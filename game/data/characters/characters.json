@@ -1,0 +1,496 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "last_updated": "2026-09-07",
+    "description": "《家业-南北篇》核心角色数据（琅琊王氏4人+陈郡谢氏4人+谯国桓氏4人=12人）"
+  },
+  "characters": {
+    "wang_dao": {
+      "id": "wang_dao",
+      "name": "王导",
+      "zi": "茂弘",
+      "birth_year": 276,
+      "death_year": 339,
+      "family_id": "wang_langya",
+      "rank": 1,
+      "gender": "male",
+      "is_alive": true,
+      "stats": {
+        "intelligence": 95,
+        "martial": 35,
+        "charm": 90,
+        "governance": 98,
+        "virtue": 92
+      },
+      "skills": {
+        "classical_studies": 95,
+        "literature": 88,
+        "calligraphy": 80,
+        "painting": 30,
+        "philosophy": 85,
+        "buddhism": 40,
+        "riding_archery": 25,
+        "swordsmanship": 20,
+        "military_strategy": 60,
+        "governance": 98
+      },
+      "personality": {
+        "ambition_conservatism": 50,
+        "introvert_extrovert": 70,
+        "kindness_severity": 75,
+        "wisdom_naivety": 90,
+        "independence_conformity": 60
+      },
+      "current_office": "骠骑大将军、仪同三司",
+      "current_title": "始兴郡公",
+      "is_main_character": true,
+      "portrait_id": "wang_dao_portrait",
+      "description": "三朝元老，奠定东晋百年基业。王与马，共天下。",
+      "famous_quotes": [
+        "臣有三事，请殿下深思：一、礼遇江东士族；二、宽待南渡士族；三、不问南北之争，共御外侮。"
+      ],
+      "relationship_ids": ["spouse_wang_dao_wife", "friend_wang_dun", "friend_sima_rui"]
+    },
+    "wang_dun": {
+      "id": "wang_dun",
+      "name": "王敦",
+      "zi": "处仲",
+      "birth_year": 276,
+      "death_year": 324,
+      "family_id": "wang_langya",
+      "rank": 1,
+      "gender": "male",
+      "is_alive": true,
+      "stats": {
+        "intelligence": 70,
+        "martial": 92,
+        "charm": 75,
+        "governance": 65,
+        "virtue": 50
+      },
+      "skills": {
+        "military_strategy": 85,
+        "riding_archery": 90,
+        "swordsmanship": 88,
+        "governance": 60,
+        "classical_studies": 50,
+        "literature": 60,
+        "calligraphy": 40
+      },
+      "personality": {
+        "ambition_conservatism": 85,
+        "introvert_extrovert": 60,
+        "kindness_severity": 35,
+        "wisdom_naivety": 60,
+        "independence_conformity": 80
+      },
+      "current_office": "大将军、荆州刺史",
+      "current_title": "汉安乡侯",
+      "is_main_character": true,
+      "portrait_id": "wang_dun_portrait",
+      "description": "王导堂兄，拥兵自重发动王敦之乱。枭雄之姿，兄弟决裂。",
+      "famous_quotes": [
+        "吾兄误我！当共戮力王室，何意相逼？"
+      ],
+      "relationship_ids": ["spouse_wang_dun_wife", "sibling_wang_dao", "rival_wang_dao"]
+    },
+    "wang_yi": {
+      "id": "wang_yi",
+      "name": "王宜",
+      "zi": "仲元",
+      "birth_year": 280,
+      "death_year": 345,
+      "family_id": "wang_langya",
+      "rank": 2,
+      "gender": "male",
+      "is_alive": true,
+      "stats": {
+        "intelligence": 78,
+        "martial": 50,
+        "charm": 75,
+        "governance": 80,
+        "virtue": 85
+      },
+      "skills": {
+        "classical_studies": 75,
+        "literature": 78,
+        "calligraphy": 70,
+        "governance": 82,
+        "philosophy": 70
+      },
+      "personality": {
+        "ambition_conservatism": 30,
+        "introvert_extrovert": 50,
+        "kindness_severity": 80,
+        "wisdom_naivety": 75,
+        "independence_conformity": 55
+      },
+      "current_office": "尚书",
+      "current_title": "",
+      "is_main_character": false,
+      "portrait_id": "wang_yi_portrait",
+      "description": "王导之子，继承家学，温和稳重。"
+    },
+    "wang_xizhi": {
+      "id": "wang_xizhi",
+      "name": "王羲之",
+      "zi": "逸少",
+      "birth_year": 303,
+      "death_year": 361,
+      "family_id": "wang_langya",
+      "rank": 1,
+      "gender": "male",
+      "is_alive": true,
+      "stats": {
+        "intelligence": 92,
+        "martial": 40,
+        "charm": 98,
+        "governance": 70,
+        "virtue": 90
+      },
+      "skills": {
+        "calligraphy": 100,
+        "literature": 88,
+        "painting": 75,
+        "philosophy": 82,
+        "classical_studies": 78,
+        "riding_archery": 35,
+        "swordsmanship": 30
+      },
+      "personality": {
+        "ambition_conservatism": 35,
+        "introvert_extrovert": 60,
+        "kindness_severity": 85,
+        "wisdom_naivety": 88,
+        "independence_conformity": 65
+      },
+      "current_office": "右军将军、会稽内史",
+      "current_title": "建康县伯",
+      "is_main_character": true,
+      "portrait_id": "wang_xizhi_portrait",
+      "description": "书圣，《兰亭集序》冠绝古今。王献之之父。",
+      "famous_quotes": [
+        "仰观宇宙之大，俯察品类之盛，所以游目骋怀，足以极视听之娱。"
+      ],
+      "relationship_ids": ["spouse_wang_xizhi_wife", "child_wang_xianzhi"]
+    },
+    "xie_an": {
+      "id": "xie_an",
+      "name": "谢安",
+      "zi": "安石",
+      "birth_year": 320,
+      "death_year": 385,
+      "family_id": "xie_chenjun",
+      "rank": 1,
+      "gender": "male",
+      "is_alive": true,
+      "stats": {
+        "intelligence": 95,
+        "martial": 50,
+        "charm": 98,
+        "governance": 92,
+        "virtue": 95
+      },
+      "skills": {
+        "philosophy": 98,
+        "literature": 92,
+        "classical_studies": 88,
+        "calligraphy": 85,
+        "painting": 70,
+        "military_strategy": 75,
+        "governance": 90
+      },
+      "personality": {
+        "ambition_conservatism": 45,
+        "introvert_extrovert": 50,
+        "kindness_severity": 80,
+        "wisdom_naivety": 95,
+        "independence_conformity": 70
+      },
+      "current_office": "司徒",
+      "current_title": "庐陵郡公",
+      "is_main_character": true,
+      "portrait_id": "xie_an_portrait",
+      "description": "淝水之战总指挥，东山再起的名相。'小儿辈破贼'千古名场面。",
+      "famous_quotes": [
+        "小儿辈遂已破贼。",
+        "既生斯世，便当为斯世而生。"
+      ],
+      "relationship_ids": ["spouse_xie_an_wife", "sibling_xie_xuan_father", "friend_wang_xizhi"]
+    },
+    "xie_xuan": {
+      "id": "xie_xuan",
+      "name": "谢玄",
+      "zi": "遏",
+      "birth_year": 343,
+      "death_year": 388,
+      "family_id": "xie_chenjun",
+      "rank": 1,
+      "gender": "male",
+      "is_alive": true,
+      "stats": {
+        "intelligence": 85,
+        "martial": 95,
+        "charm": 80,
+        "governance": 75,
+        "virtue": 88
+      },
+      "skills": {
+        "military_strategy": 95,
+        "riding_archery": 92,
+        "swordsmanship": 88,
+        "governance": 78,
+        "classical_studies": 60,
+        "literature": 65
+      },
+      "personality": {
+        "ambition_conservatism": 40,
+        "introvert_extrovert": 55,
+        "kindness_severity": 75,
+        "wisdom_naivety": 80,
+        "independence_conformity": 60
+      },
+      "current_office": "建武将军、兖州刺史",
+      "current_title": "东兴县侯",
+      "is_main_character": true,
+      "portrait_id": "xie_xuan_portrait",
+      "description": "北府兵创建者，淝水之战前线总指挥。",
+      "famous_quotes": [
+        "此战若胜，则东晋存；若败，则谢氏亡。"
+      ],
+      "relationship_ids": ["nephew_xie_an"]
+    },
+    "xie_daoyun": {
+      "id": "xie_daoyun",
+      "name": "谢道韫",
+      "zi": "令姜",
+      "birth_year": 340,
+      "death_year": 388,
+      "family_id": "xie_chenjun",
+      "rank": 2,
+      "gender": "female",
+      "is_alive": true,
+      "stats": {
+        "intelligence": 92,
+        "martial": 25,
+        "charm": 95,
+        "governance": 60,
+        "virtue": 92
+      },
+      "skills": {
+        "literature": 95,
+        "philosophy": 88,
+        "calligraphy": 82,
+        "painting": 75,
+        "classical_studies": 85
+      },
+      "personality": {
+        "ambition_conservatism": 30,
+        "introvert_extrovert": 50,
+        "kindness_severity": 80,
+        "wisdom_naivety": 95,
+        "independence_conformity": 70
+      },
+      "current_office": "王凝之妻",
+      "current_title": "",
+      "is_main_character": true,
+      "portrait_id": "xie_daoyun_portrait",
+      "description": "中国古代第一才女，'未若柳絮因风起'。",
+      "famous_quotes": [
+        "未若柳絮因风起。",
+        "一门之内，不愧林下之风。"
+      ],
+      "relationship_ids": ["spouse_wang_ningzhi"]
+    },
+    "xie_tao": {
+      "id": "xie_tao",
+      "name": "谢韬",
+      "zi": "子明",
+      "birth_year": 325,
+      "death_year": 360,
+      "family_id": "xie_chenjun",
+      "rank": 3,
+      "gender": "male",
+      "is_alive": true,
+      "stats": {
+        "intelligence": 80,
+        "martial": 75,
+        "charm": 70,
+        "governance": 75,
+        "virtue": 80
+      },
+      "skills": {
+        "military_strategy": 80,
+        "riding_archery": 78,
+        "governance": 72,
+        "classical_studies": 65
+      },
+      "personality": {
+        "ambition_conservatism": 50,
+        "introvert_extrovert": 50,
+        "kindness_severity": 70,
+        "wisdom_naivety": 70,
+        "independence_conformity": 60
+      },
+      "current_office": "豫州刺史",
+      "current_title": "",
+      "is_main_character": false,
+      "portrait_id": "xie_tao_portrait",
+      "description": "谢氏旁支，镇守豫州。"
+    },
+    "huan_wen": {
+      "id": "huan_wen",
+      "name": "桓温",
+      "zi": "元子",
+      "birth_year": 312,
+      "death_year": 373,
+      "family_id": "huan_qiaoguo",
+      "rank": 1,
+      "gender": "male",
+      "is_alive": true,
+      "stats": {
+        "intelligence": 85,
+        "martial": 95,
+        "charm": 80,
+        "governance": 80,
+        "virtue": 60
+      },
+      "skills": {
+        "military_strategy": 98,
+        "riding_archery": 95,
+        "swordsmanship": 90,
+        "governance": 82,
+        "classical_studies": 65,
+        "literature": 75
+      },
+      "personality": {
+        "ambition_conservatism": 90,
+        "introvert_extrovert": 70,
+        "kindness_severity": 35,
+        "wisdom_naivety": 80,
+        "independence_conformity": 85
+      },
+      "current_office": "大司马、扬州刺史",
+      "current_title": "南郡公",
+      "is_main_character": true,
+      "portrait_id": "huan_wen_portrait",
+      "description": "东晋枭雄，三次北伐震动朝野，最终废帝试探。",
+      "famous_quotes": [
+        "既不能流芳百世，不足复遗臭万载耶！",
+        "木犹如此，人何以堪。"
+      ],
+      "relationship_ids": ["spouse_huan_wen_wife", "child_huan_chong", "child_huan_xuan"]
+    },
+    "huan_chong": {
+      "id": "huan_chong",
+      "name": "桓冲",
+      "zi": "幼子",
+      "birth_year": 328,
+      "death_year": 384,
+      "family_id": "huan_qiaoguo",
+      "rank": 1,
+      "gender": "male",
+      "is_alive": true,
+      "stats": {
+        "intelligence": 80,
+        "martial": 88,
+        "charm": 75,
+        "governance": 85,
+        "virtue": 88
+      },
+      "skills": {
+        "military_strategy": 85,
+        "riding_archery": 88,
+        "swordsmanship": 82,
+        "governance": 88,
+        "classical_studies": 70
+      },
+      "personality": {
+        "ambition_conservatism": 30,
+        "introvert_extrovert": 60,
+        "kindness_severity": 85,
+        "wisdom_naivety": 80,
+        "independence_conformity": 50
+      },
+      "current_office": "车骑将军、徐州刺史",
+      "current_title": "",
+      "is_main_character": true,
+      "portrait_id": "huan_chong_portrait",
+      "description": "桓温之弟，比桓温温和。淝水之战时留守京师。"
+    },
+    "huan_xuan": {
+      "id": "huan_xuan",
+      "name": "桓玄",
+      "zi": "敬道",
+      "birth_year": 369,
+      "death_year": 404,
+      "family_id": "huan_qiaoguo",
+      "rank": 2,
+      "gender": "male",
+      "is_alive": true,
+      "stats": {
+        "intelligence": 80,
+        "martial": 70,
+        "charm": 75,
+        "governance": 65,
+        "virtue": 45
+      },
+      "skills": {
+        "literature": 88,
+        "calligraphy": 85,
+        "philosophy": 80,
+        "classical_studies": 78,
+        "military_strategy": 65,
+        "governance": 60
+      },
+      "personality": {
+        "ambition_conservatism": 95,
+        "introvert_extrovert": 60,
+        "kindness_severity": 30,
+        "wisdom_naivety": 65,
+        "independence_conformity": 85
+      },
+      "current_office": "楚王",
+      "current_title": "楚王",
+      "is_main_character": true,
+      "portrait_id": "huan_xuan_portrait",
+      "description": "桓温之子，最终篡晋建立桓楚，但短命而亡。"
+    },
+    "huan_yu": {
+      "id": "huan_yu",
+      "name": "桓宇",
+      "zi": "仲明",
+      "birth_year": 340,
+      "death_year": 380,
+      "family_id": "huan_qiaoguo",
+      "rank": 3,
+      "gender": "male",
+      "is_alive": true,
+      "stats": {
+        "intelligence": 70,
+        "martial": 82,
+        "charm": 60,
+        "governance": 70,
+        "virtue": 75
+      },
+      "skills": {
+        "military_strategy": 75,
+        "riding_archery": 80,
+        "swordsmanship": 78,
+        "governance": 68
+      },
+      "personality": {
+        "ambition_conservatism": 60,
+        "introvert_extrovert": 50,
+        "kindness_severity": 65,
+        "wisdom_naivety": 65,
+        "independence_conformity": 60
+      },
+      "current_office": "建威将军",
+      "current_title": "",
+      "is_main_character": false,
+      "portrait_id": "huan_yu_portrait",
+      "description": "桓氏旁支武将。"
+    }
+  }
+}

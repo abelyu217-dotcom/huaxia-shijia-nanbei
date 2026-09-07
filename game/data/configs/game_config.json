@@ -1,0 +1,119 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "last_updated": "2026-09-07",
+    "description": "《家业-南北篇》游戏配置（数值、属性、规则）"
+  },
+  "rank_system": {
+    "ranks": [
+      {"rank": 1, "name": "上品", "description": "顶级门阀", "offices_max": ["太尉", "司徒", "司空", "大将军"]},
+      {"rank": 2, "name": "上品", "description": "一流门阀", "offices_max": ["尚书令", "九卿"]},
+      {"rank": 3, "name": "中品上", "description": "高级门阀", "offices_max": ["刺史", "太守"]},
+      {"rank": 4, "name": "中品上", "description": "中级门阀", "offices_max": ["郡守", "列侯"]},
+      {"rank": 5, "name": "中品中", "description": "次级门阀", "offices_max": ["县令", "郎官"]},
+      {"rank": 6, "name": "中品下", "description": "寒门士族", "offices_max": ["功曹", "掾属"]},
+      {"rank": 7, "name": "下品上", "description": "平民", "offices_max": ["低级吏员"]},
+      {"rank": 8, "name": "下品中", "description": "寒人", "offices_max": ["兵户"]},
+      {"rank": 9, "name": "下品下", "description": "奴仆", "offices_max": []}
+    ],
+    "marriage_rules": {
+      "max_rank_diff_for_marriage": 2,
+      "special_condition_diff": 3,
+      "forbidden_diff": 5
+    }
+  },
+  "stat_system": {
+    "stats": ["intelligence", "martial", "charm", "governance", "virtue"],
+    "skills": [
+      "classical_studies", "literature", "calligraphy", "painting",
+      "philosophy", "buddhism", "riding_archery", "swordsmanship",
+      "military_strategy", "governance", "agriculture", "medicine",
+      "craftsmanship", "music"
+    ],
+    "stat_min": 0,
+    "stat_max": 100,
+    "skill_min": 0,
+    "skill_max": 100
+  },
+  "time_system": {
+    "seasons": ["春", "夏", "秋", "冬"],
+    "season_names": {
+      "spring": {"name": "春", "month_range": [1, 3], "events": ["春耕", "会亲", "议亲"]},
+      "summer": {"name": "夏", "month_range": [4, 6], "events": ["夏耘", "清谈", "上书"]},
+      "autumn": {"name": "秋", "month_range": [7, 9], "events": ["秋收", "祭祀", "朝会"]},
+      "winter": {"name": "冬", "month_range": [10, 12], "events": ["冬藏", "宴会", "年终总结"]}
+    },
+    "month_names": [
+      "正月", "二月", "三月", "四月", "五月", "六月",
+      "七月", "八月", "九月", "十月", "十一月", "十二月"
+    ]
+  },
+  "war_system": {
+    "battle_outcomes": ["great_victory", "victory", "draw", "defeat", "great_defeat"],
+    "outcome_weights": {
+      "great_victory": [0.1, 0.3, 0.5, 0.7, 0.9],
+      "victory": [0.3, 0.5, 0.7, 0.85, 0.95],
+      "draw": [0.5, 0.65, 0.8, 0.9, 0.95],
+      "defeat": [0.05, 0.15, 0.3, 0.5, 0.7],
+      "great_defeat": [0.01, 0.05, 0.15, 0.3, 0.5]
+    },
+    "morale_factors": [
+      "leadership", "training", "supply", "terrain_advantage",
+      "weather", "casualties", "morale", "alliance_support"
+    ]
+  },
+  "marriage_system": {
+    "steps": ["识别", "议亲", "婚约", "婚礼", "影响"],
+    "offspring_algorithm": {
+      "intelligence": "parents_average",
+      "martial": "weighted_mother_60",
+      "charm": "weighted_father_60",
+      "governance": "parents_average",
+      "virtue": "higher_parent",
+      "personality_inheritance": "blend_with_variance",
+      "rank_inheritance": "min_of_parents"
+    },
+    "matchmaking_modifiers": {
+      "rank_diff_0": 1.0,
+      "rank_diff_1": 0.8,
+      "rank_diff_2": 0.5,
+      "rank_diff_3": 0.2,
+      "rank_diff_4_or_more": 0.0
+    }
+  },
+  "conversation_system": {
+    "topics": [
+      "老庄", "周易", "佛理", "人物品评", "诗文", "琴棋书画", "政事", "军事"
+    ],
+    "difficulty_levels": [
+      {"level": "easy", "name": "入门", "skill_required": 30},
+      {"level": "normal", "name": "普通", "skill_required": 50},
+      {"level": "hard", "name": "高级", "skill_required": 70},
+      {"level": "expert", "name": "大师", "skill_required": 90}
+    ],
+    "success_formula": "skill * 0.4 + intelligence * 0.3 + charm * 0.2 + random_factor * 0.1",
+    "rewards": {
+      "great_victory": {"culture": 50, "prestige": 30},
+      "victory": {"culture": 20, "prestige": 15},
+      "draw": {"culture": 10, "prestige": 5},
+      "defeat": {"culture": -5, "prestige": -10},
+      "great_defeat": {"culture": -15, "prestige": -30}
+    }
+  },
+  "economy_system": {
+    "income_sources": ["田庄收入", "俸禄", "赏赐", "商业收入", "供奉"],
+    "expense_categories": ["家族开支", "养士", "部曲", "祭祀", "婚丧", "建设"],
+    "currency_unit": "钱",
+    "starting_wealth_by_rank": {
+      "1": 8000,
+      "2": 6000,
+      "3": 4000,
+      "4": 2500,
+      "5": 1500,
+      "6": 800,
+      "7": 500,
+      "8": 300,
+      "9": 100
+    }
+  }
+}

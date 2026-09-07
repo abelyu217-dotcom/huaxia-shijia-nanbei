@@ -1,0 +1,88 @@
+[gd_scene load_steps=2 format=3 uid="uid://g8b9cz6rw0yqe"]
+
+[ext_resource type="Script" path="res://scripts/ui/WarScene.gd" id="1_war"]
+
+[node name="WarScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_war")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.961, 0.922, 0.851, 1)
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = 40.0
+offset_right = -40.0
+offset_bottom = -40.0
+
+[node name="Title" type="Label" parent="VBox"]
+layout_mode = 2
+text = "淝水之战（公元383年）"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 32
+
+[node name="InfoLabel" type="Label" parent="VBox"]
+custom_minimum_size = Vector2(0, 250)
+layout_mode = 2
+text = "战争背景..."
+theme_override_font_sizes/font_size = 14
+
+[node name="StrategySection" type="VBoxContainer" parent="VBox"]
+layout_mode = 2
+
+[node name="StrategyLabel" type="Label" parent="VBox/StrategySection"]
+layout_mode = 2
+text = "选择战略："
+theme_override_font_sizes/font_size = 18
+
+[node name="StrategyDropdown" type="OptionButton" parent="VBox/StrategySection"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+
+[node name="CommitmentSection" type="VBoxContainer" parent="VBox"]
+layout_mode = 2
+
+[node name="CommitmentLabel" type="Label" parent="VBox/CommitmentSection"]
+layout_mode = 2
+text = "投入兵力: 100% （约 8 万人）"
+theme_override_font_sizes/font_size = 18
+
+[node name="CommitmentSlider" type="HSlider" parent="VBox/CommitmentSection"]
+layout_mode = 2
+min_value = 30
+max_value = 100
+value = 100
+
+[node name="ExecuteButton" type="Button" parent="VBox"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "开始战役"
+theme_override_font_sizes/font_size = 20
+
+[node name="ResultLabel" type="Label" parent="VBox"]
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 2
+text = ""
+theme_override_font_sizes/font_size = 14
+
+[node name="BackButton" type="Button" parent="VBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+text = "返回家族面板"
+theme_override_font_sizes/font_size = 16
+
+[connection signal="pressed" from="VBox/ExecuteButton" to="." method="_on_execute_pressed"]
+[connection signal="pressed" from="VBox/BackButton" to="." method="_on_back_pressed"]

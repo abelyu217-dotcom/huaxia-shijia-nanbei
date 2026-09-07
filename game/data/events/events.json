@@ -1,0 +1,255 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "last_updated": "2026-09-07",
+    "description": "《家业-南北篇》核心历史事件脚本（5个标志性事件）"
+  },
+  "events": {
+    "event_001_yijian_nandu": {
+      "id": "event_001_yijian_nandu",
+      "title": "衣冠南渡",
+      "year": 317,
+      "month": 3,
+      "type": "main",
+      "trigger_condition": {
+        "year_gte": 317,
+        "year_lt": 320,
+        "family_id": "wang_langya"
+      },
+      "description": "永嘉之乱后，琅琊王司马睿在王导辅佐下，于建康建立东晋。中原士族南渡，琅琊王氏随之南迁，开启百年门阀时代。",
+      "historical_context": "311年永嘉之乱，晋怀帝被俘。313年司马睿被拥立为晋王。317年司马睿称晋王，正式建立东晋。王导以安东将军身份辅政，与王敦共掌内外，形成'王与马，共天下'的政治格局。",
+      "choices": [
+        {
+          "id": "choice_a",
+          "text": "全力支持司马睿，定策建康",
+          "description": "与司马睿共治江东，建立东晋",
+          "consequence": "王氏家族获得开国功臣地位，门第升为顶级",
+          "stat_effects": {
+            "family_prestige": 30,
+            "family_rank_change": 1,
+            "relationship_sima_rui": 50
+          }
+        },
+        {
+          "id": "choice_b",
+          "text": "观望局势，等待时局明朗",
+          "description": "暂不表态，保留实力",
+          "consequence": "保持中立但可能失去先机",
+          "stat_effects": {
+            "family_prestige": 5
+          }
+        },
+        {
+          "id": "choice_c",
+          "text": "暗中积蓄力量，拥兵自重",
+          "description": "走枭雄路线，为日后独立奠基",
+          "consequence": "为王敦之乱埋下伏笔",
+          "stat_effects": {
+            "family_wealth": 1000,
+            "war_preparation": 30
+          }
+        }
+      ],
+      "outcome_text": "司马睿登基，王导辅政，琅琊王氏与司马氏共治天下。",
+      "is_repeatable": false,
+      "related_characters": ["wang_dao", "wang_dun", "sima_rui"],
+      "scene_id": "sc_003_yijian_nandu"
+    },
+    "event_002_wangdun_zhiluan": {
+      "id": "event_002_wangdun_zhiluan",
+      "title": "王敦之乱",
+      "year": 322,
+      "month": 6,
+      "type": "main",
+      "trigger_condition": {
+        "year_gte": 322,
+        "year_lt": 325,
+        "family_id": "wang_langya"
+      },
+      "description": "王敦不满朝廷疏远，以'清君侧'之名起兵东下，攻陷建康。王导在朝廷，王敦在荆州，兄弟对峙。",
+      "historical_context": "322年，王敦因忌惮刘隗、刁协等宠臣，以诛刘隗为名，从武昌起兵。攻入建康后，诛杀异己。323年王敦移镇姑孰，自领扬州牧。324年王敦病重，第二次东下，最终病死军中。",
+      "choices": [
+        {
+          "id": "choice_a",
+          "text": "站在朝廷一边，与王敦决裂",
+          "description": "维护王导一脉的辅政地位",
+          "consequence": "王导家族延续，但与王敦一脉分裂",
+          "stat_effects": {
+            "family_prestige": -10,
+            "family_internal_strife": true,
+            "relationship_sima_rui": 30
+          }
+        },
+        {
+          "id": "choice_b",
+          "text": "支持王敦，篡位自立",
+          "description": "走枭雄路线",
+          "consequence": "若成功则改朝换代，若失败则满门抄斩",
+          "stat_effects": {
+            "family_wealth": -2000,
+            "family_prestige": -50,
+            "war_bet": 50
+          }
+        },
+        {
+          "id": "choice_c",
+          "text": "保持中立，分裂家族",
+          "description": "部分支持朝廷，部分支持王敦",
+          "consequence": "家族分裂为'朝廷派'与'藩镇派'",
+          "stat_effects": {
+            "family_split": true,
+            "family_prestige": -20
+          }
+        }
+      ],
+      "outcome_text": "王敦之乱以王敦病死、叛乱平定告终。王氏内部出现分化。",
+      "is_repeatable": false,
+      "related_characters": ["wang_dao", "wang_dun"],
+      "scene_id": "sc_004_wangdun_zhiluan"
+    },
+    "event_003_sujun_zhiluan": {
+      "id": "event_003_sujun_zhiluan",
+      "title": "苏峻之乱",
+      "year": 327,
+      "month": 10,
+      "type": "main",
+      "trigger_condition": {
+        "year_gte": 327,
+        "year_lt": 330,
+        "family_id": "wang_langya"
+      },
+      "description": "苏峻因不满庾亮专权，联合祖约起兵叛乱。攻陷建康，挟持晋成帝。王导等坚守宫廷，最终平定叛乱。",
+      "historical_context": "327年苏峻以'诛庾亮'为名起兵，次年攻入建康。329年陶侃、温峤、庾亮联军击败苏峻。",
+      "choices": [
+        {
+          "id": "choice_a",
+          "text": "坚守建康，保护晋成帝",
+          "description": "维持王氏'忠于朝廷'的形象",
+          "consequence": "家族声望恢复，巩固门阀地位",
+          "stat_effects": {
+            "family_prestige": 20,
+            "relationship_sima_yi": 40
+          }
+        },
+        {
+          "id": "choice_b",
+          "text": "趁机扩张势力",
+          "description": "在乱世中扩展",
+          "consequence": "扩张但可能被猜忌",
+          "stat_effects": {
+            "family_wealth": 500,
+            "family_prestige": 10,
+            "suspicion": 30
+          }
+        }
+      ],
+      "outcome_text": "王导坚守建康，叛乱平定后，王氏地位更加巩固。",
+      "is_repeatable": false,
+      "related_characters": ["wang_dao"],
+      "scene_id": "sc_005_sujun_zhiluan"
+    },
+    "event_004_lanting_yaji": {
+      "id": "event_004_lanting_yaji",
+      "title": "兰亭雅集",
+      "year": 353,
+      "month": 3,
+      "type": "culture",
+      "trigger_condition": {
+        "year_gte": 353,
+        "year_lte": 353,
+        "has_character": "wang_xizhi"
+      },
+      "description": "王羲之于会稽山阴兰亭举办修禊雅集，邀谢安等四十一位名士。曲水流觞，赋诗饮酒，王羲之挥毫作《兰亭集序》。",
+      "historical_context": "353年三月初三上巳节，王羲之邀谢安、孙绰等四十一人于会稽山阴兰亭举行修禊集会。众人赋诗，王羲之乘兴作序，即《兰亭集序》，被誉为'天下第一行书'。",
+      "choices": [
+        {
+          "id": "choice_a",
+          "text": "赋诗一首，参与雅集",
+          "description": "在文化上留下足迹",
+          "consequence": "文化声望大幅提升，可能参与《兰亭集序》",
+          "stat_effects": {
+            "character_charm": 5,
+            "character_calligraphy": 3,
+            "family_culture": 30
+          }
+        },
+        {
+          "id": "choice_b",
+          "text": "观赏为主，不参与创作",
+          "description": "保持低调",
+          "consequence": "欣赏雅集，但不留下个人印记",
+          "stat_effects": {
+            "family_culture": 10
+          }
+        },
+        {
+          "id": "choice_c",
+          "text": "提出异议，质疑浮华之风",
+          "description": "走务实路线",
+          "consequence": "务实但得罪文化圈",
+          "stat_effects": {
+            "family_culture": -10,
+            "family_governance": 5
+          }
+        }
+      ],
+      "outcome_text": "兰亭雅集成为千古佳话，《兰亭集序》传颂至今。",
+      "is_repeatable": false,
+      "related_characters": ["wang_xizhi", "xie_an"],
+      "scene_id": "sc_lanting_yaji"
+    },
+    "event_005_feishui_zhizhan": {
+      "id": "event_005_feishui_zhizhan",
+      "title": "淝水之战",
+      "year": 383,
+      "month": 11,
+      "type": "war",
+      "trigger_condition": {
+        "year_gte": 383,
+        "year_lte": 383,
+        "family_id": "xie_chenjun"
+      },
+      "description": "前秦苻坚率百万大军南下伐晋，东晋以谢玄率八万北府兵迎战。在淝水两岸对峙，最终东晋大胜，前秦帝国崩溃。",
+      "historical_context": "383年，前秦苻坚不顾群臣反对，率90万大军南下伐晋。东晋以谢玄率北府兵八万迎敌。淝水一战，秦军大溃，苻坚仅以身免。此战奠定南北朝对峙格局。",
+      "choices": [
+        {
+          "id": "choice_a",
+          "text": "全力出击，投入全部兵力",
+          "description": "谢玄率八万北府兵决战",
+          "consequence": "淝水大捷，谢氏达到权力巅峰",
+          "stat_effects": {
+            "family_prestige": 50,
+            "family_rank_change": 1,
+            "family_merit": "first_class",
+            "family_military_strength": 30
+          }
+        },
+        {
+          "id": "choice_b",
+          "text": "坚守建康，保存实力",
+          "description": "谢安坐镇京师指挥",
+          "consequence": "稳健但可能错失战机",
+          "stat_effects": {
+            "family_prestige": 20,
+            "family_merit": "second_class"
+          }
+        },
+        {
+          "id": "choice_c",
+          "text": "求和议和，避免决战",
+          "description": "避免战争",
+          "consequence": "虽然安全但东晋将亡",
+          "stat_effects": {
+            "family_prestige": -50,
+            "family_rank_change": -1,
+            "family_merit": "shame"
+          }
+        }
+      ],
+      "outcome_text": "淝水大捷！'小儿辈遂已破贼'，谢安留下千古名场面。",
+      "is_repeatable": false,
+      "related_characters": ["xie_an", "xie_xuan"],
+      "scene_id": "sc_009_feishui"
+    }
+  }
+}

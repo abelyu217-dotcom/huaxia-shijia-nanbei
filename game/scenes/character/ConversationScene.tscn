@@ -1,0 +1,81 @@
+[gd_scene load_steps=2 format=3 uid="uid://f7a8bz5qr8xmd"]
+
+[ext_resource type="Script" path="res://scripts/ui/ConversationScene.gd" id="1_conversation"]
+
+[node name="ConversationScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_conversation")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.961, 0.922, 0.851, 1)
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = 40.0
+offset_right = -40.0
+offset_bottom = -40.0
+
+[node name="Title" type="Label" parent="VBox"]
+layout_mode = 2
+text = "清谈品评"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 32
+
+[node name="TopicSection" type="VBoxContainer" parent="VBox"]
+layout_mode = 2
+
+[node name="TopicLabel" type="Label" parent="VBox/TopicSection"]
+layout_mode = 2
+text = "选择议题："
+theme_override_font_sizes/font_size = 18
+
+[node name="TopicDropdown" type="OptionButton" parent="VBox/TopicSection"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+
+[node name="DebaterLabel" type="Label" parent="VBox"]
+layout_mode = 2
+text = "选择辩手（2-4人）："
+theme_override_font_sizes/font_size = 18
+
+[node name="DebaterScroll" type="ScrollContainer" parent="VBox"]
+custom_minimum_size = Vector2(0, 250)
+layout_mode = 2
+
+[node name="DebaterList" type="VBoxContainer" parent="VBox/DebaterScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="StartButton" type="Button" parent="VBox"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "开始清谈"
+theme_override_font_sizes/font_size = 20
+
+[node name="ResultLabel" type="Label" parent="VBox"]
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 2
+text = ""
+theme_override_font_sizes/font_size = 14
+
+[node name="BackButton" type="Button" parent="VBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+text = "返回家族面板"
+theme_override_font_sizes/font_size = 16
+
+[connection signal="pressed" from="VBox/StartButton" to="." method="_on_start_pressed"]
+[connection signal="pressed" from="VBox/BackButton" to="." method="_on_back_pressed"]

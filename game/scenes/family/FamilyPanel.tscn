@@ -1,0 +1,147 @@
+[gd_scene load_steps=2 format=3 uid="uid://c3w5tp6yr8kfd"]
+
+[ext_resource type="Script" path="res://scripts/ui/FamilyPanel.gd" id="1_family"]
+
+[node name="FamilyPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_family")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.961, 0.922, 0.851, 1)
+
+[node name="TopBar" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 60.0
+
+[node name="TimeLabel" type="Label" parent="TopBar"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+text = "317年 正月（春）"
+theme_override_font_sizes/font_size = 20
+
+[node name="FamilyName" type="Label" parent="TopBar"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+text = "琅琊王氏"
+theme_override_font_sizes/font_size = 22
+
+[node name="FamilyRank" type="Label" parent="TopBar"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+text = "1品"
+theme_override_font_sizes/font_size = 18
+
+[node name="PrestigeLabel" type="Label" parent="TopBar"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "声望: 95"
+theme_override_font_sizes/font_size = 16
+
+[node name="WealthLabel" type="Label" parent="TopBar"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "财富: 8000"
+theme_override_font_sizes/font_size = 16
+
+[node name="HBox" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 70.0
+offset_right = -10.0
+offset_bottom = -100.0
+
+[node name="MainPanel" type="Panel" parent="HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CharacterScroll" type="ScrollContainer" parent="HBox/MainPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="CharacterList" type="VBoxContainer" parent="HBox/MainPanel/CharacterScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Sidebar" type="Panel" parent="HBox"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+
+[node name="EstateScroll" type="ScrollContainer" parent="HBox/Sidebar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="EstateList" type="VBoxContainer" parent="HBox/Sidebar/EstateScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ActionBar" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = -90.0
+offset_right = -10.0
+offset_bottom = -10.0
+
+[node name="Buttons" type="HBoxContainer" parent="ActionBar"]
+layout_mode = 2
+alignment = 1
+
+[node name="CultivateButton" type="Button" parent="ActionBar/Buttons"]
+custom_minimum_size = Vector2(120, 60)
+layout_mode = 2
+text = "培养族人"
+theme_override_font_sizes/font_size = 16
+
+[node name="MarryButton" type="Button" parent="ActionBar/Buttons"]
+custom_minimum_size = Vector2(120, 60)
+layout_mode = 2
+text = "联姻"
+theme_override_font_sizes/font_size = 16
+
+[node name="ConverseButton" type="Button" parent="ActionBar/Buttons"]
+custom_minimum_size = Vector2(120, 60)
+layout_mode = 2
+text = "清谈"
+theme_override_font_sizes/font_size = 16
+
+[node name="EventButton" type="Button" parent="ActionBar/Buttons"]
+custom_minimum_size = Vector2(120, 60)
+layout_mode = 2
+text = "触发事件"
+theme_override_font_sizes/font_size = 16
+
+[node name="AdvanceButton" type="Button" parent="ActionBar/Buttons"]
+custom_minimum_size = Vector2(120, 60)
+layout_mode = 2
+text = "推进一季"
+theme_override_font_sizes/font_size = 16
+
+[connection signal="pressed" from="ActionBar/Buttons/CultivateButton" to="." method="_on_cultivate_pressed"]
+[connection signal="pressed" from="ActionBar/Buttons/MarryButton" to="." method="_on_marry_pressed"]
+[connection signal="pressed" from="ActionBar/Buttons/ConverseButton" to="." method="_on_converse_pressed"]
+[connection signal="pressed" from="ActionBar/Buttons/EventButton" to="." method="_on_event_pressed"]
+[connection signal="pressed" from="ActionBar/Buttons/AdvanceButton" to="." method="_on_advance_pressed"]

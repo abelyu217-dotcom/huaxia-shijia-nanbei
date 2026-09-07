@@ -1,0 +1,79 @@
+[gd_scene load_steps=2 format=3 uid="uid://e6s7uy9pq1vnz"]
+
+[ext_resource type="Script" path="res://scripts/ui/MarriageScene.gd" id="1_marriage"]
+
+[node name="MarriageScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_marriage")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.961, 0.922, 0.851, 1)
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = 40.0
+offset_right = -40.0
+offset_bottom = -40.0
+
+[node name="Title" type="Label" parent="VBox"]
+layout_mode = 2
+text = "联姻外交"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 32
+
+[node name="OwnCharSection" type="VBoxContainer" parent="VBox"]
+layout_mode = 2
+
+[node name="OwnCharLabel" type="Label" parent="VBox/OwnCharSection"]
+layout_mode = 2
+text = "选择家族适婚成员："
+theme_override_font_sizes/font_size = 18
+
+[node name="OwnCharDropdown" type="OptionButton" parent="VBox/OwnCharSection"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+
+[node name="CandidateLabel" type="Label" parent="VBox"]
+layout_mode = 2
+text = "候选联姻对象："
+theme_override_font_sizes/font_size = 18
+
+[node name="CandidateScroll" type="ScrollContainer" parent="VBox"]
+custom_minimum_size = Vector2(0, 250)
+layout_mode = 2
+
+[node name="CandidateList" type="VBoxContainer" parent="VBox/CandidateScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="DetailPanel" type="Panel" parent="VBox"]
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 2
+
+[node name="ConfirmButton" type="Button" parent="VBox"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "确认联姻"
+theme_override_font_sizes/font_size = 20
+
+[node name="BackButton" type="Button" parent="VBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+text = "返回家族面板"
+theme_override_font_sizes/font_size = 16
+
+[connection signal="pressed" from="VBox/ConfirmButton" to="." method="_on_confirm_pressed"]
+[connection signal="pressed" from="VBox/BackButton" to="." method="_on_back_pressed"]

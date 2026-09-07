@@ -1,0 +1,137 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "last_updated": "2026-09-07",
+    "description": "《家业-南北篇》田庄配置数据"
+  },
+  "estate_types": {
+    "top_tier": {
+      "id": "top_tier",
+      "name": "顶级田庄",
+      "description": "占地千顷的顶级田庄，多为门阀世族所拥有，设有专用的庄院、藏书楼、族塾等设施",
+      "base_income": 500,
+      "base_output": ["粮食", "绢帛", "书籍", "文房四宝"],
+      "special_features": ["藏书楼", "族塾", "园林"],
+      "cost": 5000,
+      "build_time": 12,
+      "min_rank": 1
+    },
+    "standard": {
+      "id": "standard",
+      "name": "普通田庄",
+      "description": "占地数百亩的标准田庄，设有基本的农田、桑园等",
+      "base_income": 200,
+      "base_output": ["粮食", "绢帛"],
+      "special_features": ["族塾"],
+      "cost": 2000,
+      "build_time": 6,
+      "min_rank": 3
+    },
+    "humble": {
+      "id": "humble",
+      "name": "寒门田庄",
+      "description": "占地数十亩的小田庄，主要依靠家族成员亲自耕作",
+      "base_income": 80,
+      "base_output": ["粮食"],
+      "special_features": [],
+      "cost": 500,
+      "build_time": 3,
+      "min_rank": 6
+    },
+    "scholar_estate": {
+      "id": "scholar_estate",
+      "name": "书香田庄",
+      "description": "以文化教育为主的田庄，设有族塾、藏书楼",
+      "base_income": 150,
+      "base_output": ["书籍", "文房四宝"],
+      "special_features": ["藏书楼", "族塾", "精舍"],
+      "cost": 3000,
+      "build_time": 8,
+      "min_rank": 2
+    },
+    "military_estate": {
+      "id": "military_estate",
+      "name": "军镇田庄",
+      "description": "以军政合一为特色的田庄，设有部曲营、烽火台等",
+      "base_income": 250,
+      "base_output": ["粮食", "军械"],
+      "special_features": ["部曲营", "烽火台"],
+      "cost": 3500,
+      "build_time": 10,
+      "min_rank": 2
+    },
+    "temple_estate": {
+      "id": "temple_estate",
+      "name": "寺院田庄",
+      "description": "寺院经济的一部分，依靠信仰和宗教影响力经营",
+      "base_income": 180,
+      "base_output": ["粮食", "香火钱"],
+      "special_features": ["佛堂", "经楼"],
+      "cost": 2500,
+      "build_time": 7,
+      "min_rank": 4
+    }
+  },
+  "starting_estates": {
+    "wang_langya": [
+      {
+        "id": "wang_estate_1",
+        "name": "琅琊祖庄",
+        "type": "top_tier",
+        "location": "琅琊",
+        "level": 5,
+        "workers": 800,
+        "specialties": ["藏书楼", "族塾"]
+      },
+      {
+        "id": "wang_estate_2",
+        "name": "建康府邸",
+        "type": "scholar_estate",
+        "location": "建康",
+        "level": 3,
+        "workers": 200,
+        "specialties": ["藏书楼", "精舍"]
+      }
+    ],
+    "xie_chenjun": [
+      {
+        "id": "xie_estate_1",
+        "name": "陈郡祖庄",
+        "type": "top_tier",
+        "location": "陈郡",
+        "level": 4,
+        "workers": 600,
+        "specialties": ["藏书楼", "族塾"]
+      },
+      {
+        "id": "xie_estate_2",
+        "name": "京口军镇",
+        "type": "military_estate",
+        "location": "京口",
+        "level": 3,
+        "workers": 300,
+        "specialties": ["部曲营"]
+      }
+    ],
+    "huan_qiaoguo": [
+      {
+        "id": "huan_estate_1",
+        "name": "谯国祖庄",
+        "type": "standard",
+        "location": "谯国",
+        "level": 4,
+        "workers": 400,
+        "specialties": ["族塾"]
+      },
+      {
+        "id": "huan_estate_2",
+        "name": "荆州军府",
+        "type": "military_estate",
+        "location": "荆州",
+        "level": 4,
+        "workers": 500,
+        "specialties": ["部曲营", "烽火台"]
+      }
+    ]
+  }
+}

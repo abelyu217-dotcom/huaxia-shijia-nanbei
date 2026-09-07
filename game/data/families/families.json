@@ -1,0 +1,81 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "last_updated": "2026-09-07",
+    "description": "《家业-南北篇》家族配置数据"
+  },
+  "families": {
+    "wang_langya": {
+      "id": "wang_langya",
+      "name": "琅琊王氏",
+      "junwang": "琅琊",
+      "rank": 1,
+      "prestige": 95,
+      "wealth": 8000,
+      "color": "#B83A2F",
+      "founding_year": 269,
+      "description": "东晋第一望族，王导辅政奠定东晋百年基业，'王与马，共天下'",
+      "famous_quotes": [
+        "王与马，共天下。",
+        "江东士族，当以礼遇。",
+        "不以南北之分，共御外侮。"
+      ],
+      "specialty": "文官世家、书法传承、清谈领袖",
+      "emblem": "凤凰",
+      "homeland": "建康",
+      "start_year": 317,
+      "starting_characters": ["wang_dao", "wang_dun", "wang_yi", "wang_xizhi"],
+      "primary_color": "#B83A2F",
+      "secondary_color": "#A75D40",
+      "emblem_description": "凤凰衔书，象征书香门第与朝堂辅政"
+    },
+    "xie_chenjun": {
+      "id": "xie_chenjun",
+      "name": "陈郡谢氏",
+      "junwang": "陈郡",
+      "rank": 1,
+      "prestige": 90,
+      "wealth": 7500,
+      "color": "#5D8B6F",
+      "founding_year": 280,
+      "description": "淝水之战主角家族，谢安、谢玄以八万北府兵破百万前秦军",
+      "famous_quotes": [
+        "小儿辈遂已破贼。",
+        "八万虽少，足以破秦。",
+        "既生斯世，便当为斯世而生。"
+      ],
+      "specialty": "武将世家、文艺兼具、北府兵创建",
+      "emblem": "芝草",
+      "homeland": "建康",
+      "start_year": 357,
+      "starting_characters": ["xie_an", "xie_xuan", "xie_daoyun", "xie_tao"],
+      "primary_color": "#5D8B6F",
+      "secondary_color": "#B8C99D",
+      "emblem_description": "芝草瑞应，象征文人风骨与武将英姿"
+    },
+    "huan_qiaoguo": {
+      "id": "huan_qiaoguo",
+      "name": "谯国桓氏",
+      "junwang": "谯国",
+      "rank": 2,
+      "prestige": 75,
+      "wealth": 6000,
+      "color": "#5B7B8F",
+      "founding_year": 290,
+      "description": "枭雄桓温家族，三次北伐震动东晋，桓玄最终篡晋建立桓楚",
+      "famous_quotes": [
+        "既不能流芳百世，不足复遗臭万载耶！",
+        "木犹如此，人何以堪。",
+        "诸君不见前朝之事乎？"
+      ],
+      "specialty": "枭雄路线、北伐霸业、篡位试探",
+      "emblem": "苍鹰",
+      "homeland": "荆州",
+      "start_year": 347,
+      "starting_characters": ["huan_wen", "huan_chong", "huan_xuan", "huan_yu"],
+      "primary_color": "#5B7B8F",
+      "secondary_color": "#4A7C7E",
+      "emblem_description": "苍鹰搏击，象征枭雄之志与北伐雄心"
+    }
+  }
+}
