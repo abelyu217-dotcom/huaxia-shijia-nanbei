@@ -1,0 +1,227 @@
+# Godot 4+ specific ignores
+.godot/
+.import/
+
+# Godot-specific ignores
+android/
+android.build/
+android/libs/
+android/local.properties
+android/app/build/
+android/app/.cxx/
+android/build/
+ios/
+
+# Imported translations (automatically generated from CSV files)
+*.translation
+
+# Mono-specific ignores
+.mono/
+data_*/
+mono_crash.*.json
+mono_crash.*.txt
+mono_logs/
+
+# Godot plugin ignores
+addons/*/importer.cfg
+addons/*/plugin.cfg
+addons/*/*.godot
+
+# ===========================================================
+# OS Files
+# ===========================================================
+
+# Windows
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# Linux
+.directory
+.Trash-*
+
+# ===========================================================
+# IDE / Editor Files
+# ===========================================================
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# JetBrains (IntelliJ, Rider, etc.)
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+
+# ===========================================================
+# Build / Generated Files
+# ===========================================================
+
+# Compiled binaries
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+*.lib
+*.a
+
+# Build directories
+build/
+bin/
+obj/
+dist/
+out/
+[Bb]uild/
+[Oo]bj/
+
+# Godot exports
+*.pck
+*.zip
+*.apk
+*.ipa
+*.app
+*.pkg
+*.dmg
+*.exe
+
+# ===========================================================
+# Game Data / Save Files
+# ===========================================================
+
+# Player save files (don't commit user data)
+*.save
+*.sav
+savegames/
+saves/
+user_data/
+
+# Generated data
+*.cache
+*.tmp
+*.temp
+*.bak
+*.backup
+*.log
+
+# ===========================================================
+# Secrets / Environment
+# ===========================================================
+
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+secrets/
+config.local.json
+
+# ===========================================================
+# Test / Coverage
+# ===========================================================
+
+coverage/
+*.coverage
+*.gcov
+*.gcda
+*.gcno
+test_results/
+
+# ===========================================================
+# Documentation (some exceptions kept)
+# ===========================================================
+
+# Documentation build outputs
+docs/_build/
+docs/.doctrees/
+site/
+
+# ===========================================================
+# Game-specific
+# ===========================================================
+
+# Steam build outputs
+steam_build/
+steamworks/
+*.vdf
+
+# Asset source files (keep some committed)
+*.psd
+*.ai
+*.sketch
+*.fig
+*.blend
+*.blend1
+*.blend2
+
+# Asset source files (always ignored - large/unstable)
+*.uasset
+*.umap
+*.unity
+
+# ===========================================================
+# Personal files
+# ===========================================================
+
+*.swp
+*.swo
+*.bak
+*.orig
+
+# ===========================================================
+# Local development files
+# ===========================================================
+
+TODO.local.md
+NOTES.local.md
+scratch/
+playground/
+
+# ===========================================================
+# Godot 工作流文件
+# ===========================================================
+
+# 临时文件
+*.tmp
+*.temp
+*~
+
+# 缩略图（除非提交）
+# thumbs.db
+
+# 调试输出
+debug.log
+*.trace
+
+# CI/CD artifacts
+artifacts/
+*.artifact
+*.tgz

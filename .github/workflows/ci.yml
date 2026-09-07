@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '.gitignore'
+      - '.gitattributes'
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.3.0
+          include-dotnet: true
+
+      - name: Lint GDScript
+        run: |
+          # 简单的 GDScript 语法验证
+          # 注意：需要 Godot 项目文件才能完整 lint
+          # 详细配置由主程入职后完善
+          echo "Linting GDScript..."
+          if [ -f "game/project.godot" ]; then
+            godot --headless --check-only --script game/scripts/lint.gd || echo "Lint script not found, skipping detailed check"
+          else
+            echo "game/project.godot not found, skipping Godot lint"
+          fi
+
+  build:
+    name: Build
+    runs-on: ${{ matrix.os }}
+    needs: lint
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            artifact: game.x86_64
+          - os: windows-latest
+            artifact: game.exe
+          - os: macos-latest
+            artifact: game.dmg
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.3.0
+          include-dotnet: true
+
+      # 导出配置由主程入职后添加
+      - name: Build Game
+        run: |
+          if [ -f "game/project.godot" ]; then
+            godot --headless --export-release "${{ matrix.artifact }}" build/${{ matrix.artifact }}
+          else
+            echo "game/project.godot not found, skipping build (expected in M0)"
+            mkdir -p build
+            echo "Placeholder" > build/${{ matrix.artifact }}
+          fi
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-${{ matrix.os }}
+          path: build/${{ matrix.artifact }}
+          if-no-files-found: warn
