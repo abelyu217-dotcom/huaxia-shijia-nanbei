@@ -958,18 +958,17 @@ button {
   font-family: var(--font-mono);
 }
 
-/* ── PBP 文字直播 ── */
+/* ── PBP 文字直播（全宽，限高滚动） ── */
 
-.match-cols {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 22px;
-  align-items: start;
+.match-pbp-section .pbp-feed {
+  max-height: 480px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel-2);
 }
 
 .pbp-feed {
-  max-height: 560px;
-  overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--panel-2);
@@ -1050,7 +1049,14 @@ button {
   color: var(--away);
 }
 
-/* ── Box Score 技术统计表 ── */
+/* ── Box Score 技术统计表（主客队左右并排） ── */
+
+.boxscore-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  align-items: start;
+}
 
 .boxscore {
   border: 1px solid var(--border);
@@ -1095,14 +1101,14 @@ button {
 .bs-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12.5px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
-  min-width: 720px;
+  min-width: 560px;
 }
 
 .bs-table th,
 .bs-table td {
-  padding: 9px 10px;
+  padding: 7px 8px;
   text-align: right;
   border-bottom: 1px solid var(--border-soft);
   white-space: nowrap;
@@ -1215,7 +1221,7 @@ button {
     padding: 18px 16px 60px;
   }
   .roster-panels,
-  .match-cols {
+  .boxscore-grid {
     grid-template-columns: 1fr;
   }
   .match-summary {

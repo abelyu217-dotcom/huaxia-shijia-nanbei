@@ -142,39 +142,32 @@ export function Match({
               </div>
             </div>
 
-            <div className="match-cols">
-              <section className="section">
-                <h3 className="section-title">文字直播</h3>
-                <PbpFeed
-                  events={simResult.pbp}
-                  homeTeamId={homeTeamId ?? ""}
-                  awayTeamId={awayTeamId ?? ""}
+            <section className="section match-pbp-section">
+              <h3 className="section-title">文字直播</h3>
+              <PbpFeed
+                events={simResult.pbp}
+                homeTeamId={homeTeamId ?? ""}
+                awayTeamId={awayTeamId ?? ""}
+              />
+            </section>
+
+            <section className="section">
+              <h3 className="section-title">技术统计</h3>
+              <div className="boxscore-grid">
+                <BoxScoreTable
+                  title={homeName}
+                  side="home"
+                  stat={simResult.boxScore.home}
+                  players={homeTeam?.players ?? null}
                 />
-              </section>
-              <section className="section">
-                <h3 className="section-title">技术统计</h3>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 16,
-                  }}
-                >
-                  <BoxScoreTable
-                    title={homeName}
-                    side="home"
-                    stat={simResult.boxScore.home}
-                    players={homeTeam?.players ?? null}
-                  />
-                  <BoxScoreTable
-                    title={awayName}
-                    side="away"
-                    stat={simResult.boxScore.away}
-                    players={awayTeam?.players ?? null}
-                  />
-                </div>
-              </section>
-            </div>
+                <BoxScoreTable
+                  title={awayName}
+                  side="away"
+                  stat={simResult.boxScore.away}
+                  players={awayTeam?.players ?? null}
+                />
+              </div>
+            </section>
           </>
         )}
       </div>
