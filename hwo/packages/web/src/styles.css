@@ -1745,6 +1745,15 @@ button {
 .ls-team.away .ls-score {
   color: var(--away);
 }
+.ls-fouls {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: var(--panel-3);
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
 
 .ls-center {
   display: flex;
@@ -1864,6 +1873,126 @@ button {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
+.live-progress-mark {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 10px;
+  background: var(--text-dim);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+/* ── 本节比分条 ── */
+.live-quarter-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  margin-bottom: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 700;
+}
+.lqs-label {
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  margin-right: 6px;
+}
+.lqs-score {
+  font-size: 18px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+.lqs-score.home { color: var(--home); }
+.lqs-score.away { color: var(--away); }
+.lqs-sep {
+  color: var(--text-dim);
+  font-weight: 700;
+}
+
+/* ── 场上五人 ── */
+.live-floor {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.oncourt {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel-2);
+  overflow: hidden;
+}
+.oncourt-home { border-left: 3px solid var(--home); }
+.oncourt-away { border-left: 3px solid var(--away); }
+
+.oncourt-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--panel-3);
+  border-bottom: 1px solid var(--border);
+}
+.oc-tag {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.oc-tag.home { background: var(--home-soft); color: var(--home); }
+.oc-tag.away { background: var(--away-soft); color: var(--away); }
+.oc-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+}
+.oc-sub {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-left: auto;
+}
+.oncourt-list {
+  padding: 4px 0;
+}
+.oncourt-player {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border-soft);
+  font-size: 12px;
+}
+.oncourt-player:last-child { border-bottom: 0; }
+.oc-pos {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--accent);
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+.oc-pname {
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.oc-stats {
+  color: var(--text-muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.oc-stats b {
+  color: var(--text);
+  font-weight: 800;
+}
 
 /* ── 文字直播 ── */
 .live-pbp-wrap {
@@ -1951,5 +2080,8 @@ button {
   .live-progress {
     order: 99;
     flex-basis: 100%;
+  }
+  .live-floor {
+    grid-template-columns: 1fr;
   }
 }

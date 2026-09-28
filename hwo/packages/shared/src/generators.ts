@@ -129,12 +129,26 @@ export function generateTeam(teamIndex: number, seed: number): Team {
   if (rng2() > 0.5) tiers[randInt(0, 4, rng2)] = 3;
 
   for (let i = 0; i < 5; i++) {
-    players.push(generatePlayer(`${teamInfo.id}-s${i + 1}`, POSITIONS[i]!, tiers[i]!, seed + i));
+    players.push(
+      generatePlayer(
+        `${teamInfo.id}-s${i + 1}`,
+        POSITIONS[i]!,
+        tiers[i]!,
+        seed + teamIndex * 1000 + i,
+      ),
+    );
   }
   // 替补：5 个角色球员/首发级
   for (let i = 0; i < 5; i++) {
     const tier = rng() > 0.6 ? 1 : 0;
-    players.push(generatePlayer(`${teamInfo.id}-b${i + 1}`, POSITIONS[i]!, tier, seed + 100 + i));
+    players.push(
+      generatePlayer(
+        `${teamInfo.id}-b${i + 1}`,
+        POSITIONS[i]!,
+        tier,
+        seed + teamIndex * 1000 + 500 + i,
+      ),
+    );
   }
 
   const starters = players.slice(0, 5).map((p) => p.id);

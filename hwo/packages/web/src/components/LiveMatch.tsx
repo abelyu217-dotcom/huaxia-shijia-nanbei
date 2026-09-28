@@ -11,14 +11,14 @@
  *   - 比分牌/时钟/球权从当前 event 派生，新事件带高亮动画
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   TeamDetail,
   TacticPreset,
   SimOutput,
   PbpEvent,
+  PlayerDetail,
 } from "../types";
-
 type PlayState = "idle" | "loading" | "playing" | "paused" | "finished";
 
 interface LiveMatchProps {
@@ -35,13 +35,98 @@ interface LiveMatchProps {
   simError: string | null;
 }
 
-const SPEEDS = [1, 2, 4] as const;
+const SPEEDS = [1, 2, 4, 8, 16] as const;
 const BASE_INTERVAL = 650; // 1x 时每事件间隔 ms
+
+/** 球员实时统计（从已展示事件聚合） */
+interface LivePlayerStat {
+  pts: number;
+  reb: number;
+  ast: number;
+}
+
+/** 从 PBP 事件聚合球员实时统计（分/板/助） */
+function computeLiveStats(events: PbpEvent[]): Map<string, LivePlayerStat> {
+  const players = new Map<string, LivePlayerStat>();
+  const get = (id: string): LivePlayerStat => {
+    let s = players.get(id);
+    if (!s) {
+      s = { pts: 0, reb: 0, ast: 0 };
+      players.set(id, s);
+    }
+    return s;
+  };
+
+  for (const ev of events) {
+    if (ev.type === "shot_made" && ev.actorId) {
+      get(ev.actorId).pts += 2;
+    } else if (ev.type === "three_made" && ev.actorId) {
+      get(ev.actorId).pts += 3;
+    } else if (ev.type === "free_throw" && ev.made && ev.actorId) {
+      get(ev.actorId).pts += 1;
+    } else if (ev.type === "rebound" && ev.actorId) {
+      get(ev.actorId).reb += 1;
+    }
+    // 助攻：命中事件的 assistId
+    if ((ev.type === "shot_made" || ev.type === "three_made") && ev.assistId) {
+      get(ev.assistId).ast += 1;
+    }
+  }
+  return players;
+}
+
+/** 按 teamId 统计球队犯规数 */
+function countTeamFouls(events: PbpEvent[], teamId: string): number {
+  return events.filter((e) => e.type === "foul" && e.teamId === teamId).length;
+}
+
+/** 取首发五人——生成器中 players 前 5 位即首发（PG→C 顺序） */
+function startersOf(team: TeamDetail | null): PlayerDetail[] {
+  if (!team) return [];
+  return team.players.slice(0, 5);
+}
 
 function teamLabel(detail: TeamDetail | null, id: string | null): string {
   if (detail) return detail.name;
   if (id) return "加载中…";
   return "未选择";
+}
+
+/** 场上五人列——展示一支球队的 5 名首发及其实时分/板/助 */
+function OnCourtColumn({
+  side,
+  teamName,
+  players,
+  stats,
+}: {
+  side: "home" | "away";
+  teamName: string;
+  players: PlayerDetail[];
+  stats: Map<string, LivePlayerStat>;
+}) {
+  return (
+    <div className={`oncourt oncourt-${side}`}>
+      <div className="oncourt-head">
+        <span className={`oc-tag ${side}`}>{side === "home" ? "主" : "客"}</span>
+        <span className="oc-name">{teamName}</span>
+        <span className="oc-sub">场上五人</span>
+      </div>
+      <div className="oncourt-list">
+        {players.map((p) => {
+          const s = stats.get(p.id) ?? { pts: 0, reb: 0, ast: 0 };
+          return (
+            <div key={p.id} className="oncourt-player">
+              <span className="oc-pos">{p.position}</span>
+              <span className="oc-pname">{p.name}</span>
+              <span className="oc-stats">
+                <b>{s.pts}</b> 分 · <b>{s.reb}</b> 板 · <b>{s.ast}</b> 助
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 /** 从事件数组中取最后一个（当前比分/时钟来源） */
@@ -118,6 +203,46 @@ export function LiveMatch({
   const quarter = cur?.quarter ?? 1;
   const clock = cur?.clock ?? "12:00";
   const possessionTeamId = cur?.teamId;
+
+  // 实时统计：球员分/板/助，球队犯规
+  const liveStats = useMemo(() => computeLiveStats(shownEvents), [shownEvents]);
+  const homeFouls = useMemo(
+    () => (homeTeamId ? countTeamFouls(shownEvents, homeTeamId) : 0),
+    [shownEvents, homeTeamId],
+  );
+  const awayFouls = useMemo(
+    () => (awayTeamId ? countTeamFouls(shownEvents, awayTeamId) : 0),
+    [shownEvents, awayTeamId],
+  );
+
+  // 当前节比分（本节开始到现在的净得分）
+  const quarterScore = useMemo(() => {
+    let qStartHome = 0;
+    let qStartAway = 0;
+    for (const ev of shownEvents) {
+      if (ev.type === "period_start" && ev.quarter === quarter) {
+        qStartHome = ev.scoreHome;
+        qStartAway = ev.scoreAway;
+        break;
+      }
+    }
+    return { home: homeScore - qStartHome, away: awayScore - qStartAway };
+  }, [shownEvents, quarter, homeScore, awayScore]);
+
+  // 进度条上的节次分界点（每节结束事件位置占比）
+  const quarterMarks = useMemo(() => {
+    if (allEvents.length === 0) return [] as number[];
+    const marks: number[] = [];
+    allEvents.forEach((ev, i) => {
+      if (ev.type === "period_end") {
+        marks.push((i / allEvents.length) * 100);
+      }
+    });
+    return marks;
+  }, [allEvents]);
+
+  const homeStarters = startersOf(homeTeam);
+  const awayStarters = startersOf(awayTeam);
 
   // 清理定时器
   const clearTimer = () => {
@@ -273,6 +398,7 @@ export function LiveMatch({
               <div className="ls-team home">
                 <span className="ls-tag">主</span>
                 <span className="ls-name">{homeName}</span>
+                <span className="ls-fouls">犯 {homeFouls}</span>
                 <span className="ls-score">{homeScore}</span>
               </div>
               <div className="ls-center">
@@ -304,9 +430,34 @@ export function LiveMatch({
               </div>
               <div className="ls-team away">
                 <span className="ls-score">{awayScore}</span>
+                <span className="ls-fouls">犯 {awayFouls}</span>
                 <span className="ls-name">{awayName}</span>
                 <span className="ls-tag">客</span>
               </div>
+            </div>
+
+            {/* 当前节比分 + 场上五人 */}
+            <div className="live-quarter-strip">
+              <span className="lqs-label">本节</span>
+              <span className="lqs-score home">{quarterScore.home}</span>
+              <span className="lqs-sep">:</span>
+              <span className="lqs-score away">{quarterScore.away}</span>
+            </div>
+
+            {/* 场上五人实时数据 */}
+            <div className="live-floor">
+              <OnCourtColumn
+                side="home"
+                teamName={homeName}
+                players={homeStarters}
+                stats={liveStats}
+              />
+              <OnCourtColumn
+                side="away"
+                teamName={awayName}
+                players={awayStarters}
+                stats={liveStats}
+              />
             </div>
 
             {/* 控制栏 */}
@@ -342,6 +493,14 @@ export function LiveMatch({
                     }%`,
                   }}
                 />
+                {quarterMarks.map((m, i) => (
+                  <span
+                    key={i}
+                    className="live-progress-mark"
+                    style={{ left: `${m}%` }}
+                    title={`第 ${i + 1} 节结束`}
+                  />
+                ))}
               </div>
               <span className="live-progress-text">
                 {playbackIndex} / {allEvents.length}
