@@ -259,7 +259,7 @@
       <div class="pillar">
         <div class="ic">📜</div>
         <div class="h">更强叙事与王朝感</div>
-        <div class="s">"时代标签"系统：核心球员退役后留下可继承的时代遗产（战术偏好、青训血脉、球迷文化）。拟态报纸 + 社媒流，把每日 sim 与赛季事件转化为可读叙事。</div>
+        <div class="s"><b>完整生涯成长线</b>（童子→少年→青年→成人→老将），每阶段专属赛事动态塑造非天赋成长因素。"时代标签"系统：核心退役留下可继承遗产。拟态报纸 + 社媒流，把每日 sim 与生涯事件转化为可读叙事。</div>
       </div>
       <div class="pillar">
         <div class="ic">📱</div>
@@ -293,7 +293,7 @@
     <div class="grid">
       <div class="card"><div class="t">信息即权力</div><div class="d">fog + 探针经济制造决策深度。</div></div>
       <div class="card"><div class="t">战术是方向不是遥控</div><div class="d">涌现式 sim，拒绝"最优解套路"。</div></div>
-      <div class="card"><div class="t">每天一赛，一生王朝</div><div class="d">低单日时长、高长留。</div></div>
+      <div class="card"><div class="t">每天一赛，一生王朝</div><div class="d">低单日时长、高长留；球员从童子到老将的完整生涯可养成。</div></div>
       <div class="card"><div class="t">公平竞技</div><div class="d">永不卖比赛结果与球员强度。</div></div>
     </div>
   </section>
@@ -330,6 +330,41 @@
 
     <h3>5.7 王朝与传承</h3>
     <p>时代标签：核心球员退役留下可继承遗产（战术偏好、青训血脉、球迷文化 buff）。名人堂：跨存档的成就沉淀。</p>
+
+    <h3>5.8 成长阶段系统（Career Arc）</h3>
+    <p>球员从童子到老将的<b>完整生涯成长线</b>，每阶段对应专属赛事。固定天赋（Peak）是天生上限不可改，但<b>训练响应率、特质觉醒、伤病抗性、比赛经验、心理素质</b>等动态成长因素受阶段赛事表现与玩家决策持续影响。</p>
+
+    <div class="note"><b>核心命题</b>：Peak = 天花板（固定）；动态成长因素决定一个球员能<b>多接近</b>天花板、<b>多快</b>达到、能<b>维持多久</b>。成长线让"养成"成为可玩内容，而非纯 sim 背景。</div>
+
+    <table>
+      <thead><tr><th>阶段</th><th>年龄</th><th>专属赛事</th><th>玩家可干预</th><th>影响的动态成长因素</th></tr></thead>
+      <tbody>
+        <tr><td><b>童子</b></td><td>8–12</td><td>街区 / 校园 3v3（球探淘苗场景）</td><td>发现并纳入青训预备名单；基础训练侧重</td><td>基础协调性、运动兴趣 → 决定<b>训练响应率基数</b></td></tr>
+        <tr><td><b>少年</b></td><td>13–15</td><td>青训营 / 校际联赛</td><td>是否跳级、青训营定位（学术/竞技）、训练方向</td><td>技术定型方向、<b>伤病抗性雏形</b>、特质倾向</td></tr>
+        <tr><td><b>青年</b></td><td>16–18</td><td>U18 联赛 / 选秀前试训</td><td>试训选择、是否提前参选、对位磨炼</td><td><b>特质觉醒概率</b>、选秀顺位、新秀红利、clutch 初值</td></tr>
+        <tr><td><b>成人</b></td><td>19–30+</td><td>职业联赛（主线）</td><td>战术 / 训练 / 合同 / 轮换</td><td>技术熟练度、比赛经验、心理素质、<b>巅峰长度</b></td></tr>
+        <tr><td><b>老将</b></td><td>31+</td><td>传承期 / 替补 / 教练过渡</td><td>角色转换、退役时机、是否进教练轨</td><td><b>经验传授（teaching）</b>、传承遗产强度</td></tr>
+      </tbody>
+    </table>
+
+    <h4>动态成长因素（受阶段影响、独立于固定天赋）</h4>
+    <div class="grid">
+      <div class="card"><div class="t">训练响应率 Trainability</div><div class="d">每单位训练带来的成长量；童子/少年期的基础决定一生上限。</div></div>
+      <div class="card"><div class="t">特质觉醒 Trait Awakening</div><div class="d">特殊能力的觉醒概率与时机；青年期赛事强度催化。</div></div>
+      <div class="card"><div class="t">伤病抗性 Durability</div><div class="d">生涯伤病史基底；少年期过度训练埋下隐患。</div></div>
+      <div class="card"><div class="t">比赛经验 Clutch IQ</div><div class="d">关键球处理；青年/成人关键战累积。</div></div>
+      <div class="card"><div class="t">心理素质 Mental Fortitude</div><div class="d">状态稳定性、逆境响应；贯穿全生涯。</div></div>
+      <div class="card"><div class="t">技术熟练度 Skill Mastery</div><div class="d">技术动作稳定度；成人期重复使用强化。</div></div>
+    </div>
+
+    <h4>设计要点</h4>
+    <ul>
+      <li><b>早期决策的长尾效应</b>：童子/少年的选择在 10+ 年后才完全显现（伤病史、技术定型）——制造"原来当初那个决定害了他"的叙事钩子。</li>
+      <li><b>青训学院玩法</b>：玩家可经营自家青训，从少年苗子培养提拔上一线；也可纯靠球探+选秀走外部路线，是两种建队流派。</li>
+      <li><b>阶段赛事非强制</b>：可主动安排（消耗主线资源）也可"放养"走默认曲线；放养球员的早期经历由 sim 生成、球探可追溯。</li>
+      <li><b>成人阶段=主线</b>：玩家接手时球员多在青年/成人期；前序阶段是"养成回溯 + 自家青训"双入口，不喧宾夺主。</li>
+      <li><b>传承闭环</b>：老将的 teaching 强度反哺下一代青训苗子，形成"一代核心 → 传承 → 下一代"的王朝闭环。</li>
+    </ul>
   </section>
 
   <section>
