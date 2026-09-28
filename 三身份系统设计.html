@@ -1,8 +1,7 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<html lang="zh-CN"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>三身份系统设计 · Hoops World Online</title>
 <style>
   :root{
@@ -742,16 +741,16 @@ expGain = baseExp(<span class="kw">taskType</span>)
     <div class="formula">
 <span class="kw">function</span> <span class="fn">checkConflict</span>(accountId, transaction) {
   <span class="kw">if</span> (transaction.type == <span class="str">"avatar_contract"</span>
-      && transaction.avatar.ownerId == accountId
-      && transaction.salary &gt; marketAvg × <span class="num">1.2</span>)
+      &amp;&amp; transaction.avatar.ownerId == accountId
+      &amp;&amp; transaction.salary &gt; marketAvg × <span class="num">1.2</span>)
     <span class="kw">return</span> <span class="str">"FLAG_REVIEW"</span>;      <span class="comment">// 触发仲裁审查</span>
 
   <span class="kw">if</span> (transaction.type == <span class="str">"agent_represent"</span>
-      && transaction.client.ownerId == accountId)
+      &amp;&amp; transaction.client.ownerId == accountId)
     <span class="kw">return</span> <span class="str">"BLOCK"</span>;          <span class="comment">// 直接阻断</span>
 
   <span class="kw">if</span> (transaction.type == <span class="str">"arbiter_case"</span>
-      && case.involvesAccount(accountId))
+      &amp;&amp; case.involvesAccount(accountId))
     <span class="kw">return</span> <span class="str">"REASSIGN"</span>;       <span class="comment">// 转交他人</span>
 }
     </div>
@@ -895,14 +894,14 @@ wM = <span class="num">0.55</span>, wA = <span class="num">0.25</span>, wP = <sp
       <thead><tr><th>等级</th><th>称号</th><th>累计经验</th><th>技能点累计</th></tr></thead>
       <tbody>
         <tr><td>1</td><td>学徒</td><td>0</td><td>1</td></tr>
-        <tr><td>2</td><td>学徒</td><td>200</td><td>2</td></tr>
-        <tr><td>3</td><td>学徒</td><td>600</td><td>3</td></tr>
+        <tr><td>2</td><td>一级学徒</td><td>200</td><td>2</td></tr>
+        <tr><td>3</td><td>二级学徒</td><td>600</td><td>3</td></tr>
         <tr><td>4</td><td>熟手</td><td>1200</td><td>5</td></tr>
-        <tr><td>5</td><td>熟手</td><td>2000</td><td>7</td></tr>
-        <tr><td>6</td><td>熟手</td><td>3000</td><td>9</td></tr>
-        <tr><td>7</td><td>专家</td><td>4500</td><td>12</td></tr>
+        <tr><td>5</td><td>一级熟手</td><td>2000</td><td>7</td></tr>
+        <tr><td>6</td><td>二级熟手</td><td>3000</td><td>9</td></tr>
+        <tr><td>7</td><td>星级专家</td><td>4500</td><td>12</td></tr>
         <tr><td>8</td><td>专家</td><td>6500</td><td>15</td></tr>
-        <tr><td>9</td><td>大师</td><td>9000</td><td>18</td></tr>
+        <tr><td>9</td><td>星级大师</td><td>9000</td><td>18</td></tr>
         <tr><td>10</td><td>大师</td><td>13000</td><td>22</td></tr>
       </tbody>
     </table>
@@ -965,5 +964,6 @@ wM = <span class="num">0.55</span>, wA = <span class="num">0.25</span>, wP = <sp
   </footer>
 
 </div>
-</body>
-</html>
+
+
+</body></html>

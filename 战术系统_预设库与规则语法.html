@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>战术系统 · 预设库与规则语法 · Hoops World Online</title>
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#141b26; --panel2:#1b2433; --line:#26324a;
+    --ink:#e6edf6; --ink2:#9fb0c7; --ink3:#6b7c97;
+    --accent:#ff6b35; --accent2:#4ade80; --gold:#fbbf24; --red:#ef4444; --blue:#60a5fa; --purple:#a78bfa; --cyan:#22d3ee;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:linear-gradient(180deg,#070a10 0%,#0b0f17 100%);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1100px;margin:0 auto;padding:40px 22px 120px}
+  .hero{
+    position:relative;border:1px solid var(--line);border-radius:18px;padding:42px 34px 30px;
+    background:
+      radial-gradient(800px 280px at 20% -10%, rgba(255,107,53,.15), transparent 60%),
+      radial-gradient(700px 260px at 90% 0%, rgba(96,165,250,.12), transparent 60%),
+      linear-gradient(180deg,#151d2c,#0e1420);
+    overflow:hidden;margin-bottom:30px;
+  }
+  .hero .tag{display:inline-block;font-size:12px;letter-spacing:.16em;color:var(--accent);border:1px solid rgba(255,107,53,.4);padding:4px 10px;border-radius:999px;margin-bottom:18px;text-transform:uppercase}
+  .hero h1{margin:0 0 8px;font-size:30px;letter-spacing:.5px;font-weight:800}
+  .hero h1 .en{color:var(--ink2);font-weight:600;font-size:17px;margin-left:10px}
+  .hero .pitch{color:var(--ink2);font-size:15px;max-width:840px;margin:10px 0 22px}
+  .hero .meta{display:flex;flex-wrap:wrap;gap:10px}
+  .hero .chip{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--ink2)}
+  .hero .chip b{color:var(--ink);font-weight:600}
+
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 28px;margin-bottom:22px}
+  .toc h3{margin:0 0 14px;font-size:14px;color:var(--ink2);letter-spacing:.1em;text-transform:uppercase}
+  .toc ol{margin:0;padding-left:22px;columns:2;column-gap:32px}
+  .toc li{margin:5px 0;break-inside:avoid}
+  .toc a{color:var(--ink2)}
+  .toc a:hover{color:var(--accent)}
+  @media (max-width:640px){.toc ol{columns:1}}
+
+  section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin-bottom:22px}
+  section > h2{margin:0 0 16px;font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
+  section > h2 .num{font-size:12px;color:#0b0f17;background:var(--accent);width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;font-weight:800;flex-shrink:0}
+  h3{font-size:16px;margin:22px 0 10px;color:var(--ink)}
+  h4{font-size:14px;margin:18px 0 8px;color:var(--accent2);letter-spacing:.04em}
+  h5{font-size:13px;margin:14px 0 6px;color:var(--gold);letter-spacing:.03em}
+  p{margin:8px 0}
+  ul,ol{margin:8px 0 8px 4px;padding-left:22px}
+  li{margin:4px 0}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{background:#0d131d;border:1px solid var(--line);padding:2px 6px;border-radius:5px;font-size:13px;color:var(--gold);font-family:"SF Mono","Fira Code",Consolas,monospace}
+  strong{color:#fff}
+  .note{border-left:3px solid var(--accent);background:rgba(255,107,53,.06);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;color:var(--ink2)}
+  .note b{color:var(--accent)}
+  .note.green{border-left-color:var(--accent2);background:rgba(74,222,128,.06)}
+  .note.green b{color:var(--accent2)}
+  .note.blue{border-left-color:var(--blue);background:rgba(96,165,250,.06)}
+  .note.blue b{color:var(--blue)}
+  .note.red{border-left-color:var(--red);background:rgba(239,68,68,.06)}
+  .note.red b{color:var(--red)}
+  .note.gold{border-left-color:var(--gold);background:rgba(251,191,36,.06)}
+  .note.gold b{color:var(--gold)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px}
+  th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--accent);font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;background:rgba(255,255,255,.02)}
+  td b{color:var(--ink)}
+  tr:hover td{background:rgba(255,255,255,.02)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:14px 0}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:16px}
+  .card .t{font-weight:700;margin-bottom:6px;color:var(--ink)}
+  .card .d{font-size:13px;color:var(--ink2)}
+  .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;letter-spacing:.04em}
+  .badge.green{background:rgba(74,222,128,.15);color:var(--accent2);border:1px solid rgba(74,222,128,.3)}
+  .badge.blue{background:rgba(96,165,250,.15);color:var(--blue);border:1px solid rgba(96,165,250,.3)}
+  .badge.gold{background:rgba(251,191,36,.15);color:var(--gold);border:1px solid rgba(251,191,36,.3)}
+  .badge.red{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+  .badge.purple{background:rgba(167,139,250,.15);color:var(--purple);border:1px solid rgba(167,139,250,.3)}
+  .badge.cyan{background:rgba(34,211,238,.15);color:var(--cyan);border:1px solid rgba(34,211,238,.3)}
+
+  /* Formula box */
+  .formula{background:#0d131d;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;font-family:"SF Mono","Fira Code",Consolas,monospace;font-size:12.5px;color:var(--gold);overflow-x:auto;line-height:1.8;white-space:pre}
+  .formula .var{color:var(--blue)}
+  .formula .op{color:var(--ink2)}
+  .formula .fn{color:var(--accent2)}
+  .formula .num{color:var(--accent)}
+  .formula .comment{color:var(--ink3);font-style:italic}
+  .formula .str{color:var(--cyan)}
+  .formula .kw{color:var(--purple)}
+  .formula .type{color:var(--pink,#f472b6)}
+
+  /* Preset card detailed */
+  .preset-d{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:20px;margin:18px 0;position:relative;overflow:hidden}
+  .preset-d::before{content:"";position:absolute;top:0;left:0;right:0;height:3px}
+  .preset-d.off::before{background:var(--accent)}
+  .preset-d.def::before{background:var(--blue)}
+  .preset-d.mix::before{background:var(--gold)}
+  .preset-d.spec::before{background:var(--purple)}
+  .preset-d .pd-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .preset-d .pd-name{font-weight:800;font-size:17px}
+  .preset-d .pd-en{font-size:12px;color:var(--ink3)}
+  .preset-d .pd-tags{margin-bottom:10px}
+  .preset-d .pd-desc{font-size:13px;color:var(--ink2);margin-bottom:12px}
+  .preset-d .pd-params{font-size:11.5px;color:var(--gold);font-family:"SF Mono","Fira Code",Consolas,monospace;line-height:1.7;background:#0d131d;border-radius:6px;padding:10px 12px;margin-bottom:12px;white-space:pre}
+  .preset-d .pd-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;font-size:12px}
+  .preset-d .pd-meta .m-item{background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:6px;padding:8px 10px}
+  .preset-d .pd-meta .m-label{color:var(--ink3);font-size:11px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:3px}
+  .preset-d .pd-meta .m-val{color:var(--ink)}
+  .preset-d .pd-meta .m-val.good{color:var(--accent2)}
+  .preset-d .pd-meta .m-val.bad{color:var(--red)}
+
+  /* BNF block */
+  .bnf{background:#0d131d;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;font-family:"SF Mono","Fira Code",Consolas,monospace;font-size:12.5px;color:var(--ink2);overflow-x:auto;line-height:1.9;white-space:pre}
+  .bnf .rule{color:var(--blue)}
+  .bnf .nt{color:var(--accent2)}
+  .bnf .t{color:var(--gold)}
+  .bnf .comment{color:var(--ink3);font-style:italic}
+
+  /* Matrix table */
+  .matrix th:first-child,.matrix td:first-child{position:sticky;left:0;background:var(--panel);z-index:1;font-weight:600}
+  .matrix .win{color:var(--accent2);font-weight:700}
+  .matrix .lose{color:var(--red);font-weight:700}
+  .matrix .even{color:var(--ink2)}
+
+  /* Tree */
+  .tree{margin:16px 0;padding:0;list-style:none}
+  .tree li{position:relative;padding-left:28px;margin:6px 0}
+  .tree li::before{content:"";position:absolute;left:8px;top:0;bottom:0;border-left:1px solid var(--line)}
+  .tree li::after{content:"";position:absolute;left:8px;top:14px;width:14px;border-top:1px solid var(--line)}
+  .tree > li::before{display:none}
+  .tree > li{padding-left:0}
+  .tree > li::after{display:none}
+  .tree .tl-node{display:inline-block;font-size:13px;font-weight:600;color:var(--accent);background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:4px 12px}
+  .tree .tl-desc{font-size:12.5px;color:var(--ink2);margin-left:8px}
+
+  footer{text-align:center;color:var(--ink2);font-size:13px;margin-top:30px;border-top:1px solid var(--line);padding-top:18px}
+  @media (max-width:640px){
+    .wrap{padding:22px 14px 80px}
+    .hero{padding:30px 20px}
+    .hero h1{font-size:24px}
+    section{padding:20px 16px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ==================== HERO ==================== -->
+  <div class="hero">
+    <span class="tag">Tactics Deep Dive · v1.0</span>
+    <h1>战术系统 · 预设库与规则语法 <span class="en">Preset Library & Rule DSL · HWO</span></h1>
+    <p class="pitch">本文是《战术系统设计》§4 预设库与 §6 条件规则的深化规格。预设库从 9 套扩展到 20 套，按进攻型/防守型/混合型/特殊型四类组织，每套给出完整参数映射、适用阵容、克制关系与风险代价。规则语法定义完整的 DSL（含 BNF 文法、条件/动作表达式、模板库、编译校验与冲突解决算法），让条件规则从"结构定义"升级为"可编写可编译可校验"的战术编程语言。</p>
+    <div class="meta">
+      <span class="chip"><b>文档版本</b> · v1.0</span>
+      <span class="chip"><b>关联文档</b> · 战术系统设计 §4/§6 / Sim Engine §12-14</span>
+      <span class="chip"><b>里程碑</b> · M0-M1 核心依赖</span>
+      <span class="chip"><b>设计原则</b> · 预设有代价 · 规则有上限 · 涌现性优先</span>
+    </div>
+  </div>
+
+  <!-- ==================== TOC ==================== -->
+  <div class="toc">
+    <h3>目录</h3>
+    <ol>
+      <li><a href="#s1">预设库分类体系</a></li>
+      <li><a href="#s2">进攻型预设详查</a></li>
+      <li><a href="#s3">防守型预设详查</a></li>
+      <li><a href="#s4">混合型与特殊型预设</a></li>
+      <li><a href="#s5">预设克制矩阵与选用指南</a></li>
+      <li><a href="#s6">规则 DSL 总览</a></li>
+      <li><a href="#s7">条件表达式语法（BNF）</a></li>
+      <li><a href="#s8">动作表达式语法</a></li>
+      <li><a href="#s9">规则模板库</a></li>
+      <li><a href="#s10">规则编译与校验</a></li>
+      <li><a href="#s11">优先级与冲突解决算法</a></li>
+      <li><a href="#s12">数值附录</a></li>
+    </ol>
+  </div>
+
+  <!-- ==================== §1 预设库分类体系 ==================== -->
+  <section id="s1">
+    <h2><span class="num">1</span>预设库分类体系</h2>
+    <p>预设库从原 9 套扩展到 <b>20 套</b>，按四个维度组织。每套预设都是"起点而非终点"——玩家可直接使用，也可基于预设修改后另存为自定义战术存档。</p>
+
+    <h3>1.1 四大分类</h3>
+    <table>
+      <thead><tr><th>分类</th><th>数量</th><th>核心特征</th><th>标识色</th></tr></thead>
+      <tbody>
+        <tr><td><b>进攻型</b> Offense-Oriented</td><td>7 套</td><td>以进攻端倾向为核心，防守端配合进攻节奏</td><td><span class="badge red">OFF</span></td></tr>
+        <tr><td><b>防守型</b> Defense-Oriented</td><td>6 套</td><td>以防守策略为核心，进攻端以稳健或反击为主</td><td><span class="badge blue">DEF</span></td></tr>
+        <tr><td><b>混合型</b> Hybrid</td><td>4 套</td><td>攻守均衡或以特定配合体系为核心</td><td><span class="badge gold">MIX</span></td></tr>
+        <tr><td><b>特殊型</b> Special</td><td>3 套</td><td>依赖特定阵容结构或情境，非通用选择</td><td><span class="badge purple">SPEC</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>1.2 预设完整清单</h3>
+    <table>
+      <thead><tr><th>分类</th><th>预设名</th><th>一句话定位</th><th>节奏</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="7"><b>进攻型</b></td><td>跑轰战术 Run & Gun</td><td>极致快节奏 + 三分火力</td><td>快</td></tr>
+        <tr><td>魔球理论 Moreyball</td><td>三分 + 攻筐，放弃中距离</td><td>快</td></tr>
+        <tr><td>三角进攻 Triangle</td><td>阵地配合 + 空间拉扯</td><td>慢</td></tr>
+        <tr><td>挡拆主导 Pick & Roll</td><td>高频挡拆策应创造错位</td><td>中</td></tr>
+        <tr><td>普林斯顿 Princeton</td><td>团队传导 + 高质量出手</td><td>慢</td></tr>
+        <tr><td>孤立单打 Iso Ball</td><td>核心持球单打，少配合</td><td>中</td></tr>
+        <tr><td>低位统治 Post Dominance</td><td>内线背打为主攻轴心</td><td>慢</td></tr>
+        <tr><td rowspan="6"><b>防守型</b></td><td>铁桶阵地 Iron Wall</td><td>收缩防守保护禁区</td><td>慢</td></tr>
+        <tr><td>绞肉机 Grinder</td><td>全场压迫 + 高犯规风险</td><td>慢</td></tr>
+        <tr><td>防守反击 Fast Break</td><td>压迫造失误 → 快攻转换</td><td>快</td></tr>
+        <tr><td>锁死外线 Perimeter Lock</td><td>针对三分强队的防守</td><td>中</td></tr>
+        <tr><td>区域联防 Zone Defense</td><td>2-3 联防护筐护板</td><td>中</td></tr>
+        <tr><td>换防体系 Switch All</td><td>无限换防消解挡拆</td><td>中</td></tr>
+        <tr><td rowspan="4"><b>混合型</b></td><td>全能均衡 All-Around</td><td>不偏不倚的默认选择</td><td>中</td></tr>
+        <tr><td>双核驱动 Twin Engine</td><td>双主攻点轮流驱动</td><td>中</td></tr>
+        <tr><td>动态进攻 Motion</td><td>无固定套路，球员自由跑位</td><td>中</td></tr>
+        <tr><td>能量板凳 Hustle</td><td>深度轮换 + 高强度拼抢</td><td>快</td></tr>
+        <tr><td rowspan="3"><b>特殊型</b></td><td>七秒进攻 Seven Seconds</td><td>极简快攻，7 秒内出手</td><td>极快</td></tr>
+        <tr><td>砍鲨战术 Hack-a-Shaq</td><td>针对低罚球对手的犯规战术</td><td>中</td></tr>
+        <tr><td>巅峰保核 Protect the Core</td><td>保护核心体力的保守战术</td><td>慢</td></tr>
+      </tbody>
+    </table>
+
+    <h3>1.3 预设参数映射规范</h3>
+    <p>每套预设的参数映射遵循统一结构，确保 sim engine 能一致解析：</p>
+    <div class="formula">
+<span class="var">PresetTactic</span> <span class="op">=</span> {
+  id:          <span class="type">string</span>,              <span class="comment">// 唯一标识，如 "run_and_gun"</span>
+  name:        <span class="type">string</span>,              <span class="comment">// 中文名</span>
+  nameEn:      <span class="type">string</span>,              <span class="comment">// 英文名</span>
+  category:    <span class="str">"off"</span> | <span class="str">"def"</span> | <span class="str">"mix"</span> | <span class="str">"spec"</span>,
+  tempo:       <span class="str">"slow"</span> | <span class="str">"mid"</span> | <span class="str">"fast"</span> | <span class="str">"ultra_fast"</span>,
+
+  <span class="comment">// —— L1 基础倾向 ——</span>
+  offenseTendency:  <span class="str">"outside"</span> | <span class="str">"balanced"</span> | <span class="str">"inside"</span>,
+  defenseTendency:  <span class="str">"press"</span> | <span class="str">"balanced"</span> | <span class="str">"pack"</span>,
+
+  <span class="comment">// —— L2 高级参数 ——</span>
+  params: {
+    tendencyMod:    { three, midrange, inside, drive, postup },  <span class="comment">// 出手倾向倍率</span>
+    fastBreakChance, pickRollChance, threeFreq,
+    defenseContest, helpDefChance, stealChance, blockChance,
+    possessionTimeDelta,                         <span class="comment">// 回合耗时偏移（秒）</span>
+    conditionLossMul,                            <span class="comment">// 体力消耗倍率</span>
+    foulStrategy,                                <span class="comment">// conservative/normal/aggressive</span>
+    rotationMode,                                <span class="comment">// star/balanced/deep</span>
+    targetDef,                                   <span class="comment">// 对位针对性防守（可选）</span>
+    roleOverrides,                               <span class="comment">// 战术角色覆盖（可选）</span>
+  },
+
+  <span class="comment">// —— 元信息（非 sim 参数，用于 UI 展示与选用指南）——</span>
+  meta: {
+    rosterFit:    [<span class="type">string</span>],          <span class="comment">// 适用阵容特征</span>
+    weakness:     [<span class="type">string</span>],          <span class="comment">// 风险代价</span>
+    counters:     [<span class="type">string</span>],          <span class="comment">// 克制的预设 id</span>
+    counteredBy:  [<span class="type">string</span>],          <span class="comment">// 被克制的预设 id</span>
+    unlockCond:   <span class="type">string</span>,            <span class="comment">// 解锁条件</span>
+  },
+}
+    </div>
+    <div class="note"><b>参数缺省规则</b>：未列出的参数取默认值（tendencyMod=1.0、defenseContest=1.0 等）。预设只需声明<b>非默认</b>参数，保持定义简洁。</div>
+  </section>
+
+  <!-- ==================== §2 进攻型预设详查 ==================== -->
+  <section id="s2">
+    <h2><span class="num">2</span>进攻型预设详查</h2>
+
+    <h3>2.1 跑轰战术 Run & Gun</h3>
+    <div class="preset-d off">
+      <div class="pd-head"><span class="pd-name">跑轰战术</span><span class="pd-en">Run & Gun</span><span class="badge red">OFF</span><span class="badge gold">快节奏</span></div>
+      <div class="pd-tags"><code>offenseTendency=outside</code> · <code>defenseTendency=balanced</code> · <code>tempo=fast</code></div>
+      <div class="pd-desc">极致的快节奏 + 三分火力。用速度制造转换进攻机会，半场以三分为主攻。体力消耗大，需要深度板凳支撑全场高强度跑动。</div>
+      <div class="pd-params">tendencyMod[three]     = 2.8   <span class="comment">// 三分倾向大幅提升</span>
+tendencyMod[inside]    = 1.0
+fastBreakChance        = 2.1   <span class="comment">// 快攻概率 ×2.1</span>
+threeFreq              = "high"
+fastBreakPref          = "high"
+conditionLossMul       = 1.3   <span class="comment">// 体力消耗 ×1.3</span>
+possessionTimeDelta    = -4    <span class="comment">// 回合耗时 -4s</span>
+rotationMode           = "deep"</div>
+      <div class="pd-meta">
+        <div class="m-item"><div class="m-label">适用阵容</div><div class="m-val good">三分射手群 + 快攻型后卫 + 深度板凳</div></div>
+        <div class="m-item"><div class="m-label">风险代价</div><div class="m-val bad">体力消耗大；半场进攻粗糙；命中率波动大</div></div>
+        <div class="m-item"><div class="m-label">克制</div><div class="m-val">慢节奏半场阵地（铁桶阵地）</div></div>
+        <div class="m-item"><div class="m-label">被克制</div><div class="m-val">压迫防守造失误（防守反击）</div></div>
+      </div>
+    </div>
+
+    <h3>2.2 魔球理论 Moreyball</h3>
+    <div class="preset-d off">
+      <div class="pd-head"><span class="pd-name">魔球理论</span><span class="pd-en">Moreyball</span><span class="badge red">OFF</span><span class="badge gold">快节奏</span></div>
+      <div class="pd-tags"><code>offenseTendency=outside</code> · <code>tempo=fast</code> · <code>threeFreq=high</code></div>
+      <div class="pd-desc">极端三分 + 攻筐 + 快攻，彻底放弃中距离。需要大量优质三分射手和突破型后卫。高分高赔，命中率波动时比分大起大落。</div>
+      <div class="pd-params">tendencyMod[three]     = 2.8
+tendencyMod[midrange]  = 0.3   <span class="comment">// 中距离近乎禁用</span>
+tendencyMod[inside]    = 1.2   <span class="comment">// 攻筐仍保留</span>
+tendencyMod[drive]     = 1.4
+pickRollChance         = 0.40
+threeFreq              = "high"
+pickRollFreq           = "high"
+fastBreakChance        = 1.5</div>
+      <div class="pd-meta">
+        <div class="m-item"><div class="m-label">适用阵容</div><div class="m-val good">3-4 名优质三分射手 + 突破型 PG + 空间型内线</div></div>
+        <div class="m-item"><div class="m-label">风险代价</div><div class="m-val bad">三分失准夜全队哑火；中距离真空被针对</div></div>
+        <div class="m-item"><div class="m-label">克制</div><div class="m-val">收缩护筐型防守（铁桶阵地）</div></div>
+        <div class="m-item"><div class="m-label">被克制</div><div class="m-val">外线压迫防守（锁死外线）</div></div>
+      </div>
+    </div>
+
+    <h3>2.3 三角进攻 Triangle</h3>
+    <div class="preset-d off">
+      <div class="pd-head"><span class="pd-name">三角进攻</span><span class="pd-en">Triangle</span><span class="badge red">OFF</span><span class="badge blue">慢节奏</span></div>
+      <div class="pd-tags"><code>offenseTendency=balanced</code> · <code>tempo=slow</code> · <code>pickRollFreq=mid</code></div>
+      <div class="pd-desc">经典阵地配合体系，通过三角站位拉扯空间，强调高低位传递与弱侧空切。需要高 OffIQ 阵容执行复杂配合，出手质量高但回合耗时长。</div>
+      <div class="pd-params">tendencyMod[inside]    = 1.3
+tendencyMod[midrange]  = 1.2
+tendencyMod[postup]    = 1.4   <span class="comment">// 低位背打是三角轴心</span>
+pickRollChance         = 0.25
+possessionTimeDelta    = +3    <span class="comment">// 阵地耗时 +3s</span>
+pass actionWeight      = 1.2   <span class="comment">// 传导权重提升</span>
+abilityBonus           = 1.05  <span class="comment">// 配合加成（高 OffIQ 阵容受益）</span>
+conditionLossMul       = 0.9   <span class="comment">// 慢节奏省体力</span></div>
+      <div class="pd-meta">
+        <div class="m-item"><div class="m-label">适用阵容</div><div class="m-val good">高 OffIQ 球员 + 低位得分手 + 空间型侧翼</div></div>
+        <div class="m-item"><div class="m-label">风险代价</div><div class="m-val bad">回合耗时长，比分低；低 IQ 阵容执行失误多</div></div>
+        <div class="m-item"><div class="m-label">克制</div><div class="m-val">快节奏跑轰（拖慢对手节奏）</div></div>
+        <div class="m-item"><div class="m-label">被克制</div><div class="m-val">压迫防守打断传导（绞肉机）</div></div>
+      </div>
+    </div>
+
+    <h3>2.4 挡拆主导 Pick & Roll</h3>
+    <div class="preset-d off">
+      <div class="pd-head"><span class="pd-name">挡拆主导</span><span class="pd-en">Pick & Roll</span><span class="badge red">OFF</span><span class="badge green">中节奏</span></div>
+      <div class="pd-tags"><code>offenseTendency=balanced</code> · <code>tempo=mid</code> · <code>pickRollFreq=high</code></div>
+      <div class="pd-desc">高频挡拆策应创造错位进攻，挡拆后持球人选择出手/传球/顺下。需要高质量挡拆执行者（PG + 内线挡拆人）。</div>
+      <div class="pd-params">pickRollChance         = 0.45  <span class="comment">// 45% 回合发起挡拆</span>
+tendencyMod[drive]     = 1.3   <span class="comment">// 挡拆后突破</span>
+tendencyMod[inside]    = 1.2   <span class="comment">// 顺下终结</span>
+pickRollFreq           = "high"
+abilityBonus           = 1.03  <span class="comment">// 挡拆配合小幅加成</span>
+roleOverrides          = [{ role: "roll_man" }, { role: "playmaker" }]</div>
+      <div class="pd-meta">
+        <div class="m-item"><div class="m-label">适用阵容</div><div class="m-val good">优质挡拆 PG + 顺下型内线 + 空间型射手拉开</div></div>
+        <div class="m-item"><div class="m-label">风险代价</div><div class="m-val bad">挡拆被换防体系消解；过度依赖挡拆执行者</div></div>
+        <div class="m-item"><div class="m-label">克制</div><div class="m-val">收缩护筐防守（错位打大打小）</div></div>
+        <div class="m-item"><div class="m-label">被克制</div><div class="m-val">无限换防（换防体系）</div></div>
+      </div>
+    </div>
+
+    <h3>2.5 孤立单打 Iso Ball</h3>
+    <div class="preset-d off">
+      <div class="pd-head"><span class="pd-name">孤立单打</span><span class="pd-en">Iso Ball</span><span class="badge red">OFF</span><span class="badge green">中节奏</span></div>
+      <div class="pd-tags"><code>offenseTendency=balanced</code> · <code>tempo=mid</code></div>
+      <div class="pd-desc">清空一侧让核心持球单打，极少配合。最大化核心球员的个人能力，但进攻极度可预测。适合有顶级单打手的阵容。</div>
+      <div class="pd-params">primaryScorer           = "star1"
+tendencyMod[drive]     = 1.5
+tendencyMod[midrange]  = 1.3
+pass actionWeight      = 0.6   <span class="comment">// 降传导</span>
+pickRollChance         = 0.10  <span class="comment">// 极少挡拆</span>
+fastBreakChance        = 0.7   <span class="comment">// 不追求快攻</span>
+roleOverrides          = [{ role: "primary_scorer", target: "star1" }]</div>
+      <div class="pd-meta">
+        <div class="m-item"><div class="m-label">适用阵容</div><div class="m-val good">顶级单打手（高 Scoring/Drive）+ 空间型射手拉开</div></div>
+        <div class="m-item"><div class="m-label">风险代价</div><div class="m-val bad">进攻可预测；核心体力消耗大；队友参与感低</div></div>
+        <div class="m-item"><div class="m-label">克制</div><div class="m-val">单打手对位劣势时高效</div></div>
+        <div class="m-item"><div class="m-label">被克制</div><div class="m-val">包夹针对性防守（targetDef=double_team）</div></div>
+      </div>
+    </div>
+
+    <h3>2.6 低位统治 Post Dominance</h3>
+    <div class="preset-d off">
+      <div class="pd-head"><span class="pd-name">低位统治</span><span class="pd-en">Post Dominance</span><span class="badge red">OFF</span><span class="badge blue">慢节奏</span></div>
+      <div class="pd-tags"><code>offenseTendency=inside</code> · <code>tempo=slow</code></div>
+      <div class="pd-desc">以内线背打为主攻轴心，低位吸引包夹后分球外线。需要统治级内线 + 外线射手群惩罚包夹。节奏慢但出手质量高。</div>
+      <div class="pd-params">tendencyMod[postup]    = 2.0
+tendencyMod[inside]    = 1.5
+tendencyMod[three]     = 1.1   <span class="comment">// 包夹分球三分</span>
+pickRollChance         = 0.15
+possessionTimeDelta    = +2
+roleOverrides          = [{ role: "blue_collar", target: "center" }]</div>
+      <div class="pd-meta">
+        <div class="m-item"><div class="m-label">适用阵容</div><div class="m-val good">统治级内线（高 Inside/Postup）+ 外线射手惩罚包夹</div></div>
+        <div class="m-item"><div class="m-label">风险代价</div><div class="m-val bad">内线被包夹失误；节奏慢追分难</div></div>
+        <div class="m-item"><div class="m-label">克制</div><div class="m-val">小球阵容（内线体型劣势）</div></div>
+        <div class="m-item"><div class="m-label">被克制</div><div class="m-val">包夹+联防（区域联防）</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== §3 防守型预设详查 ==================== -->
+  <section id="s3">
+    <h2><span class="num">3</span>防守型预设详查</h2>
+
+    <h3>3.1 铁桶阵地 Iron Wall</h3>
+    <div class="preset-d def">
+      <div class="pd-head"><span class="pd-name">铁桶阵地</span><span class="pd-en">Iron Wall</span><span class="badge blue">DEF</span><span class="badge blue">慢节奏</span></div>
+      <div class="pd-tags"><code>offenseTendency=inside</code> · <code>defenseTendency=pack</code> · <code>tempo=slow</code></div>
+      <div class="pd-desc">降低节奏打半场阵地，内线攻筐为主。收缩防守保护禁区，放对方外线。适合内线强 + 对方三分弱的对手。</div>
+      <div class="pd-params">defenseTendency         = "pack"
+tendencyMod[inside]     = 2.0
+threeFreq               = "low"
+fastBreakPref           = "low"
+possessionTimeDelta     = +3
+defenseContest[inside]  = 1.2   <span class="comment">// 禁区干扰提升</span>
+defenseContest[three]   = 0.6   <span class="comment">// 放空外线</span>
+helpDefChance           = 1.5   <span class="comment">// 协防集中在禁区</span>
+conditionLossMul        = 0.85</div>
+      <div class="pd-meta">
+        <div class="m-item"><div class="m-label">适用阵容</div><div class="m-val good">护筐型内线 + 对方三分弱的对手</div></div>
+        <div class="m-item"><div class="m-label">风险代价</div><div class="m-val bad">放空三分被射手惩罚；节奏慢自身得分也低</div></div>
+        <div class="m-item"><div class="m-label">克制</div><div class="m-val">内线攻筐型进攻（低位统治）</div></div>
+        <div class="m-item"><div class="m-label">被克制</div><div class="m-val">三分火力型进攻（跑轰/魔球）</div></div>
+      </div>
+    </div>
+
+    <h3>3.2 绞肉机 Grinder</h3>
+    <div class="preset-d def">
+      <div class="pd-head"><span class="pd-name">绞肉机</span><span class="pd-en">Grinder</span><span class="badge blue">DEF</span><span class="badge blue">慢节奏</span></div>
+      <div class="pd-tags"><code>offenseTendency=inside</code> · <code>defenseTendency=press</code> · <code>tempo=slow</code></div>
+      <div class="pd-desc">内线强攻 + 全场压迫防守。犯规风险极高但防守压迫感拉满。适合身体对抗型阵容，拖慢比赛进入肉搏节奏。</div>
+      <div class="pd-params">defenseTendency         = "press"
+foulStrategy            = "aggressive"
+tendencyMod[inside]     = 2.0
+tendencyMod[postup]     = 1.5
+defFoulChance           = 1.50  <span class="comment">// 犯规概率 ×1.5</span>
+stealChance             = 1.3
+defenseContest          = 1.05
+fastBreakPref           = "low"
+possessionTimeDelta     = +2</div>
+      <div class="pd-meta">
+        <div class="m-item"><div class="m-label">适用阵容</div><div class="m-val good">身体对抗型阵容 + 板凳深度（犯规多需轮换）</div></div>
+        <div class="m-item"><div class="m-label">风险代价</div><div class="m-val bad">犯规麻烦主力下场；罚球送分</div></div>
+        <div class="m-item"><div class="m-label">克制</div><div class="m-val">传导配合型进攻（三角/普林斯顿）</div></div>
+        <div class="m-item"><div class="m-label">被克制</div><div class="m-val">快攻型进攻（跑轰——犯规送快攻）</div></div>
+      </div>
+    </div>
+
+    <h3>3.3 区域联防 Zone Defense</h3>
+    <div class="preset-d def">
+      <div class="pd-head"><span class="pd-name">区域联防</span><span class="pd-en">Zone Defense</span><span class="badge blue">DEF</span><span class="badge green">中节奏</span></div>
+      <div class="pd-tags"><code>defenseTendency=pack</code> · <code>tempo=mid</code></div>
+      <div class="pd-desc">2-3 联防护筐护板，区域负责而非人盯人。有效保护禁区与篮板，但外线轮转慢被三分惩罚。适合内线体型劣势或犯规麻烦时使用。</div>
+      <div class="pd-params">defenseMode             = "zone_2_3"
+defenseContest[inside]  = 1.3
+defenseContest[three]   = 0.7   <span class="comment">// 外线轮转慢</span>
+reboundContest          = 1.15  <span class="comment">// 联防护板</span>
+helpDefChance           = 1.3
+stealChance             = 0.8   <span class="comment">// 联防抢断少</span>
+defFoulChance           = 0.85  <span class="comment">// 联防犯规少</span>
+matchupOverride         = []     <span class="comment">// 联防无对位</span></div>
+      <div class="pd-meta">
+        <div class="m-item"><div class="m-label">适用阵容</div><div class="m-val good">内线体型劣势 / 主力犯规麻烦 / 对方外线弱</div></div>
+        <div class="m-item"><div class="m-label">风险代价</div><div class="m-val bad">三分射手惩罚；联防轮转失误送空位</div></div>
+        <div class="m-item"><div class="m-label">克制</div><div class="m-val">内线背打型进攻（低位统治）</div></div>
+        <div class="m-item"><div class="m-label">被克制</div><div class="m-val">三分火力型进攻（魔球/跑轰）</div></div>
+      </div>
+    </div>
+
+    <h3>3.4 换防体系 Switch All</h3>
+    <div class="preset-d def">
+      <div class="pd-head"><span class="pd-name">换防体系</span><span class="pd-en">Switch All</span><span class="badge blue">DEF</span><span class="badge green">中节奏</span></div>
+      <div class="pd-tags"><code>defenseTendency=press</code> · <code>tempo=mid</code></div>
+      <div class="pd-desc">无限换防消解挡拆，所有位置均可换防。需要 1-5 号位均具备换防能力（侧翼型阵容）。有效克制挡拆主导，但低位被大打小惩罚。</div>
+      <div class="pd-params">defenseMode             = "switch_all"
+pickRollDefense         = "switch"   <span class="comment">// 挡拆换防</span>
+defenseContest          = 1.08
+stealChance             = 1.1
+helpDefChance           = 0.8   <span class="comment">// 换防少协防</span>
+defenseContest[postup]  = 0.85  <span class="comment">// 低位被大打小惩罚</span>
+conditionLossMul        = 1.1   <span class="comment">// 换防跑动多</span></div>
+      <div class="pd-meta">
+        <div class="m-item"><div class="m-label">适用阵容</div><div class="m-val good">1-5 号位均可换防的侧翼型阵容（Switchable 1-5）</div></div>
+        <div class="m-item"><div class="m-label">风险代价</div><div class="m-val bad">低位被大打小；体力消耗大</div></div>
+        <div class="m-item"><div class="m-label">克制</div><div class="m-val">挡拆主导型进攻（Pick & Roll）</div></div>
+        <div class="m-item"><div class="m-label">被克制</div><div class="m-val">低位背打型进攻（低位统治）</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== §4 混合型与特殊型预设 ==================== -->
+  <section id="s4">
+    <h2><span class="num">4</span>混合型与特殊型预设</h2>
+
+    <h3>4.1 动态进攻 Motion</h3>
+    <div class="preset-d mix">
+      <div class="pd-head"><span class="pd-name">动态进攻</span><span class="pd-en">Motion</span><span class="badge gold">MIX</span><span class="badge green">中节奏</span></div>
+      <div class="pd-tags"><code>offenseTendency=balanced</code> · <code>tempo=mid</code></div>
+      <div class="pd-desc">无固定套路，球员自由跑位 + 传导寻找最佳出手。最大化球员自主决策与化学反应，涌现性强。适合高 IQ + 高默契阵容。</div>
+      <div class="pd-params"><span class="comment">// 无固定倾向——所有 tendencyMod = 1.0，让球员自主决策</span>
+pass actionWeight      = 1.3   <span class="comment">// 传导权重提升</span>
+chemistryBonus         = 1.1   <span class="comment">// 默契加成放大</span>
+abilityBonus           = 1.05  <span class="comment">// 高 IQ 球员受益</span>
+pickRollChance         = 0.20
+fastBreakChance        = 1.0</div>
+      <div class="pd-meta">
+        <div class="m-item"><div class="m-label">适用阵容</div><div class="m-val good">高 OffIQ + 高默契（chemistry 高）阵容</div></div>
+        <div class="m-item"><div class="m-label">风险代价</div><div class="m-val bad">低 IQ 阵容决策混乱；无核心进攻轴心</div></div>
+        <div class="m-item"><div class="m-label">克制</div><div class="m-val">僵硬的防守体系（涌现性突破</div></div>
+        <div class="m-item"><div class="m-label">被克制</div><div class="m-val">压迫防守造失误（绞肉机）</div></div>
+      </div>
+    </div>
+
+    <h3>4.2 能量板凳 Hustle</h3>
+    <div class="preset-d mix">
+      <div class="pd-head"><span class="pd-name">能量板凳</span><span class="pd-en">Hustle</span><span class="badge gold">MIX</span><span class="badge gold">快节奏</span></div>
+      <div class="pd-tags"><code>offenseTendency=balanced</code> · <code>defenseTendency=press</code> · <code>tempo=fast</code></div>
+      <div class="pd-desc">深度轮换 + 全场高强度拼抢。利用板凳深度保持全场高强度，体力优势转化为第四节冲刺。适合板凳深度联盟顶级阵容。</div>
+      <div class="pd-params">rotationMode            = "deep"
+defenseTendency         = "press"
+fastBreakChance         = 1.6
+stealChance             = 1.2
+reboundContest          = 1.15  <span class="comment">// 拼抢篮板</span>
+conditionLossMul        = 1.2   <span class="comment">// 高强度消耗</span>
+substitutionFreq        = "high"</div>
+      <div class="pd-meta">
+        <div class="m-item"><div class="m-label">适用阵容</div><div class="m-val good">板凳深度顶级 + 体能型球员</div></div>
+        <div class="m-item"><div class="m-label">风险代价</div><div class="m-val bad">主力上场时间少数据差；板凳薄时崩盘</div></div>
+        <div class="m-item"><div class="m-label">克制</div><div class="m-val">主力依赖型阵容（第四节体力崩</div></div>
+        <div class="m-item"><div class="m-label">被克制</div><div class="m-val">半场阵地高效进攻（不跟你跑</div></div>
+      </div>
+    </div>
+
+    <h3>4.3 七秒进攻 Seven Seconds <span class="badge purple">SPEC</span></h3>
+    <div class="preset-d spec">
+      <div class="pd-head"><span class="pd-name">七秒进攻</span><span class="pd-en">Seven Seconds</span><span class="badge purple">SPEC</span><span class="badge red">极快</span></div>
+      <div class="pd-tags"><code>offenseTendency=outside</code> · <code>tempo=ultra_fast</code></div>
+      <div class="pd-desc">极简快攻，7 秒内出手。极致提速放弃半场阵地，几乎全靠转换进攻与早攻三分。体力消耗极大，命中率波动剧烈。</div>
+      <div class="pd-params">tempo                   = "ultra_fast"
+fastBreakChance         = 2.5   <span class="comment">// 极致快攻</span>
+tendencyMod[three]      = 2.0
+possessionTimeDelta     = -8    <span class="comment">// 回合耗时 -8s</span>
+fastBreakPref           = "high"
+conditionLossMul        = 1.5   <span class="comment">// 极大消耗</span>
+rotationMode            = "deep"
+pickRollChance          = 0.10</div>
+      <div class="pd-meta">
+        <div class="m-item"><div class="m-label">适用阵容</div><div class="m-val good">顶级板凳深度 + 快攻型后卫 + 三分射手群</div></div>
+        <div class="m-item"><div class="m-label">风险代价</div><div class="m-val bad">体力崩盘；命中率波动极大；防守端被打转换</div></div>
+        <div class="m-item"><div class="m-label">克制</div><div class="m-val">慢节奏半场阵地（节奏被拉快</div></div>
+        <div class="m-item"><div class="m-label">被克制</div><div class="m-val">压迫防守造失误（防守反击</div></div>
+      </div>
+    </div>
+
+    <h3>4.4 砍鲨战术 Hack-a-Shaq <span class="badge purple">SPEC</span></h3>
+    <div class="preset-d spec">
+      <div class="pd-head"><span class="pd-name">砍鲨战术</span><span class="pd-en">Hack-a-Shaq</span><span class="badge purple">SPEC</span><span class="badge green">中节奏</span></div>
+      <div class="pd-tags"><code>defenseTendency=balanced</code> · <code>tempo=mid</code></div>
+      <div class="pd-desc">针对对方低罚球球员故意犯规，迫使其罚球而非轻松得分。需要该球员罚球命中率显著低于其运动战效率。受犯规上限约束。</div>
+      <div class="pd-params">foulStrategy            = "targeted"
+targetDef               = { type: "hack_shaq", target: "low_ft_player_id" }
+defFoulChance           = 1.8   <span class="comment">// 故意犯规</span>
+foulThreshold           = "no_bonus"  <span class="comment">// 仅在非 bonus 时段执行</span>
+possessionTimeDelta     = 0     <span class="comment">// 不追求节奏</span></div>
+      <div class="pd-meta">
+        <div class="m-item"><div class="m-label">适用阵容</div><div class="m-val good">对方有低罚球（&lt;60%）主力且大量出场时间</div></div>
+        <div class="m-item"><div class="m-label">风险代价</div><div class="m-val bad">自身犯规麻烦；比赛碎片化；bonus 后禁用</div></div>
+        <div class="m-item"><div class="m-label">克制</div><div class="m-val">低罚球内线型阵容</div></div>
+        <div class="m-item"><div class="m-label">被克制</div><div class="m-val">对方罚球好（战术无效</div></div>
+      </div>
+    </div>
+
+    <h3>4.5 巅峰保核 Protect the Core <span class="badge purple">SPEC</span></h3>
+    <div class="preset-d spec">
+      <div class="pd-head"><span class="pd-name">巅峰保核</span><span class="pd-en">Protect the Core</span><span class="badge purple">SPEC</span><span class="badge blue">慢节奏</span></div>
+      <div class="pd-tags"><code>offenseTendency=balanced</code> · <code>tempo=slow</code></div>
+      <div class="pd-desc">保守战术，保护核心体力与避免犯规。慢节奏 + 保守犯规 + 早换人。适合背靠背赛程或主力疲劳时使用，牺牲当战竞争力换取长期健康。</div>
+      <div class="pd-params">foulStrategy            = "conservative"
+tempo                   = "slow"
+possessionTimeDelta     = +4
+conditionLossMul        = 0.75  <span class="comment">// 大幅省体力</span>
+defFoulChance           = 0.7
+rotationMode            = "balanced"
+substitutionFreq        = "early"
+fastBreakChance         = 0.7   <span class="comment">// 不追求快攻省体力</span></div>
+      <div class="pd-meta">
+        <div class="m-item"><div class="m-label">适用阵容</div><div class="m-val good">背靠背 / 主力疲劳 / 伤病恢复期</div></div>
+        <div class="m-item"><div class="m-label">风险代价</div><div class="m-val bad">当战竞争力下降；慢节奏追分难</div></div>
+        <div class="m-item"><div class="m-label">克制</div><div class="m-val">无——这是保核战术非争胜战术</div></div>
+        <div class="m-item"><div class="m-label">被克制</div><div class="m-val">强队全力进攻时被碾压</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== §5 预设克制矩阵与选用指南 ==================== -->
+  <section id="s5">
+    <h2><span class="num">5</span>预设克制矩阵与选用指南</h2>
+
+    <h3>5.1 核心克制关系矩阵</h3>
+    <p>行=己方预设，列=对方预设。<span class="win">●</span>=克制(胜率+5~10%)，<span class="lose">○</span>=被克制(胜率-5~10%)，<span class="even">─</span>=均势。</p>
+    <table class="matrix">
+      <thead><tr><th>己方＼对方</th><th>跑轰</th><th>魔球</th><th>三角</th><th>挡拆</th><th>铁桶</th><th>绞肉机</th><th>防反</th><th>锁外线</th><th>联防</th><th>换防</th></tr></thead>
+      <tbody>
+        <tr><td><b>跑轰</b></td><td class="even">─</td><td class="even">─</td><td class="win">●</td><td class="even">─</td><td class="win">●</td><td class="lose">○</td><td class="lose">○</td><td class="lose">○</td><td class="lose">○</td><td class="even">─</td></tr>
+        <tr><td><b>魔球</b></td><td class="even">─</td><td class="even">─</td><td class="win">●</td><td class="even">─</td><td class="win">●</td><td class="lose">○</td><td class="even">─</td><td class="lose">○</td><td class="lose">○</td><td class="even">─</td></tr>
+        <tr><td><b>三角</b></td><td class="lose">○</td><td class="lose">○</td><td class="even">─</td><td class="even">─</td><td class="even">─</td><td class="lose">○</td><td class="even">─</td><td class="even">─</td><td class="win">●</td><td class="even">─</td></tr>
+        <tr><td><b>挡拆</b></td><td class="even">─</td><td class="even">─</td><td class="even">─</td><td class="even">─</td><td class="win">●</td><td class="even">─</td><td class="even">─</td><td class="even">─</td><td class="win">●</td><td class="lose">○</td></tr>
+        <tr><td><b>铁桶</b></td><td class="lose">○</td><td class="lose">○</td><td class="even">─</td><td class="lose">○</td><td class="even">─</td><td class="even">─</td><td class="lose">○</td><td class="win">●</td><td class="even">─</td><td class="win">●</td></tr>
+        <tr><td><b>绞肉机</b></td><td class="win">●</td><td class="win">●</td><td class="win">●</td><td class="even">─</td><td class="even">─</td><td class="even">─</td><td class="lose">○</td><td class="even">─</td><td class="even">─</td><td class="even">─</td></tr>
+        <tr><td><b>防反</b></td><td class="win">●</td><td class="even">─</td><td class="even">─</td><td class="even">─</td><td class="win">●</td><td class="win">●</td><td class="even">─</td><td class="even">─</td><td class="win">●</td><td class="even">─</td></tr>
+        <tr><td><b>锁外线</b></td><td class="win">●</td><td class="win">●</td><td class="even">─</td><td class="even">─</td><td class="lose">○</td><td class="even">─</td><td class="even">─</td><td class="even">─</td><td class="even">─</td><td class="even">─</td></tr>
+        <tr><td><b>联防</b></td><td class="win">●</td><td class="win">●</td><td class="lose">○</td><td class="lose">○</td><td class="even">─</td><td class="even">─</td><td class="lose">○</td><td class="even">─</td><td class="even">─</td><td class="even">─</td></tr>
+        <tr><td><b>换防</b></td><td class="even">─</td><td class="even">─</td><td class="even">─</td><td class="win">●</td><td class="lose">○</td><td class="even">─</td><td class="even">─</td><td class="even">─</td><td class="even">─</td><td class="even">─</td></tr>
+      </tbody>
+    </table>
+    <div class="note"><b>克制≠必胜</b>：克制关系仅提供 ±5~10% 胜率修正，球员能力差距仍是主导因素。克制的意义在于"同水平对局中获取边际优势"，而非以弱胜强的银弹。</div>
+
+    <h3>5.2 预设选用决策树</h3>
+    <ul class="tree">
+      <li><span class="tl-node">Q1: 阵容核心优势在哪？</span>
+        <ul>
+          <li><span class="tl-node">三分射手群</span><span class="tl-desc">→ 考虑 跑轰 / 魔球 / 锁外线（攻防两端利用外线）</span></li>
+          <li><span class="tl-node">统治级内线</span><span class="tl-desc">→ 考虑 低位统治 / 铁桶阵地 / 三角进攻</span></li>
+          <li><span class="tl-node">挡拆组合（PG+内线）</span><span class="tl-desc">→ 考虑 挡拆主导（注意对方是否换防体系）</span></li>
+          <li><span class="tl-node">无明显核心 / 均衡阵容</span><span class="tl-desc">→ 考虑 全能均衡 / 动态进攻</span></li>
+        </ul>
+      </li>
+      <li><span class="tl-node">Q2: 对方核心威胁是什么？</span>
+        <ul>
+          <li><span class="tl-node">三分火力强</span><span class="tl-desc">→ 锁外线 / 换防体系（外线压迫）</span></li>
+          <li><span class="tl-node">内线统治</span><span class="tl-desc">→ 铁桶阵地 / 联防 / 砍鲨（低罚球时）</span></li>
+          <li><span class="tl-node">挡拆主导</span><span class="tl-desc">→ 换防体系（消解挡拆）</span></li>
+          <li><span class="tl-node">快攻型</span><span class="tl-desc">→ 铁桶阵地（拖慢节奏）/ 防守反击（对拼压迫）</span></li>
+        </ul>
+      </li>
+      <li><span class="tl-node">Q3: 赛程与体力状况？</span>
+        <ul>
+          <li><span class="tl-node">背靠背 / 主力疲劳</span><span class="tl-desc">→ 巅峰保核（省体力）</span></li>
+          <li><span class="tl-node">板凳深度优势</span><span class="tl-desc">→ 能量板凳 / 跑轰（深度轮换支撑高强度）</span></li>
+        </ul>
+      </li>
+    </ul>
+
+    <h3>5.3 预设 vs 自定义的定位</h3>
+    <div class="note blue"><b>预设是起点，自定义是终点</b>：新手用预设快速上手，理解战术方向感；进阶玩家基于预设修改参数 + 叠加条件规则，打造针对自家阵容与对手的定制战术。预设确保"即使不编辑也有合理战术可用"，自定义确保"深度玩家有足够调优空间"。</div>
+  </section>
+
+  <!-- ==================== §6 规则 DSL 总览 ==================== -->
+  <section id="s6">
+    <h2><span class="num">6</span>规则 DSL 总览</h2>
+    <p>条件规则系统（战术系统设计 §6）从"结构定义"升级为完整的<b>领域特定语言（DSL）</b>。玩家通过 DSL 编写条件规则，经编译器校验后注入 sim engine 的战术参数修改层。</p>
+
+    <h3>6.1 DSL 设计目标</h3>
+    <ul>
+      <li><b>表达力</b>：支持 AND/OR/NOT 嵌套条件、参数 set/multiply/add 动作、目标球员引用。</li>
+      <li><b>安全性</b>：沙箱执行，不可访问 sim 内部状态以外的数据；参数修改有上下限钳制。</li>
+      <li><b>确定性</b>：规则求值顺序固定，同一输入永远产出同一参数修改集，保证可复现。</li>
+      <li><b>性能</b>：每套战术存档最多 8 条规则，每条规则的条件求值 O(条件数)，sim 每回合检查成本可控。</li>
+      <li><b>可读性</b>：类自然语言语法，玩家无需编程基础即可编写。</li>
+    </ul>
+
+    <h3>6.2 DSL 编译流水线</h3>
+    <div class="formula">
+<span class="comment">// 玩家在 UI 编写规则文本 → 编译 → 字节码 → sim 运行时求值</span>
+
+[玩家编写] RuleText
+    <span class="op">↓</span> <span class="fn">Lexer</span>           <span class="comment">// 词法分析 → Token 流</span>
+    <span class="op">↓</span> <span class="fn">Parser</span>          <span class="comment">// 语法分析 → AST（遵循 BNF 文法）</span>
+    <span class="op">↓</span> <span class="fn">SemanticChecker</span> <span class="comment">// 语义校验（条件类型/参数名/值域/目标引用）</span>
+    <span class="op">↓</span> <span class="fn">Optimizer</span>       <span class="comment">// 常量折叠 + 冗余条件消除</span>
+    <span class="op">↓</span> <span class="fn">Codegen</span>         <span class="comment">// 生成字节码（紧凑可序列化）</span>
+[注入 sim] RuleBytecode
+    <span class="op">↓</span> <span class="fn">Runtime</span>          <span class="comment">// sim 每回合求值 → 参数修改集</span>
+    </div>
+
+    <h3>6.3 规则生命周期</h3>
+    <ul>
+      <li><b>编写</b>：玩家在高级编辑器编写规则文本（或用模板库一键生成后修改）。</li>
+      <li><b>编译</b>：保存时编译器校验，错误则拒绝保存并提示修正。</li>
+      <li><b>注入</b>：编译后的字节码随战术存档存入数据库，比赛时注入 sim。</li>
+      <li><b>求值</b>：sim 每回合结束后按优先级顺序求值所有 enabled 规则。</li>
+      <li><b>触发</b>：条件满足则执行动作，进入冷却（如有）；maxTriggers 到达则禁用。</li>
+    </ul>
+  </section>
+
+  <!-- ==================== §7 条件表达式语法 ==================== -->
+  <section id="s7">
+    <h2><span class="num">7</span>条件表达式语法（BNF）</h2>
+    <p>条件表达式支持 AND/OR/NOT 嵌套，比原 §6.1 的纯 AND 列表更灵活。以下为完整 BNF 文法。</p>
+
+    <h3>7.1 条件表达式 BNF</h3>
+    <div class="bnf"><span class="rule">ConditionExpr</span> ::= <span class="nt">OrExpr</span>
+
+<span class="rule">OrExpr</span>         ::= <span class="nt">AndExpr</span> ( "OR" <span class="nt">AndExpr</span> )*
+
+<span class="rule">AndExpr</span>        ::= <span class="nt">NotExpr</span> ( "AND" <span class="nt">NotExpr</span> )*
+
+<span class="rule">NotExpr</span>        ::= "NOT" <span class="nt">NotExpr</span> | <span class="nt">Atom</span>
+
+<span class="rule">Atom</span>           ::= "(" <span class="nt">OrExpr</span> ")"
+                 | <span class="nt">Condition</span>
+
+<span class="rule">Condition</span>      ::= <span class="nt">CondType</span> "." <span class="nt">Field</span> <span class="nt">Op</span> <span class="nt">Value</span>
+                 | <span class="nt">CondType</span> <span class="nt">Op</span> <span class="nt">Value</span>            <span class="comment">// 无字段简写</span>
+
+<span class="rule">CondType</span>       ::= "score_diff" | "quarter" | "clock" | "clutch"
+                 | "has_ball" | "streak" | "team_fouls" | "opp_team_pts"
+                 | "player_fouls" | "player_condition" | "player_pts"
+                 | "player_on_court" | "opp_player_pts" | "timeouts_left"
+
+<span class="rule">Op</span>             ::= "==" | "!=" | "<" | "<=" | ">" | ">="
+
+<span class="rule">Value</span>          ::= <span class="t">Number</span> | <span class="t">Boolean</span> | <span class="t">PlayerRef</span>
+
+<span class="rule">PlayerRef</span>      ::= "star1" | "star2" | "pg" | "sg" | "sf" | "pf" | "c"
+                 | "opp_star1" | "opp_star2" | <span class="t">PlayerId</span>     <span class="comment">// 位置/角色/具体ID</span>
+    </div>
+    <div class="note"><b>AND 优先级高于 OR</b>：与标准逻辑一致，<code>A AND B OR C</code> 等价于 <code>(A AND B) OR C</code>。用括号显式分组避免歧义。</div>
+
+    <h3>7.2 条件类型完整表（扩展版）</h3>
+    <table>
+      <thead><tr><th>CondType</th><th>字段</th><th>说明</th><th>值域</th></tr></thead>
+      <tbody>
+        <tr><td><code>score_diff</code></td><td>—</td><td>当前比分差（正=领先）</td><td>-50~+50</td></tr>
+        <tr><td><code>quarter</code></td><td>—</td><td>当前节次</td><td>1-9（5+=OT）</td></tr>
+        <tr><td><code>clock</code></td><td>—</td><td>当前节剩余秒数</td><td>0-720（OT: 0-300）</td></tr>
+        <tr><td><code>clutch</code></td><td>—</td><td>是否 Clutch 时段</td><td>true/false</td></tr>
+        <tr><td><code>has_ball</code></td><td>—</td><td>本方是否持球</td><td>true/false</td></tr>
+        <tr><td><code>streak</code></td><td>—</td><td>对方连续得分（负=本方连得）</td><td>-20~+20</td></tr>
+        <tr><td><code>team_fouls</code></td><td>—</td><td>本节全队犯规</td><td>0-10+</td></tr>
+        <tr><td><code>opp_team_pts</code></td><td>—</td><td>对方本场总得分</td><td>0-150</td></tr>
+        <tr><td><code>timeouts_left</code></td><td>—</td><td>本方剩余暂停</td><td>0-7</td></tr>
+        <tr><td><code>player_fouls</code></td><td>.target</td><td>指定球员个人犯规</td><td>0-6 / PlayerRef</td></tr>
+        <tr><td><code>player_condition</code></td><td>.target</td><td>指定球员体力值</td><td>0-100 / PlayerRef</td></tr>
+        <tr><td><code>player_pts</code></td><td>.target</td><td>本方指定球员得分</td><td>0-60+ / PlayerRef</td></tr>
+        <tr><td><code>player_on_court</code></td><td>.target</td><td>指定球员是否在场</td><td>true/false / PlayerRef</td></tr>
+        <tr><td><code>opp_player_pts</code></td><td>.target</td><td>对方指定球员得分</td><td>0-60+ / PlayerRef</td></tr>
+      </tbody>
+    </table>
+
+    <h3>7.3 条件表达式示例</h3>
+    <div class="formula">
+<span class="comment">// 示例 1：第四节最后 5 分钟落后 8+ 分（纯 AND）</span>
+score_diff <span class="op">&lt;=</span> <span class="num">-8</span> AND quarter <span class="op">&gt;=</span> <span class="num">4</span> AND clock <span class="op">&lt;=</span> <span class="num">300</span>
+
+<span class="comment">// 示例 2：对方核心爆发 OR 对方全队高分（OR 嵌套）</span>
+opp_player_pts.opp_star1 <span class="op">&gt;=</span> <span class="num">20</span> OR opp_team_pts <span class="op">&gt;=</span> <span class="num">60</span>
+
+<span class="comment">// 示例 3：主力犯规麻烦 AND (节次早 OR Clutch 时段)</span>
+player_fouls.star1 <span class="op">&gt;=</span> <span class="num">4</span> AND (quarter <span class="op">&lt;=</span> <span class="num">2</span> OR clutch <span class="op">==</span> <span class="kw">true</span>)
+
+<span class="comment">// 示例 4：NOT 嵌套——非 Clutch 时段且本方持球</span>
+NOT clutch <span class="op">==</span> <span class="kw">true</span> AND has_ball <span class="op">==</span> <span class="kw">true</span>
+
+<span class="comment">// 示例 5：复杂组合——(落后且第四节) OR (Clutch 且领先不超过3)</span>
+(score_diff <span class="op">&lt;=</span> <span class="num">-5</span> AND quarter <span class="op">&gt;=</span> <span class="num">4</span>) OR (clutch <span class="op">==</span> <span class="kw">true</span> AND score_diff <span class="op">&lt;=</span> <span class="num">3</span>)
+    </div>
+  </section>
+
+  <!-- ==================== §8 动作表达式语法 ==================== -->
+  <section id="s8">
+    <h2><span class="num">8</span>动作表达式语法</h2>
+    <p>动作表达式定义规则触发后对 sim 参数的修改。支持 set / multiply / add 三种操作，可引用 PlayerRef。</p>
+
+    <h3>8.1 动作表达式 BNF</h3>
+    <div class="bnf"><span class="rule">ActionList</span>    ::= <span class="nt">Action</span> ( "," <span class="nt">Action</span> )*
+
+<span class="rule">Action</span>        ::= <span class="nt">Param</span> <span class="nt">ActionOp</span> <span class="nt">ActionValue</span>
+               | <span class="nt">SpecialAction</span>
+
+<span class="rule">ActionOp</span>      ::= "set" | "mul" | "add"           <span class="comment">// set=覆盖 mul=乘 add=加</span>
+
+<span class="rule">ActionValue</span>   ::= <span class="t">Number</span> | <span class="t">String</span> | <span class="nt">PlayerRef</span> | <span class="nt">TargetDefExpr</span>
+
+<span class="rule">Param</span>         ::= "tendencyMod[three]" | "tendencyMod[midrange]"
+               | "tendencyMod[inside]" | "tendencyMod[drive]"
+               | "tendencyMod[postup]" | "fastBreakChance"
+               | "pickRollChance" | "defenseContest" | "defenseContest[three]"
+               | "defenseContest[inside]" | "defenseContest[postup]"
+               | "helpDefChance" | "stealChance" | "blockChance"
+               | "possessionTime" | "conditionLossMul"
+               | "foulStrategy" | "primaryScorer" | "rotationMode"
+               | "matchupOverride" | "targetDef" | "threeFreq"
+
+<span class="rule">SpecialAction</span> ::= "substitute(" <span class="nt">PlayerRef</span> "," <span class="nt">PlayerRef</span> ")"  <span class="comment">// 换人</span>
+               | "call_timeout()"                              <span class="comment">// 叫暂停</span>
+               | "set_role(" <span class="nt">PlayerRef</span> "," <span class="t">Role</span> ")"        <span class="comment">// 改战术角色</span>
+
+<span class="rule">TargetDefExpr</span> ::= { type: "double_team"|"perimeter_lock"|"rim_protect"|"switch_all"|"hack_shaq", target: <span class="nt">PlayerRef</span> }
+    </div>
+
+    <h3>8.2 动作操作语义</h3>
+    <table>
+      <thead><tr><th>操作</th><th>语义</th><th>适用参数</th><th>示例</th></tr></thead>
+      <tbody>
+        <tr><td><code>set</code></td><td>覆盖为目标值</td><td>枚举/引用型（foulStrategy, primaryScorer, targetDef）</td><td><code>foulStrategy set "conservative"</code></td></tr>
+        <tr><td><code>mul</code></td><td>当前值 × 倍率</td><td>数值倍率型（tendencyMod, chance 类）</td><td><code>tendencyMod[three] mul 1.5</code></td></tr>
+        <tr><td><code>add</code></td><td>当前值 + 增量</td><td>数值增量型（possessionTime）</td><td><code>possessionTime add -3</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3>8.3 动作值域钳制</h3>
+    <p>所有动作执行后参数值受上下限钳制，防止规则叠加产出极端值：</p>
+    <table>
+      <thead><tr><th>参数</th><th>下限</th><th>上限</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>tendencyMod[*]</td><td>0.1</td><td>3.0</td><td>出手倾向倍率不可极端</td></tr>
+        <tr><td>fastBreakChance</td><td>0.2</td><td>3.0</td><td>快攻概率倍率</td></tr>
+        <tr><td>defenseContest[*]</td><td>0.5</td><td>1.5</td><td>防守干扰倍率</td></tr>
+        <tr><td>stealChance</td><td>0.3</td><td>2.0</td><td>抢断概率倍率</td></tr>
+        <tr><td>possessionTime</td><td>8s</td><td>24s</td><td>回合耗时（24s 进攻时限）</td></tr>
+        <tr><td>conditionLossMul</td><td>0.5</td><td>2.0</td><td>体力消耗倍率</td></tr>
+      </tbody>
+    </table>
+
+    <h3>8.4 动作表达式示例</h3>
+    <div class="formula">
+<span class="comment">// 追分模式：三分倾向 ×1.5，快攻 ×1.3，回合耗时 -3s</span>
+tendencyMod[three] mul <span class="num">1.5</span>, fastBreakChance mul <span class="num">1.3</span>, possessionTime add <span class="op">-</span><span class="num">3</span>
+
+<span class="comment">// 锁死对方核心：设置包夹针对性防守</span>
+targetDef set { type: <span class="str">"double_team"</span>, target: opp_star1 }
+
+<span class="comment">// 保护犯规麻烦主力：保守犯规 + 换人</span>
+foulStrategy set <span class="str">"conservative"</span>, substitute(star1, bench1)
+
+<span class="comment">// Clutch 改角色：核心改主攻点</span>
+set_role(star1, <span class="str">"primary_scorer"</span>)
+
+<span class="comment">// 叫暂停打断对方高潮</span>
+call_timeout()
+    </div>
+  </section>
+
+  <!-- ==================== §9 规则模板库 ==================== -->
+  <section id="s9">
+    <h2><span class="num">9</span>规则模板库</h2>
+    <p>模板库提供常见战术情境的预制规则，玩家一键导入后修改参数即可使用。降低 DSL 学习门槛，同时作为最佳实践参考。</p>
+
+    <h3>9.1 模板分类</h3>
+    <table>
+      <thead><tr><th>分类</th><th>模板数</th><th>覆盖情境</th></tr></thead>
+      <tbody>
+        <tr><td><b>追分类</b></td><td>4</td><td>落后追分、绝杀布置、放弃防守全攻</td></tr>
+        <tr><td><b>保领先类</b></td><td>3</td><td>控节奏、保守犯规、消耗时间</td></tr>
+        <tr><td><b>针对类</b></td><td>4</td><td>锁死对方核心、砍鲨、针对犯规麻烦</td></tr>
+        <tr><td><b>轮换类</b></td><td>3</td><td>体力保护换人、犯规麻烦换人、Clutch 阵容</td></tr>
+        <tr><td><b>节奏类</b></td><td>2</td><td>提速、降速</td></tr>
+      </tbody>
+    </table>
+
+    <h3>9.2 模板详查（精选）</h3>
+
+    <h4>模板 T-01：落后追分</h4>
+    <div class="formula">
+<span class="comment">// 触发：第四节最后 5 分钟落后 8+ 分</span>
+<span class="comment">// 动作：三分 ×1.5 + 快攻 ×1.3 + 提速 -3s</span>
+{
+  name: <span class="str">"落后追分"</span>,
+  conditions: score_diff <span class="op">&lt;=</span> <span class="num">-8</span> AND quarter <span class="op">&gt;=</span> <span class="num">4</span> AND clock <span class="op">&lt;=</span> <span class="num">300</span>,
+  actions: tendencyMod[three] mul <span class="num">1.5</span>, fastBreakChance mul <span class="num">1.3</span>, possessionTime add <span class="op">-</span><span class="num">3</span>,
+  priority: <span class="num">50</span>, cooldown: <span class="num">0</span>, maxTriggers: <span class="num">0</span>,
+}
+    </div>
+
+    <h4>模板 T-02：保领先控节奏</h4>
+    <div class="formula">
+{
+  name: <span class="str">"保领先控节奏"</span>,
+  conditions: score_diff <span class="op">&gt;=</span> <span class="num">8</span> AND quarter <span class="op">&gt;=</span> <span class="num">4</span> AND clock <span class="op">&lt;=</span> <span class="num">300</span>,
+  actions: possessionTime add <span class="num">3</span>, fastBreakChance mul <span class="num">0.6</span>, tendencyMod[three] mul <span class="num">0.7</span>,
+  priority: <span class="num">50</span>, cooldown: <span class="num">0</span>, maxTriggers: <span class="num">0</span>,
+}
+    </div>
+
+    <h4>模板 T-03：锁死对方核心</h4>
+    <div class="formula">
+{
+  name: <span class="str">"锁死对方核心"</span>,
+  conditions: opp_player_pts.opp_star1 <span class="op">&gt;=</span> <span class="num">20</span>,
+  actions: targetDef set { type: <span class="str">"double_team"</span>, target: opp_star1 },
+  priority: <span class="num">60</span>, cooldown: <span class="num">0</span>, maxTriggers: <span class="num">1</span>,
+}
+    </div>
+
+    <h4>模板 T-04：主力体力保护换人</h4>
+    <div class="formula">
+{
+  name: <span class="str">"主力体力保护"</span>,
+  conditions: player_condition.star1 <span class="op">&lt;=</span> <span class="num">40</span> AND NOT clutch <span class="op">==</span> <span class="kw">true</span>,
+  actions: substitute(star1, bench1),
+  priority: <span class="num">70</span>, cooldown: <span class="num">4</span>, maxTriggers: <span class="num">0</span>,
+}
+    </div>
+
+    <h4>模板 T-05：犯规麻烦换人</h4>
+    <div class="formula">
+{
+  name: <span class="str">"犯规麻烦保护"</span>,
+  conditions: player_fouls.star1 <span class="op">&gt;=</span> <span class="num">4</span> AND quarter <span class="op">&lt;=</span> <span class="num">2</span>,
+  actions: substitute(star1, bench1), foulStrategy set <span class="str">"conservative"</span>,
+  priority: <span class="num">75</span>, cooldown: <span class="num">0</span>, maxTriggers: <span class="num">1</span>,
+}
+    </div>
+
+    <h4>模板 T-06：对方高潮叫暂停</h4>
+    <div class="formula">
+{
+  name: <span class="str">"打断对方高潮"</span>,
+  conditions: streak <span class="op">&gt;=</span> <span class="num">10</span> AND timeouts_left <span class="op">&gt;=</span> <span class="num">1</span>,
+  actions: call_timeout(),
+  priority: <span class="num">80</span>, cooldown: <span class="num">6</span>, maxTriggers: <span class="num">3</span>,
+}
+    </div>
+
+    <h4>模板 T-07：Clutch 阵容</h4>
+    <div class="formula">
+{
+  name: <span class="str">"Clutch 决胜阵容"</span>,
+  conditions: clutch <span class="op">==</span> <span class="kw">true</span>,
+  actions: set_role(star1, <span class="str">"primary_scorer"</span>), set_role(star2, <span class="str">"secondary_scorer"</span>),
+           tendencyMod[midrange] mul <span class="num">1.2</span>,
+  priority: <span class="num">65</span>, cooldown: <span class="num">0</span>, maxTriggers: <span class="num">1</span>,
+}
+    </div>
+
+    <h3>9.3 模板组合示例</h3>
+    <div class="note green"><b>典型组合</b>：T-04（体力保护）+ T-05（犯规麻烦）+ T-06（叫暂停）+ T-07（Clutch 阵容）= 一套完整的"轮换与关键时刻"规则集，占用 4/8 规则槽位，剩余 4 槽留给追分/保领先/针对类。模板组合让玩家用最少编辑量覆盖最常见情境。</div>
+  </section>
+
+  <!-- ==================== §10 规则编译与校验 ==================== -->
+  <section id="s10">
+    <h2><span class="num">10</span>规则编译与校验</h2>
+    <p>规则保存时经编译器校验，确保语法正确、语义合法、值域合理。校验失败的规则拒绝保存并返回错误信息。</p>
+
+    <h3>10.1 校验阶段</h3>
+    <table>
+      <thead><tr><th>阶段</th><th>检查项</th><th>错误示例</th></tr></thead>
+      <tbody>
+        <tr><td><b>词法</b></td><td>Token 合法性</td><td>未知操作符 <code>~=</code></td></tr>
+        <tr><td><b>语法</b></td><td>BNF 文法符合性</td><td>括号不匹配 <code>(A AND B</code></td></tr>
+        <tr><td><b>语义</b></td><td>条件类型/字段/参数名存在</td><td>未知参数 <code>tendencyMod[half_court]</code></td></tr>
+        <tr><td><b>值域</b></td><td>Value 在 CondType 合法范围</td><td><code>quarter == 0</code>（节次 1-9）</td></tr>
+        <tr><td><b>引用</b></td><td>PlayerRef 在当前阵容存在</td><td><code>star3</code>（阵容只有 star1/star2）</td></tr>
+        <tr><td><b>冲突</b></td><td>同参数矛盾动作检测</td><td>两条规则同 priority 同参数不同 set</td></tr>
+        <tr><td><b>资源</b></td><td>规则数 ≤ 8，条件数 ≤ 10/条</td><td>第 9 条规则超上限</td></tr>
+      </tbody>
+    </table>
+
+    <h3>10.2 优化器</h3>
+    <p>编译通过的规则经优化器处理，降低 sim 运行时成本：</p>
+    <ul>
+      <li><b>常量折叠</b>：<code>quarter >= 4 AND quarter >= 4</code> → <code>quarter >= 4</code></li>
+      <li><b>冗余消除</b>：<code>score_diff <= -8 AND score_diff <= -5</code> → <code>score_diff <= -8</code>（更强条件吸收）</li>
+      <li><b>永真/永假检测</b>：<code>quarter >= 1</code>（永真，恒满足）→ 警告玩家可能写错</li>
+      <li><b>死动作检测</b>：被更高 priority 同参数 set 覆盖的 mul/add → 标记无效</li>
+    </ul>
+
+    <h3>10.3 编译错误码</h3>
+    <table>
+      <thead><tr><th>错误码</th><th>含义</th><th>处理建议</th></tr></thead>
+      <tbody>
+        <tr><td><code>E_LEX_001</code></td><td>未知 Token</td><td>检查操作符/关键字拼写</td></tr>
+        <tr><td><code>E_PARSE_010</code></td><td>括号不匹配</td><td>补全括号</td></tr>
+        <tr><td><code>E_SEM_020</code></td><td>未知 CondType / Param</td><td>查阅条件类型表/参数表</td></tr>
+        <tr><td><code>E_VAL_030</code></td><td>值域越界</td><td>调整 Value 至合法范围</td></tr>
+        <tr><td><code>E_REF_040</code></td><td>PlayerRef 不存在</td><td>使用合法位置/角色/ID</td></tr>
+        <tr><td><code>E_CONFLICT_050</code></td><td>同参数矛盾动作</td><td>调整 priority 或参数</td></tr>
+        <tr><td><code>E_RESOURCE_060</code></td><td>规则/条件超上限</td><td>删减规则数</td></tr>
+        <tr><td><code>W_OPT_070</code></td><td>永真条件/死动作（警告）</td><td>检查是否写错</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ==================== §11 优先级与冲突解决算法 ==================== -->
+  <section id="s11">
+    <h2><span class="num">11</span>优先级与冲突解决算法</h2>
+    <p>多条规则同时满足时，需确定参数修改集的最终值。以下为完整的冲突解决算法。</p>
+
+    <h3>11.1 求值流程</h3>
+    <div class="formula">
+<span class="comment">// sim 每回合结束后执行</span>
+<span class="kw">function</span> <span class="fn">evaluateRules</span>(rules, gameState) -> ParamModSet {
+  <span class="comment">// STEP 1: 过滤——enabled 且未冷却且未达 maxTriggers</span>
+  active = rules.filter(r <span class="op">=&gt;</span> r.enabled && !r.onCooldown && !r.maxedOut)
+
+  <span class="comment">// STEP 2: 求值——按 priority 降序检查条件</span>
+  triggered = []
+  <span class="kw">for</span> r <span class="kw">in</span> active.sortByPriorityDesc() {
+    <span class="kw">if</span> <span class="fn">evalCondition</span>(r.conditions, gameState) {
+      triggered.push(r)
+      r.enterCooldown()           <span class="comment">// 进入冷却</span>
+      r.incrementTriggerCount()    <span class="comment">// 触发次数 +1</span>
+    }
+  }
+
+  <span class="comment">// STEP 3: 合并——按参数分组，解决冲突</span>
+  <span class="kw">return</span> <span class="fn">mergeActions</span>(triggered.flatMap(r <span class="op">=&gt;</span> r.actions))
+}
+    </div>
+
+    <h3>11.2 冲突解决规则（完整版）</h3>
+    <table>
+      <thead><tr><th>情况</th><th>解决规则</th><th>示例</th></tr></thead>
+      <tbody>
+        <tr><td><b>不同参数</b></td><td>叠加共存</td><td>A 改三分倾向、B 改防守策略 → 两者同时生效</td></tr>
+        <tr><td><b>同参数不同 op</b></td><td>按 op 类型顺序执行：先 set 再 mul 再 add</td><td>A: <code>set "aggressive"</code> + B: <code>mul 1.2</code> → 先 set 再 mul</td></tr>
+        <tr><td><b>同参数同 op（set）</b></td><td>高 priority 覆盖低</td><td>A(pri=50): set "normal" + B(pri=70): set "conservative" → "conservative"</td></tr>
+        <tr><td><b>同参数同 op（mul）</b></td><td>倍率连乘（按 priority 降序）</td><td>A(pri=70): mul 1.5 + B(pri=50): mul 1.3 → base × 1.5 × 1.3</td></tr>
+        <tr><td><b>同参数同 op（add）</b></td><td>增量累加</td><td>A: add -3 + B: add +2 → base + (-3) + 2</td></tr>
+        <tr><td><b>同 priority 同参数</b></td><td>按规则列表顺序，后者覆盖（set）/累加（mul/add）</td><td>列表中靠后的规则优先</td></tr>
+        <tr><td><b>最终钳制</b></td><td>合并后值受 §8.3 值域钳制</td><td>tendencyMod 连乘超 3.0 → 钳至 3.0</td></tr>
+      </tbody>
+    </table>
+    <div class="note"><b>设计意图</b>：mul 连乘而非覆盖——让多条"提升三分"规则可叠加（追分 + Clutch 同时触发时三分倾向更高），但受上限钳制防爆。set 覆盖——枚举型参数（犯规策略）只能有一个最终值，高优先级决定。</div>
+
+    <h3>11.3 mergeActions 算法伪码</h3>
+    <div class="formula">
+<span class="kw">function</span> <span class="fn">mergeActions</span>(actions) -> ParamModSet {
+  <span class="comment">// 按参数名分组</span>
+  byParam = groupBy(actions, a <span class="op">=&gt;</span> a.param)
+
+  result = {}
+  <span class="kw">for</span> (param, acts) <span class="kw">in</span> byParam {
+    <span class="comment">// 按 op 类型分桶：set / mul / add</span>
+    sets = acts.filter(a <span class="op">=&gt;</span> a.op == <span class="str">"set"</span>).sortByPriorityDesc()
+    muls = acts.filter(a <span class="op">=&gt;</span> a.op == <span class="str">"mul"</span>).sortByPriorityDesc()
+    adds = acts.filter(a <span class="op">=&gt;</span> a.op == <span class="str">"add"</span>)
+
+    val = baseValue(param)
+    <span class="kw">if</span> sets.notEmpty()  val = sets[0].value            <span class="comment">// 高 pri 覆盖</span>
+    <span class="kw">for</span> m <span class="kw">in</span> muls       val = val * m.value           <span class="comment">// 连乘</span>
+    <span class="kw">for</span> a <span class="kw">in</span> adds       val = val + a.value           <span class="comment">// 累加</span>
+
+    result[param] = <span class="fn">clamp</span>(val, lowerBound(param), upperBound(param))  <span class="comment">// 钳制</span>
+  }
+  <span class="kw">return</span> result
+}
+    </div>
+  </section>
+
+  <!-- ==================== §12 数值附录 ==================== -->
+  <section id="s12">
+    <h2><span class="num">12</span>数值附录</h2>
+
+    <h3>12.1 预设参数完整映射表</h3>
+    <table>
+      <thead><tr><th>预设</th><th>tempo</th><th>offTend</th><th>defTend</th><th>three</th><th>inside</th><th>midrange</th><th>fastBreak</th><th>condLoss</th></tr></thead>
+      <tbody>
+        <tr><td><b>跑轰</b></td><td>fast</td><td>outside</td><td>balanced</td><td>×2.8</td><td>×1.0</td><td>×1.0</td><td>×2.1</td><td>×1.3</td></tr>
+        <tr><td><b>魔球</b></td><td>fast</td><td>outside</td><td>balanced</td><td>×2.8</td><td>×1.2</td><td>×0.3</td><td>×1.5</td><td>×1.0</td></tr>
+        <tr><td><b>三角</b></td><td>slow</td><td>balanced</td><td>balanced</td><td>×1.0</td><td>×1.3</td><td>×1.2</td><td>×0.8</td><td>×0.9</td></tr>
+        <tr><td><b>挡拆</b></td><td>mid</td><td>balanced</td><td>balanced</td><td>×1.0</td><td>×1.2</td><td>×1.0</td><td>×1.0</td><td>×1.0</td></tr>
+        <tr><td><b>孤立单打</b></td><td>mid</td><td>balanced</td><td>balanced</td><td>×1.0</td><td>×1.0</td><td>×1.3</td><td>×0.7</td><td>×1.0</td></tr>
+        <tr><td><b>低位统治</b></td><td>slow</td><td>inside</td><td>balanced</td><td>×1.1</td><td>×1.5</td><td>×1.0</td><td>×0.8</td><td>×0.95</td></tr>
+        <tr><td><b>铁桶</b></td><td>slow</td><td>inside</td><td>pack</td><td>×0.7</td><td>×2.0</td><td>×1.0</td><td>×0.6</td><td>×0.85</td></tr>
+        <tr><td><b>绞肉机</b></td><td>slow</td><td>inside</td><td>press</td><td>×0.8</td><td>×2.0</td><td>×1.0</td><td>×0.7</td><td>×1.1</td></tr>
+        <tr><td><b>防反</b></td><td>fast</td><td>balanced</td><td>press</td><td>×1.0</td><td>×1.0</td><td>×1.0</td><td>×2.1</td><td>×1.15</td></tr>
+        <tr><td><b>锁外线</b></td><td>mid</td><td>balanced</td><td>press</td><td>×1.0</td><td>×1.0</td><td>×1.0</td><td>×1.0</td><td>×1.0</td></tr>
+        <tr><td><b>联防</b></td><td>mid</td><td>balanced</td><td>pack</td><td>×1.0</td><td>×1.0</td><td>×1.0</td><td>×1.0</td><td>×0.95</td></tr>
+        <tr><td><b>换防</b></td><td>mid</td><td>balanced</td><td>press</td><td>×1.0</td><td>×1.0</td><td>×1.0</td><td>×1.0</td><td>×1.1</td></tr>
+        <tr><td><b>均衡</b></td><td>mid</td><td>balanced</td><td>balanced</td><td>×1.0</td><td>×1.0</td><td>×1.0</td><td>×1.0</td><td>×1.0</td></tr>
+        <tr><td><b>动态</b></td><td>mid</td><td>balanced</td><td>balanced</td><td>×1.0</td><td>×1.0</td><td>×1.0</td><td>×1.0</td><td>×1.0</td></tr>
+        <tr><td><b>能量板凳</b></td><td>fast</td><td>balanced</td><td>press</td><td>×1.1</td><td>×1.0</td><td>×1.0</td><td>×1.6</td><td>×1.2</td></tr>
+        <tr><td><b>七秒</b></td><td>ultra</td><td>outside</td><td>balanced</td><td>×2.0</td><td>×1.0</td><td>×0.5</td><td>×2.5</td><td>×1.5</td></tr>
+        <tr><td><b>巅峰保核</b></td><td>slow</td><td>balanced</td><td>balanced</td><td>×0.9</td><td>×1.0</td><td>×1.0</td><td>×0.7</td><td>×0.75</td></tr>
+      </tbody>
+    </table>
+
+    <h3>12.2 规则资源上限表</h3>
+    <table>
+      <thead><tr><th>资源</th><th>上限</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>每套战术存档规则数</td><td>8</td><td>性能+设计约束</td></tr>
+        <tr><td>每条规则条件数</td><td>10</td><td>含 AND/OR/NOT 展开后</td></tr>
+        <tr><td>每条规则动作数</td><td>6</td><td>含 SpecialAction</td></tr>
+        <tr><td>priority 范围</td><td>1-99</td><td>高覆盖低</td></tr>
+        <tr><td>cooldown 范围</td><td>0-20 回合</td><td>0=无冷却</td></tr>
+        <tr><td>maxTriggers 范围</td><td>0-9</td><td>0=无限</td></tr>
+      </tbody>
+    </table>
+
+    <h3>12.3 克制胜率修正表</h3>
+    <table>
+      <thead><tr><th>克制程度</th><th>胜率修正</th><th>示例</th></tr></thead>
+      <tbody>
+        <tr><td>强克制</td><td>+8~10%</td><td>跑轰 vs 铁桶阵地（节奏碾压）</td></tr>
+        <tr><td>普通克制</td><td>+5~7%</td><td>魔球 vs 铁桶（三分惩罚收缩）</td></tr>
+        <tr><td>弱克制</td><td>+3~4%</td><td>挡拆 vs 联防（错位利用）</td></tr>
+        <tr><td>均势</td><td>±0%</td><td>跑轰 vs 魔球（同为快攻三分）</td></tr>
+      </tbody>
+    </table>
+
+    <h3>12.4 模板库完整索引</h3>
+    <table>
+      <thead><tr><th>ID</th><th>名称</th><th>分类</th><th>核心触发</th></tr></thead>
+      <tbody>
+        <tr><td>T-01</td><td>落后追分</td><td>追分</td><td>Q4 最后 5min 落后 8+</td></tr>
+        <tr><td>T-02</td><td>保领先控节奏</td><td>保领先</td><td>Q4 最后 5min 领先 8+</td></tr>
+        <tr><td>T-03</td><td>锁死对方核心</td><td>针对</td><td>对方核心得分 ≥20</td></tr>
+        <tr><td>T-04</td><td>主力体力保护</td><td>轮换</td><td>主力 condition ≤40</td></tr>
+        <tr><td>T-05</td><td>犯规麻烦保护</td><td>轮换</td><td>主力 4 犯 + 节次早</td></tr>
+        <tr><td>T-06</td><td>打断对方高潮</td><td>节奏</td><td>对方连得 ≥10</td></tr>
+        <tr><td>T-07</td><td>Clutch 决胜阵容</td><td>轮换</td><td>Clutch 时段</td></tr>
+        <tr><td>T-08</td><td>绝杀布置</td><td>追分</td><td>Q4/OT 最后 24s 落后 ≤3</td></tr>
+        <tr><td>T-09</td><td>放弃防守全攻</td><td>追分</td><td>Q4 最后 60s 落后 10+</td></tr>
+        <tr><td>T-10</td><td>保守犯规保领先</td><td>保领先</td><td>Q4 领先 + 对方罚球好</td></tr>
+        <tr><td>T-11</td><td>砍鲨战术</td><td>针对</td><td>对方低罚球主力在场</td></tr>
+        <tr><td>T-12</td><td>针对对方犯规麻烦</td><td>针对</td><td>对方主力 4 犯 → 强攻造犯</td></tr>
+        <tr><td>T-13</td><td>提速</td><td>节奏</td><td>落后 + 需要更多回合</td></tr>
+        <tr><td>T-14</td><td>降速</td><td>节奏</td><td>领先 + 消耗时间</td></tr>
+        <tr><td>T-15</td><td>消耗时间</td><td>保领先</td><td>Q4 最后 2min 领先 + 控球</td></tr>
+        <tr><td>T-16</td><td>Clutch 防守阵容</td><td>轮换</td><td>Clutch + 需要防守</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    篮球经理世界 Hoops World Online · 关联战术系统设计 §4/§6 / Sim Engine §12-14
+  </footer>
+
+</div>
+</body>
+</html>
