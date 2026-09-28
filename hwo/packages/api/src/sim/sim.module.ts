@@ -4,8 +4,10 @@
 
 import { Module } from "@nestjs/common";
 import { SimController } from "./sim.controller.js";
+import { TeamModule } from "../team/team.module.js";
 
 @Module({
+  imports: [TeamModule],
   controllers: [SimController],
 })
 export class SimModule {}
