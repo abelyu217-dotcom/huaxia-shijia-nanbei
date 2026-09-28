@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>篮球经理游戏立项书 · 篮图 Hoops Dynasty</title>
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#141b26; --panel2:#1b2433; --line:#26324a;
+    --ink:#e6edf6; --ink2:#9fb0c7; --accent:#ff6b35; --accent2:#4ade80;
+    --gold:#fbbf24; --red:#ef4444; --blue:#60a5fa;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:linear-gradient(180deg,#070a10 0%,#0b0f17 100%);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:980px;margin:0 auto;padding:40px 22px 120px}
+  /* hero */
+  .hero{
+    position:relative;
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:42px 34px 30px;
+    background:
+      radial-gradient(800px 280px at 20% -10%, rgba(255,107,53,.18), transparent 60%),
+      radial-gradient(700px 260px at 90% 0%, rgba(74,222,128,.10), transparent 60%),
+      linear-gradient(180deg,#151d2c,#0e1420);
+    overflow:hidden;
+    margin-bottom:34px;
+  }
+  .hero .tag{
+    display:inline-block;font-size:12px;letter-spacing:.16em;
+    color:var(--accent);border:1px solid rgba(255,107,53,.45);
+    padding:4px 10px;border-radius:999px;margin-bottom:18px;
+    text-transform:uppercase;
+  }
+  .hero h1{margin:0 0 8px;font-size:34px;letter-spacing:.5px;font-weight:800}
+  .hero h1 .en{color:var(--ink2);font-weight:600;font-size:20px;margin-left:8px}
+  .hero .pitch{color:var(--ink2);font-size:16px;max-width:720px;margin:10px 0 22px}
+  .hero .meta{display:flex;flex-wrap:wrap;gap:10px}
+  .hero .chip{
+    background:rgba(255,255,255,.04);border:1px solid var(--line);
+    border-radius:8px;padding:8px 12px;font-size:13px;color:var(--ink2);
+  }
+  .hero .chip b{color:var(--ink);font-weight:600}
+  .hero .court{
+    position:absolute;right:-60px;bottom:-60px;width:220px;height:220px;
+    border:2px solid rgba(255,107,53,.18);border-radius:50%;
+    pointer-events:none;
+  }
+  .hero .court::before{
+    content:"";position:absolute;inset:30px;border:2px solid rgba(255,107,53,.12);border-radius:50%;
+  }
+  /* sections */
+  section{
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:26px 28px;margin-bottom:22px;
+  }
+  section > h2{
+    margin:0 0 16px;font-size:20px;font-weight:700;
+    display:flex;align-items:center;gap:10px;
+  }
+  section > h2 .num{
+    font-size:12px;color:#0b0f17;background:var(--accent);
+    width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;
+    border-radius:6px;font-weight:800;
+  }
+  h3{font-size:16px;margin:22px 0 10px;color:var(--ink)}
+  h4{font-size:14px;margin:18px 0 8px;color:var(--accent2);letter-spacing:.04em}
+  p{margin:8px 0}
+  ul,ol{margin:8px 0 8px 4px;padding-left:22px}
+  li{margin:4px 0}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{background:#0d131d;border:1px solid var(--line);padding:2px 6px;border-radius:5px;font-size:13px;color:var(--gold)}
+  strong{color:#fff}
+  .note{
+    border-left:3px solid var(--accent);background:rgba(255,107,53,.06);
+    padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;color:var(--ink2);
+  }
+  .note b{color:var(--accent)}
+  /* tables */
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--accent);font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;background:rgba(255,255,255,.02)}
+  td b{color:var(--ink)}
+  tr:hover td{background:rgba(255,255,255,.02)}
+  /* cards */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin:14px 0}
+  .card{
+    background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:16px;
+  }
+  .card .t{font-weight:700;margin-bottom:6px;color:var(--ink)}
+  .card .d{font-size:13px;color:var(--ink2)}
+  /* pillars */
+  .pillars{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:14px 0}
+  .pillar{border:1px solid var(--line);border-radius:12px;padding:18px;background:linear-gradient(180deg,#1a2433,#141c2a)}
+  .pillar .ic{font-size:22px;margin-bottom:8px}
+  .pillar .h{font-weight:700;margin-bottom:6px}
+  .pillar .s{font-size:13px;color:var(--ink2)}
+  /* ms */
+  .ms{display:flex;flex-direction:column;gap:12px;margin:14px 0}
+  .ms-item{display:grid;grid-template-columns:120px 1fr;gap:16px;border:1px solid var(--line);border-radius:10px;padding:14px 16px;background:var(--panel2)}
+  .ms-item .stage{color:var(--accent);font-weight:800;font-size:13px;letter-spacing:.06em;text-transform:uppercase}
+  .ms-item .stage small{display:block;color:var(--ink2);font-weight:500;text-transform:none;letter-spacing:0;font-size:12px;margin-top:4px}
+  .ms-item .body b{color:var(--ink)}
+  .ms-item .body .ver{color:var(--accent2);font-size:13px;margin-top:6px;display:block}
+  /* footer */
+  footer{text-align:center;color:var(--ink2);font-size:13px;margin-top:30px;border-top:1px solid var(--line);padding-top:18px}
+  .src{margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+  .src a{font-size:12px;background:rgba(255,255,255,.04);border:1px solid var(--line);padding:6px 10px;border-radius:6px;color:var(--ink2)}
+  /* responsive */
+  @media (max-width:640px){
+    .wrap{padding:22px 14px 80px}
+    .hero{padding:30px 20px}
+    .hero h1{font-size:26px}
+    section{padding:20px 16px}
+    .ms-item{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <span class="tag">Game Project Pitch · v0.1</span>
+    <h1>篮图 <span class="en">Hoops Dynasty</span></h1>
+    <p class="pitch">面向中文玩家的异步每日制篮球经理，以「亚洲联赛金字塔 + 真实信息迷雾 + 战术方向感」为核心，主打公平非 P2W 的王朝养成。</p>
+    <div class="meta">
+      <span class="chip"><b>品类</b> · 异步每日制篮球经理模拟</span>
+      <span class="chip"><b>平台</b> · Browser + Mobile PWA</span>
+      <span class="chip"><b>日期</b> · 2026-09-28</span>
+      <span class="chip"><b>版本</b> · 立项稿 v0.1</span>
+    </div>
+    <div class="court"></div>
+  </div>
+
+  <section>
+    <h2><span class="num">1</span>立项背景与机会</h2>
+
+    <h3>1.1 品类格局</h3>
+    <table>
+      <thead><tr><th>作品</th><th>形态</th><th>主题</th><th>节奏</th><th>商业化</th><th>迷雾/不确定性</th></tr></thead>
+      <tbody>
+        <tr><td><b>Basketball GM</b></td><td>单机 Web</td><td>NBA 历史阵容</td><td>自由推进</td><td>免费/开源</td><td>弱（数据全开）</td></tr>
+        <tr><td><b>Pro Basketball Manager 2026</b></td><td>Steam 单机</td><td>全球 2000 队</td><td>自由推进</td><td>买断</td><td>中（球探等级）</td></tr>
+        <tr><td><b>Hardwood Basketball Manager</b></td><td>Steam 单机</td><td>大学+选秀</td><td>自由推进</td><td>买断</td><td>中（选秀行情）</td></tr>
+        <tr><td><b>Rim Attack</b></td><td><b>联机 Web/异步</b></td><td><b>台湾风格联赛</b></td><td><b>每日 1 赛</b></td><td><b>Credits+VIP（公平）</b></td><td><b>强（The Fog）</b></td></tr>
+      </tbody>
+    </table>
+
+    <h3>1.2 趋势</h3>
+    <ul>
+      <li><b>异步每日制</b>（daily-turn）经理品类被验证：适配成年玩家碎片时间，低单日时长、高长留。</li>
+      <li><b>公平非 P2W</b> 成为经理品类的信任底线（Rim Attack 明确"Credits/VIP 均不影响比赛结果与球员强度"）。</li>
+      <li><b>浏览器即玩 + 移动 PWA</b> 降低获客与回流门槛。</li>
+    </ul>
+
+    <h3>1.3 机会缺口</h3>
+    <ol>
+      <li><b>中文/亚洲篮球主题缺位</b>：现有作品均以 NBA 或欧洲为轴；CBA、日本 B 联赛、菲律宾 PBA、台湾 P. League+ 的热度无对应经理产品承接。</li>
+      <li><b>联机异步赛道可复制且未饱和</b>：Rim Attack 已跑通模型，但主题窄、移动端体验薄弱、战术层偏浅——存在系统性超越空间。</li>
+      <li><b>亚洲篮球叙事红利</b>：联赛职业化、归化潮、亚冠联赛（BAL）等话题持续升温，是天然的"王朝叙事"土壤。</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2><span class="num">2</span>逆向研究结论：Rim Attack 系统拆解</h2>
+    <p style="color:var(--ink2);font-size:13px">研究来源：playrimattack.com 首页 + 官方 14 章 Guide（重点拆解第 3、4 章）。</p>
+
+    <h3>2.1 产品哲学（四句话）</h3>
+    <ol>
+      <li><b>信息不对称是玩法核心</b>：球员的 27 项能力、Peak、特质在"不熟悉"时都带误差区间（The Fog），球探/探针/观看/对阵逐步收窄。</li>
+      <li><b>战术是方向，不是遥控器</b>：球员依据自身能力、情境、防守自行决策；战术只调"倾向"。</li>
+      <li><b>节奏由日历驱动</b>：异步、低单日粘性、高长留。</li>
+      <li><b>公平商业化</b>：不卖比赛结果，不卖球员强度。</li>
+    </ol>
+
+    <h3>2.2 核心系统清单（11 项）</h3>
+
+    <h4>① 每日结算周期（Daily Settlement）</h4>
+    <p>10:00 UTC 比赛结算，16:00 UTC 资源/天翻页。玩家提交的是"下一场"的安排，不能改写已发生结果。<br>
+    <span style="color:var(--ink2);font-size:13px">设计意图：异步 PvP、防沉迷、确定性节奏、所有人都同一时钟。</span></p>
+
+    <h4>② 球员能力模型（27 项，5 组）</h4>
+    <ul>
+      <li><b>Physical(7)</b>：Wingspan / Standing Reach / Speed / Vertical / Strength / Agility / Endurance</li>
+      <li><b>Shooting(5)</b>：Mid-Range / Three-Point / Inside Shooting / Rim Attack / Free Throw</li>
+      <li><b>Defense & Rebounding(6)</b>：Steal / Perimeter D / Interior D / Off Rebound / Def Rebound / Lateral Speed</li>
+      <li><b>Ball Handling(4)</b>：Dribbling / Catching / Passing / Post Move</li>
+      <li><b>Mental(5)</b>：Offensive IQ / Defensive IQ / Aggression / Leadership / Draw Foul</li>
+    </ul>
+    <p>能力"相互作用而非独立裁决"：好的终结者还需控运/体格/决策配合。球员另有：<b>Peak</b>（成长空间估值）、<b>Condition</b>（疲劳驱动状态）、<b>Fame</b>（联盟声望）、<b>Stats</b>、<b>Contract</b>。</p>
+
+    <h4>③ The Fog（迷雾）</h4>
+    <p>不熟悉的球员，能力/Peak/特质均带 margin of error。球探报告"收窄"区间，不是"保证"真值；探针槽位与预算有限 → 资源分配博弈。</p>
+
+    <h4>④ 战术与轮换（Tactics as Direction）</h4>
+    <ul>
+      <li>基础设置：进攻倾向 / 防守倾向 / 节奏 三选即可用。</li>
+      <li>高级编辑器：保存多套战术；设定首发与轮换逻辑；给球员分配战术槽位与角色；写"仅特定阵容/情境触发"的条件规则；设换人逻辑。</li>
+      <li>Per-game tactics：可对任意赛程指定一次性战术，对手看不到你的私有设置。</li>
+    </ul>
+
+    <h4>⑤ 训练 / 成长 / 生涯曲线</h4>
+    <p>身体天赋先达峰、先衰退；技术更持久；经验只增不减。训练是延迟回报的投资。</p>
+
+    <h4>⑥ 球探 / 探针 / Watchlist</h4>
+    <p>Scout Report 收窄候选，不是保证；探针槽与预算有限，花在"能改变决策"的地方。</p>
+
+    <h4>⑦ 选秀 + 传闻中心（Rumor Mill）</h4>
+    <p>试训、接近新秀、运作传闻、经理间博弈抢人。</p>
+
+    <h4>⑧ 自由市场 / 合同 / 工资帽</h4>
+    <p>报价=带价格的承诺，不是无限试探；下单前三查：位置缺口 / 薪资空间 / 情报。</p>
+
+    <h4>⑨ 财务 / 球馆 / 投资</h4>
+    <p>健康的财务不是"少花"，而是"每一笔长约都有明确职责"。</p>
+
+    <h4>⑩ 联盟金字塔 + 升降级</h4>
+    <p>分层联赛（Alpha / Beta / Next Wave）；季末升降级；季后赛 top/bottom 16。</p>
+
+    <h4>⑪ 王朝 / 传承 / 名人堂</h4>
+    <p>围绕一名核心建一代，生涯结束交棒；Credits（账号资源）+ VIP（订阅）均不影响比赛结果/球员强度。</p>
+
+    <h3>2.3 玩家日循环</h3>
+    <div class="note"><b>日循环</b>：登录 → 看 Alerts → 训练/球探/市场/战术 → 提交 → 10:00 结算看比赛（文字 PBP）→ 复盘 box score / PBP → 16:00 翻天 → 次日</div>
+
+    <h3>2.4 可借鉴 / 可超越</h3>
+    <ul>
+      <li><b>借鉴</b>：每日结算时钟、The Fog、战术即方向、公平商业化、升降级金字塔。</li>
+      <li><b>超越点</b>：移动端体验、战术纵深（半场调整/关键时刻）、叙事与王朝感、亚洲主题与中文本地化、实时观战每日 sim。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span class="num">3</span>本作产品定位与差异化</h2>
+
+    <h3>3.1 定位</h3>
+    <p><b>面向中文玩家的异步每日制篮球经理</b>：每日一赛、固定时钟结算；以"亚洲联赛金字塔 + 真实信息迷雾 + 战术方向感"为核心；公平非 P2W；移动优先 PWA。</p>
+
+    <h3>3.2 差异化四板斧</h3>
+    <div class="pillars">
+      <div class="pillar">
+        <div class="ic">🌏</div>
+        <div class="h">亚洲篮球主题与中文本地化</div>
+        <div class="s">虚构的亚洲联赛金字塔（致敬 CBA / B 联赛 / PBA / P. League+ 风格，规避版权），中文球员/球队/报纸叙事。玩家从次级联赛起步，逐级冲击顶级联赛与洲际冠军（拟态 BAL 亚冠）。</div>
+      </div>
+      <div class="pillar">
+        <div class="ic">🎯</div>
+        <div class="h">更深的战术层</div>
+        <div class="s">在 Rim Attack"基础三选 + 高级条件规则"之上，增加<b>半场调整</b>与<b>关键时刻（Clutch）战术卡</b>。引入<b>对位针对性</b>：针对对手核心的防守策略（包夹/护筐/换防）作为可指定战术槽。</div>
+      </div>
+      <div class="pillar">
+        <div class="ic">📜</div>
+        <div class="h">更强叙事与王朝感</div>
+        <div class="s">"时代标签"系统：核心球员退役后留下可继承的时代遗产（战术偏好、青训血脉、球迷文化）。拟态报纸 + 社媒流，把每日 sim 与赛季事件转化为可读叙事。</div>
+      </div>
+      <div class="pillar">
+        <div class="ic">📱</div>
+        <div class="h">移动优先 PWA + 实时观战</div>
+        <div class="s">移动端为第一体验；每日 10:00 结算时支持<b>实时推送 PBP 观战</b>（WebSocket/SSE），把"等结果"变成"看直播"。</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">4</span>核心玩法设计</h2>
+
+    <h3>4.1 核心幻想与玩家动词</h3>
+    <ul>
+      <li><b>幻想</b>：从无名小卒接手一支末流球队，逐级爬升，围绕一名核心建一代王朝，并在其退役后完成传承。</li>
+      <li><b>玩家动词</b>：侦察 · 选秀 · 签约 · 训练 · 排阵 · 战术 · 复盘。</li>
+    </ul>
+
+    <h3>4.2 四层时间结构</h3>
+    <table>
+      <thead><tr><th>层级</th><th>周期</th><th>关键事件</th></tr></thead>
+      <tbody>
+        <tr><td><b>日循环</b></td><td>每天</td><td>训练/球探/市场操作 → 提交 → 10:00 比赛 → 复盘</td></tr>
+        <tr><td><b>周循环</b></td><td>每周</td><td>关键战、市场窗口、球探报告更新</td></tr>
+        <tr><td><b>季循环</b></td><td>每季</td><td>常规赛 → 季后赛 → 升降级 → 选秀 → 自由市场</td></tr>
+        <tr><td><b>年代循环</b></td><td>多季</td><td>核心养成 → 巅峰 → 退役 → 时代传承</td></tr>
+      </tbody>
+    </table>
+
+    <h3>4.3 玩法支柱（Pillars）</h3>
+    <div class="grid">
+      <div class="card"><div class="t">信息即权力</div><div class="d">fog + 探针经济制造决策深度。</div></div>
+      <div class="card"><div class="t">战术是方向不是遥控</div><div class="d">涌现式 sim，拒绝"最优解套路"。</div></div>
+      <div class="card"><div class="t">每天一赛，一生王朝</div><div class="d">低单日时长、高长留。</div></div>
+      <div class="card"><div class="t">公平竞技</div><div class="d">永不卖比赛结果与球员强度。</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">5</span>系统设计（首版范围）</h2>
+
+    <h3>5.1 球员能力模型</h3>
+    <p>沿用 5 组结构，合并冗余项至 <b>约 20 项</b>（如 Lateral Speed 并入 Perimeter D 的子维度，Catching 弱化为隐含属性），降低新手认知负荷，保留迷雾深度。</p>
+    <ul>
+      <li>每项能力含：<b>可见估值</b>（带误差）/ <b>真实值</b>（隐藏）/ <b>Peak</b>（成长上限估值，带误差）。</li>
+      <li>球探等级决定：估值偏差幅度、不确定区间宽度、可见特质数量。</li>
+    </ul>
+
+    <h3>5.2 比赛模拟引擎</h3>
+    <ul>
+      <li>文字 PBP 为主，关键回合（lead change / clutch / 关键犯规）高亮。</li>
+      <li>每回合由：球员能力 × 战术倾向 × 对位 × 情境（比分/时间/疲劳）× 随机 → 决策树生成出手选择与结果。</li>
+      <li><b>新增：半场调整</b>——中场可依 box score 调整下半场倾向（限 2 处）。</li>
+      <li><b>新增：Clutch 战术卡</b>——第四节最后 3 分钟 / 加时，可指定一套关键回合战术。</li>
+    </ul>
+
+    <h3>5.3 球探与选秀</h3>
+    <p>探针槽位 + 预算制；Scout Report 收窄区间，Probe 提高精度，Watchlist 持续跟踪。选秀：试训 → 接近新秀（好感度）→ 传闻中心博弈 → 选秀日抢人。</p>
+
+    <h3>5.4 自由市场与合同</h3>
+    <p>报价即承诺；三查（位置缺口/薪资空间/情报）；长约带"明确职责"才能签。合同类型：底薪/中产/顶薪/新秀红利/老将底薪。</p>
+
+    <h3>5.5 训练与生涯曲线</h3>
+    <p>身体天赋先达峰先衰退；技术持久；经验只增。训练为延迟投资；过劳伤状态与 condition。</p>
+
+    <h3>5.6 联盟与升降级</h3>
+    <p>三层金字塔（顶级 / 次级 / 入门）；每季末升降级；季后赛 top/bottom 16。冷启动用 AI 经理填充，随真实玩家增加逐步替换。</p>
+
+    <h3>5.7 王朝与传承</h3>
+    <p>时代标签：核心球员退役留下可继承遗产（战术偏好、青训血脉、球迷文化 buff）。名人堂：跨存档的成就沉淀。</p>
+  </section>
+
+  <section>
+    <h2><span class="num">6</span>商业化</h2>
+    <table>
+      <thead><tr><th>形态</th><th>说明</th><th>红线</th></tr></thead>
+      <tbody>
+        <tr><td><b>Credits</b><br><span style="color:var(--ink2);font-size:12px">账号资源</span></td><td>购买皮肤/球馆主题/教练 avatar/报纸版面</td><td rowspan="3" style="vertical-align:middle;text-align:center;color:var(--red);font-weight:700">不买比赛结果<br>不买球员强度</td></tr>
+        <tr><td><b>VIP</b><br><span style="color:var(--ink2);font-size:12px">订阅</span></td><td>便捷类：多球探槽、多战术存档槽、观赛回放</td></tr>
+        <tr><td><b>外观</b></td><td>球衣/球馆/海报（纯视觉）</td></tr>
+      </tbody>
+    </table>
+    <div class="note"><b>铁律</b>：Credits / VIP 均不影响比赛结果与球员强度（与 Rim Attack 一致，作为信任底线）。</div>
+  </section>
+
+  <section>
+    <h2><span class="num">7</span>技术方案</h2>
+    <h3>7.1 架构</h3>
+    <ul>
+      <li><b>前端</b>：React + Vite + TypeScript + PWA（移动优先，离线可查看阵容/战术）。</li>
+      <li><b>后端</b>：Node 服务 + 关系型 DB（球员/联盟/合同）+ 缓存（每日 sim 队列）。</li>
+      <li><b>结算调度</b>：Cron 每日 10:00（UTC+8）触发 sim，16:00 翻天。</li>
+      <li><b>实时观战</b>：sim 运行时通过 WebSocket/SSE 推送 PBP，玩家可"看直播"。</li>
+      <li><b>反作弊</b>：sim 在服务端权威执行，前端只读结果。</li>
+    </ul>
+    <h3>7.2 关键模块</h3>
+    <div class="grid">
+      <div class="card"><div class="t"><code>sim-engine</code></div><div class="d">回合级 PBP 生成（纯函数，可单测、可回放）。</div></div>
+      <div class="card"><div class="t"><code>scouting</code></div><div class="d">fog 偏差与收窄逻辑。</div></div>
+      <div class="card"><div class="t"><code>league-scheduler</code></div><div class="d">赛程 + 升降级 + 季后赛种子。</div></div>
+      <div class="card"><div class="t"><code>daily-settler</code></div><div class="d">每日结算编排。</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">8</span>美术与 UI 方向</h2>
+    <ul>
+      <li><b>风格</b>：运动杂志 × 数据仪表盘；暗色为主，强对比、高可读性；移动端单列流式。</li>
+      <li><b>关键界面</b>：首页 Dashboard（Alerts）/ 阵容 / 球员卡（迷雾态）/ 战术编辑器 / 比赛直播页（PBP 流）/ 联盟排名 / 选秀中心 / 报纸流。</li>
+      <li><b>核心反馈</b>：迷雾用"???"与区间条表达不确定性；Clutch 回合用高亮卡片。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span class="num">9</span>里程碑</h2>
+    <div class="ms">
+      <div class="ms-item">
+        <div class="stage">M0<small>概念验证</small></div>
+        <div class="body"><b>范围</b>：sim-engine 单回合/单场可跑；fog 模型可调<br><span class="ver">验收：一场比赛可生成 PBP + box score</span></div>
+      </div>
+      <div class="ms-item">
+        <div class="stage">M1<small>闭合核心循环</small></div>
+        <div class="body"><b>范围</b>：日循环 + 阵容/战术/训练/球探可玩（单机 vs AI）<br><span class="ver">验收：一个赛季可走完，升降级生效</span></div>
+      </div>
+      <div class="ms-item">
+        <div class="stage">M2<small>联机 + 升降级</small></div>
+        <div class="body"><b>范围</b>：多玩家同联赛、AI 经理填充、实时观战<br><span class="ver">验收：1 个 16 人联赛跑完一季</span></div>
+      </div>
+      <div class="ms-item">
+        <div class="stage">M3<small>商业化 + PWA</small></div>
+        <div class="body"><b>范围</b>：Credits/VIP、外观、PWA 安装、推送<br><span class="ver">验收：移动端可用、付费链路通</span></div>
+      </div>
+      <div class="ms-item">
+        <div class="stage">M4<small>软启动/封测</small></div>
+        <div class="body"><b>范围</b>：平衡调参、反作弊、留存观测<br><span class="ver">验收：次留/7 留达标</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">10</span>风险与应对</h2>
+    <table>
+      <thead><tr><th>风险</th><th>应对</th></tr></thead>
+      <tbody>
+        <tr><td>sim 平衡难收敛</td><td>sim-engine 纯函数化 + 海量自动对局回归测试 + 灰度调参</td></tr>
+        <tr><td>冷启动玩家稀疏</td><td>AI 经理填充联赛，随真实玩家增加逐步替换</td></tr>
+        <tr><td>反外挂/多开</td><td>服务端权威 sim + 账号风控</td></tr>
+        <tr><td>版权</td><td>虚构联赛/球员，致敬风格不照搬真实标识</td></tr>
+        <tr><td>留存</td><td>每日时钟 + 王朝叙事 + 实时观战制造"每日回流钩子"</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2><span class="num">11</span>立项结论与下一步</h2>
+    <div class="note"><b>结论</b>：以 Rim Attack 验证过的"异步每日制 + 信息迷雾 + 战术即方向 + 公平商业化"为底，叠加亚洲主题、更深战术、更强叙事、移动 PWA 四项差异化，立项《篮图 Hoops Dynasty》。</div>
+    <h3>下一步</h3>
+    <ol>
+      <li>锁定能力模型精简版（20 项）与 fog 数值公式。</li>
+      <li>搭建 sim-engine 骨架，跑通单场 PBP（M0）。</li>
+      <li>产出战术编辑器与比赛直播页低保真原型。</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>附录 A · Rim Attack 27 项能力速查</h2>
+    <p style="color:var(--ink2);font-size:13px">逆向所得，供对标。</p>
+    <div class="grid">
+      <div class="card"><div class="t">Physical (7)</div><div class="d">Wingspan / Standing Reach / Speed / Vertical / Strength / Agility / Endurance</div></div>
+      <div class="card"><div class="t">Shooting (5)</div><div class="d">Mid-Range / Three-Point / Inside Shooting / Rim Attack / Free Throw</div></div>
+      <div class="card"><div class="t">Defense & Rebounding (6)</div><div class="d">Steal / Perimeter Defense / Interior Defense / Offensive Rebound / Defensive Rebound / Lateral Speed</div></div>
+      <div class="card"><div class="t">Ball Handling (4)</div><div class="d">Dribbling / Catching / Passing / Post Move</div></div>
+      <div class="card"><div class="t">Mental (5)</div><div class="d">Offensive IQ / Defensive IQ / Aggression / Leadership / Draw Foul</div></div>
+    </div>
+  </section>
+
+  <footer>
+    篮图 Hoops Dynasty · 立项书 v0.1 · 2026-09-28
+    <div class="src">
+      <a href="https://playrimattack.com/#/">Rim Attack 首页</a>
+      <a href="https://playrimattack.com/#/guide">Rim Attack Guide</a>
+      <a href="https://basketball-gm.com/">Basketball GM</a>
+      <a href="https://pro-basketball-manager.com">Pro Basketball Manager 2026</a>
+      <a href="https://store.steampowered.com/app/4594110/">Hardwood Basketball Manager</a>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
