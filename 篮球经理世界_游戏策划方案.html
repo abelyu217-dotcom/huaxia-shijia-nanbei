@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>篮球经理世界 Hoops World Online · 游戏策划方案</title>
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#141b26; --panel2:#1b2433; --line:#26324a;
+    --ink:#e6edf6; --ink2:#9fb0c7; --ink3:#6b7c97;
+    --accent:#ff6b35; --accent2:#4ade80; --gold:#fbbf24; --red:#ef4444; --blue:#60a5fa; --purple:#a78bfa;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:linear-gradient(180deg,#070a10 0%,#0b0f17 100%);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1020px;margin:0 auto;padding:40px 22px 120px}
+  .hero{
+    position:relative;border:1px solid var(--line);border-radius:18px;padding:42px 34px 30px;
+    background:
+      radial-gradient(800px 280px at 20% -10%, rgba(255,107,53,.18), transparent 60%),
+      radial-gradient(700px 260px at 90% 0%, rgba(96,165,250,.12), transparent 60%),
+      linear-gradient(180deg,#151d2c,#0e1420);
+    overflow:hidden;margin-bottom:30px;
+  }
+  .hero .tag{display:inline-block;font-size:12px;letter-spacing:.16em;color:var(--accent);border:1px solid rgba(255,107,53,.45);padding:4px 10px;border-radius:999px;margin-bottom:18px;text-transform:uppercase}
+  .hero h1{margin:0 0 8px;font-size:34px;letter-spacing:.5px;font-weight:800}
+  .hero h1 .en{color:var(--ink2);font-weight:600;font-size:20px;margin-left:10px}
+  .hero .pitch{color:var(--ink2);font-size:16px;max-width:760px;margin:10px 0 22px}
+  .hero .meta{display:flex;flex-wrap:wrap;gap:10px}
+  .hero .chip{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--ink2)}
+  .hero .chip b{color:var(--ink);font-weight:600}
+  .hero .court{position:absolute;right:-60px;bottom:-60px;width:220px;height:220px;border:2px solid rgba(255,107,53,.18);border-radius:50%;pointer-events:none}
+  .hero .court::before{content:"";position:absolute;inset:30px;border:2px solid rgba(255,107,53,.12);border-radius:50%}
+
+  /* TOC */
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 28px;margin-bottom:22px}
+  .toc h3{margin:0 0 14px;font-size:14px;color:var(--ink2);letter-spacing:.1em;text-transform:uppercase}
+  .toc ol{margin:0;padding-left:22px;columns:2;column-gap:32px}
+  .toc li{margin:5px 0;break-inside:avoid}
+  .toc a{color:var(--ink2)}
+  .toc a:hover{color:var(--accent)}
+  @media (max-width:640px){.toc ol{columns:1}}
+
+  section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin-bottom:22px}
+  section > h2{margin:0 0 16px;font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
+  section > h2 .num{font-size:12px;color:#0b0f17;background:var(--accent);width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;font-weight:800;flex-shrink:0}
+  h3{font-size:16px;margin:22px 0 10px;color:var(--ink)}
+  h4{font-size:14px;margin:18px 0 8px;color:var(--accent2);letter-spacing:.04em}
+  p{margin:8px 0}
+  ul,ol{margin:8px 0 8px 4px;padding-left:22px}
+  li{margin:4px 0}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{background:#0d131d;border:1px solid var(--line);padding:2px 6px;border-radius:5px;font-size:13px;color:var(--gold)}
+  strong{color:#fff}
+  .note{border-left:3px solid var(--accent);background:rgba(255,107,53,.06);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;color:var(--ink2)}
+  .note b{color:var(--accent)}
+  .note.green{border-left-color:var(--accent2);background:rgba(74,222,128,.06)}
+  .note.green b{color:var(--accent2)}
+  .note.blue{border-left-color:var(--blue);background:rgba(96,165,250,.06)}
+  .note.blue b{color:var(--blue)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--accent);font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;background:rgba(255,255,255,.02)}
+  td b{color:var(--ink)}
+  tr:hover td{background:rgba(255,255,255,.02)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:14px 0}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:16px}
+  .card .t{font-weight:700;margin-bottom:6px;color:var(--ink)}
+  .card .d{font-size:13px;color:var(--ink2)}
+  .pillars{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:14px 0}
+  .pillar{border:1px solid var(--line);border-radius:12px;padding:18px;background:linear-gradient(180deg,#1a2433,#141c2a)}
+  .pillar .ic{font-size:22px;margin-bottom:8px}
+  .pillar .h{font-weight:700;margin-bottom:6px}
+  .pillar .s{font-size:13px;color:var(--ink2)}
+  .ms{display:flex;flex-direction:column;gap:12px;margin:14px 0}
+  .ms-item{display:grid;grid-template-columns:130px 1fr;gap:16px;border:1px solid var(--line);border-radius:10px;padding:14px 16px;background:var(--panel2)}
+  .ms-item .stage{color:var(--accent);font-weight:800;font-size:13px;letter-spacing:.06em;text-transform:uppercase}
+  .ms-item .stage small{display:block;color:var(--ink2);font-weight:500;text-transform:none;letter-spacing:0;font-size:12px;margin-top:4px}
+  .ms-item .body b{color:var(--ink)}
+  .ms-item .body .ver{color:var(--accent2);font-size:13px;margin-top:6px;display:block}
+  .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;letter-spacing:.04em}
+  .badge.p1{background:rgba(74,222,128,.15);color:var(--accent2);border:1px solid rgba(74,222,128,.3)}
+  .badge.p2{background:rgba(96,165,250,.15);color:var(--blue);border:1px solid rgba(96,165,250,.3)}
+  .badge.p3{background:rgba(251,191,36,.15);color:var(--gold);border:1px solid rgba(251,191,36,.3)}
+  footer{text-align:center;color:var(--ink2);font-size:13px;margin-top:30px;border-top:1px solid var(--line);padding-top:18px}
+  @media (max-width:640px){
+    .wrap{padding:22px 14px 80px}
+    .hero{padding:30px 20px}
+    .hero h1{font-size:26px}
+    section{padding:20px 16px}
+    .ms-item{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <span class="tag">Game Design Document · v0.1</span>
+    <h1>篮球经理世界 <span class="en">Hoops World Online · HWO</span></h1>
+    <p class="pitch">网页多人在线异步每日制篮球经理。玩家接手一支末流球队，在由真实玩家与 AI 经理共同构成的亚洲联赛金字塔中逐级攀升，围绕一名核心球员建一代王朝并完成传承。</p>
+    <div class="meta">
+      <span class="chip"><b>品类</b> · 多人在线异步每日制经理模拟</span>
+      <span class="chip"><b>平台</b> · Browser + Mobile PWA</span>
+      <span class="chip"><b>核心节奏</b> · 每日 1 赛 · 固定时钟结算</span>
+      <span class="chip"><b>商业模型</b> · 公平非 P2W（F2P + Credits/VIP）</span>
+      <span class="chip"><b>文档</b> · 策划方案 v0.1 · 2026-09-28</span>
+    </div>
+    <div class="court"></div>
+  </div>
+
+  <div class="toc">
+    <h3>目录</h3>
+    <ol>
+      <li><a href="#s1">游戏概述与定位</a></li>
+      <li><a href="#s2">核心玩法循环</a></li>
+      <li><a href="#s3">玩家角色与目标系统</a></li>
+      <li><a href="#s4">多人在线世界与联赛结构</a></li>
+      <li><a href="#s5">球员系统（能力·迷雾·Peak）</a></li>
+      <li><a href="#s6">成长阶段系统（生涯弧线）</a></li>
+      <li><a href="#s7">业余梯队赛制金字塔</a></li>
+      <li><a href="#s8">战术系统</a></li>
+      <li><a href="#s9">比赛模拟引擎</a></li>
+      <li><a href="#s10">球探系统</a></li>
+      <li><a href="#s11">选秀系统</a></li>
+      <li><a href="#s12">转会、交易与合同</a></li>
+      <li><a href="#s13">训练系统</a></li>
+      <li><a href="#s14">财务与球馆</a></li>
+      <li><a href="#s15">王朝与传承</a></li>
+      <li><a href="#s16">社交与对抗层</a></li>
+      <li><a href="#s17">经济系统</a></li>
+      <li><a href="#s18">商业化设计</a></li>
+      <li><a href="#s19">技术架构</a></li>
+      <li><a href="#s20">UI/UX 设计</a></li>
+      <li><a href="#s21">数值设计总则</a></li>
+      <li><a href="#s22">内容规模</a></li>
+      <li><a href="#s23">开发里程碑</a></li>
+      <li><a href="#s24">风险评估</a></li>
+    </ol>
+  </div>
+
+  <section id="s1">
+    <h2><span class="num">1</span>游戏概述与定位</h2>
+    <h3>1.1 基本信息</h3>
+    <table>
+      <tbody>
+        <tr><td style="width:160px"><b>中文名</b></td><td>篮球经理世界</td></tr>
+        <tr><td><b>英文名</b></td><td>Hoops World Online（缩写 HWO）</td></tr>
+        <tr><td><b>品类</b></td><td>多人在线异步每日制篮球经理模拟（Web MMOM）</td></tr>
+        <tr><td><b>平台</b></td><td>浏览器 + 移动端 PWA（移动优先设计）</td></tr>
+        <tr><td><b>商业模式</b></td><td>F2P，Credits（账号资源）+ VIP（订阅），公平非 P2W</td></tr>
+        <tr><td><b>目标用户</b></td><td>25–45 岁篮球爱好者、FM/FIFA 经理品类玩家、中文体育游戏用户</td></tr>
+        <tr><td><b>单日时长</b></td><td>10–20 分钟（低单日粘性 · 高长留）</td></tr>
+        <tr><td><b>核心幻想</b></td><td>接手末流球队 → 逐级攀升 → 围绕核心建一代王朝 → 退役传承</td></tr>
+      </tbody>
+    </table>
+
+    <h3>1.2 体验目标</h3>
+    <ul>
+      <li><b>每日回流钩子</b>：固定时钟结算 + 实时观战 + 赛事快报，制造"今天要看结果"的日常仪式感。</li>
+      <li><b>长线王朝感</b>：球员完整生涯可养成（童子→老将），核心退役后时代传承，跨赛季积累名人堂。</li>
+      <li><b>多人对抗的紧张感</b>：每场对手都是真实玩家或拟真 AI，升降级与选秀博弈带来真实赌注。</li>
+      <li><b>公平信任</b>：永不卖比赛结果与球员强度，sim 服务端权威执行。</li>
+    </ul>
+
+    <h3>1.3 核心差异化</h3>
+    <div class="pillars">
+      <div class="pillar"><div class="ic">🌏</div><div class="h">亚洲主题 · 中文本地化</div><div class="s">虚构亚洲联赛金字塔（致敬 CBA / B 联赛 / PBA / P.League+ 风格），中文球员/球队/报纸叙事，规避版权。</div></div>
+      <div class="pillar"><div class="ic">👥</div><div class="h">多人在线世界</div><div class="s">多世界并行，每世界自含联赛金字塔；真实玩家与 AI 经理共存；跨经理交易与升降级博弈。</div></div>
+      <div class="pillar"><div class="ic">🎯</div><div class="h">更深战术层</div><div class="s">半场调整 + Clutch 战术卡 + 对位针对性战术槽。</div></div>
+      <div class="pillar"><div class="ic">📜</div><div class="h">完整生涯成长线</div><div class="s">童子→少年→青年→成人→老将五阶段 + 业余梯队赛制金字塔，非天赋成长因素可养成。</div></div>
+      <div class="pillar"><div class="ic">📱</div><div class="h">移动 PWA + 实时观战</div><div class="s">移动优先；结算时实时推送 PBP 直播，"等结果"变"看直播"。</div></div>
+    </div>
+  </section>
+
+  <section id="s2">
+    <h2><span class="num">2</span>核心玩法循环</h2>
+    <h3>2.1 玩家动词</h3>
+    <p>侦察 · 选秀 · 签约 · 交易 · 训练 · 排阵 · 战术 · 复盘 · 经营青训 · 传承</p>
+    <h3>2.2 日循环</h3>
+    <div class="note green"><b>日循环</b>：登录 → 看 Alerts/赛事快报 → 训练/球探/市场/战术操作 → 提交次日安排 → <b>10:00 结算看比赛（可实时观战 PBP）</b> → 复盘 box score / PBP → <b>16:00 翻天</b>（资源/状态/球探报告更新）→ 次日</div>
+    <h3>2.3 四层时间结构</h3>
+    <table>
+      <thead><tr><th>层级</th><th>周期</th><th>关键事件</th></tr></thead>
+      <tbody>
+        <tr><td><b>日循环</b></td><td>每天</td><td>训练/球探/市场 → 提交 → 10:00 比赛 → 复盘 → 16:00 翻天</td></tr>
+        <tr><td><b>周循环</b></td><td>每周（≈7 场）</td><td>关键战、市场窗口、球探报告更新、青训苗子赛事</td></tr>
+        <tr><td><b>季循环</b></td><td>每季（≈30 场常规赛 + 季后赛）</td><td>常规赛 → 季后赛 → 升降级 → 选秀 → 自由市场 → 青训提拔</td></tr>
+        <tr><td><b>年代循环</b></td><td>多季</td><td>核心养成 → 巅峰 → 退役 → 时代传承 → 名人堂</td></tr>
+      </tbody>
+    </table>
+    <h3>2.4 赛季节奏</h3>
+    <ul>
+      <li><b>常规赛</b>：约 30 场，约 30 天（1 场/日）。</li>
+      <li><b>季后赛</b>：top 8 单淘汰，约 1 周。</li>
+      <li><b>休赛期</b>：升降级 → 选秀 → 自由市场 → 青训提拔 → 季前，约 5–7 天。</li>
+      <li><b>赛季总长</b>：约 6 周/季。一年约 8 季。</li>
+    </ul>
+  </section>
+
+  <section id="s3">
+    <h2><span class="num">3</span>玩家角色与目标系统</h2>
+    <h3>3.1 玩家身份</h3>
+    <p>玩家以"主教练兼总经理"身份接手一支球队，拥有阵容管理权、战术权、训练权、转会/合同决策权、青训学院经营权、财务权。</p>
+    <h3>3.2 目标分层</h3>
+    <table>
+      <thead><tr><th>层级</th><th>目标</th><th>达成感来源</th></tr></thead>
+      <tbody>
+        <tr><td><b>即时</b></td><td>赢下今晚的比赛</td><td>实时观战 + PBP 复盘</td></tr>
+        <tr><td><b>短期</b></td><td>冲季后赛 / 升级 / 保级</td><td>排名变化、升降级赌注</td></tr>
+        <tr><td><b>中期</b></td><td>签下心仪球员 / 选秀抢人</td><td>阵容成型、市场博弈胜出</td></tr>
+        <tr><td><b>长期</b></td><td>建立王朝 / 夺冠 / 登顶</td><td>奖杯、名人堂、世界排名</td></tr>
+        <tr><td><b>超长期</b></td><td>核心退役传承 / 跨代王朝</td><td>时代标签、传承遗产、青训血脉</td></tr>
+      </tbody>
+    </table>
+    <h3>3.3 成就与沉淀</h3>
+    <ul>
+      <li><b>经理履历</b>：跨赛季记录（战绩、冠军、升降级、传奇交易）。</li>
+      <li><b>名人堂</b>：退役核心进名人堂，跨存档可见。</li>
+      <li><b>世界排名</b>：跨联赛的经理声望积分（联赛层级 + 战绩 + 王朝成就）。</li>
+    </ul>
+  </section>
+
+  <section id="s4">
+    <h2><span class="num">4</span>多人在线世界与联赛结构</h2>
+    <p>这是本作作为"多人在线游戏"的核心骨架，决定玩家如何被组织、如何对抗、如何流动。</p>
+    <h3>4.1 世界（World）模型</h3>
+    <div class="note blue"><b>世界 = 一个独立生态系统</b>。玩家注册时选择或被分配到一个世界。每个世界自含完整联赛金字塔、共享球员池（自由球员 + 选秀池 + 青训苗子池）、独立经济与排名。世界之间球员不流通（保证公平与经济体量可控）。</div>
+    <ul>
+      <li><b>世界容量</b>：每世界约 256–512 支球队（16 队/组 × 多组多级），随玩家增长开新世界。</li>
+      <li><b>世界选择</b>：按语言/时区/活跃度推荐；可付费迁移世界（受冷却限制，避免经济套利）。</li>
+      <li><b>AI 经理填充</b>：未被人接管的球队由 AI 经理经营，阵容/战术/交易拟真，随真实玩家增加逐步替换。</li>
+    </ul>
+    <h3>4.2 联赛金字塔（每世界）</h3>
+    <table>
+      <thead><tr><th>层级</th><th>规模</th><th>定位</th><th>升降级</th></tr></thead>
+      <tbody>
+        <tr><td><b>顶级联赛</b></td><td>1 组 16 队</td><td>世界之巅，争夺冠军戒指</td><td>末 3 名降级</td></tr>
+        <tr><td><b>次级联赛</b></td><td>2 组各 16 队</td><td>冲击顶级</td><td>各组前 2 升级 / 末 3 降级</td></tr>
+        <tr><td><b>第三级</b></td><td>4 组各 16 队</td><td>中坚层</td><td>同规则</td></tr>
+        <tr><td><b>入门级</b>（新经理起点）</td><td>多组 16 队</td><td>新经理从这里起步</td><td>前 2 升级</td></tr>
+      </tbody>
+    </table>
+    <p style="color:var(--ink2);font-size:13px">新注册经理默认分配到入门级某组 AI 球队；可付费（Credits）选择中游球队，但不可选顶级球队（保护生态）。</p>
+    <h3>4.3 全球时钟与异步结算</h3>
+    <ul>
+      <li><b>比赛结算</b>：每日 10:00（UTC+8）所有世界同时 sim 当日全部对阵。</li>
+      <li><b>翻天</b>：每日 16:00（UTC+8）资源/状态/球探报告翻页。</li>
+      <li><b>提交截止</b>：每日 09:30（UTC+8）截止次日安排，过后该日不可改。</li>
+      <li><b>所有世界同步</b>：保证选秀/自由市场/升降级在同一全球节点进行。</li>
+    </ul>
+    <h3>4.4 赛程与对阵</h3>
+    <ul>
+      <li>组内双循环或单循环 + 跨组交叉，保证每队约 30 场常规赛。</li>
+      <li>季后赛：组内 top 8 单淘汰（BO1 / 决赛 BO3）。</li>
+      <li>关键战（同城德比、升降级生死战、冠军战）高亮，进入"赛事快报"。</li>
+    </ul>
+    <h3>4.5 升降级与赛季交接</h3>
+    <ol>
+      <li>常规赛结束 → 季后赛决出冠军。</li>
+      <li>按规则执行升降级（顶级末 3 降次级，次级前 2 升顶级，依此类推）。</li>
+      <li>休赛期：选秀 → 自由市场 → 青训提拔 → 季前热身。</li>
+      <li>新赛季重排赛程，开始下一季。</li>
+    </ol>
+  </section>
+
+  <section id="s5">
+    <h2><span class="num">5</span>球员系统（能力 · 迷雾 · Peak）</h2>
+    <h3>5.1 能力模型（精简至约 20 项，5 组）</h3>
+    <table>
+      <thead><tr><th>组</th><th>能力项</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><b>身体</b>（6）</td><td>Wingspan · Standing Reach · Speed · Vertical · Strength · Agility</td><td>Endurance 合并为隐含耐力属性；身体天赋先达峰先衰退。</td></tr>
+        <tr><td><b>投射</b>（4）</td><td>Mid-Range · Three-Point · Inside · Free Throw</td><td>Rim Attack 作为"终结"并入 Inside 子维度。</td></tr>
+        <tr><td><b>防守与篮板</b>（5）</td><td>Steal · Perimeter D · Interior D · Off Rebound · Def Rebound</td><td>Lateral Speed 并入 Perimeter D 子维度。</td></tr>
+        <tr><td><b>控传</b>（3）</td><td>Dribbling · Passing · Post Move</td><td>Catching 弱化为隐含属性。</td></tr>
+        <tr><td><b>心智</b>（4）</td><td>Offensive IQ · Defensive IQ · Aggression · Leadership</td><td>Draw Foul 并入 Aggression 子维度。</td></tr>
+      </tbody>
+    </table>
+    <p>能力"相互作用而非独立裁决"：好的终结者还需控运/体格/决策配合。</p>
+    <h3>5.2 球员其他维度</h3>
+    <div class="grid">
+      <div class="card"><div class="t">Peak（天赋上限）</div><div class="d">天生不可改的估值，带误差；动态因素决定能多接近它。</div></div>
+      <div class="card"><div class="t">Condition（状态）</div><div class="d">疲劳驱动；重分钟与长期不打都拉低。</div></div>
+      <div class="card"><div class="t">Fame（声望）</div><div class="d">联盟内外知名度，影响商业收入与续约难度。</div></div>
+      <div class="card"><div class="t">Stats（数据）</div><div class="d">近期与生涯数据；球探与球迷叙事素材。</div></div>
+      <div class="card"><div class="t">Contract（合同）</div><div class="d">类型/薪资/年限；影响薪资空间。</div></div>
+      <div class="card"><div class="t">Traits（特质）</div><div class="d">特殊能力标签（如"冷血杀手""玻璃人"），部分隐藏于迷雾。</div></div>
+    </div>
+    <h3>5.3 The Fog（信息迷雾）</h3>
+    <div class="note"><b>核心机制</b>：不熟悉的球员，能力/Peak/特质均带 margin of error。球探报告"收窄"区间，不是"保证"真值；探针槽位与预算有限 → 信息不对称是玩法主源。</div>
+    <ul>
+      <li><b>可见估值</b>（带误差区间）/ <b>真实值</b>（隐藏，仅服务端）/ <b>Peak 估值</b>（带误差）。</li>
+      <li><b>收窄来源</b>：球探报告、探针、Watchlist 长期观察、对阵亲历。</li>
+      <li><b>球探等级</b>决定：偏差幅度、区间宽度、可见特质数量。</li>
+    </ul>
+    <h3>5.4 球员生成与位置</h3>
+    <ul>
+      <li>位置是"注册"不是"评分"，不锁死风格；能否胜任某角色仍看能力+情境+体系。</li>
+      <li>球员由服务端生成（虚构姓名库，致敬亚洲姓名风格，无真实球员版权风险）。</li>
+    </ul>
+  </section>
+
+  <section id="s6">
+    <h2><span class="num">6</span>成长阶段系统（生涯弧线 Career Arc）</h2>
+    <p>球员从童子到老将的<b>完整生涯成长线</b>。固定天赋（Peak）是天生上限不可改；<b>训练响应率、特质觉醒、伤病抗性、比赛经验、心理素质</b>等动态成长因素受阶段赛事表现与玩家决策持续影响。</p>
+    <div class="note"><b>核心命题</b>：Peak = 天花板（固定）；动态因素决定一个球员能<b>多接近</b>天花板、<b>多快</b>达到、能<b>维持多久</b>。成长线让"养成"成为可玩内容，而非纯 sim 背景。</div>
+    <h3>6.1 五阶段</h3>
+    <table>
+      <thead><tr><th>阶段</th><th>年龄</th><th>玩家干预入口</th><th>影响的动态成长因素</th></tr></thead>
+      <tbody>
+        <tr><td><b>童子</b></td><td>8–12</td><td>球探淘苗；青训预备名单；基础训练侧重</td><td>训练响应率基数</td></tr>
+        <tr><td><b>少年</b></td><td>13–15</td><td>跳级决策；青训营定位；训练方向</td><td>技术定型方向、伤病抗性雏形、特质倾向</td></tr>
+        <tr><td><b>青年</b></td><td>16–18</td><td>试训选择；提前参选；对位磨炼</td><td>特质觉醒概率、选秀顺位、新秀红利、clutch 初值</td></tr>
+        <tr><td><b>成人</b></td><td>19–30+</td><td>战术/训练/合同/轮换（主线）</td><td>技术熟练度、比赛经验、心理素质、巅峰长度</td></tr>
+        <tr><td><b>老将</b></td><td>31+</td><td>角色转换；退役时机；是否进教练轨</td><td>经验传授（teaching）、传承遗产强度</td></tr>
+      </tbody>
+    </table>
+    <h3>6.2 动态成长因素</h3>
+    <div class="grid">
+      <div class="card"><div class="t">训练响应率 Trainability</div><div class="d">每单位训练带来的成长量；童子/少年期基础决定一生上限。</div></div>
+      <div class="card"><div class="t">特质觉醒 Trait Awakening</div><div class="d">特殊能力觉醒概率与时机；青年期赛事强度催化。</div></div>
+      <div class="card"><div class="t">伤病抗性 Durability</div><div class="d">生涯伤病史基底；少年期过度训练埋下隐患。</div></div>
+      <div class="card"><div class="t">比赛经验 Clutch IQ</div><div class="d">关键球处理；青年/成人关键战累积。</div></div>
+      <div class="card"><div class="t">心理素质 Mental Fortitude</div><div class="d">状态稳定性、逆境响应；贯穿全生涯。</div></div>
+      <div class="card"><div class="t">技术熟练度 Skill Mastery</div><div class="d">技术动作稳定度；成人期重复使用强化。</div></div>
+    </div>
+    <h3>6.3 设计要点</h3>
+    <ul>
+      <li><b>早期决策的长尾效应</b>：童子/少年选择 10+ 年后才完全显现——"当初那个决定害了他"的叙事钩子。</li>
+      <li><b>双建队流派</b>：自家青训学院 vs 球探+选秀外部路线。</li>
+      <li><b>成人阶段=主线</b>：玩家接手时球员多在青年/成人期。</li>
+      <li><b>传承闭环</b>：老将 teaching 强度反哺下一代青训苗子。</li>
+    </ul>
+  </section>
+
+  <section id="s7">
+    <h2><span class="num">7</span>业余梯队赛制金字塔（Grassroots Pyramid）</h2>
+    <p>小学、初中、高中、大学四个学龄阶段，<b>每阶段均设五层赛事金字塔</b>：城市 → 省 → 国家 → 洲际 → 国际。与职业主线并行、由 sim 自动驱动；玩家以<b>球探观察者</b>与<b>自家青训决策者</b>双重身份介入，不直接执教青年队。</p>
+    <div class="note"><b>核心命题</b>：金字塔高度 = 成长催化强度（clutch/心理/特质觉醒）+ 球探可见度 + 选秀行情；同时 = 伤病累积风险。让玩家在"拔苗助长"与"厚积薄发"间权衡。</div>
+    <h3>7.1 赛制矩阵</h3>
+    <table>
+      <thead><tr><th>层级</th><th>小学 (8-12)</th><th>初中 (13-15)</th><th>高中 (16-18)</th><th>大学 (19-22)</th></tr></thead>
+      <tbody>
+        <tr><td><b>城市</b></td><td>校际联赛/区赛</td><td>市初中联赛</td><td>市高中联赛</td><td>校际邀请赛</td></tr>
+        <tr><td><b>省</b></td><td>省少锦赛</td><td>省运会 U15</td><td>省高中联赛（CHBL 风格）</td><td>省大学生联赛</td></tr>
+        <tr><td><b>国家</b></td><td>全国少锦赛</td><td>全国 U15 锦标赛</td><td>全国高中联赛 / U17 国青选拔</td><td>全国大学生联赛（CUBA 风格）</td></tr>
+        <tr><td><b>洲际</b></td><td style="color:var(--ink3)">—（不开放）</td><td>东亚 U15 邀请赛</td><td>亚青赛 U17 / U18</td><td>亚洲大学生锦标赛</td></tr>
+        <tr><td><b>国际</b></td><td style="color:var(--ink3)">—（不开放）</td><td style="color:var(--ink3)">—（不开放）</td><td>U17/U19 世青赛</td><td>世界大学生运动会</td></tr>
+      </tbody>
+    </table>
+    <h3>7.2 玩家三种介入</h3>
+    <div class="grid">
+      <div class="card"><div class="t">① 球探现场</div><div class="d">派球探去某层级赛事观察苗子，消耗预算收窄 fog；高层级报告更值钱但门票更贵。</div></div>
+      <div class="card"><div class="t">② 青训苗子参赛</div><div class="d">决定自家苗子是否报名更高层级赛事——收益催化成长，风险伤病疲劳。</div></div>
+      <div class="card"><div class="t">③ 青训学院投入</div><div class="d">投资青训设施/教练，提升苗子表现上限与晋升概率，长线建队流派核心。</div></div>
+    </div>
+    <h3>7.3 设计要点</h3>
+    <ul>
+      <li><b>"伤仲永"机制</b>：过早高强度参赛 → 短期 clutch 飙升但埋下伤病隐患、巅峰缩短。</li>
+      <li><b>选秀行情业余溯源</b>：选秀夜球探报告回溯完整金字塔履历。</li>
+      <li><b>不喧宾夺主</b>：sim 驱动 + 点状干预，界面以"赛事快报 + 球探报告"呈现。</li>
+      <li><b>冷启动简化</b>：首版只开放高中+大学两层，小学/初中后续补全。</li>
+    </ul>
+  </section>
+
+  <section id="s8">
+    <h2><span class="num">8</span>战术系统</h2>
+    <p>战术是<b>方向</b>，不是遥控器——球员依据自身能力、情境、防守自行决策。</p>
+    <h3>8.1 基础设置（新手友好）</h3>
+    <p>进攻倾向（外线/平衡/内线）+ 防守倾向（压迫/平衡/收缩）+ 节奏（快/平衡/慢）三选即可用。</p>
+    <h3>8.2 高级编辑器</h3>
+    <ul>
+      <li>保存多套战术存档。</li>
+      <li>设定首发与轮换逻辑（位置优先级、疲劳阈值、换人触发条件）。</li>
+      <li>给球员分配战术槽位与角色（主攻点/3D/蓝领/第六人等）。</li>
+      <li>条件规则：仅特定阵容/情境触发。</li>
+      <li>换人逻辑：按比分/时间/犯规/疲劳自动调整。</li>
+    </ul>
+    <h3>8.3 本作新增战术纵深</h3>
+    <div class="grid">
+      <div class="card"><div class="t">半场调整 <span class="badge p1">新增</span></div><div class="d">中场依 box score 调整下半场倾向（限 2 处）。</div></div>
+      <div class="card"><div class="t">Clutch 战术卡 <span class="badge p1">新增</span></div><div class="d">第四节最后 3 分钟/加时，指定关键回合战术（最后一攻、防守重点）。</div></div>
+      <div class="card"><div class="t">对位针对性 <span class="badge p1">新增</span></div><div class="d">针对对手核心的防守策略（包夹/护筐/换防/放投）作为可指定战术槽。</div></div>
+    </div>
+    <h3>8.4 Per-game 战术</h3>
+    <p>可对任意赛程指定一次性战术，对手看不到你的私有设置。适用于关键战、季后赛、针对性备战。</p>
+    <h3>8.5 轮换与疲劳</h3>
+    <ul>
+      <li>轮换基于位置适配、耐力、对位、体系需求、板凳深度，而非纯评分。</li>
+      <li>重用主力不自动正确——疲劳堆积、位置无替补、零件不契合都会拖垮全队。</li>
+      <li>系统按设置与比赛进程执行换人；位置优先级决定顶替人选。</li>
+    </ul>
+  </section>
+
+  <section id="s9">
+    <h2><span class="num">9</span>比赛模拟引擎</h2>
+    <div class="note green"><b>设计铁律</b>：sim-engine 为<b>纯函数</b>，输入相同则输出相同——可单测、可回放、可灰度调参、可防作弊。所有比赛在<b>服务端权威执行</b>，前端只读结果与 PBP。</div>
+
+    <h3>9.1 回合结构</h3>
+    <p>一场比赛 = 若干回合（约 100–110 回合/场）。每回合由决策树生成出手选择与结果。</p>
+    <p><b>单回合决策链</b>：球权归属 → 控球者读取战术倾向+自身能力+情境 → 选择持球/传球 → 终结者读取对位+防守 → 决定出手类型与位置 → 投篮/罚球/失误判定 → 篮板争夺 → 球权转换。</p>
+
+    <h3>9.2 出手决策权重</h3>
+    <p>每回合出手类型由<b>球员能力 × 战术倾向 × 对位 × 情境（比分/时间/疲劳）× 随机</b>加权决定：</p>
+    <ul>
+      <li><b>战术倾向</b>：外线/内线/平衡 影响三分 vs 内线的基线权重。</li>
+      <li><b>球员能力</b>：Three-Point 高的球员在"外线倾向"下更可能投三分；Inside 高的在"内线倾向"下更可能攻筐。</li>
+      <li><b>对位</b>：对手 Perimeter D 高 → 三分出手权重下降；Interior D 高 → 内线权重下降。</li>
+      <li><b>情境</b>：落后追分倾向外线、领先控节奏倾向内线低风险；Clutch 阶段按 Clutch 战术卡覆盖。</li>
+      <li><b>随机</b>：保证涌现性，拒绝"最优解套路"。</li>
+    </ul>
+
+    <h3>9.3 关键回合与叙事</h3>
+    <ul>
+      <li>关键回合（lead change / clutch 最后 5 分钟 / 关键犯规 / 绝杀）高亮，生成"赛事快报"叙事摘要。</li>
+      <li>Clutch 战术卡在最后 3 分钟/加时覆盖默认战术，影响最后一攻方案与防守重点。</li>
+      <li>半场调整：中场可依 box score 调整下半场倾向（限 2 处）。</li>
+    </ul>
+
+    <h3>9.4 输出产物</h3>
+    <div class="grid">
+      <div class="card"><div class="t">PBP 流</div><div class="d">逐回合文字直播，含时间/比分/动作/球员。</div></div>
+      <div class="card"><div class="t">Box Score</div><div class="d">双方逐人数据（得分/篮板/助攻/抢断/盖帽/失误/犯规/正负值/命中率）。</div></div>
+      <div class="card"><div class="t">赛事快报</div><div class="d">3–5 句叙事摘要，进报纸流。</div></div>
+      <div class="card"><div class="t">高光回放</div><div class="d">关键回合可单独回看。</div></div>
+    </div>
+
+    <h3>9.5 实时观战</h3>
+    <p>sim 在 10:00 运行时通过 WebSocket/SSE 逐回合推送 PBP，玩家可"看直播"；错过可看回放与快报。这是把"等结果"变"看直播"的核心体验钩子。</p>
+  </section>
+
+  <section id="s10">
+    <h2><span class="num">10</span>球探系统</h2>
+
+    <h3>10.1 三层信息获取</h3>
+    <table>
+      <thead><tr><th>手段</th><th>作用</th><th>成本</th></tr></thead>
+      <tbody>
+        <tr><td><b>Scout Report（球探报告）</b></td><td>收窄候选名单的 fog 区间，不是保证真值</td><td>球探预算</td></tr>
+        <tr><td><b>Probe（探针）</b></td><td>对特定球员深度探查，提高精度</td><td>探针槽位（稀缺）+ 预算</td></tr>
+        <tr><td><b>Watchlist（关注名单）</b></td><td>长期跟踪，随时间自动收窄 fog</td><td>关注槽位（有限）</td></tr>
+      </tbody>
+    </table>
+
+    <h3>10.2 收窄来源</h3>
+    <ul>
+      <li>球探报告、探针、Watchlist 长期观察、<b>对阵亲历</b>（交过手自动收窄）。</li>
+      <li>业余金字塔赛事：派球探去某层级赛事现场观察苗子，消耗预算收窄 fog。</li>
+    </ul>
+
+    <h3>10.3 球探等级</h3>
+    <p>球探部门有等级，决定：估值偏差幅度、不确定区间宽度、可见特质数量。升级球探部门需投入（财务系统）。</p>
+
+    <h3>10.4 资源约束制造博弈</h3>
+    <div class="note"><b>设计意图</b>：探针槽位与预算有限 → 资源分配博弈。花在"能改变决策"的地方，而非盲目探查所有人。信息即权力，但信息有成本。</div>
+  </section>
+
+  <section id="s11">
+    <h2><span class="num">11</span>选秀系统</h2>
+
+    <h3>11.1 选秀池</h3>
+    <ul>
+      <li>每季选秀池由服务端生成，含<b>世界内</b>所有达到参选年龄的青年球员（含金字塔赛事历练者）。</li>
+      <li>新秀 Peak 估值带 fog，球探需投入才能看清。</li>
+      <li>选秀顺位：按上赛季战绩倒序（垫底队优先，鼓励重建公平）。</li>
+    </ul>
+
+    <h3>11.2 选秀博弈四步</h3>
+    <div class="grid">
+      <div class="card"><div class="t">① 试训 Workout</div><div class="d">对心仪新秀办试训，收窄 fog、提升好感度。</div></div>
+      <div class="card"><div class="t">② 接近新秀</div><div class="d">通过互动提升新秀对你的好感，影响被选中后的契合度。</div></div>
+      <div class="card"><div class="t">③ 传闻中心 Rumor Mill</div><div class="d">运作传闻，影响其他经理的判断与顺位预期。</div></div>
+      <div class="card"><div class="t">④ 选秀夜</div><div class="d">按顺位选人；经理间博弈抢人，传闻与迷雾决定最终归属。</div></div>
+    </div>
+
+    <h3>11.3 选秀行情业余溯源</h3>
+    <p>选秀夜球探报告回溯球员完整金字塔履历（"高中全国四强、U17 世青赛 MVP"），让生涯有连续叙事，也为经理判断提供线索。</p>
+
+    <h3>11.4 多人博弈</h3>
+    <p>同一选秀池被同世界所有经理共享，顺位交错。传闻中心可误导对手，自家情报不外泄——多人在线的选秀是一场心理战。</p>
+  </section>
+
+  <section id="s12">
+    <h2><span class="num">12</span>转会、交易与合同</h2>
+
+    <h3>12.1 自由市场（Free Agency）</h3>
+    <ul>
+      <li><b>报价即承诺</b>：带价格的承诺，不是无限试探；下单前三查——位置缺口 / 薪资空间 / 情报（fog 未收窄别乱签）。</li>
+      <li>自由市场为<b>世界内共享</b>，所有经理竞争同一批球员。</li>
+      <li>球员有"心仪目的地"倾向（基于球市规模/战绩/家乡），影响接受概率。</li>
+    </ul>
+
+    <h3>12.2 跨经理交易（Trade）</h3>
+    <table>
+      <thead><tr><th>项</th><th>规则</th></tr></thead>
+      <tbody>
+        <tr><td><b>范围</b></td><td>同世界内任意两经理可发起交易</td></tr>
+        <tr><td><b>机制</b></td><td>报价 → 对方接受/还价/拒绝；限时响应</td></tr>
+        <tr><td><b>平衡校验</b></td><td>薪资需大致对等（工资帽规则），防套利</td></tr>
+        <tr><td><b>AI 经理</b></td><td>AI 按"球队需求+球员价值+fog"评估，拟真博弈</td></tr>
+        <tr><td><b>否决</b></td><td>明显失衡交易（如新秀换空气）系统可标记人工复核</td></tr>
+      </tbody>
+    </table>
+
+    <h3>12.3 合同类型</h3>
+    <div class="grid">
+      <div class="card"><div class="t">新秀红利</div><div class="d">低薪高性价比，前 4 年红利期。</div></div>
+      <div class="card"><div class="t">底薪</div><div class="d">老将/边缘轮换，填充名单。</div></div>
+      <div class="card"><div class="t">中产</div><div class="d">主力轮换价位的标准合同。</div></div>
+      <div class="card"><div class="t">顶薪</div><div class="d">核心球员，占用大量空间，需"明确职责"。</div></div>
+      <div class="card"><div class="t">老将底薪</div><div class="d">31+ 老将特例，带 teaching 加成。</div></div>
+    </div>
+
+    <h3>12.4 工资帽</h3>
+    <ul>
+      <li>硬帽或软帽（待定），超帽受奢侈税惩罚。</li>
+      <li>长约带"明确职责"才能签——健康的财务不是少花，而是每笔长约都有清晰定位。</li>
+    </ul>
+  </section>
+
+  <section id="s13">
+    <h2><span class="num">13</span>训练系统</h2>
+
+    <h3>13.1 训练是延迟投资</h3>
+    <p>训练不会立即显现，需时间累积；过劳伤状态与 condition。训练响应率（Trainability）决定每单位训练的成长量，受童子/少年期基础影响。</p>
+
+    <h3>13.2 生涯曲线</h3>
+    <table>
+      <thead><tr><th>属性类</th><th>达峰</th><th>衰退</th></tr></thead>
+      <tbody>
+        <tr><td>身体天赋（Speed/Vertical/Agility）</td><td>早（约 23–26）</td><td>早（约 30+）</td></tr>
+        <tr><td>技术（投射/控传/防守技巧）</td><td>中（约 26–30）</td><td>缓（约 33+）</td></tr>
+        <tr><td>经验（IQ/Clutch）</td><td>晚（约 28–33）</td><td>极缓（几乎不衰）</td></tr>
+      </tbody>
+    </table>
+
+    <h3>13.3 训练方向</h3>
+    <ul>
+      <li>玩家可为球员指定训练侧重（如"强化三分""提升护筐"）。</li>
+      <li>训练响应率随年龄与生涯阶段衰减；定型后可塑性下降。</li>
+      <li>青训苗子训练方向影响技术定型（少年期的选择长尾影响）。</li>
+    </ul>
+  </section>
+
+  <section id="s14">
+    <h2><span class="num">14</span>财务与球馆</h2>
+
+    <h3>14.1 收入来源</h3>
+    <ul>
+      <li><b>球票</b>：受球馆容量与战绩/球市影响。</li>
+      <li><b>转播/商业赞助</b>：受联赛层级与球队 Fame 影响。</li>
+      <li><b>球衣/周边</b>：受核心球员 Fame 与球迷文化影响。</li>
+    </ul>
+
+    <h3>14.2 支出</h3>
+    <ul>
+      <li>球员薪资（最大头）、教练组、球探部门、青训学院、球馆维护/升级、奢侈税（超帽）。</li>
+    </ul>
+
+    <h3>14.3 球馆投资</h3>
+    <p>升级球馆扩容 → 球票收入↑；但前期投入大，需权衡现金流。球馆档次也影响自由球员"心仪目的地"倾向。</p>
+
+    <h3>14.4 财务健康原则</h3>
+    <div class="note"><b>核心</b>：最健康的财务不是"少花"，而是"每一笔长约都有明确职责"。长线建队需平衡短期战力与未来空间。</div>
+  </section>
+
+  <section id="s15">
+    <h2><span class="num">15</span>王朝与传承</h2>
+
+    <h3>15.1 时代标签（Era Tag）</h3>
+    <p>核心球员退役后留下可继承的时代遗产：</p>
+    <div class="grid">
+      <div class="card"><div class="t">战术偏好遗产</div><div class="d">该核心时代的战术体系成为球队"传统"，新一代球员适配时有加成。</div></div>
+      <div class="card"><div class="t">青训血脉</div><div class="d">核心留下的青训理念提升后续苗子培养上限。</div></div>
+      <div class="card"><div class="t">球迷文化 buff</div><div class="d">核心时代积累的球迷基础提升球票与商业收入。</div></div>
+    </div>
+
+    <h3>15.2 传承闭环</h3>
+    <p>老将的 teaching 强度（经验传授）反哺下一代青训苗子 → 形成"一代核心 → 传承 → 下一代"的王朝循环。老将是否进教练轨影响 teaching 强度。</p>
+
+    <h3>15.3 名人堂</h3>
+    <ul>
+      <li>退役核心进名人堂，跨存档可见，沉淀经理成就。</li>
+      <li>名人堂球员的"时代标签"可在新存档中作为可选传承起点（轻度 meta 进度）。</li>
+    </ul>
+  </section>
+
+  <section id="s16">
+    <h2><span class="num">16</span>社交与对抗层</h2>
+    <p>多人在线的核心张力来自人与人。本节设计让对抗与社交自然涌现，而非强塞社交功能。</p>
+
+    <h3>16.1 经理档案与履历</h3>
+    <ul>
+      <li>每经理有公开档案：昵称、头像、执教履历（赛季战绩/冠军/升降级/传奇交易）。</li>
+      <li>履历是"江湖地位"的体现，影响交易谈判中 AI 与玩家对你的判断。</li>
+    </ul>
+
+    <h3>16.2 对抗关系（Rivalry）</h3>
+    <ul>
+      <li><b>自然生成</b>：反复对阵且比分接近的两队，系统标记为"宿敌"，进入双方赛事快报高亮。</li>
+      <li><b>德比</b>：同城/同区球队自动德比标记。</li>
+      <li><b>升降级生死战</b>：决定升降级的关键对阵特殊高亮。</li>
+    </ul>
+
+    <h3>16.3 交易谈判</h3>
+    <ul>
+      <li>同世界经理间报价/还价/拒绝，限时响应。</li>
+      <li>谈判历史可追溯，"这笔交易谁亏了"成为社区谈资。</li>
+    </ul>
+
+    <h3>16.4 联盟内交流（v2）</h3>
+    <ul>
+      <li>组内简易聊天/垃圾话频道（可选，可关闭）。</li>
+      <li>赛季结束"颁奖"：社区票选最佳交易、最坑合同、最佳绝杀等。</li>
+    </ul>
+
+    <h3>16.5 世界排名与跨联赛声望</h3>
+    <ul>
+      <li>跨联赛的经理声望积分 = 联赛层级 × 战绩 × 王朝成就。</li>
+      <li>世界排名榜激励玩家冲击顶级联赛与多代王朝。</li>
+    </ul>
+  </section>
+
+  <section id="s17">
+    <h2><span class="num">17</span>经济系统</h2>
+    <p>多人在线游戏的经济平衡是长线生命线。本节定义资源、流动与防通胀机制。</p>
+
+    <h3>17.1 资源类型</h3>
+    <table>
+      <thead><tr><th>资源</th><th>获取</th><th>用途</th><th>是否影响强度</th></tr></thead>
+      <tbody>
+        <tr><td><b>薪资空间</b>（游戏内货币）</td><td>球票/转播/赞助</td><td>签球员/教练/球探/青训/球馆</td><td>是（核心博弈资源）</td></tr>
+        <tr><td><b>球探预算</b></td><td>球探部门等级</td><td>球探报告/探针/金字塔现场</td><td>间接（信息）</td></tr>
+        <tr><td><b>探针槽位</b></td><td>固定 + VIP 加成</td><td>深度探查特定球员</td><td>间接（信息）</td></tr>
+        <tr><td><b>Credits</b>（付费货币）</td><td>充值</td><td>外观/便捷/迁移世界</td><td><b>否（红线）</b></td></tr>
+      </tbody>
+    </table>
+
+    <h3>17.2 球员价值锚定</h3>
+    <ul>
+      <li>球员薪资由<b>真实能力 + Peak 估值 + 年龄 + Fame + 合同类型</b>锚定，服务端定价，防止玩家间操纵。</li>
+      <li>自由市场报价由系统评估"市场价"，玩家在此基础上竞争。</li>
+    </ul>
+
+    <h3>17.3 防通胀与赛季重置</h3>
+    <ul>
+      <li><b>赛季结算消耗</b>：每季末部分薪资/资源随赛季清零或折旧，避免无限累积。</li>
+      <li><b>球员自然流出</b>：老将退役、自由球员离队、伤病退役构成天然回收。</li>
+      <li><b>新秀注入</b>：每季选秀池补充新鲜血液，维持生态活力。</li>
+    </ul>
+
+    <h3>17.4 AI 经理的经济角色</h3>
+    <p>AI 经理是经济"蓄水池"：可被交易、可签自由球员、可被挖角，保证冷启动期玩家也有交易对手与市场流动性。</p>
+  </section>
+
+  <section id="s18">
+    <h2><span class="num">18</span>商业化设计</h2>
+    <div class="note"><b>铁律</b>：Credits / VIP 均不影响比赛结果与球员强度。这是信任底线，与 Rim Attack 一致。</div>
+
+    <h3>18.1 付费点</h3>
+    <table>
+      <thead><tr><th>形态</th><th>内容</th><th>定位</th></tr></thead>
+      <tbody>
+        <tr><td><b>Credits 包</b></td><td>充值获取 Credits</td><td>主付费入口</td></tr>
+        <tr><td><b>VIP 订阅</b></td><td>月/季/年订阅</td><td>稳定营收 + 留存</td></tr>
+        <tr><td><b>外观</b></td><td>球衣/球馆主题/教练 avatar/报纸版面</td><td>个性化变现</td></tr>
+        <tr><td><b>便捷</b></td><td>额外战术存档槽/球探槽/观赛回放</td><td>VIP 含，或单买</td></tr>
+        <tr><td><b>世界迁移</b></td><td>跨世界迁移球队</td><td>低频高价，受冷却</td></tr>
+        <tr><td><b>初始球队选择</b></td><td>选非顶级中游球队起步</td><td>付费跳过冷启动</td></tr>
+      </tbody>
+    </table>
+
+    <h3>18.2 红线清单（永不售卖）</h3>
+    <div class="grid">
+      <div class="card"><div class="t">比赛结果</div><div class="d">不可买胜负、不可买 sim 随机。</div></div>
+      <div class="card"><div class="t">球员强度</div><div class="d">不可买能力/Peak/特质提升。</div></div>
+      <div class="card"><div class="t">薪资空间</div><div class="d">不可直接买游戏内货币。</div></div>
+      <div class="card"><div class="t">选秀顺位</div><div class="d">不可买顺位提升。</div></div>
+    </div>
+
+    <h3>18.3 F2P 友好</h3>
+    <ul>
+      <li>所有影响强度的内容均靠游戏内行为获取，零氪可夺冠。</li>
+      <li>Credits/VIP 只买"快"与"美"，不买"强"。</li>
+    </ul>
+  </section>
+
+  <section id="s19">
+    <h2><span class="num">19</span>技术架构</h2>
+
+    <h3>19.1 总体架构</h3>
+    <ul>
+      <li><b>前端</b>：React + Vite + TypeScript + PWA（移动优先，离线可查看阵容/战术）。</li>
+      <li><b>后端</b>：Node 服务 + 关系型 DB（PostgreSQL，球员/联盟/合同）+ Redis（每日 sim 队列/缓存）。</li>
+      <li><b>结算调度</b>：Cron 每日 10:00（UTC+8）触发全世界 sim，16:00 翻天。</li>
+      <li><b>实时观战</b>：sim 运行时通过 WebSocket/SSE 逐回合推送 PBP。</li>
+      <li><b>反作弊</b>：sim 在服务端权威执行，前端只读结果；输入相同输出相同（纯函数）。</li>
+    </ul>
+
+    <h3>19.2 关键模块</h3>
+    <div class="grid">
+      <div class="card"><div class="t"><code>sim-engine</code></div><div class="d">回合级 PBP 生成，纯函数，可单测/回放/灰度调参。</div></div>
+      <div class="card"><div class="t"><code>scouting</code></div><div class="d">fog 偏差与收窄逻辑。</div></div>
+      <div class="card"><div class="t"><code>league-scheduler</code></div><div class="d">赛程 + 升降级 + 季后赛种子。</div></div>
+      <div class="card"><div class="t"><code>daily-settler</code></div><div class="d">每日结算编排，全世界并行。</div></div>
+      <div class="card"><div class="t"><code>career-arc</code></div><div class="d">生涯阶段与动态成长因素演化。</div></div>
+      <div class="card"><div class="t"><code>grassroots</code></div><div class="d">业余金字塔赛事 sim 与晋升。</div></div>
+      <div class="card"><div class="t"><code>ai-manager</code></div><div class="d">AI 经理决策（阵容/战术/交易/选秀）。</div></div>
+      <div class="card"><div class="t"><code>economy</code></div><div class="d">薪资/合同/工资帽/防通胀。</div></div>
+    </div>
+
+    <h3>19.3 性能与扩展</h3>
+    <ul>
+      <li>sim 任务分片并行（按世界/组分配 worker）。</li>
+      <li>PBP 推送用 SSE 长连接，按用户订阅频道分发。</li>
+      <li>DB 分世界分片，避免单库热点。</li>
+    </ul>
+  </section>
+
+  <section id="s20">
+    <h2><span class="num">20</span>UI/UX 设计</h2>
+
+    <h3>20.1 风格</h3>
+    <p>运动杂志 × 数据仪表盘；暗色为主，强对比、高可读性；移动端单列流式。</p>
+
+    <h3>20.2 关键界面</h3>
+    <div class="grid">
+      <div class="card"><div class="t">首页 Dashboard</div><div class="d">Alerts / 赛事快报 / 今日对手 / 提交状态。</div></div>
+      <div class="card"><div class="t">阵容页</div><div class="d">全队卡片网格，状态/合同一眼可见。</div></div>
+      <div class="card"><div class="t">球员卡</div><div class="d">迷雾态用 ??? 与区间条表达不确定性。</div></div>
+      <div class="card"><div class="t">战术编辑器</div><div class="d">基础三选 + 高级条件规则 + Clutch 卡。</div></div>
+      <div class="card"><div class="t">比赛直播页</div><div class="d">PBP 流实时滚动，比分/关键回合高亮。</div></div>
+      <div class="card"><div class="t">联盟排名</div><div class="d">本组/本联赛/世界排名三层。</div></div>
+      <div class="card"><div class="t">选秀中心</div><div class="d">选秀池 + 试训 + 传闻中心 + 选秀夜直播。</div></div>
+      <div class="card"><div class="t">青训学院</div><div class="d">苗子列表 + 金字塔参赛安排 + 培养投入。</div></div>
+      <div class="card"><div class="t">报纸流</div><div class="d">拟态报纸，赛事/转会/王朝叙事。</div></div>
+    </div>
+
+    <h3>20.3 核心反馈</h3>
+    <ul>
+      <li>迷雾用"???"与区间条表达不确定。</li>
+      <li>Clutch 回合用高亮卡片。</li>
+      <li>升降级/选秀结果用全屏过渡动画强化仪式感。</li>
+    </ul>
+  </section>
+
+  <section id="s21">
+    <h2><span class="num">21</span>数值设计总则</h2>
+
+    <h3>21.1 能力评分</h3>
+    <ul>
+      <li>单项能力 1–99 量表；Peak 为该球员某项的理论上限估值。</li>
+      <li>可见估值带 ±误差区间，球探等级越高区间越窄。</li>
+    </ul>
+
+    <h3>21.2 fog 收窄公式（示意）</h3>
+    <p><code>可见区间宽度 = 基础宽度 × (1 − 收窄系数)</code>，收窄系数 = f(球探等级, 探针投入, Watchlist 天数, 对阵次数)。</p>
+
+    <h3>21.3 sim 平衡原则</h3>
+    <ul>
+      <li>每项能力对结果有边际贡献，避免单一能力碾压。</li>
+      <li>涌现性优先：拒绝"最优解套路"，随机项保证多样性。</li>
+      <li>用海量自动对局回归测试校准：联赛层级间胜率差、得分分布、clutch 频率需落在合理区间。</li>
+    </ul>
+
+    <h3>21.4 成长曲线原则</h3>
+    <ul>
+      <li>身体天赋先达峰（约 23–26）先衰退（约 30+）。</li>
+      <li>技术持久（达峰 26–30，缓衰 33+）。</li>
+      <li>经验几乎不衰（达峰 28–33）。</li>
+      <li>训练响应率随年龄衰减；"伤仲永"：过早高强度参赛埋下伤病隐患。</li>
+    </ul>
+  </section>
+
+  <section id="s22">
+    <h2><span class="num">22</span>内容规模</h2>
+    <h3>22.1 首版（M1–M2）</h3>
+    <ul>
+      <li>1 个世界，4 级联赛金字塔（约 256 队，含 AI 填充）。</li>
+      <li>约 20 项能力的球员系统 + fog。</li>
+      <li>完整日循环 + 赛季 + 升降级 + 选秀 + 自由市场。</li>
+      <li>战术：基础三选 + 高级 + Clutch + 半场调整。</li>
+      <li>青训学院（高中+大学两层金字塔）。</li>
+      <li>实时观战 PBP。</li>
+    </ul>
+    <h3>22.2 后续版本</h3>
+    <ul>
+      <li>v2：小学+初中金字塔补全；联盟内聊天/颁奖；更多世界。</li>
+      <li>v3：跨世界冠军杯（各世界顶级联赛冠军对决）；教练轨深度；王朝博物馆。</li>
+    </ul>
+  </section>
+
+  <section id="s23">
+    <h2><span class="num">23</span>开发里程碑</h2>
+    <div class="ms">
+      <div class="ms-item">
+        <div class="stage">M0<small>概念验证</small></div>
+        <div class="body"><b>范围</b>：sim-engine 单回合/单场可跑；fog 模型可调。<br><span class="ver">验收：一场比赛可生成 PBP + box score</span></div>
+      </div>
+      <div class="ms-item">
+        <div class="stage">M1<small>闭合核心循环</small></div>
+        <div class="body"><b>范围</b>：日循环 + 阵容/战术/训练/球探可玩（单机 vs AI）；一个赛季走完。<br><span class="ver">验收：一个赛季可走完，升降级生效</span></div>
+      </div>
+      <div class="ms-item">
+        <div class="stage">M2<small>联机 + 升降级</small></div>
+        <div class="body"><b>范围</b>：多玩家同联赛、AI 经理填充、实时观战、跨经理交易。<br><span class="ver">验收：1 个 16 人联赛跑完一季</span></div>
+      </div>
+      <div class="ms-item">
+        <div class="stage">M3<small>生涯 + 青训</small></div>
+        <div class="body"><b>范围</b>：生涯弧线 + 青训学院 + 金字塔（高中+大学）+ 传承。<br><span class="ver">验收：一代核心可养成至退役并传承</span></div>
+      </div>
+      <div class="ms-item">
+        <div class="stage">M4<small>商业化 + PWA</small></div>
+        <div class="body"><b>范围</b>：Credits/VIP、外观、PWA 安装、推送。<br><span class="ver">验收：移动端可用、付费链路通</span></div>
+      </div>
+      <div class="ms-item">
+        <div class="stage">M5<small>软启动/封测</small></div>
+        <div class="body"><b>范围</b>：平衡调参、反作弊、留存观测、多世界。<br><span class="ver">验收：次留/7 留达标</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="s24">
+    <h2><span class="num">24</span>风险评估</h2>
+    <table>
+      <thead><tr><th>风险</th><th>应对</th></tr></thead>
+      <tbody>
+        <tr><td>sim 平衡难收敛</td><td>sim-engine 纯函数化 + 海量自动对局回归测试 + 灰度调参</td></tr>
+        <tr><td>冷启动玩家稀疏</td><td>AI 经理填充联赛，随真实玩家增加逐步替换；单世界先开</td></tr>
+        <tr><td>反外挂/多开/共谋</td><td>服务端权威 sim + 账号风控 + 失衡交易人工复核</td></tr>
+        <tr><td>版权</td><td>虚构联赛/球员，致敬风格不照搬真实标识</td></tr>
+        <tr><td>留存</td><td>每日时钟 + 王朝叙事 + 实时观战 + 升降级赌注制造回流钩子</td></tr>
+        <tr><td>经济通胀</td><td>赛季结算消耗 + 球员自然流出 + 薪资服务端锚定</td></tr>
+        <tr><td>多人公平</td><td>固定全球时钟 + 世界内封闭经济 + 付费不卖强度</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    篮球经理世界 Hoops World Online · 游戏策划方案 v0.1 · 2026-09-28<br>
+    基于立项书《篮图 Hoops Dynasty》演化 · 多人在线化设计
+  </footer>
+
+</div>
+</body>
+</html>
