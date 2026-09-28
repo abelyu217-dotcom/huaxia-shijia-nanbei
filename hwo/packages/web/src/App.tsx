@@ -21,13 +21,15 @@ import { fetchTeams, fetchTeam, fetchTactics, postSimMatch } from "./api";
 import { Roster } from "./components/Roster";
 import { Tactics } from "./components/Tactics";
 import { Match } from "./components/Match";
+import { LiveMatch } from "./components/LiveMatch";
 
-type Tab = "roster" | "tactics" | "match";
+type Tab = "roster" | "tactics" | "match" | "live";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "roster", label: "球队阵容" },
   { id: "tactics", label: "战术选择" },
   { id: "match", label: "比赛模拟" },
+  { id: "live", label: "比赛直播" },
 ];
 
 export function App() {
@@ -166,11 +168,13 @@ export function App() {
   const rosterDone = Boolean(homeTeamId && awayTeamId);
   const tacticsDone = Boolean(homeTacticId && awayTacticId);
   const matchDone = Boolean(simResult);
+  const liveDone = Boolean(simResult);
 
   const stepDone: Record<Tab, boolean> = {
     roster: rosterDone,
     tactics: tacticsDone,
     match: matchDone,
+    live: liveDone,
   };
 
   return (
@@ -220,6 +224,21 @@ export function App() {
         )}
         {tab === "match" && (
           <Match
+            homeTeam={homeTeam}
+            awayTeam={awayTeam}
+            homeTeamId={homeTeamId}
+            awayTeamId={awayTeamId}
+            homeTacticId={homeTacticId}
+            awayTacticId={awayTacticId}
+            tactics={tactics}
+            onSimulate={runSim}
+            simResult={simResult}
+            simLoading={simLoading}
+            simError={simError}
+          />
+        )}
+        {tab === "live" && (
+          <LiveMatch
             homeTeam={homeTeam}
             awayTeam={awayTeam}
             homeTeamId={homeTeamId}
