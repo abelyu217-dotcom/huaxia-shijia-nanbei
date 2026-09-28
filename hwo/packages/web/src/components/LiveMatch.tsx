@@ -311,7 +311,7 @@ function vividDesc(ev: PbpEvent, playerName?: string): string {
     case "block":
       return `${name} 送出一记大帽！`;
     case "foul":
-      return `${name} 犯规`;
+      return ev.desc || `${name} 犯规`;
     case "turnover":
       return ev.desc || `${name || ev.teamId} 失误`;
     case "period_start":
@@ -323,20 +323,56 @@ function vividDesc(ev: PbpEvent, playerName?: string): string {
   }
 }
 
-/** 计算进攻时钟（24秒）——从比赛时钟反推，简化为每回合递减 */
-function shotClockFromEvent(ev: PbpEvent | null, prev: PbpEvent | null): string {
+/** 计算进攻时钟（24秒）——确定性：从最近一次重置事件反推 */
+const SHOT_CLOCK_RESET_TYPES = new Set([
+  "period_start",
+  "shot_made",
+  "three_made",
+  "steal",
+  "turnover",
+]);
+
+function shotClockFromEvent(
+  ev: PbpEvent | null,
+  allEvents: PbpEvent[],
+): string {
   if (!ev) return "24";
   if (ev.type === "period_start" || ev.type === "period_end") return "24";
-  // 简化：根据事件间的时间差估算进攻时间
-  if (prev && prev.clock && ev.clock) {
-    const parse = (c: string) => {
-      const [m, s] = c.split(":").map(Number);
-      return (m ?? 0) * 60 + (s ?? 0);
-    };
-    const diff = parse(prev.clock) - parse(ev.clock);
-    if (diff > 0 && diff < 30) return String(Math.max(1, 24 - diff));
+
+  // 找到上一次进攻时钟重置事件（节开始/命中/抢断/失误/防守篮板）
+  let lastResetIdx = -1;
+  for (let i = allEvents.length - 2; i >= 0; i--) {
+    const e = allEvents[i];
+    if (SHOT_CLOCK_RESET_TYPES.has(e.type)) {
+      lastResetIdx = i;
+      break;
+    }
+    if (e.type === "rebound" && e.reboundType !== "off") {
+      lastResetIdx = i;
+      break;
+    }
   }
-  return String(20 + Math.floor(Math.random() * 5));
+
+  if (lastResetIdx >= 0) {
+    const reset = allEvents[lastResetIdx];
+    // 进攻篮板后进攻时钟重置为 14 秒，其余情况为 24 秒
+    const resetVal = reset.type === "rebound" && reset.reboundType === "off" ? 14 : 24;
+    if (reset.clock && ev.clock) {
+      const parse = (c: string) => {
+        const [m, s] = c.split(":").map(Number);
+        return (m ?? 0) * 60 + (s ?? 0);
+      };
+      const elapsed = parse(reset.clock) - parse(ev.clock);
+      if (elapsed >= 0 && elapsed < resetVal) return String(resetVal - elapsed);
+      if (elapsed >= resetVal) return "1";
+    }
+  }
+  // 回退：用事件自身时钟的秒数做确定性映射
+  if (ev.clock) {
+    const secs = Number(ev.clock.split(":")[1]) || 0;
+    return String(14 + (secs % 10));
+  }
+  return "20";
 }
 
 export function LiveMatch({
@@ -374,14 +410,12 @@ export function LiveMatch({
   const allEvents = simResult?.pbp ?? [];
   const shownEvents = allEvents.slice(0, playbackIndex);
   const cur = currentEvent(shownEvents);
-  const prev = shownEvents.length > 1 ? shownEvents[shownEvents.length - 2]! : null;
-
   const homeScore = cur?.scoreHome ?? 0;
   const awayScore = cur?.scoreAway ?? 0;
   const quarter = cur?.quarter ?? 1;
   const clock = cur?.clock ?? "12:00";
   const possessionTeamId = cur?.teamId;
-  const shotClock = shotClockFromEvent(cur, prev);
+  const shotClock = shotClockFromEvent(cur, shownEvents);
 
   // 球员名字查找表
   const playerNames = useMemo(() => {
@@ -872,7 +906,12 @@ export function LiveMatch({
                 <b className="home">{homeScore}</b> : <b className="away">{awayScore}</b>
               </span>
               <span className="lbb-meta">
-                {quarter <= 4 ? `第${quarter}节` : `加时${quarter - 4}`} · {clock}
+                {playState === "finished"
+                  ? "全场结束"
+                  : quarter <= 4
+                    ? `第${quarter}节`
+                    : `加时${quarter - 4}`}
+                {playState !== "finished" && ` · ${clock}`}
               </span>
               <span className="lbb-possession">
                 {possessionTeamId === homeTeamId && <span className="home">{homeName} 进攻</span>}
