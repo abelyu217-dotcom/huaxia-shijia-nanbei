@@ -983,6 +983,19 @@ button {
   border-radius: 999px;
 }
 
+/* 赛后 PBP 按节分组，节内用双栏列表 */
+.pbp-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.pbp-dual-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px 0;
+}
+
 .pbp-quarter {
   position: sticky;
   top: 0;
