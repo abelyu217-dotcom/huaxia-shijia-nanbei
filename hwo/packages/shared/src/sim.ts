@@ -184,135 +184,174 @@ function shotChance(ctx: PossessionContext, shooter: Player, shotType: ShotType)
 // ─── 单回合模拟 ───
 
 interface PossessionResult {
-  event: PbpEvent;
+  events: PbpEvent[];     // 一个回合可产生多个事件：投篮/篮板/盖帽/犯规/罚球
   homeScoreDelta: number;
   awayScoreDelta: number;
 }
 
+/** 罚球命中率（基于关键球能力微调） */
+function ftChance(shooter: Player): number {
+  return clamp(0.75 + (shooter.abilities.clutch / 99) * 0.12, 0.5, 0.92);
+}
+
 function simulatePossession(ctx: PossessionContext, possessionIdx: number, config: SimConfig): PossessionResult {
   const { rng, offense, defense, quarter, scoreHome, scoreAway } = ctx;
+  const clock = formatClock(possessionIdx, config.possessionsPerQuarter, config);
+  const events: PbpEvent[] = [];
+  let homePts = 0;
+  let awayPts = 0;
+  const addPts = (pts: number) => {
+    if (ctx.isHome) homePts += pts;
+    else awayPts += pts;
+  };
+  // 当前累计比分快照（每个事件携带最新比分）
+  const snap = () => ({ scoreHome: scoreHome + homePts, scoreAway: scoreAway + awayPts });
 
   // 失误判定
   const turnoverChance = 0.12 + (1 - offense.chemistry / 100) * 0.03;
   if (rng.chance(turnoverChance, "turnover")) {
-    // 被抢断？
     if (rng.chance(defense.tactic.stealChance + 0.05, "stealAttempt")) {
       const stealer = rng.pick(onCourtPlayers(defense), "stealer");
-      return {
-        homeScoreDelta: 0,
-        awayScoreDelta: 0,
-        event: {
-          quarter,
-          clock: formatClock(possessionIdx, config.possessionsPerQuarter, config),
-          scoreHome,
-          scoreAway,
-          type: "steal",
-          actorId: stealer.id,
-          teamId: defense.id,
-          desc: `${stealer.name} 抢断成功！`,
-        },
-      };
-    }
-    return {
-      homeScoreDelta: 0,
-      awayScoreDelta: 0,
-      event: {
-        quarter,
-        clock: formatClock(possessionIdx, config.possessionsPerQuarter, config),
-        scoreHome,
-        scoreAway,
-        type: "turnover",
-        teamId: offense.id,
+      const s = snap();
+      events.push({
+        quarter, clock, scoreHome: s.scoreHome, scoreAway: s.scoreAway,
+        type: "steal", actorId: stealer.id, teamId: defense.id,
+        desc: `${stealer.name} 抢断成功！`,
+      });
+    } else {
+      const s = snap();
+      events.push({
+        quarter, clock, scoreHome: s.scoreHome, scoreAway: s.scoreAway,
+        type: "turnover", teamId: offense.id,
         desc: `${offense.name} 失误`,
-      },
-    };
+      });
+    }
+    return { events, homeScoreDelta: homePts, awayScoreDelta: awayPts };
   }
 
   // 选择投篮
   const shooter = chooseShooter(ctx);
   const shotType = chooseShotType(ctx, shooter);
   const chance = shotChance(ctx, shooter, shotType);
-
-  const made = rng.chance(chance, "shot");
-  const points = shotType === "three" ? 3 : 2;
   const isThree = shotType === "three";
+  const basePoints = isThree ? 3 : 2;
+  const made = rng.chance(chance, "shot");
 
-  // 助攻判定
-  let assistId: string | undefined;
-  if (made && rng.chance(0.55, "assist")) {
-    const passers = onCourtPlayers(offense).filter((p) => p.id !== shooter.id);
-    if (passers.length > 0) {
-      const assister = rng.pick(passers, "assister");
-      assistId = assister.id;
-    }
-  }
+  // 投篮犯规判定（独立概率，仅出现在投篮回合）
+  const shootingFoul = rng.chance(0.13, "foul");
+  const fouler = shootingFoul ? rng.pick(onCourtPlayers(defense), "fouler") : null;
 
-  // 手感更新
-  if (made) {
-    shooter.condition.hot = clamp(shooter.condition.hot + 0.1, 0, 1);
-  } else {
-    shooter.condition.hot = clamp(shooter.condition.hot - 0.05, 0, 1);
-  }
-
-  // 篮板判定（未中时）
-  let reboundEvent: PbpEvent | null = null;
+  // 盖帽判定（仅未中时）
+  let blocker: Player | null = null;
   if (!made) {
-    const offRebChance = 0.25 + (offense.chemistry / 100) * 0.05;
-    if (rng.chance(offRebChance, "offReb")) {
-      const rebounder = rng.pick(onCourtPlayers(offense), "offRebounder");
-      reboundEvent = {
-        quarter,
-        clock: formatClock(possessionIdx, config.possessionsPerQuarter, config),
-        scoreHome,
-        scoreAway,
-        type: "rebound",
-        actorId: rebounder.id,
-        teamId: offense.id,
-        desc: `${rebounder.name} 进攻篮板`,
-      };
-    } else {
-      const rebounder = rng.pick(onCourtPlayers(defense), "defRebounder");
-      reboundEvent = {
-        quarter,
-        clock: formatClock(possessionIdx, config.possessionsPerQuarter, config),
-        scoreHome,
-        scoreAway,
-        type: "rebound",
-        actorId: rebounder.id,
-        teamId: defense.id,
-        desc: `${rebounder.name} 防守篮板`,
-      };
+    const defCourt = onCourtPlayers(defense);
+    const maxBlock = Math.max(...defCourt.map((p) => p.abilities.block));
+    const blockChance = 0.06 + (maxBlock / 99) * 0.08;
+    if (rng.chance(blockChance, "block")) {
+      const candidates = defCourt.filter((p) => p.abilities.block >= 55);
+      blocker = candidates.length > 0
+        ? rng.pick(candidates, "blocker")
+        : rng.pick(defCourt, "blocker");
     }
   }
 
-  const delta = made ? points : 0;
-  const scoreDelta = ctx.isHome ? { homeScoreDelta: delta, awayScoreDelta: 0 } : { homeScoreDelta: 0, awayScoreDelta: delta };
+  if (made) {
+    // 命中
+    addPts(basePoints);
+    let assistId: string | undefined;
+    if (rng.chance(0.55, "assist")) {
+      const passers = onCourtPlayers(offense).filter((p) => p.id !== shooter.id);
+      if (passers.length > 0) assistId = rng.pick(passers, "assister").id;
+    }
+    const s = snap();
+    events.push({
+      quarter, clock, scoreHome: s.scoreHome, scoreAway: s.scoreAway,
+      type: isThree ? "three_made" : "shot_made",
+      actorId: shooter.id, assistId, teamId: offense.id,
+      desc: `${shooter.name} ${isThree ? "三分命中" : basePoints + "分命中"}${assistId ? "（助攻）" : ""}`,
+    });
+    shooter.condition.hot = clamp(shooter.condition.hot + 0.1, 0, 1);
 
-  const shotEvent: PbpEvent = {
-    quarter,
-    clock: formatClock(possessionIdx, config.possessionsPerQuarter, config),
-    scoreHome: scoreHome + scoreDelta.homeScoreDelta,
-    scoreAway: scoreAway + scoreDelta.awayScoreDelta,
-    type: made ? (isThree ? "three_made" : "shot_made") : isThree ? "three_miss" : "shot_miss",
-    actorId: shooter.id,
-    assistId,
-    teamId: offense.id,
-    desc: made
-      ? `${shooter.name} ${isThree ? "三分命中" : points + "分命中"}${assistId ? "（助攻）" : ""}`
-      : `${shooter.name} ${isThree ? "三分不中" : "投篮不中"}`,
-  };
+    // And-one：投篮犯规 + 命中 → 1 次罚球
+    if (shootingFoul && fouler) {
+      const sf = snap();
+      events.push({
+        quarter, clock, scoreHome: sf.scoreHome, scoreAway: sf.scoreAway,
+        type: "foul", actorId: fouler.id, teamId: defense.id,
+        desc: `${fouler.name} 投篮犯规（加罚）`,
+      });
+      const ftMade = rng.chance(ftChance(shooter), "ft");
+      if (ftMade) addPts(1);
+      const sf2 = snap();
+      events.push({
+        quarter, clock, scoreHome: sf2.scoreHome, scoreAway: sf2.scoreAway,
+        type: "free_throw", actorId: shooter.id, teamId: offense.id, made: ftMade,
+        desc: `${shooter.name} 加罚${ftMade ? "命中" : "不中"}`,
+      });
+    }
+  } else {
+    // 未中
+    const s0 = snap();
+    events.push({
+      quarter, clock, scoreHome: s0.scoreHome, scoreAway: s0.scoreAway,
+      type: isThree ? "three_miss" : "shot_miss",
+      actorId: shooter.id, teamId: offense.id,
+      desc: blocker ? `${shooter.name} 投篮被 ${blocker.name} 封盖` : `${shooter.name} ${isThree ? "三分不中" : "投篮不中"}`,
+    });
+    if (blocker) {
+      const sb = snap();
+      events.push({
+        quarter, clock, scoreHome: sb.scoreHome, scoreAway: sb.scoreAway,
+        type: "block", actorId: blocker.id, teamId: defense.id,
+        desc: `${blocker.name} 盖帽`,
+      });
+    }
+    shooter.condition.hot = clamp(shooter.condition.hot - 0.05, 0, 1);
 
-  // 若有篮板，追加篮板事件（下一回合前）。此处简化合并到 shot event 的 score 已更新。
-  // 为保持 PBP 完整，篮板作为独立事件返回会破坏单 event 结构；
-  // 这里采用：未中时把篮板信息附在 desc，保持单事件。
-  if (reboundEvent && !made) {
-    return {
-      event: { ...shotEvent, desc: `${shotEvent.desc} · ${reboundEvent.desc}` },
-      ...scoreDelta,
-    };
+    if (shootingFoul && fouler) {
+      // 投篮犯规未中 → 罚球（三分尝试 3 罚，其余 2 罚）
+      const sf = snap();
+      events.push({
+        quarter, clock, scoreHome: sf.scoreHome, scoreAway: sf.scoreAway,
+        type: "foul", actorId: fouler.id, teamId: defense.id,
+        desc: `${fouler.name} 投篮犯规`,
+      });
+      const ftCount = isThree ? 3 : 2;
+      const rate = ftChance(shooter);
+      for (let f = 0; f < ftCount; f++) {
+        const ftMade = rng.chance(rate, "ft" + f);
+        if (ftMade) addPts(1);
+        const sf2 = snap();
+        events.push({
+          quarter, clock, scoreHome: sf2.scoreHome, scoreAway: sf2.scoreAway,
+          type: "free_throw", actorId: shooter.id, teamId: offense.id, made: ftMade,
+          desc: `${shooter.name} 罚球${ftMade ? "命中" : "不中"}（${f + 1}/${ftCount}）`,
+        });
+      }
+    } else {
+      // 篮板判定（仅非犯规回合；犯规回合球权转入罚球）
+      const offRebChance = 0.25 + (offense.chemistry / 100) * 0.05;
+      if (rng.chance(offRebChance, "offReb")) {
+        const rebounder = rng.pick(onCourtPlayers(offense), "offRebounder");
+        const sr = snap();
+        events.push({
+          quarter, clock, scoreHome: sr.scoreHome, scoreAway: sr.scoreAway,
+          type: "rebound", actorId: rebounder.id, teamId: offense.id,
+          reboundType: "off", desc: `${rebounder.name} 进攻篮板`,
+        });
+      } else {
+        const rebounder = rng.pick(onCourtPlayers(defense), "defRebounder");
+        const sr = snap();
+        events.push({
+          quarter, clock, scoreHome: sr.scoreHome, scoreAway: sr.scoreAway,
+          type: "rebound", actorId: rebounder.id, teamId: defense.id,
+          reboundType: "def", desc: `${rebounder.name} 防守篮板`,
+        });
+      }
+    }
   }
 
-  return { event: shotEvent, ...scoreDelta };
+  return { events, homeScoreDelta: homePts, awayScoreDelta: awayPts };
 }
 
 // ─── 统计收集 ───
@@ -320,14 +359,16 @@ function simulatePossession(ctx: PossessionContext, possessionIdx: number, confi
 function emptyPlayerStat(playerId: string): PlayerStat {
   return {
     playerId, points: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, fta: 0, ftm: 0,
-    rebounds: 0, assists: 0, steals: 0, blocks: 0, turnovers: 0, fouls: 0, minutes: 0,
+    offReb: 0, defReb: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0,
+    turnovers: 0, fouls: 0, minutes: 0, plusMinus: 0,
   };
 }
 
 function emptyTeamStat(teamId: string, players: Player[]): TeamStat {
   return {
     teamId, score: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, fta: 0, ftm: 0,
-    rebounds: 0, assists: 0, steals: 0, blocks: 0, turnovers: 0, fouls: 0,
+    offReb: 0, defReb: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0,
+    turnovers: 0, fouls: 0,
     players: players.map((p) => emptyPlayerStat(p.id)),
   };
 }
@@ -363,8 +404,11 @@ export function simulate(input: SimInput): SimOutput {
   let scoreHome = 0;
   let scoreAway = 0;
   const totalQuarters = 4;
+  const quarterScores = { home: [] as number[], away: [] as number[] };
 
   for (let quarter = 1; quarter <= totalQuarters; quarter++) {
+    const qStartHome = scoreHome;
+    const qStartAway = scoreAway;
     pbp.push({
       quarter,
       clock: "12:00",
@@ -393,9 +437,21 @@ export function simulate(input: SimInput): SimOutput {
       };
 
       const result = simulatePossession(ctx, i, config);
-      pbp.push(result.event);
+      for (const ev of result.events) pbp.push(ev);
       scoreHome += result.homeScoreDelta;
       scoreAway += result.awayScoreDelta;
+
+      // +/- 跟踪：在场球员记录本回合净分
+      const netHome = result.homeScoreDelta - result.awayScoreDelta;
+      const netAway = result.awayScoreDelta - result.homeScoreDelta;
+      for (const p of onCourtPlayers(homeTeam)) {
+        const ps = homeStat.players.find((s) => s.playerId === p.id);
+        if (ps) ps.plusMinus += netHome;
+      }
+      for (const p of onCourtPlayers(awayTeam)) {
+        const ps = awayStat.players.find((s) => s.playerId === p.id);
+        if (ps) ps.plusMinus += netAway;
+      }
 
       // 疲劳累积（每回合轻微增加）
       for (const p of onCourtPlayers(offense)) {
@@ -411,6 +467,9 @@ export function simulate(input: SimInput): SimOutput {
       type: "period_end",
       desc: `第 ${quarter} 节结束`,
     });
+
+    quarterScores.home.push(scoreHome - qStartHome);
+    quarterScores.away.push(scoreAway - qStartAway);
   }
 
   // Clutch 判定：分差 ≤3 且最后 2 分钟
@@ -462,15 +521,41 @@ export function simulate(input: SimInput): SimOutput {
         break;
       case "rebound":
         stat.rebounds++;
-        if (playerStat) playerStat.rebounds++;
+        if (ev.reboundType === "off") stat.offReb++;
+        else stat.defReb++;
+        if (playerStat) {
+          playerStat.rebounds++;
+          if (ev.reboundType === "off") playerStat.offReb++;
+          else playerStat.defReb++;
+        }
+        break;
+      case "block":
+        stat.blocks++;
+        if (playerStat) playerStat.blocks++;
+        break;
+      case "foul":
+        stat.fouls++;
+        if (playerStat) playerStat.fouls++;
+        break;
+      case "free_throw":
+        stat.fta++;
+        if (playerStat) playerStat.fta++;
+        if (ev.made) {
+          stat.score += 1; stat.ftm++;
+          if (playerStat) { playerStat.points += 1; playerStat.ftm++; }
+        }
         break;
     }
   }
 
-  // 上场时间均分（简化：首发每人 32 分钟）
-  for (const stat of [homeStat, awayStat]) {
+  // 上场时间：首发按 lineup.minutes 分配，替补 DNP（minutes=0）
+  for (const team of [homeTeam, awayTeam]) {
+    const stat = team.id === homeTeam.id ? homeStat : awayStat;
+    const starterIds = new Set(team.lineup.starters);
     for (const ps of stat.players) {
-      ps.minutes = 32;
+      ps.minutes = starterIds.has(ps.playerId)
+        ? (team.lineup.minutes[ps.playerId] ?? 32)
+        : 0;
     }
   }
 
@@ -488,6 +573,7 @@ export function simulate(input: SimInput): SimOutput {
     pbp,
     boxScore,
     result,
+    quarterScores,
     rngLog: rng.auditLog() as Array<{ label: string; value: number }>,
     seed,
   };

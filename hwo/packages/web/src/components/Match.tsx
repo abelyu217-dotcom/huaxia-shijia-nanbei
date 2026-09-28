@@ -2,9 +2,12 @@
  * 页面 3：比赛模拟（Match）
  * - 显示主客队与各自战术
  * - 开始比赛 → POST /api/sim/match
- * - 结果：大比分牌 + PBP 文字直播 + 双方 Box Score
+ * - 结果：比分牌 + 逐节比分 + Tab（Box Score / Play-by-Play / Team Stats）
+ *
+ * 参考 RimAttack 比赛页结构升级。Props 接口与 App.tsx 调用方式保持不变。
  */
 
+import { useState } from "react";
 import type {
   TeamDetail,
   TacticPreset,
@@ -12,6 +15,10 @@ import type {
 } from "../types";
 import { PbpFeed } from "./PbpFeed";
 import { BoxScoreTable } from "./BoxScoreTable";
+import { QuarterScoreTable } from "./QuarterScoreTable";
+import { TeamStatsTable } from "./TeamStatsTable";
+
+type MatchTab = "box" | "pbp" | "team";
 
 interface MatchProps {
   homeTeam: TeamDetail | null;
@@ -46,6 +53,8 @@ export function Match({
   simLoading,
   simError,
 }: MatchProps) {
+  const [tab, setTab] = useState<MatchTab>("box");
+
   const ready = Boolean(
     homeTeamId && awayTeamId && homeTacticId && awayTacticId,
   );
@@ -116,58 +125,99 @@ export function Match({
 
         {simResult && !simLoading && r && (
           <>
-            <div className="scoreboard">
-              <div className="score-side home">
-                <span className="score-team">{homeName}</span>
-                <span className="score-num">{r.homeScore}</span>
-                {homeWon ? (
-                  <span className="score-winner">胜</span>
-                ) : awayWon ? (
-                  <span className="score-loser">负</span>
-                ) : null}
+            {/* 1. 顶部信息栏 + 比分牌 */}
+            <div className="match-topbar">
+              <span className="match-back">← 返回</span>
+              <div className="match-scoreline">
+                <div
+                  className={`msl-side-block home${homeWon ? " is-winner" : ""}`}
+                >
+                  <span className="msl-tag">主</span>
+                  <span className="msl-team">{homeName}</span>
+                  {homeWon && <span className="msl-win">胜</span>}
+                </div>
+                <div className="msl-bigscore">
+                  <span className="msl-score home">{r.homeScore}</span>
+                  <span className="msl-colon">:</span>
+                  <span className="msl-score away">{r.awayScore}</span>
+                  {r.isClutch && <span className="clutch-badge">绝杀</span>}
+                </div>
+                <div
+                  className={`msl-side-block away${awayWon ? " is-winner" : ""}`}
+                >
+                  <span className="msl-tag">客</span>
+                  <span className="msl-team">{awayName}</span>
+                  {awayWon && <span className="msl-win">胜</span>}
+                </div>
               </div>
-              <div className="score-divider">
-                <span>VS</span>
-                {r.isClutch && <span className="clutch-badge">绝杀</span>}
-                <span className="seed-tag">seed {simResult.seed}</span>
-              </div>
-              <div className="score-side away">
-                <span className="score-team">{awayName}</span>
-                <span className="score-num">{r.awayScore}</span>
-                {awayWon ? (
-                  <span className="score-winner">胜</span>
-                ) : homeWon ? (
-                  <span className="score-loser">负</span>
-                ) : null}
-              </div>
+              <span className="match-meta">
+                第 {simResult.quarterScores.home.length} 节 · 10:00 开赛 · seed{" "}
+                {simResult.seed}
+              </span>
             </div>
 
-            <section className="section match-pbp-section">
-              <h3 className="section-title">文字直播</h3>
-              <PbpFeed
-                events={simResult.pbp}
-                homeTeamId={homeTeamId ?? ""}
-                awayTeamId={awayTeamId ?? ""}
-              />
-            </section>
+            {/* 2. 逐节比分表 */}
+            <QuarterScoreTable
+              homeName={homeName}
+              awayName={awayName}
+              homeScores={simResult.quarterScores.home}
+              awayScores={simResult.quarterScores.away}
+              homeTotal={r.homeScore}
+              awayTotal={r.awayScore}
+            />
 
-            <section className="section">
-              <h3 className="section-title">技术统计</h3>
-              <div className="boxscore-grid">
+            {/* 3. Tab 切换 */}
+            <div className="match-tabs tab-nav">
+              <button
+                type="button"
+                className={`tab${tab === "box" ? " is-active" : ""}`}
+                onClick={() => setTab("box")}
+              >
+                Box Score
+              </button>
+              <button
+                type="button"
+                className={`tab${tab === "pbp" ? " is-active" : ""}`}
+                onClick={() => setTab("pbp")}
+              >
+                Play-by-Play
+              </button>
+              <button
+                type="button"
+                className={`tab${tab === "team" ? " is-active" : ""}`}
+                onClick={() => setTab("team")}
+              >
+                Team Stats
+              </button>
+            </div>
+
+            <div className="tab-content">
+              {tab === "box" && (
                 <BoxScoreTable
-                  title={homeName}
-                  side="home"
-                  stat={simResult.boxScore.home}
-                  players={homeTeam?.players ?? null}
+                  homeName={homeName}
+                  awayName={awayName}
+                  homeStat={simResult.boxScore.home}
+                  awayStat={simResult.boxScore.away}
+                  homePlayers={homeTeam?.players ?? null}
+                  awayPlayers={awayTeam?.players ?? null}
                 />
-                <BoxScoreTable
-                  title={awayName}
-                  side="away"
-                  stat={simResult.boxScore.away}
-                  players={awayTeam?.players ?? null}
+              )}
+              {tab === "pbp" && (
+                <PbpFeed
+                  events={simResult.pbp}
+                  homeTeamId={homeTeamId ?? ""}
+                  awayTeamId={awayTeamId ?? ""}
                 />
-              </div>
-            </section>
+              )}
+              {tab === "team" && (
+                <TeamStatsTable
+                  homeName={homeName}
+                  awayName={awayName}
+                  home={simResult.boxScore.home}
+                  away={simResult.boxScore.away}
+                />
+              )}
+            </div>
           </>
         )}
       </div>

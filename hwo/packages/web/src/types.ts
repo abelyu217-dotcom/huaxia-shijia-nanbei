@@ -7,29 +7,80 @@
  *   GET  /api/tactics        → TacticPreset[]（20 个战术预设）
  *   POST /api/sim/match      → SimOutput
  *
- * 复用 @hwo/shared 中与 API 契约一致的子结构（Position / Abilities /
- * PbpEvent / PlayerStat / TeamStat / BoxScore / MatchResult）；
- * 其余与 API 文档对齐的形状在此本地定义。
+ * Position / Abilities 复用 @hwo/shared；PbpEvent / PlayerStat / TeamStat /
+ * SimOutput 在本地定义，与后端 @hwo/shared 对齐（PbpEvent.type 用 string
+ * 保持宽松；SimOutput 含 quarterScores 逐节比分）。
  */
 
-import type {
-  Abilities,
-  Position,
-  PbpEvent,
-  BoxScore,
-  MatchResult,
-} from "@hwo/shared";
+import type { Position, Abilities, MatchResult } from "@hwo/shared";
 
 /** 统一从 ./types 导出 shared 中与 API 契约一致的类型，便于组件单一来源导入。 */
 export type {
   Position,
   Abilities,
-  PbpEvent,
-  PlayerStat,
-  TeamStat,
   BoxScore,
   MatchResult,
 } from "@hwo/shared";
+
+// ── PBP 事件（type 用 string 保持宽松，与 @hwo/shared 对齐）──
+export interface PbpEvent {
+  quarter: number;
+  clock: string;
+  scoreHome: number;
+  scoreAway: number;
+  type: string;
+  actorId?: string;
+  assistId?: string;
+  teamId?: string;
+  /** 篮板类型：off=进攻篮板, def=防守篮板（仅篮板事件有值） */
+  reboundType?: "off" | "def";
+  /** 罚球是否命中（仅罚球事件有值） */
+  made?: boolean;
+  desc: string;
+}
+
+// ── 单球员技术统计 ──
+export interface PlayerStat {
+  playerId: string;
+  points: number;
+  fgm: number;
+  fga: number;
+  tpm: number;
+  tpa: number;
+  ftm: number;
+  fta: number;
+  offReb: number;
+  defReb: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  turnovers: number;
+  fouls: number;
+  minutes: number;
+  plusMinus: number;
+}
+
+// ── 球队技术统计 ──
+export interface TeamStat {
+  teamId: string;
+  score: number;
+  fgm: number;
+  fga: number;
+  tpm: number;
+  tpa: number;
+  ftm: number;
+  fta: number;
+  offReb: number;
+  defReb: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  turnovers: number;
+  fouls: number;
+  players: PlayerStat[];
+}
 
 // ── 球队列表（GET /api/teams）──
 export interface RosterPlayer {
@@ -87,12 +138,14 @@ export interface SimMatchRequest {
 }
 
 /**
- * 比赛模拟输出。与 @hwo/shared 的 SimOutput 一致，但 API 契约不含 rngLog，
- * 故在此显式定义，避免类型声称存在运行时未返回的字段。
+ * 比赛模拟输出。与 @hwo/shared 的 SimOutput 对齐，但 API 契约不含 rngLog，
+ * 故在此显式定义，避免类型声称存在运行时未返回的字段。新增 quarterScores
+ * 逐节比分（home[i]/away[i] 为第 i+1 节得分）。
  */
 export interface SimOutput {
   pbp: PbpEvent[];
-  boxScore: BoxScore;
+  boxScore: { home: TeamStat; away: TeamStat };
   result: MatchResult;
+  quarterScores: { home: number[]; away: number[] };
   seed: number;
 }

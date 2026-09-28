@@ -154,6 +154,10 @@ export interface PbpEvent {
   actorId?: string;       // 主要执行者
   assistId?: string;      // 助攻者
   teamId?: string;        // 所属球队
+  /** 篮板类型：off=进攻篮板, def=防守篮板（仅 type=rebound 时有值） */
+  reboundType?: "off" | "def";
+  /** 罚球是否命中（仅 type=free_throw 时有值） */
+  made?: boolean;
   desc: string;           // 叙事文本
 }
 
@@ -167,13 +171,16 @@ export interface PlayerStat {
   tpa: number;
   fta: number;
   ftm: number;
-  rebounds: number;
+  offReb: number;     // 进攻篮板
+  defReb: number;     // 防守篮板
+  rebounds: number;   // 总篮板
   assists: number;
   steals: number;
   blocks: number;
   turnovers: number;
   fouls: number;
   minutes: number;
+  plusMinus: number;  // 正负值：在场期间球队净分
 }
 
 /** 球队技术统计 */
@@ -186,6 +193,8 @@ export interface TeamStat {
   tpa: number;
   fta: number;
   ftm: number;
+  offReb: number;
+  defReb: number;
   rebounds: number;
   assists: number;
   steals: number;
@@ -221,6 +230,8 @@ export interface SimOutput {
   pbp: PbpEvent[];
   boxScore: BoxScore;
   result: MatchResult;
+  /** 逐节比分：home[i]/away[i] 为第 i+1 节得分 */
+  quarterScores: { home: number[]; away: number[] };
   rngLog: RngLogEntry[];
   seed: number;
 }
