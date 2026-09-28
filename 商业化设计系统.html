@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>商业化设计系统 · Hoops World Online</title>
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#141b26; --panel2:#1b2433; --line:#26324a;
+    --ink:#e6edf6; --ink2:#9fb0c7; --ink3:#6b7c97;
+    --accent:#ff6b35; --accent2:#4ade80; --gold:#fbbf24; --red:#ef4444; --blue:#60a5fa; --purple:#a78bfa; --cyan:#22d3ee;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:linear-gradient(180deg,#070a10 0%,#0b0f17 100%);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 22px 120px}
+  .hero{
+    position:relative;border:1px solid var(--line);border-radius:18px;padding:42px 34px 30px;
+    background:
+      radial-gradient(800px 280px at 20% -10%, rgba(251,191,36,.18), transparent 60%),
+      radial-gradient(700px 260px at 90% 0%, rgba(74,222,128,.12), transparent 60%),
+      linear-gradient(180deg,#151d2c,#0e1420);
+    overflow:hidden;margin-bottom:30px;
+  }
+  .hero .tag{display:inline-block;font-size:12px;letter-spacing:.16em;color:var(--gold);border:1px solid rgba(251,191,36,.45);padding:4px 10px;border-radius:999px;margin-bottom:18px;text-transform:uppercase}
+  .hero h1{margin:0 0 8px;font-size:32px;letter-spacing:.5px;font-weight:800}
+  .hero h1 .en{color:var(--ink2);font-weight:600;font-size:18px;margin-left:10px}
+  .hero .pitch{color:var(--ink2);font-size:15px;max-width:840px;margin:10px 0 22px}
+  .hero .meta{display:flex;flex-wrap:wrap;gap:10px}
+  .hero .chip{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--ink2)}
+  .hero .chip b{color:var(--ink);font-weight:600}
+  .hero .coin{position:absolute;right:34px;bottom:18px;font-size:68px;opacity:.08;pointer-events:none}
+
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 28px;margin-bottom:22px}
+  .toc h3{margin:0 0 14px;font-size:14px;color:var(--ink2);letter-spacing:.1em;text-transform:uppercase}
+  .toc ol{margin:0;padding-left:22px;columns:2;column-gap:32px}
+  .toc li{margin:5px 0;break-inside:avoid}
+  .toc a{color:var(--ink2)}
+  .toc a:hover{color:var(--gold)}
+  @media (max-width:640px){.toc ol{columns:1}}
+
+  section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin-bottom:22px}
+  section > h2{margin:0 0 16px;font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
+  section > h2 .num{font-size:12px;color:#0b0f17;background:var(--gold);width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;font-weight:800;flex-shrink:0}
+  h3{font-size:16px;margin:22px 0 10px;color:var(--ink)}
+  h4{font-size:14px;margin:18px 0 8px;color:var(--gold);letter-spacing:.04em}
+  p{margin:8px 0}
+  ul,ol{margin:8px 0 8px 4px;padding-left:22px}
+  li{margin:4px 0}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{background:#0d131d;border:1px solid var(--line);padding:2px 6px;border-radius:5px;font-size:13px;color:var(--gold);font-family:"SF Mono","Fira Code",Consolas,monospace}
+  strong{color:#fff}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px}
+  th,td{padding:9px 11px;text-align:left;border:1px solid var(--line);vertical-align:top}
+  th{background:var(--panel2);color:var(--ink);font-weight:600}
+  tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+
+  .note{border-left:3px solid var(--accent);background:rgba(255,107,53,.06);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;color:var(--ink2)}
+  .note b{color:var(--accent)}
+  .note.green{border-left-color:var(--accent2);background:rgba(74,222,128,.06)}
+  .note.green b{color:var(--accent2)}
+  .note.blue{border-left-color:var(--blue);background:rgba(96,165,250,.06)}
+  .note.blue b{color:var(--blue)}
+  .note.red{border-left-color:var(--red);background:rgba(239,68,68,.06)}
+  .note.red b{color:var(--red)}
+  .note.gold{border-left-color:var(--gold);background:rgba(251,191,36,.06)}
+  .note.gold b{color:var(--gold)}
+  .note.purple{border-left-color:var(--purple);background:rgba(167,139,250,.06)}
+  .note.purple b{color:var(--purple)}
+
+  .formula{background:#0d131d;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;font-family:"SF Mono","Fira Code",Consolas,monospace;font-size:13px;overflow-x:auto;line-height:1.9;white-space:pre}
+  .formula .var{color:var(--blue)}
+  .formula .op{color:var(--accent)}
+  .formula .fn{color:var(--purple)}
+  .formula .num{color:var(--gold)}
+  .formula .comment{color:var(--ink3);font-style:italic}
+  .formula .str{color:var(--accent2)}
+  .formula .kw{color:var(--accent2);font-weight:bold}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:14px 0}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .card .t{font-weight:700;color:var(--ink);font-size:14px;margin-bottom:6px}
+  .card .d{font-size:13px;color:var(--ink2)}
+  .badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:999px;font-weight:700;letter-spacing:.04em;vertical-align:middle}
+  .badge.green{background:rgba(74,222,128,.15);color:var(--accent2)}
+  .badge.gold{background:rgba(251,191,36,.15);color:var(--gold)}
+  .badge.red{background:rgba(239,68,68,.15);color:var(--red)}
+  .badge.blue{background:rgba(96,165,250,.15);color:var(--blue)}
+  .badge.purple{background:rgba(167,139,250,.15);color:var(--purple)}
+
+  .flow{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:14px 0;font-size:13px}
+  .flow .step{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 14px;color:var(--ink)}
+  .flow .arrow{color:var(--gold);font-weight:bold}
+
+  .redline{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:16px 0}
+  .rl-card{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:16px;text-align:center}
+  .rl-card .ico{font-size:28px;margin-bottom:6px}
+  .rl-card .t{font-weight:800;color:var(--red);font-size:14px;margin-bottom:4px}
+  .rl-card .d{font-size:12px;color:var(--ink2)}
+
+  .vip-tiers{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:16px 0}
+  .vip-card{border-radius:10px;padding:16px 14px;border:1px solid var(--line);background:var(--panel2)}
+  .vip-card .tier{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+  .vip-card .price{font-size:20px;font-weight:800;color:var(--gold);margin:4px 0 8px}
+  .vip-card .feats{font-size:12px;color:var(--ink2);line-height:1.6}
+  .vip-card .feats li{margin:3px 0}
+  .vip-1{border-color:rgba(96,165,250,.3)}
+  .vip-1 .tier{color:var(--blue)}
+  .vip-2{border-color:rgba(251,191,36,.3);background:linear-gradient(180deg,rgba(251,191,36,.06),var(--panel2))}
+  .vip-2 .tier{color:var(--gold)}
+  .vip-3{border-color:rgba(167,139,250,.3);background:linear-gradient(180deg,rgba(167,139,250,.06),var(--panel2))}
+  .vip-3 .tier{color:var(--purple)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ==================== HERO ==================== -->
+<div class="hero">
+  <span class="tag">System Design · Monetization</span>
+  <h1>商业化设计系统 <span class="en">Monetization System</span></h1>
+  <p class="pitch">F2P 公平非 P2W 商业模型的完整设计。深化策划方案 §18 的框架——定义 Credits 付费货币的完整用途体系、VIP 订阅三级权益、外观商城目录、便捷服务定价、世界迁移商业化、初始球队选择、防套利机制、付费转化漏斗、反 P2W 审计。铁律：Credits/VIP 只买"快"与"美"，永不买"强"——这是信任底线，零氪可夺冠。</p>
+  <div class="meta">
+    <span class="chip"><b>优先级</b> P1</span>
+    <span class="chip"><b>基础文档</b> 策划方案 §18</span>
+    <span class="chip"><b>商业模型</b> F2P + Credits/VIP</span>
+    <span class="chip"><b>版本</b> v1.0</span>
+  </div>
+  <span class="coin">💰</span>
+</div>
+
+<!-- ==================== TOC ==================== -->
+<div class="toc">
+  <h3>目录 · Table of Contents</h3>
+  <ol>
+    <li><a href="#s1">设计原则与铁律</a></li>
+    <li><a href="#s2">系统总览</a></li>
+    <li><a href="#s3">Credits 付费货币</a></li>
+    <li><a href="#s4">VIP 订阅体系</a></li>
+    <li><a href="#s5">外观商城</a></li>
+    <li><a href="#s6">便捷服务</a></li>
+    <li><a href="#s7">世界迁移商业化</a></li>
+    <li><a href="#s8">初始球队选择</a></li>
+    <li><a href="#s9">红线清单与反 P2W 审计</a></li>
+    <li><a href="#s10">防套利机制</a></li>
+    <li><a href="#s11">付费转化漏斗</a></li>
+    <li><a href="#s12">付费用户分层</a></li>
+    <li><a href="#s13">营收预测模型</a></li>
+    <li><a href="#s14">与各系统联动</a></li>
+    <li><a href="#s15">异常处理与边界规则</a></li>
+    <li><a href="#s16">数值附录</a></li>
+  </ol>
+</div>
+
+<!-- ==================== §1 设计原则与铁律 ==================== -->
+<section id="s1">
+  <h2><span class="num">1</span>设计原则与铁律</h2>
+
+  <div class="note gold"><b>核心铁律</b>：Credits / VIP 均不影响比赛结果与球员强度。这是信任底线。零氪玩家可以夺冠，付费玩家不能凭付费赢比赛。付费只买"快"（便捷）与"美"（外观），永不买"强"（数值）。</div>
+
+  <h3>1.1 四设计原则</h3>
+  <div class="grid">
+    <div class="card"><div class="t">① 公平优先 <span class="badge red">铁律</span></div><div class="d">竞技公平是 HWO 的生命线。任何影响比赛 sim、球员能力、薪资空间、选秀顺位的内容永不售卖。一旦突破，信任崩塌不可逆。</div></div>
+    <div class="card"><div class="t">② 价值在体验 <span class="badge gold">变现</span></div><div class="d">付费价值来自体验增强——好看的球衣、便捷的操作、个性化的球馆。这些让游戏更"好玩/好看"，但不让玩家更"能赢"。</div></div>
+    <div class="card"><div class="t">③ 零氪可玩 <span class="badge green">友好</span></div><div class="d">所有影响强度的内容均靠游戏内行为获取。零氪玩家与付费玩家在"能赢"上完全平等，差异只在"好看/方便"。</div></div>
+    <div class="card"><div class="t">④ 防套利 <span class="badge blue">边界</span></div><div class="d">Credits 不与游戏内经济（薪资空间/转会费）互通。世界迁移受冷却限制。防止付费成为套利工具破坏世界内经济平衡。</div></div>
+  </div>
+
+  <h3>1.2 与策划方案 §18 的关系</h3>
+  <p>策划方案 §18 已建立商业化框架：付费点表、红线清单、F2P 友好原则。本系统是 §18 的深化实现，补全 Credits 完整用途体系、VIP 三级权益、外观商城目录、便捷服务定价、防套利机制、付费转化漏斗、反 P2W 审计。数值与原则沿用 §18，本系统聚焦"怎么卖、卖什么、怎么防套利"。</p>
+</section>
+
+<!-- ==================== §2 系统总览 ==================== -->
+<section id="s2">
+  <h2><span class="num">2</span>系统总览</h2>
+
+  <h3>2.1 货币体系</h3>
+  <table>
+    <thead><tr><th>货币</th><th>类型</th><th>获取</th><th>用途</th><th>是否影响强度</th></tr></thead>
+    <tbody>
+      <tr><td><b>薪资空间</b></td><td>游戏内主货币</td><td>赛季收入（球票/转播/赞助/周边）</td><td>签球员/运营投入/球馆</td><td><span class="badge red">是</span>（但不付费购买）</td></tr>
+      <tr><td><b>Credits</b></td><td>付费货币</td><td>充值</td><td>外观/便捷/世界迁移/初始球队</td><td><span class="badge green">否（红线）</span></td></tr>
+      <tr><td><b>VIP</b></td><td>订阅状态</td><td>月/季/年订阅</td><td>便捷权益/外观折扣/额外槽位</td><td><span class="badge green">否（红线）</span></td></tr>
+      <tr><td><b>声望</b></td><td>成就货币</td><td>游戏内成就（王朝系统 §11）</td><td>新世界起始加成</td><td><span class="badge gold">间接</span>（时间回报，非付费）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>2.2 付费链路</h3>
+  <div class="flow">
+    <span class="step">玩家充值</span>
+    <span class="arrow">→</span>
+    <span class="step">获取 Credits</span>
+    <span class="arrow">→</span>
+    <span class="step">商城消费</span>
+    <span class="arrow">→</span>
+    <span class="step">外观/便捷/迁移</span>
+    <span class="arrow">→</span>
+    <span class="step">体验增强（非强度）</span>
+  </div>
+
+  <h3>2.3 营收来源占比（目标）</h3>
+  <table>
+    <thead><tr><th>来源</th><th>占比</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><b>VIP 订阅</b></td><td>40%</td><td>稳定营收+留存；月/季/年</td></tr>
+      <tr><td><b>Credits 充值</b></td><td>35%</td><td>外观+便捷+迁移；大额充值</td></tr>
+      <tr><td><b>外观商城</b></td><td>20%</td><td>个性化变现；球衣/球馆主题</td></tr>
+      <tr><td><b>初始球队选择</b></td><td>5%</td><td>低频高价；新玩家冷启动跳过</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== §3 Credits 付费货币 ==================== -->
+<section id="s3">
+  <h2><span class="num">3</span>Credits 付费货币</h2>
+
+  <h3>3.1 Credits 充值包</h3>
+  <table>
+    <thead><tr><th>包名</th><th>价格</th><th>Credits</th><th>单价</th><th>额外</th></tr></thead>
+    <tbody>
+      <tr><td><b>入门包</b></td><td>¥6</td><td>60</td><td>10/¥</td><td>—</td></tr>
+      <tr><td><b>基础包</b></td><td>¥30</td><td>320</td><td>10.7/¥</td><td>+20</td></tr>
+      <tr><td><b>标准包</b></td><td>¥68</td><td>750</td><td>11.0/¥</td><td>+50</td></tr>
+      <tr><td><b>超值包</b></td><td>¥128</td><td>1,500</td><td>11.7/¥</td><td>+150</td></tr>
+      <tr><td><b>豪华包</b></td><td>¥328</td><td>4,000</td><td>12.2/¥</td><td>+500</td></tr>
+      <tr><td><b>至尊包</b></td><td>¥648</td><td>8,500</td><td>13.1/¥</td><td>+1,200</td></tr>
+    </tbody>
+  </table>
+  <p><b>定价逻辑</b>：大额充值单价更优（鼓励充值），但所有 Credits 只能买外观/便捷/迁移，不能买强度——大额充值不等于更强。</p>
+
+  <h3>3.2 Credits 用途体系</h3>
+  <table>
+    <thead><tr><th>用途</th><th>影响强度</th><th>定价（Credits）</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>球衣外观</td><td><span class="badge green">否</span></td><td>30-150</td><td>个性化球衣配色/图案</td></tr>
+      <tr><td>球馆主题</td><td><span class="badge green">否</span></td><td>100-500</td><td>球馆视觉皮肤（不影响容量/收入）</td></tr>
+      <tr><td>教练 avatar</td><td><span class="badge green">否</span></td><td>50-200</td><td>经理/教练头像个性化</td></tr>
+      <tr><td>报纸版面</td><td><span class="badge green">否</span></td><td>30-80</td><td>赛后报纸视觉风格</td></tr>
+      <tr><td>额外战术存档槽</td><td><span class="badge green">否</span></td><td>100/槽</td><td>便捷：多存几套战术预设</td></tr>
+      <tr><td>额外球探 Watchlist</td><td><span class="badge green">否</span></td><td>80/槽</td><td>便捷：多跟踪几个球员</td></tr>
+      <tr><td>观赛回放存档</td><td><span class="badge green">否</span></td><td>50/场</td><td>便捷：保存精彩比赛回放</td></tr>
+      <tr><td>世界迁移</td><td><span class="badge green">否</span></td><td>500-2000</td><td>跨世界迁移球队（受冷却）</td></tr>
+      <tr><td>初始球队选择</td><td><span class="badge green">否</span></td><td>300</td><td>选非顶级中游球队起步</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.3 Credits 不可购买（红线）</h3>
+  <div class="redline">
+    <div class="rl-card"><div class="ico">🏀</div><div class="t">比赛结果</div><div class="d">不可买胜负、不可买 sim 随机</div></div>
+    <div class="rl-card"><div class="ico">💪</div><div class="t">球员强度</div><div class="d">不可买能力/Peak/特质提升</div></div>
+    <div class="rl-card"><div class="ico">💵</div><div class="t">薪资空间</div><div class="d">不可直接买游戏内货币</div></div>
+    <div class="rl-card"><div class="ico">📋</div><div class="t">选秀顺位</div><div class="d">不可买顺位提升</div></div>
+    <div class="rl-card"><div class="ico">🔍</div><div class="t">球探信息</div><div class="d">不可买 fog 收窄/探针</div></div>
+    <div class="rl-card"><div class="ico">⏱️</div><div class="t">训练加速</div><div class="d">不可买训练响应/成长加速</div></div>
+  </div>
+</section>
+
+<!-- ==================== §4 VIP 订阅体系 ==================== -->
+<section id="s4">
+  <h2><span class="num">4</span>VIP 订阅体系</h2>
+  <p>VIP 是稳定营收与留存的核心。策划方案 §18 仅提及"月/季/年订阅"，本节补全三级权益。</p>
+
+  <h3>4.1 VIP 三级</h3>
+  <div class="vip-tiers">
+    <div class="vip-card vip-1">
+      <div class="tier">VIP 蓝卡</div>
+      <div class="price">¥18/月</div>
+      <ul class="feats">
+        <li>额外 2 战术存档槽</li>
+        <li>额外 3 球探 Watchlist</li>
+        <li>观赛回放存档 +5 场</li>
+        <li>赛后报纸去广告</li>
+        <li>外观商城 9 折</li>
+      </ul>
+    </div>
+    <div class="vip-card vip-2">
+      <div class="tier">VIP 金卡</div>
+      <div class="price">¥45/月</div>
+      <ul class="feats">
+        <li>额外 5 战术存档槽</li>
+        <li>额外 8 球探 Watchlist</li>
+        <li>观赛回放存档 +15 场</li>
+        <li>赛后报纸去广告</li>
+        <li>外观商城 8 折</li>
+        <li>专属球衣配色（金卡限定）</li>
+        <li>球馆主题免费任选 1 个</li>
+        <li>每日 Credits 返利 5</li>
+      </ul>
+    </div>
+    <div class="vip-card vip-3">
+      <div class="tier">VIP 黑卡</div>
+      <div class="price">¥98/月</div>
+      <ul class="feats">
+        <li>额外 10 战术存档槽</li>
+        <li>额外 20 球探 Watchlist</li>
+        <li>观赛回放存档 +50 场</li>
+        <li>赛后报纸去广告</li>
+        <li>外观商城 7 折</li>
+        <li>专属球衣配色（黑卡限定）</li>
+        <li>球馆主题免费任选 3 个</li>
+        <li>每日 Credits 返利 15</li>
+        <li>专属教练 avatar 框</li>
+        <li>世界迁移冷却减半</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>4.2 VIP 订阅周期优惠</h3>
+  <table>
+    <thead><tr><th>周期</th><th>蓝卡</th><th>金卡</th><th>黑卡</th><th>折扣</th></tr></thead>
+    <tbody>
+      <tr><td>月付</td><td>¥18</td><td>¥45</td><td>¥98</td><td>基准</td></tr>
+      <tr><td>季付</td><td>¥48</td><td>¥120</td><td>¥260</td><td>~9 折</td></tr>
+      <tr><td>年付</td><td>¥168</td><td>¥420</td><td>¥920</td><td>~8 折</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.3 VIP 权益边界</h3>
+  <div class="note red"><b>关键约束</b>：VIP 所有权益都是"便捷"与"外观"——更多战术存档槽=方便管理，不增加战术效果；更多 Watchlist=方便跟踪，不收窄 fog；外观折扣=省钱买好看，不买强度。VIP 黑卡的"每日 Credits 返利"只能买外观/便捷，不能买强度。VIP 永不提供任何 sim/能力/fog 加成。</div>
+</section>
+
+<!-- ==================== §5 外观商城 ==================== -->
+<section id="s5">
+  <h2><span class="num">5</span>外观商城</h2>
+  <p>外观商城是个性化变现的核心——让玩家"好看"但不"能赢"。</p>
+
+  <h3>5.1 外观分类</h3>
+  <table>
+    <thead><tr><th>分类</th><th>内容</th><th>定价（Credits）</th><th>是否影响强度</th></tr></thead>
+    <tbody>
+      <tr><td><b>球衣配色</b></td><td>主场/客场/备用球衣配色方案</td><td>30-150</td><td><span class="badge green">否</span></td></tr>
+      <tr><td><b>球衣图案</b></td><td>特殊图案/纹样/纪念款</td><td>80-300</td><td><span class="badge green">否</span></td></tr>
+      <tr><td><b>球馆主题</b></td><td>球馆地板/灯光/记分牌视觉皮肤</td><td>100-500</td><td><span class="badge green">否（纯视觉）</span></td></tr>
+      <tr><td><b>教练 avatar</b></td><td>经理/教练头像框/背景</td><td>50-200</td><td><span class="badge green">否</span></td></tr>
+      <tr><td><b>报纸版面</b></td><td>赛后报纸视觉风格/字体/配色</td><td>30-80</td><td><span class="badge green">否</span></td></tr>
+      <tr><td><b>球员庆祝动作</b></td><td>扣篮/三分后的庆祝动画</td><td>60-180</td><td><span class="badge green">否</span></td></tr>
+      <tr><td><b>王朝铜像</b></td><td>传奇王朝球队的球馆铜像样式</td><td>200-600</td><td><span class="badge green">否</span></td></tr>
+      <tr><td><b>球衣退役横幅</b></td><td>球衣退役仪式的横幅样式</td><td>100-250</td><td><span class="badge green">否</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.2 外观获取方式</h3>
+  <ul>
+    <li><b>Credits 购买</b>：主要获取方式。</li>
+    <li><b>VIP 限定</b>：金卡/黑卡有专属外观（不单独售卖）。</li>
+    <li><b>成就解锁</b>：部分外观通过游戏内成就解锁（如夺冠解锁冠军纪念球衣）。</li>
+    <li><b>赛季奖励</b>：每赛季末按成绩发放限定外观（季后赛球队专属）。</li>
+  </ul>
+
+  <h3>5.3 外观不影响收入</h3>
+  <div class="note blue"><b>关键设计</b>：球馆"主题皮肤"与球馆"等级"严格区分——主题皮肤只改视觉（地板颜色/灯光），不改容量/收入/FA 吸引力。玩家买了豪华主题皮肤但球馆仍是 Lv1，收入不变。外观是纯视觉个性化，与经济系统完全隔离。</div>
+</section>
+
+<!-- ==================== §6 便捷服务 ==================== -->
+<section id="s6">
+  <h2><span class="num">6</span>便捷服务</h2>
+  <p>便捷服务让游戏更"方便"但不更"强"——多存几套战术、多跟踪几个球员、保存回放。</p>
+
+  <h3>6.1 便捷服务定价</h3>
+  <table>
+    <thead><tr><th>服务</th><th>免费额度</th><th>额外购买</th><th>VIP 含</th><th>影响强度</th></tr></thead>
+    <tbody>
+      <tr><td><b>战术存档槽</b></td><td>3</td><td>100 Credits/槽</td><td>蓝+2/金+5/黑+10</td><td><span class="badge green">否</span></td></tr>
+      <tr><td><b>球探 Watchlist</b></td><td>20+球探等级×5</td><td>80 Credits/槽</td><td>蓝+3/金+8/黑+20</td><td><span class="badge green">否</span></td></tr>
+      <tr><td><b>观赛回放存档</b></td><td>5 场</td><td>50 Credits/场</td><td>蓝+5/金+15/黑+50</td><td><span class="badge green">否</span></td></tr>
+      <tr><td><b>赛后报纸去广告</b></td><td>—</td><td>—</td><td>所有 VIP</td><td><span class="badge green">否</span></td></tr>
+      <tr><td><b>批量操作</b></td><td>—</td><td>—</td><td>金卡+</td><td><span class="badge green">否</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>6.2 便捷的边界</h3>
+  <ul>
+    <li><b>战术存档槽</b>：只是多存几套预设战术，不增加战术效果或可选战术种类。</li>
+    <li><b>球探 Watchlist</b>：只是多跟踪几个球员，不收窄 fog 或增加探针。</li>
+    <li><b>观赛回放</b>：只是保存回放，不影响比赛结果。</li>
+    <li><b>批量操作</b>：只是减少点击次数，不改变操作可做的事。</li>
+  </ul>
+  <div class="note green"><b>原则</b>：便捷服务让"能做的事更方便做"，但不让"不能做的事变成能做"。零氪玩家能做的一切，付费玩家也能做——只是更快/更多存档。</div>
+</section>
+
+<!-- ==================== §7 世界迁移商业化 ==================== -->
+<section id="s7">
+  <h2><span class="num">7</span>世界迁移商业化</h2>
+
+  <h3>7.1 世界迁移定价</h3>
+  <table>
+    <thead><tr><th>迁移类型</th><th>Credits</th><th>冷却</th><th>VIP 黑卡冷却</th></tr></thead>
+    <tbody>
+      <tr><td>同语言区迁移</td><td>500</td><td>180 天</td><td>90 天</td></tr>
+      <tr><td>跨语言区迁移</td><td>1,000</td><td>365 天</td><td>180 天</td></tr>
+      <tr><td>指定世界迁移（如找朋友）</td><td>2,000</td><td>365 天</td><td>180 天</td></tr>
+    </tbody>
+  </table>
+
+  <h3>7.2 迁移规则</h3>
+  <ul>
+    <li><b>带走的</b>：球队（球员/合同）、青训苗子、 Credits 余额、VIP 状态、外观物品、经理档案。</li>
+    <li><b>不带走的</b>：原世界的排名/王朝记录（留档但不影响新世界）、原世界人脉关系（标记"远"）、原世界薪资空间（新世界重置）。</li>
+    <li><b>新世界起始</b>：按新世界联赛层级重新计算起始收入/薪资空间；经理传奇档案声望加成生效（王朝系统 §11.3）。</li>
+  </ul>
+
+  <h3>7.3 防套利</h3>
+  <div class="note red"><b>关键防套利</b>：迁移不带走薪资空间——防止玩家在富世界攒钱后迁移到穷世界当富翁。Credits 与游戏内经济（薪资空间）完全隔离——Credits 不可兑换薪资空间，薪资空间不可兑换 Credits。这是付费与竞技的防火墙。</div>
+</section>
+
+<!-- ==================== §8 初始球队选择 ==================== -->
+<section id="s8">
+  <h2><span class="num">8</span>初始球队选择</h2>
+
+  <h3>8.1 默认分配</h3>
+  <p>新注册经理默认分配到 T4 入门级某组 AI 球队——从底层起步，体验完整成长。</p>
+
+  <h3>8.2 付费选择</h3>
+  <ul>
+    <li><b>价格</b>：300 Credits。</li>
+    <li><b>可选范围</b>：T3 或 T4 的中游 AI 球队（跳过底层冷启动）。</li>
+    <li><b>不可选</b>：T1/T2 球队（保护生态——顶级球队不可付费获取）。</li>
+    <li><b>不可选</b>：已有真人经理的球队（避免抢占）。</li>
+  </ul>
+
+  <h3>8.3 公平性保障</h3>
+  <div class="note blue"><b>公平设计</b>：付费选择只是"跳过冷启动"——从 T3 中游起步比 T4 底层快一些，但不提供任何数值优势。T3 中游球队的球员/薪资/球馆与免费分配的 T4 球队按各自世界标准生成，付费不获得更强阵容。顶级球队（T1/T2）永不付费可选——这是"花钱不能买顶级平台"的红线。</div>
+</section>
+
+<!-- ==================== §9 红线清单与反 P2W 审计 ==================== -->
+<section id="s9">
+  <h2><span class="num">9</span>红线清单与反 P2W 审计</h2>
+
+  <h3>9.1 红线清单（永不售卖）</h3>
+  <table>
+    <thead><tr><th>红线项</th><th>说明</th><th>审计方式</th></tr></thead>
+    <tbody>
+      <tr><td>比赛结果</td><td>不可买胜负/sim 随机</td><td>sim 引擎审计（纯函数+确定性 PRNG）</td></tr>
+      <tr><td>球员强度</td><td>不可买能力/Peak/特质</td><td>能力变更日志审查</td></tr>
+      <tr><td>薪资空间</td><td>不可直接买游戏内货币</td><td> Credits 与薪资空间隔离审计</td></tr>
+      <tr><td>选秀顺位</td><td>不可买顺位提升</td><td>选秀 PRNG 审计</td></tr>
+      <tr><td>球探信息</td><td>不可买 fog 收窄/探针</td><td>fog 变更日志审查</td></tr>
+      <tr><td>训练加速</td><td>不可买训练响应/成长加速</td><td>训练响应审计</td></tr>
+      <tr><td>顶级球队</td><td>不可付费获取 T1/T2 球队</td><td>初始球队选择审计</td></tr>
+    </tbody>
+  </table>
+
+  <h3>9.2 反 P2W 审计机制</h3>
+  <ul>
+    <li><b>代码审计</b>：所有 Credits/VIP 消费入口需通过"红线审查"——确认不触及红线项。</li>
+    <li><b>日志审计</b>：所有付费操作记录日志，可追溯是否有红线违规。</li>
+    <li><b>玩家举报</b>：玩家可举报疑似 P2W 行为；运营团队核查。</li>
+    <li><b>定期审计</b>：每季度全量审计付费与竞技的隔离性。</li>
+  </ul>
+
+  <h3>9.3 信任承诺</h3>
+  <div class="note gold"><b>信任底线</b>：HW0 的商业模型建立在"公平非 P2W"的信任上。一旦突破红线（如开始卖球员强度），信任崩塌不可逆——玩家会流失且不会回来。因此红线是绝对的，不可因短期营收压力突破。宁可少赚，不可卖强。</div>
+</section>
+
+<!-- ==================== §10 防套利机制 ==================== -->
+<section id="s10">
+  <h2><span class="num">10</span>防套利机制</h2>
+
+  <h3>10.1 Credits 与游戏内经济隔离</h3>
+  <div class="formula">
+<span class="comment">── 付费与竞技的防火墙 ──</span>
+
+<span class="comment">// Credits 不可兑换薪资空间</span>
+<span class="fn">convertCreditsToCapSpace</span>(credits): <span class="kw">return</span> <span class="str">"FORBIDDEN"</span>
+
+<span class="comment">// 薪资空间不可兑换 Credits</span>
+<span class="fn">convertCapSpaceToCredits</span>(cap): <span class="kw">return</span> <span class="str">"FORBIDDEN"</span>
+
+<span class="comment">// 世界迁移不带走薪资空间</span>
+<span class="fn">migrateWorld</span>(accountId, targetWorld):
+    <span class="var">credits</span> <span class="op">=</span> <span class="fn">getCredits</span>(<span class="var">accountId</span>)       <span class="comment">// 带走</span>
+    <span class="var">capSpace</span> <span class="op">=</span> <span class="fn">resetForNewWorld</span>(<span class="var">targetWorld</span>)  <span class="comment">// 重置</span>
+    <span class="comment">// Credits 余额跟随，但不可用于新世界的薪资空间</span>
+  </div>
+
+  <h3>10.2 外观不可转让</h3>
+  <ul>
+    <li>外观物品绑定账号，不可交易/转让给其他玩家。</li>
+    <li>防止用 Credits 买外观再转卖套利。</li>
+  </ul>
+
+  <h3>10.3 三身份反套利延伸</h3>
+  <ul>
+    <li>经理不能给化身开高薪合同（三身份 §10）。</li>
+    <li>经理不能以经纪人身份代表自己化身（三身份 §10）。</li>
+    <li>付费不改变这些反套利规则——Credits 不能绕过三身份反套利。</li>
+  </ul>
+
+  <h3>10.4 世界迁移冷却</h3>
+  <ul>
+    <li>同语言区 180 天冷却；跨语言区 365 天。</li>
+    <li>防止频繁迁移套利（如在不同世界间倒卖球员——但球员不可跨世界交易，故此风险已阻断）。</li>
+  </ul>
+</section>
+
+<!-- ==================== §11 付费转化漏斗 ==================== -->
+<section id="s11">
+  <h2><span class="num">11</span>付费转化漏斗</h2>
+
+  <h3>11.1 转化漏斗</h3>
+  <div class="flow">
+    <span class="step">注册</span>
+    <span class="arrow">→</span>
+    <span class="step">新手引导</span>
+    <span class="arrow">→</span>
+    <span class="step">首赛季体验</span>
+    <span class="arrow">→</span>
+    <span class="step">外观诱惑</span>
+    <span class="arrow">→</span>
+    <span class="step">便捷需求</span>
+    <span class="arrow">→</span>
+    <span class="step">首充（¥6）</span>
+    <span class="arrow">→</span>
+    <span class="step">VIP 试用</span>
+    <span class="arrow">→</span>
+    <span class="step">VIP 订阅</span>
+    <span class="arrow">→</span>
+    <span class="step">长期付费</span>
+  </div>
+
+  <h3>11.2 转化节点设计</h3>
+  <table>
+    <thead><tr><th>节点</th><th>触发</th><th>目标</th></tr></thead>
+    <tbody>
+      <tr><td>外观诱惑</td><td>首赛季后展示限定外观（冠军球衣/球馆主题）</td><td>激发个性化需求</td></tr>
+      <tr><td>便捷需求</td><td>战术存档槽/Watchlist 不够用时提示</td><td>激发便捷需求</td></tr>
+      <tr><td>首充</td><td>¥6 入门包（低门槛）；首充额外赠送外观</td><td>破冰首充</td></tr>
+      <tr><td>VIP 试用</td><td>首充后赠送 7 天 VIP 金卡体验</td><td>体验 VIP 便捷</td></tr>
+      <tr><td>VIP 订阅</td><td>试用结束后引导订阅</td><td>转化为稳定订阅</td></tr>
+    </tbody>
+  </table>
+
+  <h3>11.3 非付费玩家的价值</h3>
+  <div class="note green"><b>关键认知</b>：零氪玩家不是"流失用户"——他们是 HWO 生态的基础。零氪玩家填充世界、构成竞争、提供社交价值。没有足够的零氪玩家，付费玩家也留不住（没人陪玩）。因此 F2P 友好不是慈善，是商业策略——零氪可夺冠确保生态繁荣，付费玩家才有付费动力。</div>
+</section>
+
+<!-- ==================== §12 付费用户分层 ==================== -->
+<section id="s12">
+  <h2><span class="num">12</span>付费用户分层</h2>
+
+  <h3>12.1 用户分层</h3>
+  <table>
+    <thead><tr><th>分层</th><th>占比</th><th>行为</th><th>营收贡献</th><th>运营策略</th></tr></thead>
+    <tbody>
+      <tr><td><b>零氪</b></td><td>70%</td><td>不付费；靠游戏内行为</td><td>0%</td><td>保障可玩性；外观诱惑引导</td></tr>
+      <tr><td><b>小氪</b></td><td>20%</td><td>偶尔充值买外观/便捷</td><td>20%</td><td>首充引导；VIP 月付</td></tr>
+      <tr><td><b>中氪</b></td><td>7%</td><td>VIP 金卡订阅+外观消费</td><td>30%</td><td>VIP 季付/年付优惠</td></tr>
+      <tr><td><b>大氪</b></td><td>3%</td><td>VIP 黑卡+大量外观+迁移</td><td>50%</td><td>专属服务；限定外观</td></tr>
+    </tbody>
+  </table>
+
+  <h3>12.2 大氪用户的边界</h3>
+  <div class="note red"><b>关键约束</b>：即使是大氪用户（VIP 黑卡+大量 Credits），也不能获得任何竞技优势。大氪用户的"特权"仅限外观/便捷/迁移——他们可以最漂亮、最方便、最自由迁移，但在"能赢"上与零氪完全平等。这是公平非 P2W 的底线——大氪是"最好的客户"但不是"最强的玩家"。</div>
+</section>
+
+<!-- ==================== §13 营收预测模型 ==================== -->
+<section id="s13">
+  <h2><span class="num">13</span>营收预测模型</h2>
+
+  <h3>13.1 营收公式</h3>
+  <div class="formula">
+<span class="comment">── 月营收预测 ──</span>
+
+<span class="var">monthlyRevenue</span> <span class="op">=</span> <span class="var">VIP订阅收入</span> <span class="op">+</span> <span class="var">Credits充值收入</span> <span class="op">+</span> <span class="var">外观商城收入</span> <span class="op">+</span> <span class="var">初始球队收入</span>
+
+<span class="var">VIP订阅收入</span> <span class="op">=</span> <span class="fn">sum</span>(<span class="var">vip用户数</span>[tier] <span class="op">*</span> <span class="var">月价</span>[tier] <span class="kw">for</span> <span class="var">tier</span> <span class="kw">in</span> [<span class="str">"蓝"</span>,<span class="str">"金"</span>,<span class="str">"黑"</span>])
+
+<span class="var">Credits充值收入</span> <span class="op">=</span> <span class="var">月充值总额</span>   <span class="comment">// 按 Credits 包价格折算</span>
+
+<span class="var">外观商城收入</span> <span class="op">=</span> <span class="var">月外观销量</span> <span class="op">*</span> <span class="var">avg外观价格</span> <span class="op">/</span> <span class="num">10</span>  <span class="comment">// Credits→¥</span>
+
+<span class="var">初始球队收入</span> <span class="op">=</span> <span class="var">月新玩家数</span> <span class="op">*</span> <span class="var">付费选择率</span> <span class="op">*</span> <span class="num">300</span> <span class="op">/</span> <span class="num">10</span>
+  </div>
+
+  <h3>13.2 关键指标</h3>
+  <table>
+    <thead><tr><th>指标</th><th>目标</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>付费率</td><td>25-30%</td><td>付费用户/活跃用户</td></tr>
+      <tr><td>ARPPU</td><td>¥40-60/月</td><td>每付费用户平均收入</td></tr>
+      <tr><td>VIP 续订率</td><td>60%+（月）/ 80%+（年）</td><td>订阅留存</td></tr>
+      <tr><td>首充转化率</td><td>15-20%</td><td>注册→首充</td></tr>
+      <tr><td>外观拥有率</td><td>40%+</td><td>拥有≥1外观的玩家占比</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== §14 与各系统联动 ==================== -->
+<section id="s14">
+  <h2><span class="num">14</span>与各系统联动</h2>
+
+  <h3>14.1 联动总览</h3>
+  <table>
+    <thead><tr><th>系统</th><th>商业化联动</th><th>边界</th></tr></thead>
+    <tbody>
+      <tr><td>经济系统</td><td>Credits 与薪资空间完全隔离</td><td>付费不可买游戏内货币</td></tr>
+      <tr><td>签约转会</td><td>无直接联动</td><td>付费不影响签约/交易</td></tr>
+      <tr><td>球探系统</td><td>VIP 额外 Watchlist 槽位</td><td>不收窄 fog/不增加探针</td></tr>
+      <tr><td>选秀系统</td><td>无直接联动</td><td>付费不影响选秀顺位</td></tr>
+      <tr><td>训练系统</td><td>无直接联动</td><td>付费不加速训练</td></tr>
+      <tr><td>战术系统</td><td>VIP 额外战术存档槽</td><td>不增加战术效果</td></tr>
+      <tr><td>王朝传承</td><td>王朝铜像/球衣退役横幅外观</td><td>纯视觉；不影响传承数值</td></tr>
+      <tr><td>三身份</td><td>无直接联动</td><td>付费不绕过反套利</td></tr>
+      <tr><td>世界结构</td><td>世界迁移商业化</td><td>不带走薪资空间</td></tr>
+    </tbody>
+  </table>
+
+  <h3>14.2 联动原则</h3>
+  <div class="note purple"><b>联动原则</b>：商业化系统与所有游戏系统的联动仅限"便捷"与"外观"——更多存档槽、更多 Watchlist、更好看的皮肤。任何触及"强度"的联动（fog/能力/薪资/顺位/训练）都是红线。商业化是游戏体验的"装饰层"，不是"加速层"。</div>
+</section>
+
+<!-- ==================== §15 异常处理与边界规则 ==================== -->
+<section id="s15">
+  <h2><span class="num">15</span>异常处理与边界规则</h2>
+
+  <h3>15.1 付费异常</h3>
+  <table>
+    <thead><tr><th>异常</th><th>处理</th></tr></thead>
+    <tbody>
+      <tr><td>充值未到账</td><td>支付渠道对账后补发；记录日志</td></tr>
+      <tr><td>VIP 到期</td><td>权益即时移除；额外槽位内容冻结（不删除）</td></tr>
+      <tr><td>退款</td><td>扣除对应 Credits；已消费外观保留（不可逆）</td></tr>
+      <tr><td>账号封禁</td><td>Credits/VIP 冻结；外观保留但不可用</td></tr>
+      <tr><td>世界迁移中途失败</td><td>迁移撤销；Credits 退还</td></tr>
+    </tbody>
+  </table>
+
+  <h3>15.2 退款政策</h3>
+  <ul>
+    <li><b>VIP 订阅</b>：未使用天数可按比例退款。</li>
+    <li><b>Credits</b>：未消费的 Credits 可退款；已消费的不可退。</li>
+    <li><b>外观</b>：已购买的外观不可退（数字商品）。</li>
+    <li><b>世界迁移</b>：迁移完成前可退；完成后不可退。</li>
+  </ul>
+
+  <h3>15.3 法律合规</h3>
+  <ul>
+    <li><b>未成年人保护</b>：未成年人充值限制（按地区法规）。</li>
+    <li><b>概率公示</b>：如有随机外观包，公示概率。</li>
+    <li><b>消费提醒</b>：大额充值消费提醒。</li>
+  </ul>
+</section>
+
+<!-- ==================== §16 数值附录 ==================== -->
+<section id="s16">
+  <h2><span class="num">16</span>数值附录</h2>
+
+  <h3>16.1 Credits 充值包</h3>
+  <table>
+    <thead><tr><th>包名</th><th>价格</th><th>Credits</th><th>额外</th></tr></thead>
+    <tbody>
+      <tr><td>入门包</td><td>¥6</td><td>60</td><td>—</td></tr>
+      <tr><td>基础包</td><td>¥30</td><td>320</td><td>+20</td></tr>
+      <tr><td>标准包</td><td>¥68</td><td>750</td><td>+50</td></tr>
+      <tr><td>超值包</td><td>¥128</td><td>1,500</td><td>+150</td></tr>
+      <tr><td>豪华包</td><td>¥328</td><td>4,000</td><td>+500</td></tr>
+      <tr><td>至尊包</td><td>¥648</td><td>8,500</td><td>+1,200</td></tr>
+    </tbody>
+  </table>
+
+  <h3>16.2 VIP 价格</h3>
+  <table>
+    <thead><tr><th>周期</th><th>蓝卡</th><th>金卡</th><th>黑卡</th></tr></thead>
+    <tbody>
+      <tr><td>月付</td><td>¥18</td><td>¥45</td><td>¥98</td></tr>
+      <tr><td>季付</td><td>¥48</td><td>¥120</td><td>¥260</td></tr>
+      <tr><td>年付</td><td>¥168</td><td>¥420</td><td>¥920</td></tr>
+    </tbody>
+  </table>
+
+  <h3>16.3 外观定价</h3>
+  <table>
+    <thead><tr><th>外观类型</th><th>Credits 范围</th></tr></thead>
+    <tbody>
+      <tr><td>球衣配色</td><td>30-150</td></tr>
+      <tr><td>球衣图案</td><td>80-300</td></tr>
+      <tr><td>球馆主题</td><td>100-500</td></tr>
+      <tr><td>教练 avatar</td><td>50-200</td></tr>
+      <tr><td>报纸版面</td><td>30-80</td></tr>
+      <tr><td>球员庆祝动作</td><td>60-180</td></tr>
+      <tr><td>王朝铜像</td><td>200-600</td></tr>
+      <tr><td>球衣退役横幅</td><td>100-250</td></tr>
+    </tbody>
+  </table>
+
+  <h3>16.4 便捷服务定价</h3>
+  <table>
+    <thead><tr><th>服务</th><th>免费额度</th><th>额外单价</th></tr></thead>
+    <tbody>
+      <tr><td>战术存档槽</td><td>3</td><td>100 Credits/槽</td></tr>
+      <tr><td>球探 Watchlist</td><td>20+球探等级×5</td><td>80 Credits/槽</td></tr>
+      <tr><td>观赛回放</td><td>5 场</td><td>50 Credits/场</td></tr>
+    </tbody>
+  </table>
+
+  <h3>16.5 世界迁移定价</h3>
+  <table>
+    <thead><tr><th>类型</th><th>Credits</th><th>冷却</th></tr></thead>
+    <tbody>
+      <tr><td>同语言区</td><td>500</td><td>180 天</td></tr>
+      <tr><td>跨语言区</td><td>1,000</td><td>365 天</td></tr>
+      <tr><td>指定世界</td><td>2,000</td><td>365 天</td></tr>
+    </tbody>
+  </table>
+
+  <h3>16.6 营收目标</h3>
+  <table>
+    <thead><tr><th>指标</th><th>目标</th></tr></thead>
+    <tbody>
+      <tr><td>付费率</td><td>25-30%</td></tr>
+      <tr><td>ARPPU</td><td>¥40-60/月</td></tr>
+      <tr><td>VIP 月续订率</td><td>60%+</td></tr>
+      <tr><td>VIP 年续订率</td><td>80%+</td></tr>
+      <tr><td>首充转化率</td><td>15-20%</td></tr>
+      <tr><td>外观拥有率</td><td>40%+</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note gold"><b>系统总结</b>：商业化设计系统建立了 HWO 的 F2P 公平非 P2W 商业模型。铁律是"Credits/VIP 只买快与美，永不买强"——这是信任底线。Credits 与游戏内经济完全隔离（防火墙）；VIP 权益仅限便捷与外观；外观纯视觉不影响收入；世界迁移不带走薪资空间。零氪可夺冠是公平承诺，也是商业策略——零氪玩家填充生态，付费玩家才有付费动力。宁可少赚，不可卖强。所有数值在 EA 阶段通过运营数据调优。</div>
+</section>
+
+<footer style="text-align:center;color:var(--ink3);font-size:12px;padding:20px 0 40px;border-top:1px solid var(--line);margin-top:20px">
+  商业化设计系统 v1.0 · Hoops World Online · 2026-09-28<br>
+  策划方案 §18 深化文档 · 公平非 P2W · Credits/VIP 只买快与美
+</footer>
+
+</div>
+</body>
+</html>
