@@ -1777,6 +1777,25 @@ button {
   line-height: 1;
   text-shadow: 0 0 24px rgba(255, 255, 255, 0.15);
 }
+.ls-shot-clock {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--accent);
+  color: #fff;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  margin: 4px 0;
+}
+.lsc-label {
+  opacity: 0.85;
+}
+.lsc-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
 .ls-possession {
   display: flex;
   align-items: center;
@@ -2084,4 +2103,282 @@ button {
   .live-floor {
     grid-template-columns: 1fr;
   }
+  .live-quarter-table {
+    font-size: 11px;
+  }
+  .stats-tables {
+    grid-template-columns: 1fr;
+  }
+  .pbp-row {
+    font-size: 11px;
+  }
 }
+
+/* ── 分节比分全表 ── */
+.live-quarter-table {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  font-size: 13px;
+}
+.lqt-row {
+  display: grid;
+  grid-template-columns: 1.5fr repeat(4, 1fr) 1fr;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--panel-2);
+}
+.lqt-head {
+  background: var(--panel-3);
+  font-weight: 800;
+  color: var(--text-muted);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+.lqt-team {
+  font-weight: 700;
+}
+.lqt-team.home { color: var(--home); }
+.lqt-team.away { color: var(--away); }
+.lqt-q, .lqt-total {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.lqt-q.is-current {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 4px;
+  margin: 0 2px;
+}
+.lqt-total.home { color: var(--home); }
+.lqt-total.away { color: var(--away); }
+
+/* ── 标签切换 ── */
+.live-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 12px;
+  border-bottom: 2px solid var(--border);
+}
+.live-tab {
+  background: none;
+  border: none;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.15s;
+}
+.live-tab:hover {
+  color: var(--text);
+}
+.live-tab.is-active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ── 技术统计表 ── */
+.stats-tables {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.stats-team-head {
+  padding: 8px 12px;
+  font-weight: 800;
+  font-size: 14px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+.stats-team-head.home {
+  background: var(--home-soft);
+  color: var(--home);
+}
+.stats-team-head.away {
+  background: var(--away-soft);
+  color: var(--away);
+}
+.stats-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+}
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.stats-table th {
+  position: sticky;
+  top: 0;
+  background: var(--panel-3);
+  padding: 6px 8px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+.stats-table td {
+  padding: 5px 8px;
+  text-align: center;
+  border-bottom: 1px solid var(--border-soft);
+  white-space: nowrap;
+}
+.stats-table tr.is-starter td {
+  background: var(--panel-2);
+  font-weight: 600;
+}
+.stats-table tr.st-total td {
+  background: var(--panel-3);
+  font-weight: 800;
+  border-top: 2px solid var(--border);
+}
+.st-name {
+  text-align: left !important;
+  font-weight: 700;
+}
+.st-pos {
+  display: inline-block;
+  width: 24px;
+  font-size: 10px;
+  color: var(--accent);
+  font-weight: 800;
+}
+.st-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 双栏文字直播 ── */
+.pbp-dual {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+.pbp-row {
+  display: grid;
+  grid-template-columns: 1fr 70px 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 4px;
+  animation: pbp-in 0.3s ease;
+}
+@keyframes pbp-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.pbp-row.is-newest {
+  background: var(--accent-soft);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.pbp-side {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 20px;
+}
+.pbp-home {
+  justify-content: flex-end;
+  text-align: right;
+}
+.pbp-away {
+  justify-content: flex-start;
+  text-align: left;
+}
+.pbp-side-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.pbp-side-desc {
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.pbp-home .pbp-side-desc { color: var(--home); }
+.pbp-away .pbp-side-desc { color: var(--away); }
+.pbp-mid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.pbp-mid-clock {
+  color: var(--text-dim);
+}
+.pbp-mid-score {
+  font-weight: 800;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.pbp-neutral {
+  grid-template-columns: auto 1fr auto;
+  justify-content: center;
+  background: var(--panel-2);
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.pbp-neutral .pbp-desc {
+  font-weight: 700;
+}
+.live-final {
+  justify-content: center;
+  font-weight: 800;
+  color: var(--accent);
+  font-size: 14px;
+}
+
+/* ── 底部固定状态栏 ── */
+.live-bottom-bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 20px;
+  margin-top: 16px;
+  background: var(--panel-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  backdrop-filter: blur(8px);
+  z-index: 10;
+}
+.lbb-score {
+  font-size: 20px;
+  font-weight: 900;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.lbb-score .home { color: var(--home); }
+.lbb-score .away { color: var(--away); }
+.lbb-meta {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+.lbb-possession {
+  font-size: 12px;
+  font-weight: 700;
+}
+.lbb-possession .home { color: var(--home); }
+.lbb-possession .away { color: var(--away); }
