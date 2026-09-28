@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>选秀系统设计 · Hoops World Online</title>
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#141b26; --panel2:#1b2433; --line:#26324a;
+    --ink:#e6edf6; --ink2:#9fb0c7; --ink3:#6b7c97;
+    --accent:#ff6b35; --accent2:#4ade80; --gold:#fbbf24; --red:#ef4444; --blue:#60a5fa; --purple:#a78bfa;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:linear-gradient(180deg,#070a10 0%,#0b0f17 100%);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1020px;margin:0 auto;padding:40px 22px 120px}
+  .hero{
+    position:relative;border:1px solid var(--line);border-radius:18px;padding:42px 34px 30px;
+    background:
+      radial-gradient(800px 280px at 20% -10%, rgba(251,191,36,.16), transparent 60%),
+      radial-gradient(700px 260px at 90% 0%, rgba(255,107,53,.12), transparent 60%),
+      linear-gradient(180deg,#151d2c,#0e1420);
+    overflow:hidden;margin-bottom:30px;
+  }
+  .hero .tag{display:inline-block;font-size:12px;letter-spacing:.16em;color:var(--gold);border:1px solid rgba(251,191,36,.45);padding:4px 10px;border-radius:999px;margin-bottom:18px;text-transform:uppercase}
+  .hero h1{margin:0 0 8px;font-size:32px;letter-spacing:.5px;font-weight:800}
+  .hero h1 .en{color:var(--ink2);font-weight:600;font-size:18px;margin-left:10px}
+  .hero .pitch{color:var(--ink2);font-size:15px;max-width:760px;margin:10px 0 22px}
+  .hero .meta{display:flex;flex-wrap:wrap;gap:10px}
+  .hero .chip{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--ink2)}
+  .hero .chip b{color:var(--ink);font-weight:600}
+  .hero .trophy{position:absolute;right:30px;bottom:20px;font-size:70px;opacity:.07;pointer-events:none}
+
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 28px;margin-bottom:22px}
+  .toc h3{margin:0 0 14px;font-size:14px;color:var(--ink2);letter-spacing:.1em;text-transform:uppercase}
+  .toc ol{margin:0;padding-left:22px;columns:2;column-gap:32px}
+  .toc li{margin:5px 0;break-inside:avoid}
+  .toc a{color:var(--ink2)}
+  .toc a:hover{color:var(--gold)}
+  @media (max-width:640px){.toc ol{columns:1}}
+
+  section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin-bottom:22px}
+  section > h2{margin:0 0 16px;font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
+  section > h2 .num{font-size:12px;color:#0b0f17;background:var(--gold);width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;font-weight:800;flex-shrink:0}
+  h3{font-size:16px;margin:22px 0 10px;color:var(--ink)}
+  h4{font-size:14px;margin:18px 0 8px;color:var(--gold);letter-spacing:.04em}
+  p{margin:8px 0}
+  ul,ol{margin:8px 0 8px 4px;padding-left:22px}
+  li{margin:4px 0}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{background:#0d131d;border:1px solid var(--line);padding:2px 6px;border-radius:5px;font-size:13px;color:var(--gold)}
+  strong{color:#fff}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--ink);font-weight:600}
+  tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+
+  .note{border-left:3px solid var(--accent);background:rgba(255,107,53,.06);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;color:var(--ink2)}
+  .note b{color:var(--accent)}
+  .note.green{border-left-color:var(--accent2);background:rgba(74,222,128,.06)}
+  .note.green b{color:var(--accent2)}
+  .note.blue{border-left-color:var(--blue);background:rgba(96,165,250,.06)}
+  .note.blue b{color:var(--blue)}
+  .note.red{border-left-color:var(--red);background:rgba(239,68,68,.06)}
+  .note.red b{color:var(--red)}
+  .note.gold{border-left-color:var(--gold);background:rgba(251,191,36,.06)}
+  .note.gold b{color:var(--gold)}
+
+  .formula{
+    background:#0d131d;border:1px solid var(--line);border-radius:10px;padding:16px 20px;
+    margin:14px 0;font-family:"SF Mono","Fira Code",Consolas,monospace;font-size:13px;line-height:1.9;
+    overflow-x:auto;white-space:pre;
+  }
+  .formula .var{color:var(--blue)}
+  .formula .fn{color:var(--purple)}
+  .formula .op{color:var(--accent)}
+  .formula .num{color:var(--gold)}
+  .formula .comment{color:var(--ink3);font-style:italic}
+  .formula .str{color:var(--accent2)}
+  .formula .kw{color:var(--accent2);font-weight:bold}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:14px 0}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .card .t{font-weight:700;color:var(--ink);font-size:14px;margin-bottom:6px}
+  .card .d{font-size:13px;color:var(--ink2)}
+  .card .badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:999px;margin-left:6px;vertical-align:middle}
+  .badge.green{background:rgba(74,222,128,.15);color:var(--accent2)}
+  .badge.gold{background:rgba(251,191,36,.15);color:var(--gold)}
+  .badge.red{background:rgba(239,68,68,.15);color:var(--red)}
+  .badge.blue{background:rgba(96,165,250,.15);color:var(--blue)}
+  .badge.purple{background:rgba(167,139,250,.15);color:var(--purple)}
+
+  .flow{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:14px 0;font-size:13px}
+  .flow .step{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 14px;color:var(--ink)}
+  .flow .arrow{color:var(--gold);font-weight:bold}
+
+  .lottery-ball{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--gold);color:#0b0f17;font-weight:800;font-size:13px;margin:0 2px}
+  .lottery-ball.r{background:var(--red);color:#fff}
+  .lottery-ball.b{background:var(--blue);color:#fff}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ==================== HERO ==================== -->
+<div class="hero">
+  <span class="tag">System Design · Draft</span>
+  <h1>选秀系统 <span class="en">Draft System</span></h1>
+  <p class="pitch">赛季末球员获取的最高潮事件。选秀池生成、乐透抽签、顺位排序、探查窗口、决策博弈、签约入队——完整定义新秀进入联盟的全流程。选秀不是简单的"按战绩倒序选人"，而是融合 fog 迷雾（球探系统）、选秀权交易（经济系统）、行情浮动（成长线）的多层博弈。一次选错可能毁掉重建周期，一次捡漏可能改变王朝命运。</p>
+  <div class="meta">
+    <span class="chip"><b>优先级</b> P0</span>
+    <span class="chip"><b>依赖</b> 球探系统 · 成长线 · 世界与联赛结构 · 经济系统</span>
+    <span class="chip"><b>下游</b> 签约/转会 · 青训提拔 · 球队建设</span>
+    <span class="chip"><b>版本</b> v1.0</span>
+  </div>
+  <span class="trophy">🏆</span>
+</div>
+
+<!-- ==================== TOC ==================== -->
+<div class="toc">
+  <h3>目录 · Table of Contents</h3>
+  <ol>
+    <li><a href="#s1">设计原则</a></li>
+    <li><a href="#s2">系统总览与架构</a></li>
+    <li><a href="#s3">选秀池生成</a></li>
+    <li><a href="#s4">选秀顺位与乐透</a></li>
+    <li><a href="#s5">选秀日程（DAY 1-12）</a></li>
+    <li><a href="#s6">选秀探查窗口</a></li>
+    <li><a href="#s7">选秀行情系统</a></li>
+    <li><a href="#s8">选秀决策</a></li>
+    <li><a href="#s9">选秀权交易</a></li>
+    <li><a href="#s10">选秀签约与新秀合同</a></li>
+    <li><a href="#s11">提前参选与退选</a></li>
+    <li><a href="#s12">国际新秀与海外球员</a></li>
+    <li><a href="#s13">落选秀与双向合同</a></li>
+    <li><a href="#s14">选秀叙事与回溯</a></li>
+    <li><a href="#s15">AI 选秀决策</a></li>
+    <li><a href="#s16">异常处理与边界规则</a></li>
+    <li><a href="#s17">数值附录</a></li>
+  </ol>
+</div>
+
+<!-- ==================== §1 设计原则 ==================== -->
+<section id="s1">
+  <h2><span class="num">1</span>设计原则</h2>
+
+  <div class="note gold"><b>核心定位</b>：选秀是赛季末球员获取的最高潮事件，也是重建球队的核心希望窗口。它将球探系统一整个赛季的探查投入在此刻兑现——所有 fog 迷雾、所有报告、所有预算分配，都指向这一夜的决策。</div>
+
+  <div class="grid">
+    <div class="card"><div class="t">① fog 兑现时刻 <span class="badge gold">核心</span></div><div class="d">选秀是球探系统的终极考试。一整个赛季的探查投入在此刻转化为决策依据。探得清的经理稳准选，探不清的经理只能赌。</div></div>
+    <div class="card"><div class="t">② 顺位即资源 <span class="badge blue">经济</span></div><div class="d">选秀权是可交易资产。乐透抽签引入随机性，让垫底队也有惊喜。选秀权交易让"赢在当下"与"囤选秀重建"成为两种建队流派。</div></div>
+    <div class="card"><div class="t">③ 行情即博弈 <span class="badge red">信息</span></div><div class="d">选秀行情浮动——球员参选决策、试训表现、其他经理意图都会影响行情。经理在传闻中心博弈"谁会被先选走"。</div></div>
+    <div class="card"><div class="t">④ 不可撤销 <span class="badge purple">后果</span></div><div class="d">选秀选中即签约锁定（新秀合同 4 年）。选错=占用名单+薪资空间 4 年。这是有长期后果的决策。</div></div>
+  </div>
+
+  <h3>1.1 不做什么</h3>
+  <ul>
+    <li><b>不做完全确定性顺位</b>：乐透抽签为垫底队引入希望，避免"摆烂=必然状元"的恶性循环。</li>
+    <li><b>不做选秀后退货</b>：选中即签约，不可退选、不可换。选错的代价是真实的。</li>
+    <li><b>不做跨世界选秀</b>：选秀池世界内封闭，每个世界独立 sim 生成与选秀。</li>
+    <li><b>不做经理直接定价</b>：新秀合同由服务端按顺位锚定（经济系统 §3.2），经理只能选人不能议价。</li>
+  </ul>
+</section>
+
+<!-- ==================== §2 系统总览与架构 ==================== -->
+<section id="s2">
+  <h2><span class="num">2</span>系统总览与架构</h2>
+
+  <h3>2.1 选秀系统在赛季周期中的位置</h3>
+  <div class="flow">
+    <span class="step">常规赛结束<br>DAY 1</span>
+    <span class="arrow">→</span>
+    <span class="step">选秀池生成<br>DAY 4</span>
+    <span class="arrow">→</span>
+    <span class="step">联合试训<br>DAY 5-6</span>
+    <span class="arrow">→</span>
+    <span class="step">单独探查窗口<br>DAY 5-10</span>
+    <span class="arrow">→</span>
+    <span class="step">乐透抽签<br>DAY 9</span>
+    <span class="arrow">→</span>
+    <span class="step">选秀夜<br>DAY 11</span>
+    <span class="arrow">→</span>
+    <span class="step">签约入队<br>DAY 11-12</span>
+    <span class="arrow">→</span>
+    <span class="step">青训提拔<br>DAY 11-12</span>
+  </div>
+  <p>选秀发生在休赛期 DAY 4-12 窗口（世界结构 §6 赛季转换流程）。选秀池在 DAY 4 生成，DAY 11 选秀夜执行，DAY 11-12 签约入队与青训提拔并行。</p>
+
+  <h3>2.2 三层架构</h3>
+  <table>
+    <thead><tr><th>层</th><th>名称</th><th>职责</th></tr></thead>
+    <tbody>
+      <tr><td><b>L1</b></td><td>生成层 Generation</td><td>选秀池 sim 生成（含 Peak、能力、特质、履历）；乐透抽签；顺位排序</td></tr>
+      <tr><td><b>L2</b></td><td>探查层 Scouting</td><td>联合试训 + 单独探查窗口；行情浮动计算（联动球探系统）</td></tr>
+      <tr><td><b>L3</b></td><td>决策层 Decision</td><td>选秀夜逐顺位选择；签约入队；新秀合同生成</td></tr>
+    </tbody>
+  </table>
+
+  <h3>2.3 核心数据结构</h3>
+  <div class="formula">
+<span class="comment">── 选秀池 ──</span>
+
+<span class="var">DraftPool</span> <span class="op">=</span> {
+  worldId:    <span class="var">u16</span>,
+  season:     <span class="var">u8</span>,
+  generatedDay:<span class="var">u8</span>,                  <span class="comment">// DAY 4</span>
+  prospects:  [<span class="var">Prospect</span>],            <span class="comment">// 选秀池新秀列表（~60人）</span>
+  draftOrder: [<span class="var">DraftPickEntry</span>],     <span class="comment">// 顺位排序（含乐透结果）</span>
+  status:     <span class="str">"generated"</span> | <span class="str">"scouting"</span> | <span class="str">"drafted"</span>,
+}
+
+<span class="var">Prospect</span> <span class="op">=</span> {
+  playerId:   <span class="var">PlayerId</span>,            <span class="comment">// 关联成长线球员实体</span>
+  name:       <span class="var">string</span>,
+  age:        <span class="var">u8</span>,                 <span class="comment">// 17-22</span>
+  position:   <span class="var">Position</span>,
+  peakTier:   <span class="var">PeakTier</span>,           <span class="comment">// S/A/B/C/D（隐藏，球探 fog）</span>
+  abilities:  <span class="var">Map</span>&lt;<span class="var">AbilityKey</span>, <span class="var">f32</span>&gt;, <span class="comment">// 真实值（服务端，经理见 fog）</span>
+  traits:     [<span class="var">Trait</span>],             <span class="comment">// 真实特质（隐藏）</span>
+  amateurCareer: [<span class="var">AmateurRecord</span>],  <span class="comment">// 业余金字塔履历（成长线 §3）</span>
+  draftStock: <span class="var">f32</span>,               <span class="comment">// 选秀行情值（§7，动态浮动）</span>
+  projection: <span class="var">u8</span>,                 <span class="comment">// 预测顺位（行情驱动）</span>
+  signed:     <span class="var">bool</span>,
+}
+
+<span class="var">DraftPickEntry</span> <span class="op">=</span> {
+  pickNumber: <span class="var">u16</span>,               <span class="comment">// 顺位（1-60）</span>
+  round:      <span class="var">u8</span>,                <span class="comment">// 轮次（1-2）</span>
+  ownerId:    <span class="var">TeamId</span>,           <span class="comment">// 当前持有该顺位的球队（可被交易）</span>
+  originalTeamId:<span class="var">TeamId</span>,         <span class="comment">// 原始归属（战绩队）</span>
+  isLottery:  <span class="var">bool</span>,             <span class="comment">// 是否乐透区（前14顺位）</span>
+}
+  </div>
+</section>
+
+<!-- ==================== §3 选秀池生成 ==================== -->
+<section id="s3">
+  <h2><span class="num">3</span>选秀池生成</h2>
+  <p>选秀池在休赛期 DAY 4 由服务端 sim 生成，世界内封闭。</p>
+
+  <h3>3.1 生成来源</h3>
+  <table>
+    <thead><tr><th>来源</th><th>占比</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><b>青训苗子达龄参选</b></td><td>~50%</td><td>各国/地区青训体系 19 岁达龄苗子（成长线 §2 青年→成人转换）</td></tr>
+      <tr><td><b>大学球员参选</b></td><td>~30%</td><td>大学金字塔球员 19-22 岁参选（成长线 §3.4 大学特殊）</td></tr>
+      <tr><td><b>海外/国际球员</b></td><td>~15%</td><td>国际赛事金字塔球员参选（§12）</td></tr>
+      <tr><td><b>提前参选者</b></td><td>~5%</td><td>17-18 岁提前参选的青年期球员（成长线 §6.1，放弃剩余成长）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.2 生成规则</h3>
+  <ul>
+    <li><b>规模</b>：每世界每赛季约 60 人入选选秀池（2 轮 × 30 顺位，对齐联赛规模）。</li>
+    <li><b>Peak 分布</b>：遵循成长线 §5.2 的 Peak 档位分布——S 档 0.5%、A 档 5%、B 档 20%、C 档 50%、D 档 24.5%。S 档每世界每赛季 0-1 人。</li>
+    <li><b>能力初值</b>：按 Peak 档位与年龄生成初值（成长线 §6 成长计算引擎）。19 岁参选者能力低于 22 岁参选者，但 Peak 上限可能更高。</li>
+    <li><b>履历生成</b>：每个新秀附带完整业余金字塔履历（成长线 §3.5 选秀行情业余溯源），用于叙事与行情计算。</li>
+    <li><b>确定性</b>：选秀池生成使用世界 seed + 赛季号的确定性 PRNG，支持回放审计。</li>
+  </ul>
+
+  <h3>3.3 Peak 档位与选秀价值</h3>
+  <table>
+    <thead><tr><th>档位</th><th>Peak 区间</th><th>概率</th><th>选秀价值</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><b>S 档</b> <span class="badge red">世代级</span></td><td>90-99</td><td>0.5%</td><td>状元/榜眼级</td><td>每世界每赛季 0-1 人。能力上限可支撑王朝核心。球探争夺焦点。</td></tr>
+      <tr><td><b>A 档</b> <span class="badge gold">全明星</span></td><td>80-89</td><td>5%</td><td>乐透区（前14）</td><td>争冠队核心或二当家。高 Peak 估值，选秀行情好。</td></tr>
+      <tr><td><b>B 档</b> <span class="badge blue">首发级</span></td><td>70-79</td><td>20%</td><td>首轮中后段</td><td>合格首发。性价比最高的档位——B 档+完美发展≈A 档+一般发展。</td></tr>
+      <tr><td><b>C 档</b></td><td>60-69</td><td>50%</td><td>次轮/落选</td><td>轮换边缘。需培养或作为交易添头。</td></tr>
+      <tr><td><b>D 档</b></td><td>50-59</td><td>24.5%</td><td>落选</td><td>名单填充或淘汰。</td></tr>
+    </tbody>
+  </table>
+  <div class="note gold"><b>关键洞察</b>：B 档+完美发展 ≈ A 档+一般发展。这让选秀决策有趣——你是赌 S 档新秀的天花板（fog 最宽风险最大），还是选 B 档新秀稳妥发展？Peak 的迷雾（球探系统 §3）让这个选择充满风险。</div>
+</section>
+
+<!-- ==================== §4 选秀顺位与乐透 ==================== -->
+<section id="s4">
+  <h2><span class="num">4</span>选秀顺位与乐透</h2>
+
+  <h3>4.1 顺位结构</h3>
+  <p>选秀共 2 轮 60 顺位（对齐世界联赛 30 队规模）：</p>
+  <ul>
+    <li><b>首轮</b>：1-30 顺位。前 14 为乐透区，15-30 为季后赛队倒序。</li>
+    <li><b>次轮</b>：31-60 顺位。全部按战绩倒序（无乐透）。</li>
+    <li><b>顺位归属</b>：原始归属=战绩倒序（战绩最差=最高顺位）；当前持有者可被交易（§9）。</li>
+  </ul>
+
+  <h3>4.2 乐透抽签（前 14 顺位）</h3>
+  <p>乐透抽签为非季后赛队（14 支战绩最差队）引入随机性，避免"摆烂=必然状元"。</p>
+  <div class="formula">
+<span class="comment">── 乐透抽签 ──</span>
+
+<span class="comment">// 14 支非季后赛队按战绩倒序分配组合数</span>
+<span class="comment">// 战绩越差，组合数越多（但非必然状元）</span>
+
+<span class="var">lotteryOdds</span> <span class="op">=</span> [
+  <span class="num">1</span>号签(最差): <span class="num">250</span> 组合 (<span class="num">25%</span>状元),
+  <span class="num">2</span>号签:        <span class="num">199</span> 组合 (<span class="num">19.9%</span>),
+  <span class="num">3</span>号签:        <span class="num">156</span> 组合 (<span class="num">15.6%</span>),
+  <span class="num">4</span>号签:        <span class="num">119</span> 组合 (<span class="num">11.9%</span>),
+  <span class="num">5</span>号签:         <span class="num">88</span> 组合 (<span class="num">8.8%</span>),
+  <span class="num">6-14</span>号签:     递减至 <span class="num">5</span> 组合
+]
+
+<span class="comment">// 抽签：抽 3 个组合确定状元/榜眼/探花</span>
+<span class="comment">// 未中签队按战绩倒序填充 4-14 顺位</span>
+<span class="comment">// 确定性 PRNG：world seed + season 号</span>
+  </div>
+
+  <h3>4.3 乐透结果示例</h3>
+  <div class="note blue"><b>示例</b>：战绩最差队有 25% 状元概率，但仍有 75% 概率不是状元——最差可能滑到第 5 顺位。战绩第 5 差的队有 8.8% 概率抽中状元惊喜。这种随机性让垫底重建队保有希望，同时抑制恶意摆烂。</div>
+
+  <h3>4.4 顺位交易对乐透的影响</h3>
+  <ul>
+    <li>乐透抽签基于<b>原始归属队</b>的战绩，而非当前持有者。</li>
+    <li>若 A 队将首轮签交易给 B 队，抽签仍按 A 队战绩确定组合数，结果归 B 队。</li>
+    <li>"前 N 顺位保护"条款：若该签落在保护顺位内，归原队；否则归交易方（§9.3）。</li>
+  </ul>
+</section>
+
+<!-- ==================== §5 选秀日程 ==================== -->
+<section id="s5">
+  <h2><span class="num">5</span>选秀日程（DAY 1-12）</h2>
+
+  <h3>5.1 完整日程表</h3>
+  <table>
+    <thead><tr><th>日</th><th>事件</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><b>DAY 1</b></td><td>常规赛结束</td><td>战绩锁定；选秀顺位原始归属确定</td></tr>
+      <tr><td><b>DAY 2-3</b></td><td>季后赛进行</td><td>季后赛队顺位待定（按季后赛成绩倒序 15-30）</td></tr>
+      <tr><td><b>DAY 4</b></td><td>选秀池生成</td><td>服务端 sim 生成 ~60 人选秀池；公布名单与履历</td></tr>
+      <tr><td><b>DAY 5-6</b></td><td>联合试训</td><td>所有选秀池球员集体浅探（球探系统 §11.1）；每队 1 次免费，fog 各收窄 ±3</td></tr>
+      <tr><td><b>DAY 5-10</b></td><td>单独探查窗口</td><td>经理可派球探针对顺位目标深探（球探系统 §11）；试训邀请/体检/心理评估探针可用</td></tr>
+      <tr><td><b>DAY 7</b></td><td>退选截止</td><td>提前参选者可在此前退选回大学（§11）</td></tr>
+      <tr><td><b>DAY 9</b></td><td>乐透抽签</td><td>前 14 顺位抽签；公布最终首轮顺位</td></tr>
+      <tr><td><b>DAY 10</b></td><td>选秀权交易截止</td><td>选秀夜前最后交易选秀权机会</td></tr>
+      <tr><td><b>DAY 11</b></td><td><b>选秀夜</b></td><td>逐顺位选择；选中即签约锁定</td></tr>
+      <tr><td><b>DAY 11-12</b></td><td>签约入队</td><td>新秀合同自动签订；入队名单；青训提拔并行</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.2 选秀夜流程</h3>
+  <div class="flow">
+    <span class="step">状元签持有队<br>10:00 前提交选择</span>
+    <span class="arrow">→</span>
+    <span class="step">10:00 结算<br>锁定选择</span>
+    <span class="arrow">→</span>
+    <span class="step">下一顺位队<br>10:00 前提交</span>
+    <span class="arrow">→</span>
+    <span class="step">...逐顺位执行...</span>
+    <span class="arrow">→</span>
+    <span class="step">60 顺位完成</span>
+  </div>
+  <ul>
+    <li><b>同步提交</b>：为避免串行等待，所有球队在 10:00 前同步提交"按顺位的偏好列表"（含条件分支）。</li>
+    <li><b>结算逻辑</b>：10:00 按顺位 1→60 依次结算。每顺位取该队偏好列表中未被选走的最高位球员。</li>
+    <li><b>超时默认</b>：若某队未提交，系统按 draftStock 行情自动选择最高行情球员。</li>
+    <li><b>即时签约</b>：选中即自动签订新秀合同（§10），不可拒签。</li>
+  </ul>
+</section>
+
+<!-- ==================== §6 选秀探查窗口 ==================== -->
+<section id="s6">
+  <h2><span class="num">6</span>选秀探查窗口</h2>
+  <p>选秀探查是球探系统（§11）在选秀期的应用，窗口为 DAY 5-10。</p>
+
+  <h3>6.1 联合试训（DAY 5-6）</h3>
+  <ul>
+    <li><b>免费集体浅探</b>：所有选秀池球员 fog 各收窄 ±3，每队 1 次。</li>
+    <li><b>全员覆盖</b>：联合试训覆盖全部 ~60 人，但收窄幅度小（±3）。</li>
+    <li><b>基础信息</b>：联合试训后所有球员的基础身体数据（身高/体重/速度）揭晓真实值。</li>
+    <li><b>目的</b>：为经理提供选秀池全貌，识别需深探的目标。</li>
+  </ul>
+
+  <h3>6.2 单独探查窗口（DAY 5-10）</h3>
+  <ul>
+    <li><b>球员探查</b>：针对顺位目标球员深探，fog 收窄按球探系统 §4.2 标准。</li>
+    <li><b>潜力探查</b>：专攻 Peak fog（球探系统 §4.3），选秀前最关键的投入。</li>
+    <li><b>探针可用</b>：试训邀请（全能力 ±6）、医疗体检（Durability ±2）、心理评估（MF/ClutchIQ ±3）。</li>
+    <li><b>预算集中</b>：选秀探查投入可能占赛季球探预算 40%。这是球探系统的"决战时刻"。</li>
+  </ul>
+
+  <h3>6.3 探查策略</h3>
+  <table>
+    <thead><tr><th>策略</th><th>预算分配</th><th>适合</th></tr></thead>
+    <tbody>
+      <tr><td><b>集中深挖</b></td><td>80% 预算投入 3-5 个顺位目标</td><td>高顺位队（前 5）；每签必中</td></tr>
+      <tr><td><b>广撒网浅探</b></td><td>预算分散探查 15-20 人</td><td>中后段首轮；备选方案多</td></tr>
+      <tr><td><b>捡漏探查</b></td><td>少量预算探查次轮目标 + 落选雷达</td><td>次轮队；寻找被低估球员</td></tr>
+      <tr><td><b>跳过探查</b></td><td>不投入选秀探查，靠联合试训基础</td><td>无首轮签队；省钱用于转会窗</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== §7 选秀行情系统 ==================== -->
+<section id="s7">
+  <h2><span class="num">7</span>选秀行情系统</h2>
+  <p>选秀行情（draftStock）是动态浮动的预测值，反映球员被选走的大致顺位。行情受多种因素影响，是经理"传闻中心博弈"的核心。</p>
+
+  <h3>7.1 行情初始值</h3>
+  <div class="formula">
+<span class="comment">── 选秀池生成时的初始行情 ──</span>
+
+<span class="var">draftStock</span> <span class="op">=</span> <span class="fn">baseStock</span>(<span class="var">peakTier</span>)              <span class="comment">// S=99, A=85, B=70, C=55, D=40</span>
+              <span class="op">+</span> <span class="var">amateurRepMod</span>              <span class="comment">// 业余金字塔履历加成</span>
+              <span class="op">+</span> <span class="var">ageMod</span>                     <span class="comment">// 19岁标准；22岁+5（成熟度高）；17岁-10（风险）</span>
+              <span class="op">+</span> <span class="var">positionDemandMod</span>         <span class="comment">// 位置稀缺性（当届中锋少→中锋行情+）</span>
+              <span class="op">+</span> <span class="fn">rand</span>(<span class="var">seed</span>) <span class="op">*</span> <span class="num">5</span>             <span class="comment">// 随机扰动</span>
+
+<span class="comment">// 注意：peakTier 对经理是隐藏的（fog），但行情反映了"共识估值"</span>
+<span class="comment">// 经理可通过行情反推球员大致 Peak 档位（但仍有 fog）</span>
+  </div>
+
+  <h3>7.2 行情浮动因素</h3>
+  <table>
+    <thead><tr><th>因素</th><th>影响</th><th>触发时机</th></tr></thead>
+    <tbody>
+      <tr><td><b>联合试训表现</b></td><td>±5~10</td><td>DAY 5-6</td></tr>
+      <tr><td><b>单独试训表现</b></td><td>±3~8</td><td>DAY 5-10</td></tr>
+      <tr><td><b>退选/参选变动</b></td><td>其他球员行情连带调整</td><td>DAY 7 退选截止前</td></tr>
+      <tr><td><b>伤病/体检结果</b></td><td>-10~30（重大伤病）</td><td>探查期间</td></tr>
+      <tr><td><b>其他经理探查热度</b></td><td>±3~5（多人探查→行情↑）</td><td>探查窗口</td></tr>
+      <tr><td><b>媒体传闻</b></td><td>±2~5</td><td>随机事件</td></tr>
+    </tbody>
+  </table>
+
+  <h3>7.3 行情与预测顺位</h3>
+  <div class="formula">
+<span class="comment">── 预测顺位计算 ──</span>
+
+<span class="var">projection</span> <span class="op">=</span> <span class="fn">rankByDraftStock</span>(<span class="var">draftPool</span>)
+<span class="comment">// 按 draftStock 降序排名即预测顺位</span>
+
+<span class="comment">// 但行情 ≠ 真实价值</span>
+<span class="comment">// 经理可能基于自己的 fog 报告选低于行情的球员（捡漏）</span>
+<span class="comment">// 也可能选高于行情的球员（基于 fog 判断行情低估）</span>
+  </div>
+
+  <h3>7.4 传闻中心博弈</h3>
+  <div class="note blue"><b>信息不对称博弈</b>：行情是"共识估值"，但每队有自己的 fog 报告。经理 A 可能探得某球员 Peak 比行情高，想"捡漏"；但若经理 B 也探到了，就会抢先选。经理需推测"谁也在探我的目标"——这就是传闻中心博弈。反球探（球探系统 §12.3）可发现他队探查意图。</div>
+</section>
+
+<!-- ==================== §8 选秀决策 ==================== -->
+<section id="s8">
+  <h2><span class="num">8</span>选秀决策</h2>
+
+  <h3>8.1 决策输入</h3>
+  <table>
+    <thead><tr><th>输入</th><th>来源</th><th>作用</th></tr></thead>
+    <tbody>
+      <tr><td><b>fog 报告</b></td><td>球探系统</td><td>各球员能力/ Peak 估值区间；特质线索</td></tr>
+      <tr><td><b>选秀行情</b></td><td>本系统 §7</td><td>共识估值；预测谁会被先选走</td></tr>
+      <tr><td><b>球队需求</b></td><td>名单分析</td><td>缺什么位置/什么角色</td></tr>
+      <tr><td><b>顺位</b></td><td>乐透+战绩</td><td>能选到谁</td></tr>
+      <tr><td><b>选秀权库存</b></td><td>交易记录</td><td>本队今年/未来还有哪些签</td></tr>
+      <tr><td><b>薪资空间</b></td><td>经济系统</td><td>新秀合同占空间；未来续约考量</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8.2 偏好列表提交</h3>
+  <p>选秀夜前，经理提交"按顺位的偏好列表"，支持条件分支：</p>
+  <div class="formula">
+<span class="comment">── 偏好列表示例 ──</span>
+
+<span class="var">preferenceList</span> <span class="op">=</span> [
+  {
+    pickNumber: <span class="num">3</span>,                          <span class="comment">// 本队持第3顺位</span>
+    ranking: [<span class="str">"张浩然"</span>, <span class="str">"李明轩"</span>, <span class="str">"王梓睿"</span>],  <span class="comment">// 偏好排序</span>
+    fallback: <span class="str">"bestAvailable"</span>               <span class="comment">// 列表内全被选走则选最高行情</span>
+  },
+  {
+    pickNumber: <span class="num">28</span>,                         <span class="comment">// 本队另有第28顺位</span>
+    ranking: [<span class="str">"陈思远"</span>, <span class="str">"刘天宇"</span>],
+    condition: <span class="str">"if 陈思远 available else tradeDown"</span>  <span class="comment">// 条件：若目标不在则尝试向下交易</span>
+  }
+]
+  </div>
+
+  <h3>8.3 决策博弈维度</h3>
+  <div class="grid">
+    <div class="card"><div class="t">赌天花板 vs 稳即战 <span class="badge red">风险</span></div><div class="d">选 S/A 档新秀赌 Peak（fog 宽风险大）；选 B 档新秀稳妥发展。前者可能是王朝基石也可能是水货，后者性价比高但天花板低。</div></div>
+    <div class="card"><div class="t">需求 vs 最优可用 <span class="badge blue">策略</span></div><div class="d">按球队需求选缺的位置；还是选"最优可用球员"（BPA）。前者补短板，后者积累资产。</div></div>
+    <div class="card"><div class="t">选人 vs 交易 <span class="badge gold">资产</span></div><div class="d">选中后留用；或选中后立即交易换即战力/未来签。"选即换"是重建队积累资产的手段。</div></div>
+    <div class="card"><div class="t">捡漏 vs 抢人 <span class="badge purple">信息</span></div><div class="d">基于 fog 报告选低于行情的球员（捡漏）；或担心被抢而提前选（抢人）。信息优势转化为选秀优势。</div></div>
+  </div>
+</section>
+
+<!-- ==================== §9 选秀权交易 ==================== -->
+<section id="s9">
+  <h2><span class="num">9</span>选秀权交易</h2>
+  <p>选秀权是可交易资产（经济系统），可在赛季中或选秀窗口前交易。</p>
+
+  <h3>9.1 交易类型</h3>
+  <table>
+    <thead><tr><th>类型</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><b>选秀权单独交易</b></td><td>纯选秀权交换（如今年首轮换明年首轮+次轮）</td></tr>
+      <tr><td><b>选秀权+球员交易</b></td><td>选秀权作为交易添头（如球员 A 换球员 B + 首轮签）</td></tr>
+      <tr><td><b>未来选秀权</b></td><td>未来 1-3 年的选秀权可交易，但受"斯特平规则"限制（不可交易连续两年的首轮）</td></tr>
+      <tr><td><b>选秀夜交易</b></td><td>选秀夜选中后立即交易该新秀（选即换）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>9.2 选秀权价值评估</h3>
+  <div class="formula">
+<span class="comment">── 选秀权价值估算 ──</span>
+
+<span class="var">pickValue</span> <span class="op">=</span> <span class="fn">baseValue</span>(<span class="var">pickNumber</span>)
+            <span class="op">*</span> <span class="var">draftClassStrengthMod</span>      <span class="comment">// 当届选秀大年/小年</span>
+            <span class="op">*</span> <span class="var">futureDiscountMod</span>           <span class="comment">// 未来签折价（明年×0.85, 后年×0.72）</span>
+
+<span class="comment">// baseValue（参考价值表）</span>
+状元: <span class="num">1000</span>
+榜眼: <span class="num">850</span>
+探花: <span class="num">720</span>
+4-14(乐透): <span class="num">600</span>→<span class="num">280</span>
+15-30(首轮后段): <span class="num">260</span>→<span class="num">100</span>
+31-60(次轮): <span class="num">80</span>→<span class="num">10</span>
+  </div>
+
+  <h3>9.3 顺位保护条款</h3>
+  <table>
+    <thead><tr><th>保护类型</th><th>说明</th><th>示例</th></tr></thead>
+    <tbody>
+      <tr><td><b>前 N 顺位保护</b></td><td>若该签落在前 N 顺位内，归原队；否则归交易方</td><td>"前 5 保护"：该签若为 1-5 归原队，6-30 归交易方</td></tr>
+      <tr><td><b>无条件</b></td><td>无论顺位高低都归交易方</td><td>—</td></tr>
+      <tr><td><b>次轮保护</b></td><td>次轮签常见"前 30 保护"（若落入首轮则保留）</td><td>—</td></tr>
+      <tr><td><b>递延保护</b></td><td>若当年触发保护，顺延至次年（保护降级）</td><td>"前 5 保护，次年降为前 3"</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== §10 选秀签约与新秀合同 ==================== -->
+<section id="s10">
+  <h2><span class="num">10</span>选秀签约与新秀合同</h2>
+  <p>选中即自动签约，合同由服务端按顺位锚定（经济系统 §3.2 新秀红利合同）。</p>
+
+  <h3>10.1 新秀合同参数</h3>
+  <table>
+    <thead><tr><th>参数</th><th>值</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><b>年限</b></td><td>4 年（固定）</td><td>不可提前解约（除裁员条款）</td></tr>
+      <tr><td><b>薪资水平</b></td><td>市场价的 40%</td><td>新秀红利期低薪高性价比</td></tr>
+      <tr><td><b>薪资锚定</b></td><td>按顺位递减</td><td>状元最高，60 顺位最低</td></tr>
+      <tr><td><b>第 3 年末球队选项</b></td><td>可提前续约或放走</td><td>第 4 年前决策点</td></tr>
+      <tr><td><b>年龄修正</b></td><td>19-22 岁 ×0.7（新秀红利期）</td><td>经济系统 §3.1</td></tr>
+    </tbody>
+  </table>
+
+  <h3>10.2 顺位薪资表（示例）</h3>
+  <table>
+    <thead><tr><th>顺位</th><th>年薪（示例）</th><th>4 年总额</th></tr></thead>
+    <tbody>
+      <tr><td>状元</td><td>120/季</td><td>480</td></tr>
+      <tr><td>榜眼</td><td>105/季</td><td>420</td></tr>
+      <tr><td>探花</td><td>95/季</td><td>380</td></tr>
+      <tr><td>10 顺位</td><td>60/季</td><td>240</td></tr>
+      <tr><td>30 顺位（首轮末）</td><td>35/季</td><td>140</td></tr>
+      <tr><td>60 顺位（次轮末）</td><td>15/季</td><td>60</td></tr>
+    </tbody>
+  </table>
+
+  <h3>10.3 第 3 年末球队选项</h3>
+  <ul>
+    <li><b>提前续约</b>：若新秀表现出色，第 3 年末可提前续签长约（避免第 4 年后成为自由球员被抢）。</li>
+    <li><b>放走</b>：若新秀表现不佳，第 3 年末可放弃第 4 年选项，球员成为自由球员。</li>
+    <li><b>全额保障</b>：前 3 年合同全额保障；第 4 年为球队选项（非保障）。</li>
+    <li><b>续约大涨</b>：第 4 年后续约可能按市场价大涨（新秀红利结束）。这是建队薪资规划的关键节点。</li>
+  </ul>
+
+  <div class="note green"><b>设计意图</b>：新秀合同是建队性价比最高的资产——4 年低价锁定一名球员。选中 S/A 档新秀=4 年低价拥有王朝核心，这是选秀权的核心价值。但选错=4 年占用名单+薪资空间的负担。这放大了选秀决策的后果。</div>
+</section>
+
+<!-- ==================== §11 提前参选与退选 ==================== -->
+<section id="s11">
+  <h2><span class="num">11</span>提前参选与退选</h2>
+  <p>参选决策由成长线（§6.1 阶段转换）驱动，选秀系统处理参选/退选流程。</p>
+
+  <h3>11.1 参选年龄规则</h3>
+  <table>
+    <thead><tr><th>年龄</th><th>参选类型</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><b>17-18 岁</b></td><td>提前参选</td><td>放弃剩余青年期成长（特质觉醒+clutch）；选秀行情可能低 3-5 位；不可回退</td></tr>
+      <tr><td><b>19 岁</b></td><td>标准参选</td><td>青年→成人转换的标准节点</td></tr>
+      <tr><td><b>20-22 岁</b></td><td>延迟参选</td><td>留在大学/海外多打 1-3 年，能力更成熟但 Peak 可能更低</td></tr>
+      <tr><td><b>22+ 岁</b></td><td>超龄参选</td><td>行情偏低（成长空间小）；多为即战型轮换</td></tr>
+    </tbody>
+  </table>
+
+  <h3>11.2 退选机制（仅提前参选者）</h3>
+  <ul>
+    <li><b>退选窗口</b>：DAY 7 退选截止前，提前参选者（17-18 岁）可退选回大学/青训。</li>
+    <li><b>退选条件</b>：未签约新秀合同（选秀夜前均可退选）。</li>
+    <li><b>退选后果</b>：球员回到业余体系继续成长；次年可再参选。</li>
+    <li><b>不可退选</b>：19+ 岁标准参选者不可退选（已转换阶段）。</li>
+  </ul>
+
+  <h3>11.3 参选决策博弈（球员化身视角）</h3>
+  <p>当玩家以球员化身身份参选时（三身份系统），参选时机是关键博弈：</p>
+  <ul>
+    <li><b>提前参选</b>（17-18 岁）：早入职业拿薪资，但放弃成长窗口，行情低。</li>
+    <li><b>标准参选</b>（19 岁）：平衡点，成长与薪资兼顾。</li>
+    <li><b>延迟参选</b>（20-22 岁）：能力更成熟，行情高，但 Peak 可能被透支。</li>
+    <li>参选决策由玩家做出，非自动——这是球员化身生涯的关键节点。</li>
+  </ul>
+</section>
+
+<!-- ==================== §12 国际新秀与海外球员 ==================== -->
+<section id="s12">
+  <h2><span class="num">12</span>国际新秀与海外球员</h2>
+
+  <h3>12.1 国际新秀来源</h3>
+  <ul>
+    <li><b>国际赛事金字塔</b>（成长线 §5）：洲际/国际层级赛事的球员可参选。</li>
+    <li><b>海外联赛</b>：非本国青训体系的海外球员（占选秀池 ~15%）。</li>
+    <li><b>语言/文化适配</b>：国际新秀入队后有适配期，化学反应成长慢（×0.7 直到适配完成）。</li>
+  </ul>
+
+  <h3>12.2 海外球员选秀权</h3>
+  <ul>
+    <li><b>选中后保留权</b>：选中海外球员后，球队持有其签约权（不限期）。</li>
+    <li><b>暂不签约</b>：球员可继续在海外发展，球队保留未来签约权。</li>
+    <li><b>签约时机</b>：球员准备好入队时，球队可激活签约权。</li>
+    <li><b>交易签约权</b>：海外球员签约权可交易。</li>
+  </ul>
+
+  <h3>12.3 国际探查难度</h3>
+  <div class="note blue"><b>距离惩罚</b>：国际新秀的球探探查有更高 distancePenalty（球探系统 §3.3），fog 更难收窄。这让国际新秀选秀风险更高，但也可能捡漏（其他球队也探不清）。情报网络分支球探对国际探查有加成。</div>
+</section>
+
+<!-- ==================== §13 落选秀与双向合同 ==================== -->
+<section id="s13">
+  <h2><span class="num">13</span>落选秀与双向合同</h2>
+  <p>选秀池 ~60 人选完后，未选中的球员成为落选秀。</p>
+
+  <h3>13.1 落选秀处理</h3>
+  <ul>
+    <li><b>进入自由球员池</b>：落选秀自动进入自由球员池（freeAgentPool），可被任何球队签约。</li>
+    <li><b>双向合同</b>：落选秀可签双向合同（Exhibit 10 类型）——低薪、非保障、可在主队与附属队之间流动。</li>
+    <li><b>落选雷达</b>：球探系统可在选秀前探查可能落选的目标，为落选后快速签约做准备。</li>
+  </ul>
+
+  <h3>13.2 双向合同参数</h3>
+  <table>
+    <thead><tr><th>参数</th><th>值</th></tr></thead>
+    <tbody>
+      <tr><td>年限</td><td>1 年</td></tr>
+      <tr><td>薪资</td><td>联盟最低薪（30-50/季）</td></tr>
+      <tr><td>保障</td><td>无保障；裁员即释放</td></tr>
+      <tr><td>转正</td><td>表现出色可转为标准合同</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== §14 选秀叙事与回溯 ==================== -->
+<section id="s14">
+  <h2><span class="num">14</span>选秀叙事与回溯</h2>
+  <p>选秀不只是数值事件，更是叙事高潮。每个新秀附带完整业余履历，选秀夜生成叙事报告。</p>
+
+  <h3>14.1 选秀叙事报告</h3>
+  <div class="note"><b>示例叙事报告</b>：「张浩然 · 18 岁 · PG —— 初中全国 U15 四强、高中省赛 MVP、全国高中联赛八强、U17 世青赛替补出场均 12 分 5 助攻。国际赛事经验丰富但出场时间有限，clutch 样本不足。身体天赋已接近 Peak，技术定型偏组织型，投射天花板存疑。第 3 顺位被 [球队名] 选中。」</div>
+
+  <h3>14.2 选秀回溯</h3>
+  <ul>
+    <li><b>10 年后回溯</b>：球员退役时，选秀报告回溯完整生涯弧线——从 U15 四强到联赛 MVP，或从乐透新秀到水货出局。</li>
+    <li><b>选秀重排</b>：赛季末系统生成"选秀重排"——按当季表现重新排序，让经理回顾"如果重来会怎么选"。</li>
+    <li><b>选秀档案</b>：每届选秀的完整记录（顺位、选择、行情、fog 报告）永久存档，供回溯与统计。</li>
+  </ul>
+
+  <h3>14.3 选秀名场面</h3>
+  <ul>
+    <li><b>捡漏名场面</b>：低顺位选中的球员成为球星，生成"XX 顺位捡到宝"叙事。</li>
+    <li><b>水货名场面</b>：高顺位选中表现不佳，生成"XX 顺位水货"叙事。</li>
+    <li><b>交易名场面</b>：选秀夜重大交易改变格局，生成叙事。</li>
+    <li>名场面进入球员/球队的时代标签（成长线 §10.2 传承），影响王朝叙事。</li>
+  </ul>
+</section>
+
+<!-- ==================== §15 AI 选秀决策 ==================== -->
+<section id="s15">
+  <h2><span class="num">15</span>AI 选秀决策</h2>
+  <p>AI 经理（世界结构 §13）的选秀决策模型。</p>
+
+  <h3>15.1 AI 选秀决策逻辑</h3>
+  <div class="formula">
+<span class="keyword">function</span> <span class="fn">aiDraftDecide</span>(team, draftPool, myPicks):
+  <span class="var">preferenceList</span> <span class="op">=</span> []
+
+  <span class="kw">for</span> <span class="var">pick</span> <span class="kw">in</span> <span class="var">myPicks</span>:
+    <span="comment">// 1. 按 fog 报告 + 行情综合排序</span>
+    <span class="var">ranked</span> <span class="op">=</span> <span class="fn">rankProspects</span>(<span class="var">draftPool</span>, <span class="var">team</span>.fogReports, <span class="var">team</span>.needs)
+
+    <span class="comment">// 2. 按建队流派分化</span>
+    <span class="kw">if</span> (<span class="var">team</span>.aiStyle <span class="op">==</span> <span class="str">"win_now"</span>):
+        <span class="var">pick</span> <span class="op">=</span> <span class="fn">selectWinNow</span>(<span class="var">ranked</span>)       <span class="comment">// 选成熟度高的</span>
+    <span class="kw">elif</span> (<span class="var">team</span>.aiStyle <span class="op">==</span> <span class="str">"develop"</span>):
+        <span class="var">pick</span> <span class="op">=</span> <span class="fn">selectHighPeak</span>(<span class="var">ranked</span>)      <span class="comment">// 赌 Peak 上限</span>
+    <span class="kw">else</span>:
+        <span class="var">pick</span> <span class="op">=</span> <span class="fn">selectBPA</span>(<span class="var">ranked</span>)           <span class="comment">// 最优可用</span>
+
+    <span class="comment">// 3. 交易决策</span>
+    <span class="kw">if</span> (<span class="fn">shouldTradeDown</span>(<span class="var">pick</span>, <span class="var">ranked</span>)):
+        <span class="var">pick</span> <span class="op">=</span> <span class="fn">tradeDown</span>(<span class="var">pick</span>)            <span class="comment">// 向下交易积累签</span>
+
+    <span class="var">preferenceList</span>.<span class="fn">add</span>(<span class="var">pick</span>)
+
+  <span class="kw">return</span> <span class="var">preferenceList</span>
+  </div>
+
+  <h3>15.2 AI 等级与选秀能力</h3>
+  <table>
+    <thead><tr><th>AI 等级</th><th>选秀探查投入</th><th>决策质量</th><th>交易活跃度</th></tr></thead>
+    <tbody>
+      <tr><td><b>弱</b>（T4）</td><td>仅联合试训</td><td>按行情选；很少捡漏</td><td>低</td></tr>
+      <tr><td><b>中</b>（T3）</td><td>联合试训+少量单独探查</td><td>结合需求与行情</td><td>中</td></tr>
+      <tr><td><b>强</b>（T2）</td><td>集中探查顺位目标</td><td>基于 fog 报告捡漏</td><td>高（交易选秀权）</td></tr>
+      <tr><td><b>精英</b>（T1）</td><td>全面深探+探针</td><td>精准捡漏+向下交易</td><td>很高</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== §16 异常处理与边界规则 ==================== -->
+<section id="s16">
+  <h2><span class="num">16</span>异常处理与边界规则</h2>
+
+  <h3>16.1 选秀异常</h3>
+  <table>
+    <thead><tr><th>异常</th><th>处理</th></tr></thead>
+    <tbody>
+      <tr><td>球队名单已满（15 人）</td><td>选中后必须裁员腾位；若不裁则新秀进入自由球员池（失去签约权）</td></tr>
+      <tr><td>薪资空间不足签新秀</td><td>同上，必须裁员释放空间；否则失去签约权</td></tr>
+      <tr><td>球队未提交偏好列表</td><td>系统按行情自动选择最高行情球员</td></tr>
+      <tr><td>选秀权交易后该签保护触发</td><td>顺位归原队；交易方获得次年补偿签（递延保护）</td></tr>
+      <tr><td>选秀池人数不足 60</td><td>末位顺位空选（自动跳过）</td></tr>
+      <tr><td>选秀池人数超 60</td><td>按 draftStock 截取前 60 人</td></tr>
+    </tbody>
+  </table>
+
+  <h3>16.2 球员异常</h3>
+  <ul>
+    <li><b>新秀选秀前受伤</b>：仍可被选中（合同按原顺位）；伤病在签约后揭示。这是探针（医疗体检）的价值。</li>
+    <li><b>新秀拒签</b>：新秀不可拒签（选中即签约，强制）。仅海外球员可暂不签约（保留权）。</li>
+    <li><b>新秀选秀后立即退役</b>：极罕见；合同作废，顺位不补偿。</li>
+  </ul>
+
+  <h3>16.3 跨世界隔离</h3>
+  <ul>
+    <li>每个世界独立 sim 生成选秀池、独立乐透、独立选秀夜。</li>
+    <li>选秀权不可跨世界交易。</li>
+    <li>选秀结果不跨世界同步（各世界时区/节奏可能不同）。</li>
+  </ul>
+</section>
+
+<!-- ==================== §17 数值附录 ==================== -->
+<section id="s17">
+  <h2><span class="num">17</span>数值附录</h2>
+
+  <h3>17.1 选秀池参数</h3>
+  <table>
+    <thead><tr><th>参数</th><th>值</th></tr></thead>
+    <tbody>
+      <tr><td>选秀池规模</td><td>~60 人/世界/赛季</td></tr>
+      <tr><td>轮次</td><td>2 轮</td></tr>
+      <tr><td>顺位数</td><td>60（对齐 30 队联赛）</td></tr>
+      <tr><td>来源占比</td><td>青训达龄 50% / 大学 30% / 海外 15% / 提前参选 5%</td></tr>
+      <tr><td>S 档频率</td><td>每世界每赛季 0-1 人（0.5%）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>17.2 乐透参数</h3>
+  <table>
+    <thead><tr><th>顺位（战绩倒序）</th><th>组合数</th><th>状元概率</th></tr></thead>
+    <tbody>
+      <tr><td>1 号签（最差）</td><td>250</td><td>25.0%</td></tr>
+      <tr><td>2 号签</td><td>199</td><td>19.9%</td></tr>
+      <tr><td>3 号签</td><td>156</td><td>15.6%</td></tr>
+      <tr><td>4 号签</td><td>119</td><td>11.9%</td></tr>
+      <tr><td>5 号签</td><td>88</td><td>8.8%</td></tr>
+      <tr><td>6-14 号签</td><td>递减至 5</td><td>递减至 0.5%</td></tr>
+    </tbody>
+  </table>
+
+  <h3>17.3 行情初始值</h3>
+  <table>
+    <thead><tr><th>Peak 档</th><th>baseStock</th></tr></thead>
+    <tbody>
+      <tr><td>S 档</td><td>99</td></tr>
+      <tr><td>A 档</td><td>85</td></tr>
+      <tr><td>B 档</td><td>70</td></tr>
+      <tr><td>C 档</td><td>55</td></tr>
+      <tr><td>D 档</td><td>40</td></tr>
+    </tbody>
+  </table>
+
+  <h3>17.4 选秀权价值表</h3>
+  <table>
+    <thead><tr><th>顺位</th><th>baseValue</th></tr></thead>
+    <tbody>
+      <tr><td>状元（1）</td><td>1000</td></tr>
+      <tr><td>榜眼（2）</td><td>850</td></tr>
+      <tr><td>探花（3）</td><td>720</td></tr>
+      <tr><td>乐透区（4-14）</td><td>600→280</td></tr>
+      <tr><td>首轮后段（15-30）</td><td>260→100</td></tr>
+      <tr><td>次轮（31-60）</td><td>80→10</td></tr>
+      <tr><td>未来签折价</td><td>明年×0.85 / 后年×0.72</td></tr>
+    </tbody>
+  </table>
+
+  <h3>17.5 新秀合同参数</h3>
+  <table>
+    <thead><tr><th>参数</th><th>值</th></tr></thead>
+    <tbody>
+      <tr><td>年限</td><td>4 年固定</td></tr>
+      <tr><td>薪资水平</td><td>市场价 40%</td></tr>
+      <tr><td>年龄修正</td><td>19-22 岁 ×0.7</td></tr>
+      <tr><td>状元年薪（示例）</td><td>120/季</td></tr>
+      <tr><td>60 顺位年薪（示例）</td><td>15/季</td></tr>
+      <tr><td>球队选项</td><td>第 3 年末（第 4 年非保障）</td></tr>
+      <tr><td>前 3 年保障</td><td>全额</td></tr>
+    </tbody>
+  </table>
+
+  <h3>17.6 选秀日程</h3>
+  <table>
+    <thead><tr><th>日</th><th>事件</th></tr></thead>
+    <tbody>
+      <tr><td>DAY 1</td><td>常规赛结束；战绩锁定</td></tr>
+      <tr><td>DAY 4</td><td>选秀池生成</td></tr>
+      <tr><td>DAY 5-6</td><td>联合试训（免费 fog ±3）</td></tr>
+      <tr><td>DAY 5-10</td><td>单独探查窗口</td></tr>
+      <tr><td>DAY 7</td><td>退选截止</td></tr>
+      <tr><td>DAY 9</td><td>乐透抽签</td></tr>
+      <tr><td>DAY 10</td><td>选秀权交易截止</td></tr>
+      <tr><td>DAY 11</td><td>选秀夜</td></tr>
+      <tr><td>DAY 11-12</td><td>签约入队 + 青训提拔</td></tr>
+    </tbody>
+  </table>
+
+  <h3>17.7 行情浮动幅度</h3>
+  <table>
+    <thead><tr><th>因素</th><th>浮动</th></tr></thead>
+    <tbody>
+      <tr><td>联合试训表现</td><td>±5~10</td></tr>
+      <tr><td>单独试训表现</td><td>±3~8</td></tr>
+      <tr><td>退选/参选变动</td><td>连带 ±2~5</td></tr>
+      <tr><td>伤病/体检结果</td><td>-10~30（重大）</td></tr>
+      <tr><td>他队探查热度</td><td>±3~5</td></tr>
+      <tr><td>媒体传闻</td><td>±2~5</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note gold"><b>数值总览</b>：选秀系统的数值设计确保"选秀是高风险高回报的决策事件"——S 档稀有（0-1 人/世界/赛季）、fog 永远不归零、选中即 4 年锁定、乐透引入随机性。新秀合同性价比（市场价 40%）让选秀权成为建队核心资产，但选错的 4 年负担也让决策有真实后果。所有数值在 EA 阶段通过灰度参数热更新调优。</div>
+</section>
+
+</div>
+</body>
+</html>
