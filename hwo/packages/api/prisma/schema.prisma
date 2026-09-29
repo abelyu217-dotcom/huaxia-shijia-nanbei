@@ -64,6 +64,7 @@ model Season {
   leagues    League[]
   matches    Match[]
   worlds     World[]
+  draftPicks DraftPick[]
   createdAt  DateTime @default(now())
 }
 
@@ -92,6 +93,11 @@ model Team {
   tradeOffersAsOfferor TradeOffer[] @relation("OfferorTeam")
   tradeOffersAsOfferee TradeOffer[] @relation("OffereeTeam")
 
+  // M3
+  academy     Academy?
+  draftPicks  DraftPick[]  @relation("DraftPicks")
+  contracts   Contract[]   @relation("Contracts")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -108,10 +114,21 @@ model Player {
   age       Int    @default(25)
   salary    Int    @default(0)
 
+  // M3: 生涯弧线
+  potential Int?     @default(75) // 潜力上限（0-99）
+  trainExp  Int      @default(0)  // 训练经验值（累积）
+  retired   Boolean  @default(false) // 是否已退役
+  retireSeason Int?  // 退役赛季年份
+
+  // M3: 关系
+  contract  Contract?
+  draftPick DraftPick?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([teamId])
+  @@index([retired])
 }
 
 // ─── 阵容（首发 + 上场时间） ───
@@ -231,4 +248,58 @@ model TradeOffer {
   @@index([worldId, status])
   @@index([offerorTeamId, status])
   @@index([offereeTeamId, status])
+}
+
+// ─── M3: 青训学院 ───
+model Academy {
+  id          String  @id @default(cuid())
+  teamId      String  @unique
+  team        Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  level       Int     @default(1)    // 学院等级 1-5
+  investment  Int     @default(0)    // 累计投入资金
+  lastProdYear Int?   // 上次产出年份
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─── M3: 选秀 ───
+model DraftPick {
+  id        String  @id @default(cuid())
+  seasonId  String
+  season    Season  @relation(fields: [seasonId], references: [id])
+  worldId   String?
+  round     Int     // 第几轮（1 或 2）
+  pickNum   Int     // 该轮顺位（1-16）
+  teamId    String? // 拥有此顺位的球队
+  team      Team?   @relation("DraftPicks", fields: [teamId], references: [id])
+  playerId  String? @unique // 选中的球员
+  player    Player? @relation(fields: [playerId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@unique([seasonId, round, pickNum])
+  @@index([seasonId])
+  @@index([teamId])
+}
+
+// ─── M3: 球员合同 ───
+model Contract {
+  id          String   @id @default(cuid())
+  playerId    String   @unique
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  teamId      String
+  team        Team     @relation("Contracts", fields: [teamId], references: [id])
+  yearsTotal  Int      // 合同总年数
+  yearsRemain Int      // 剩余年数
+  salaryPerYear Int    // 年薪
+  playerOption Boolean @default(false) // 球员选项（最后一年可提前跳出）
+  teamOption   Boolean @default(false) // 球队选项
+  noTrade     Boolean  @default(false) // 交易否决权
+  status      String   @default("active") // active | expired | waived
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([teamId, status])
 }

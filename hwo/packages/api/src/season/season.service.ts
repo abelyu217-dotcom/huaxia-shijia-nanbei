@@ -7,14 +7,19 @@
  * 3. 根据比赛结果更新积分榜（胜场、负场、得失分、连胜）
  */
 
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, forwardRef, Inject } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service.js";
+import { CareerService } from "../career/career.service.js";
 
 @Injectable()
 export class SeasonService {
   private readonly logger = new Logger(SeasonService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => CareerService))
+    private readonly careerService: CareerService,
+  ) {}
 
   /** 获取当前激活的常规赛赛季，不存在则创建 */
   async getCurrentSeason() {
@@ -265,6 +270,10 @@ export class SeasonService {
         }
       }
     }
+
+    // M3: 推进球员生涯成长 + 退役
+    const { grown, retired } = await this.careerService.advanceAllPlayers(season.year);
+    this.logger.log(`生涯成长：${grown} 人成长，${retired} 人退役`);
 
     this.logger.log(`赛季交接：${season.name} → ${newSeason.name}`);
     return true;

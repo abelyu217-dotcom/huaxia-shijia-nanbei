@@ -12,6 +12,7 @@ import { AuthModule } from "./auth/auth.module.js";
 import { AiManagerModule } from "./ai/ai-manager.module.js";
 import { WorldModule } from "./world/world.module.js";
 import { TradeModule } from "./trade/trade.module.js";
+import { CareerModule } from "./career/career.module.js";
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { TradeModule } from "./trade/trade.module.js";
     AiManagerModule,
     WorldModule,
     TradeModule,
+    CareerModule,
   ],
 })
 export class AppModule {}
