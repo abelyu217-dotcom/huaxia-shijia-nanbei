@@ -64,6 +64,12 @@ export class SeasonController {
       league = await this.prisma.league.create({
         data: { seasonId: season.id, name: "HWO Premier", level: 1 },
       });
+    }
+    // 始终把未关联联赛的球队归入当前联赛（处理历史数据）
+    const orphanTeams = await this.prisma.team.count({
+      where: { leagueId: null },
+    });
+    if (orphanTeams > 0) {
       await this.prisma.team.updateMany({
         where: { leagueId: null },
         data: { leagueId: league.id },
