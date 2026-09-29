@@ -140,6 +140,16 @@ button {
   text-transform: uppercase;
 }
 
+.brand-ver {
+  font-size: 11px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
 .tab-nav {
   display: flex;
   gap: 6px;
