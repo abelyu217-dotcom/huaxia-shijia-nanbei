@@ -12,6 +12,7 @@ import type {
   AiTrainResult,
   AuthResult,
   AdvanceResult,
+  CounterTacticResult,
   LineupView,
   ScheduleDay,
   SeasonInfo,
@@ -20,7 +21,9 @@ import type {
   StandingRow,
   TacticPreset,
   TeamDetail,
+  TeamTactic,
   TeamRoster,
+  TradeOffer,
   UserInfo,
 } from "./types";
 
@@ -217,4 +220,130 @@ export function postAiRefresh(
 /** POST /api/ai/train — 手动触发 AI 球队训练（需 JWT） */
 export function postAiTrain(): Promise<AiTrainResult> {
   return sendJson<AiTrainResult>("POST", "/api/ai/train", {});
+}
+
+// ── 球队战术 ──
+
+/** GET /api/tactics/presets — 全部战术预设（含参数详情） */
+export function fetchTacticPresets(): Promise<TacticPreset[]> {
+  return getJson<TacticPreset[]>("/api/tactics/presets");
+}
+
+/** GET /api/tactics/team/:teamId — 获取球队当前战术 */
+export function fetchTeamTactic(teamId: string): Promise<TeamTactic> {
+  return getJson<TeamTactic>(`/api/tactics/team/${encodeURIComponent(teamId)}`);
+}
+
+/** PUT /api/tactics/team/:teamId — 更新球队战术（切换预设或微调参数） */
+export function putTeamTactic(
+  teamId: string,
+  payload: { presetId?: string; modSet?: Record<string, unknown> },
+): Promise<TeamTactic> {
+  return sendJson<TeamTactic>(
+    "PUT",
+    `/api/tactics/team/${encodeURIComponent(teamId)}`,
+    payload,
+  );
+}
+
+/** GET /api/tactics/counter/:presetId — 反制策略推荐 */
+export function fetchCounterTactic(presetId: string): Promise<CounterTacticResult> {
+  return getJson<CounterTacticResult>(
+    `/api/tactics/counter/${encodeURIComponent(presetId)}`,
+  );
+}
+
+// ── 交易系统 ──
+
+/** POST /api/trades — 发起交易报价 */
+export function postTradeOffer(payload: {
+  offerorTeamId: string;
+  offereeTeamId: string;
+  offerorPlayers: string[];
+  offereePlayers: string[];
+  offerorCash?: number;
+  offereeCash?: number;
+}): Promise<TradeOffer> {
+  return sendJson<TradeOffer>("POST", "/api/trades", payload);
+}
+
+/** GET /api/trades/sent/:teamId — 我发出的交易报价 */
+export function fetchSentTrades(teamId: string): Promise<TradeOffer[]> {
+  return getJson<TradeOffer[]>(`/api/trades/sent/${encodeURIComponent(teamId)}`);
+}
+
+/** GET /api/trades/received/:teamId — 我收到的交易报价 */
+export function fetchReceivedTrades(teamId: string): Promise<TradeOffer[]> {
+  return getJson<TradeOffer[]>(
+    `/api/trades/received/${encodeURIComponent(teamId)}`,
+  );
+}
+
+/** POST /api/trades/:id/accept — 接受报价 */
+export function postAcceptTrade(tradeId: string): Promise<TradeOffer> {
+  return sendJson<TradeOffer>(
+    "POST",
+    `/api/trades/${encodeURIComponent(tradeId)}/accept`,
+    {},
+  );
+}
+
+/** POST /api/trades/:id/reject — 拒绝报价 */
+export function postRejectTrade(tradeId: string): Promise<TradeOffer> {
+  return sendJson<TradeOffer>(
+    "POST",
+    `/api/trades/${encodeURIComponent(tradeId)}/reject`,
+    {},
+  );
+}
+
+/** POST /api/trades/:id/counter — 还价 */
+export function postCounterTrade(
+  tradeId: string,
+  payload: {
+    offerorPlayers: string[];
+    offereePlayers: string[];
+    offerorCash?: number;
+    offereeCash?: number;
+  },
+): Promise<TradeOffer> {
+  return sendJson<TradeOffer>(
+    "POST",
+    `/api/trades/${encodeURIComponent(tradeId)}/counter`,
+    payload,
+  );
+}
+
+/** POST /api/trades/:id/ai-decide — 触发 AI 决策 */
+export function postAiDecideTrade(tradeId: string): Promise<TradeOffer> {
+  return sendJson<TradeOffer>(
+    "POST",
+    `/api/trades/${encodeURIComponent(tradeId)}/ai-decide`,
+    {},
+  );
+}
+
+// ── SSE 实时直播 ──
+
+/**
+ * 订阅 /api/matches/:id/stream 的 SSE 流。
+ * 返回 EventSource；调用方负责 close()。
+ * onMessage 解析后通过回调传出。
+ */
+export function subscribeMatchStream(
+  matchId: string,
+  onMessage: (data: unknown) => void,
+  onError?: (err: Event) => void,
+): EventSource {
+  const url = `/api/matches/${encodeURIComponent(matchId)}/stream`;
+  const es = new EventSource(url);
+  es.onmessage = (ev) => {
+    try {
+      onMessage(JSON.parse(ev.data));
+    } catch {
+      onMessage(ev.data);
+    }
+  };
+  if (onError) es.onerror = onError;
+  return es;
 }

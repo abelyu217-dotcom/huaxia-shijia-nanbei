@@ -159,7 +159,9 @@ export class SeasonService {
    * 赛季结束处理：
    * 1. 标记当前赛季为 offseason
    * 2. 创建新赛季
-   * 3. 清空积分榜（新赛季重新建档）
+   * 3. 升降级：L1 末尾 2 队降入 L2，L2 前 2 队升入 L1
+   * 4. 为联赛在新赛季创建对应记录，球队按升降级结果重新分配
+   * 5. 清空积分榜（新赛季重新建档）
    * 返回 true 表示赛季已交接
    */
   async handleSeasonEnd(seasonId: string): Promise<boolean> {
@@ -183,34 +185,117 @@ export class SeasonService {
       },
     });
 
-    // 获取联赛
+    // 获取当前赛季所有联赛（按 world 分组）
     const leagues = await this.prisma.league.findMany({
       where: { seasonId },
+      include: { world: true },
     });
 
-    // 为联赛在新赛季创建对应记录
+    // 按 world 分组处理升降级
+    const worlds = new Map<string, typeof leagues>();
     for (const league of leagues) {
-      const newLeague = await this.prisma.league.create({
-        data: {
-          seasonId: newSeason.id,
-          name: league.name,
-          level: league.level,
-        },
-      });
+      const key = league.worldId ?? "default";
+      if (!worlds.has(key)) worlds.set(key, []);
+      worlds.get(key)!.push(league);
+    }
 
-      // 将球队关联到新联赛
-      const teams = await this.prisma.team.findMany({
-        where: { leagueId: league.id },
-        select: { id: true },
-      });
-      await this.prisma.team.updateMany({
-        where: { id: { in: teams.map((t) => t.id) } },
-        data: { leagueId: newLeague.id },
-      });
+    for (const [, worldLeagues] of worlds) {
+      const l1 = worldLeagues.find((l) => l.level === 1);
+      const l2 = worldLeagues.find((l) => l.level === 2);
+
+      // 计算升降级球队
+      let relegatedTeamIds: string[] = [];
+      let promotedTeamIds: string[] = [];
+
+      if (l1 && l2) {
+        const { relegated, promoted } = await this.calculateRelegation(l1.id, l2.id);
+        relegatedTeamIds = relegated;
+        promotedTeamIds = promoted;
+        this.logger.log(
+          `升降级：L1 降级 [${relegated.join(", ")}] → L2；L2 升级 [${promoted.join(", ")}] → L1`,
+        );
+      }
+
+      // 为每个联赛在新赛季创建对应记录，并重新分配球队
+      for (const league of worldLeagues) {
+        const newLeague = await this.prisma.league.create({
+          data: {
+            seasonId: newSeason.id,
+            name: league.name,
+            level: league.level,
+            worldId: league.worldId,
+          },
+        });
+
+        // 获取该联赛下的所有球队
+        const teams = await this.prisma.team.findMany({
+          where: { leagueId: league.id },
+          select: { id: true },
+        });
+
+        // 按升降级结果调整球队归属
+        let teamIds = teams.map((t) => t.id);
+
+        if (league.level === 1 && l1 && l2) {
+          // L1：移除降级球队，加入升级球队
+          teamIds = teamIds.filter((id) => !relegatedTeamIds.includes(id));
+          teamIds.push(...promotedTeamIds);
+        } else if (league.level === 2 && l1 && l2) {
+          // L2：移除升级球队，加入降级球队
+          teamIds = teamIds.filter((id) => !promotedTeamIds.includes(id));
+          teamIds.push(...relegatedTeamIds);
+        }
+
+        // 将球队关联到新联赛
+        if (teamIds.length > 0) {
+          await this.prisma.team.updateMany({
+            where: { id: { in: teamIds } },
+            data: { leagueId: newLeague.id },
+          });
+
+          // 为新联赛创建初始积分榜
+          await this.prisma.standing.createMany({
+            data: teamIds.map((teamId) => ({
+              leagueId: newLeague.id,
+              teamId,
+              seasonId: newSeason.id,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
     }
 
     this.logger.log(`赛季交接：${season.name} → ${newSeason.name}`);
     return true;
+  }
+
+  /**
+   * 计算升降级球队：
+   * - L1 积分榜最后 2 名降级
+   * - L2 积分榜前 2 名升级
+   */
+  private async calculateRelegation(l1LeagueId: string, l2LeagueId: string): Promise<{
+    relegated: string[];
+    promoted: string[];
+  }> {
+    const [l1Standings, l2Standings] = await Promise.all([
+      this.prisma.standing.findMany({
+        where: { leagueId: l1LeagueId },
+        orderBy: [{ wins: "desc" }, { pointsFor: "desc" }],
+      }),
+      this.prisma.standing.findMany({
+        where: { leagueId: l2LeagueId },
+        orderBy: [{ wins: "desc" }, { pointsFor: "desc" }],
+      }),
+    ]);
+
+    // L1 最后 2 名降级
+    const relegated = l1Standings.slice(-2).map((s) => s.teamId);
+    // L2 前 2 名升级
+    const promoted = l2Standings.slice(0, 2).map((s) => s.teamId);
+
+    return { relegated, promoted };
   }
 
   /** 获取赛季赛程（按日分组） */

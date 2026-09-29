@@ -243,3 +243,70 @@ export interface AiRefreshResult {
 export interface AiTrainResult {
   playersTrained: number;
 }
+
+// ── 球队战术（GET /api/tactics/team/:id）──
+export interface TacticTendencyMod {
+  drive: number;
+  three: number;
+  inside: number;
+  postup: number;
+  midrange: number;
+}
+
+export interface TacticModSet {
+  teamId: string;
+  stealChance: number;
+  tendencyMod: TacticTendencyMod;
+  helpDefChance: number;
+  defenseContest: number;
+  pickRollChance: number;
+  fastBreakChance: number;
+  possessionTimeDelta: number;
+}
+
+export interface TeamTactic {
+  teamId: string;
+  presetId: string;
+  presetName: string;
+  modSet: TacticModSet;
+}
+
+export interface CounterTacticResult {
+  counter: TacticPreset;
+  reason: string;
+}
+
+// ── 交易系统 ──
+export type TradeStatus =
+  | "pending"
+  | "accepted"
+  | "rejected"
+  | "countered"
+  | "expired";
+
+export interface TradeOffer {
+  id: string;
+  worldId: string;
+  offerorTeamId: string;
+  offerorTeamName?: string;
+  offereeTeamId: string;
+  offereeTeamName?: string;
+  offerorPlayers: string[];
+  offereePlayers: string[];
+  offerorCash: number;
+  offereeCash: number;
+  status: TradeStatus;
+  round: number;
+  expiresAt: string;
+  createdAt: string;
+}
+
+// ── SSE 实时直播事件 ──
+export interface SseStreamEvent {
+  type: "pbp" | "box" | "final";
+  event?: PbpEvent;
+  boxScore?: { home: TeamStat; away: TeamStat };
+  scoreHome?: number;
+  scoreAway?: number;
+  done?: boolean;
+}

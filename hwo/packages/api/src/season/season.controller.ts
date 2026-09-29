@@ -57,25 +57,36 @@ export class SeasonController {
   @Post("generate")
   async generate() {
     const season = await this.seasonService.getCurrentSeason();
-    let league = await this.prisma.league.findFirst({
+
+    // 获取当前赛季所有联赛
+    let leagues = await this.prisma.league.findMany({
       where: { seasonId: season.id },
     });
-    if (!league) {
-      league = await this.prisma.league.create({
+
+    // 若没有联赛，创建默认 L1 联赛
+    if (leagues.length === 0) {
+      const league = await this.prisma.league.create({
         data: { seasonId: season.id, name: "HWO Premier", level: 1 },
       });
+      leagues = [league];
     }
-    // 始终把未关联联赛的球队归入当前联赛（处理历史数据）
+
+    // 始终把未关联联赛的球队归入第一个联赛（处理历史数据）
     const orphanTeams = await this.prisma.team.count({
       where: { leagueId: null },
     });
     if (orphanTeams > 0) {
       await this.prisma.team.updateMany({
         where: { leagueId: null },
-        data: { leagueId: league.id },
+        data: { leagueId: leagues[0]!.id },
       });
     }
-    const count = await this.scheduleService.generateSchedule(season.id, league.id);
-    return { generated: count };
+
+    // 为每个联赛生成赛程
+    let total = 0;
+    for (const league of leagues) {
+      total += await this.scheduleService.generateSchedule(season.id, league.id);
+    }
+    return { generated: total, leagues: leagues.length };
   }
 }

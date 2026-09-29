@@ -13,6 +13,7 @@ import type { TacticPreset, TeamDetail } from "../types";
 import { useAuth } from "../auth/AuthContext";
 import { LineupEditor } from "../components/LineupEditor";
 import { PlayerCard } from "../components/PlayerCard";
+import { TacticEditor } from "../components/TacticEditor";
 import {
   DEFENSE_LABEL,
   OFFENSE_LABEL,
@@ -113,11 +114,13 @@ export function TeamPage({ teamId }: Props) {
         </section>
       )}
 
-      {tab === "tactics" && (
+      {tab === "tactics" && isMine && <TacticEditor teamId={teamId} />}
+
+      {tab === "tactics" && !isMine && (
         <section className="panel">
           <div className="panel-head">
             <h2>战术选择</h2>
-            <span className="hint">M1 阶段仅展示，M2 将持久化用户选择</span>
+            <span className="hint">仅查看：其他球队战术一览</span>
           </div>
           <div className="panel-body">
             {tactics ? (

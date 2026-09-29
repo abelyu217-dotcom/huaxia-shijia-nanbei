@@ -1,13 +1,17 @@
 /**
  * TacticController——战术相关端点
  *
- * - GET /api/tactics  返回全部 20 个战术预设（不含 params 内部细节）
+ * - GET  /api/tactics                    返回全部战术预设（简要）
+ * - GET  /api/tactics/presets            返回全部战术预设（含参数详情）
+ * - GET  /api/tactics/team/:teamId       获取球队当前战术
+ * - PUT  /api/tactics/team/:teamId       更新球队战术（切换预设或微调参数）
+ * - GET  /api/tactics/counter/:presetId  反制策略推荐
  */
 
-import { Controller, Get } from "@nestjs/common";
-import { PRESET_TACTICS, type PresetTactic } from "@hwo/shared";
+import { Body, Controller, Get, Param, Put } from "@nestjs/common";
+import { PRESET_TACTICS, type PresetTactic, type TacticModSet } from "@hwo/shared";
+import { TacticService } from "./tactic.service.js";
 
-/** 列表视图：暴露战术预设的展示字段，隐藏 params 实现细节 */
 type TacticSummary = Pick<
   PresetTactic,
   | "id"
@@ -22,6 +26,8 @@ type TacticSummary = Pick<
 
 @Controller("api/tactics")
 export class TacticController {
+  constructor(private readonly tacticService: TacticService) {}
+
   @Get()
   list(): TacticSummary[] {
     return PRESET_TACTICS.map((t) => ({
@@ -34,5 +40,28 @@ export class TacticController {
       defenseTendency: t.defenseTendency,
       desc: t.desc,
     }));
+  }
+
+  @Get("presets")
+  listPresets() {
+    return this.tacticService.listPresets();
+  }
+
+  @Get("team/:teamId")
+  async getTeamTactic(@Param("teamId") teamId: string) {
+    return this.tacticService.getTeamTactic(teamId);
+  }
+
+  @Put("team/:teamId")
+  async updateTeamTactic(
+    @Param("teamId") teamId: string,
+    @Body() body: { presetId?: string; modSet?: Partial<Omit<TacticModSet, "teamId">> },
+  ) {
+    return this.tacticService.updateTeamTactic(teamId, body);
+  }
+
+  @Get("counter/:presetId")
+  suggestCounter(@Param("presetId") presetId: string) {
+    return this.tacticService.suggestCounter(presetId);
   }
 }

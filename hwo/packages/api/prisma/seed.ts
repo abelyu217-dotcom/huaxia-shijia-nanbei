@@ -58,13 +58,13 @@ async function seedTeam(team: Team): Promise<void> {
   });
 
   // 4. 写入 tactic（用第一个预设作为默认）
-  const tactic = tacticFromPreset(team.id, "pace-space");
+  const tactic = tacticFromPreset(team.id, "pace_space");
   await prisma.tactic.upsert({
     where: { teamId: team.id },
-    update: { presetId: "pace-space", modSet: tactic },
+    update: { presetId: "pace_space", modSet: tactic },
     create: {
       teamId: team.id,
-      presetId: "pace-space",
+      presetId: "pace_space",
       modSet: tactic,
     },
   });

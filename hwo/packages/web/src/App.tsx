@@ -20,25 +20,29 @@ import { AuthPage } from "./auth/AuthPage";
 import { HomePage } from "./pages/HomePage";
 import { SchedulePage } from "./pages/SchedulePage";
 import { TeamPage } from "./pages/TeamPage";
+import { TradePage } from "./pages/TradePage";
 import { MatchSimView } from "./views/MatchSimView";
 
 type View =
   | { kind: "home" }
   | { kind: "schedule"; matchId?: string | null }
   | { kind: "team"; teamId: string }
+  | { kind: "trade" }
   | { kind: "sim" };
 
-type NavKind = "home" | "schedule" | "sim";
+type NavKind = "home" | "schedule" | "trade" | "sim";
 
 const NAV_ITEMS: { id: NavKind; label: string }[] = [
   { id: "home", label: "主页" },
   { id: "schedule", label: "赛程" },
+  { id: "trade", label: "交易" },
   { id: "sim", label: "模拟" },
 ];
 
 function navToView(kind: NavKind): View {
   if (kind === "home") return { kind: "home" };
   if (kind === "schedule") return { kind: "schedule" };
+  if (kind === "trade") return { kind: "trade" };
   return { kind: "sim" };
 }
 
@@ -119,6 +123,9 @@ function AppInner() {
           <SchedulePage initialMatchId={view.matchId ?? null} />
         )}
         {view.kind === "team" && <TeamPage teamId={view.teamId} />}
+        {view.kind === "trade" && myTeamId && (
+          <TradePage myTeamId={myTeamId} />
+        )}
         {view.kind === "sim" && <MatchSimView />}
       </main>
     </div>

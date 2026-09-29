@@ -10,6 +10,8 @@ import { PrismaModule } from "./prisma/prisma.module.js";
 import { SeasonModule } from "./season/season.module.js";
 import { AuthModule } from "./auth/auth.module.js";
 import { AiManagerModule } from "./ai/ai-manager.module.js";
+import { WorldModule } from "./world/world.module.js";
+import { TradeModule } from "./trade/trade.module.js";
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { AiManagerModule } from "./ai/ai-manager.module.js";
     TacticModule,
     SeasonModule,
     AiManagerModule,
+    WorldModule,
+    TradeModule,
   ],
 })
 export class AppModule {}

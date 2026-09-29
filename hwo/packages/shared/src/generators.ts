@@ -156,6 +156,16 @@ const TEAM_NAMES = [
   { id: "wolves", name: "西部群狼", city: "成都" },
   { id: "sharks", name: "海岸鲨鱼", city: "深圳" },
   { id: "thunder", name: "高原雷霆", city: "昆明" },
+  { id: "phoenix", name: "江城凤凰", city: "武汉" },
+  { id: "lions", name: "钱塘雄狮", city: "杭州" },
+  { id: "bears", name: "津门棕熊", city: "天津" },
+  { id: "hawks", name: "山城猎鹰", city: "重庆" },
+  { id: "bulls", name: "金陵公牛", city: "南京" },
+  { id: "knights", name: "三晋骑士", city: "太原" },
+  { id: "storm", name: "冰城风暴", city: "哈尔滨" },
+  { id: "foxes", name: "鹭岛灵狐", city: "厦门" },
+  { id: "rhinos", name: "泉城犀牛", city: "济南" },
+  { id: "pirates", name: "椰城海盗", city: "海口" },
 ];
 
 /**
@@ -219,7 +229,7 @@ export function generateTeam(teamIndex: number, seed: number): Team {
 }
 
 /**
- * 生成全部 6 支球队
+ * 生成全部 16 支球队
  */
 export function generateAllTeams(seed = 42): Team[] {
   return TEAM_NAMES.map((_, i) => generateTeam(i, seed));
