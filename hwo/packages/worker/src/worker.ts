@@ -1,34 +1,251 @@
 /**
  * HWO sim worker（BullMQ）
  *
- * 监听 "settle-queue"，处理函数接收 job 后调用 @hwo/shared simulate()，
- * console.log 结果比分。MVP 占位：暂不连 DB、暂不写回结果。
+ * 监听 "settle-queue"，处理函数：
+ * 1. 调用 @hwo/shared simulate() 引擎
+ * 2. 将结果写入 matches + match_results 表
+ * 3. 更新 standings 积分榜
  *
- * 参见：技术架构文档 §4（worker）、§8（sim 引擎）
+ * job.data 结构：{ homeTeamId, awayTeamId, homeTacticId, awayTacticId, seed?, seasonId?, day? }
  */
 
 import { Worker, type Job } from "bullmq";
 import Ioredis from "ioredis";
-import { simulate, type SimInput } from "@hwo/shared";
+import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import pg from "pg";
+import {
+  DEFAULT_CONFIG,
+  simulate,
+  tacticFromPreset,
+  type Abilities,
+  type Lineup,
+  type Player,
+  type TacticModSet,
+  type Team,
+} from "@hwo/shared";
 
 const QUEUE_NAME = "settle-queue";
 const REDIS_URL = process.env.REDIS_URL ?? "redis://localhost:6379";
+const DATABASE_URL =
+  process.env.DATABASE_URL ?? "postgresql://hwo:hwo_dev@localhost:5432/hwo";
 
+// ─── Prisma 客户端 ───
+const pool = new pg.Pool({ connectionString: DATABASE_URL });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
+
+// ─── Redis 连接 ───
 const connection = new Ioredis(REDIS_URL, { maxRetriesPerRequest: null });
 
+/** worker 接收的 job 数据结构 */
+interface SettleJobData {
+  homeTeamId: string;
+  awayTeamId: string;
+  homeTacticId: string;
+  awayTacticId: string;
+  seed?: number;
+  seasonId?: string;
+  day?: number;
+}
+
+/** 获取或创建默认赛季 + 联赛 */
+async function getSeasonContext(seasonId?: string) {
+  let season;
+  if (seasonId) {
+    season = await prisma.season.findUnique({ where: { id: seasonId } });
+  }
+  if (!season) {
+    season =
+      (await prisma.season.findFirst({ where: { status: "regular" } })) ??
+      (await prisma.season.create({
+        data: {
+          year: new Date().getFullYear(),
+          name: `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
+          status: "regular",
+          currentDay: 1,
+        },
+      }));
+  }
+
+  let league = await prisma.league.findFirst({
+    where: { seasonId: season.id },
+  });
+  if (!league) {
+    league = await prisma.league.create({
+      data: { seasonId: season.id, name: "HWO Premier", level: 1 },
+    });
+  }
+
+  return { seasonId: season.id, leagueId: league.id };
+}
+
+/** 从 DB 加载球队并组装 Team 对象 */
+async function loadTeam(teamId: string): Promise<Team> {
+  const row = await prisma.team.findUnique({
+    where: { id: teamId },
+    include: { players: true, lineup: true, tactic: true },
+  });
+  if (!row) throw new Error(`Team ${teamId} not found`);
+
+  const players: Player[] = row.players.map((p) => ({
+    id: p.id,
+    name: p.name,
+    position: p.position as Player["position"],
+    abilities: p.abilities as unknown as Abilities,
+    condition: { fatigue: 0, foulTrouble: 0, hot: 0 },
+    traits: (p.traits as string[]) ?? [],
+  }));
+
+  const lineup: Lineup = row.lineup
+    ? {
+        starters: row.lineup.starters as string[],
+        minutes: row.lineup.minutes as Record<string, number>,
+      }
+    : { starters: players.slice(0, 5).map((p) => p.id), minutes: {} };
+
+  const tactic: TacticModSet = (row.tactic?.modSet as unknown as TacticModSet) ?? {
+    teamId: row.id,
+    tendencyMod: { three: 0, midrange: 0, inside: 0, drive: 0, postup: 0 },
+    fastBreakChance: 0.15,
+    pickRollChance: 0.3,
+    defenseContest: 0.2,
+    helpDefChance: 0.4,
+    stealChance: 0.08,
+    possessionTimeDelta: 0,
+  };
+
+  return {
+    id: row.id,
+    name: row.name,
+    players,
+    lineup,
+    tactic,
+    chemistry: row.chemistry,
+  };
+}
+
+/** 更新积分榜（单支球队） */
+async function upsertStanding(
+  seasonId: string,
+  leagueId: string,
+  teamId: string,
+  win: boolean,
+  pointsFor: number,
+  pointsAgainst: number,
+) {
+  const existing = await prisma.standing.findUnique({
+    where: { leagueId_teamId: { leagueId, teamId } },
+  });
+
+  if (!existing) {
+    return prisma.standing.create({
+      data: {
+        seasonId,
+        leagueId,
+        teamId,
+        wins: win ? 1 : 0,
+        losses: win ? 0 : 1,
+        pointsFor,
+        pointsAgainst,
+        streak: win ? "W1" : "L1",
+      },
+    });
+  }
+
+  const newWins = existing.wins + (win ? 1 : 0);
+  const newLosses = existing.losses + (win ? 0 : 1);
+  const prefix = existing.streak?.[0] ?? "";
+  const count = parseInt(existing.streak?.slice(1) ?? "0", 10) || 0;
+  const newStreak =
+    (win && prefix === "W") || (!win && prefix === "L")
+      ? `${prefix}${count + 1}`
+      : win
+        ? "W1"
+        : "L1";
+
+  return prisma.standing.update({
+    where: { leagueId_teamId: { leagueId, teamId } },
+    data: {
+      wins: newWins,
+      losses: newLosses,
+      pointsFor: existing.pointsFor + pointsFor,
+      pointsAgainst: existing.pointsAgainst + pointsAgainst,
+      streak: newStreak,
+    },
+  });
+}
+
 /**
- * 处理函数：调用 simulate() 并打印比分。
- * job.data 应为 SimInput（matchup + seed + config）。
- * 后续接入 DB 时在此持久化 SimOutput。
+ * 处理函数：模拟比赛 → 持久化 → 更新积分榜
  */
-async function handleSettle(job: Job<SimInput>): Promise<void> {
-  const out = simulate(job.data);
+async function handleSettle(job: Job<SettleJobData>): Promise<void> {
+  const data = job.data;
+  const [home, away] = await Promise.all([
+    loadTeam(data.homeTeamId),
+    loadTeam(data.awayTeamId),
+  ]);
+
+  const homeTeam: Team = {
+    ...home,
+    tactic: tacticFromPreset(home.id, data.homeTacticId),
+  };
+  const awayTeam: Team = {
+    ...away,
+    tactic: tacticFromPreset(away.id, data.awayTacticId),
+  };
+
+  const seed = data.seed ?? Math.floor(Math.random() * 1_000_000);
+
+  const output = simulate({
+    matchup: { homeTeam, awayTeam },
+    seed,
+    config: DEFAULT_CONFIG,
+  });
+
+  const { result } = output;
+  const { seasonId, leagueId } = await getSeasonContext(data.seasonId);
+
+  // 持久化比赛 + 结果
+  await prisma.match.create({
+    data: {
+      seasonId,
+      leagueId,
+      homeTeamId: data.homeTeamId,
+      awayTeamId: data.awayTeamId,
+      day: data.day ?? 1,
+      status: "settled",
+      seed,
+      settledAt: new Date(),
+      result: {
+        create: {
+          homeScore: result.homeScore,
+          awayScore: result.awayScore,
+          winnerId: result.winnerId,
+          loserId: result.loserId,
+          isClutch: result.isClutch ?? false,
+          pbp: output.pbp as unknown as object,
+          boxScore: output.boxScore as unknown as object,
+          quarterScores: output.quarterScores as unknown as object,
+          seed,
+        },
+      },
+    },
+  });
+
+  // 更新积分榜
+  const homeWin = result.winnerId === data.homeTeamId;
+  await Promise.all([
+    upsertStanding(seasonId, leagueId, data.homeTeamId, homeWin, result.homeScore, result.awayScore),
+    upsertStanding(seasonId, leagueId, data.awayTeamId, !homeWin, result.awayScore, result.homeScore),
+  ]);
+
   console.log(
-    `[worker] job ${job.id} settled: home ${out.result.homeScore} : away ${out.result.awayScore} (winner=${out.result.winnerId})`,
+    `[worker] job ${job.id} settled: ${data.homeTeamId} ${result.homeScore}:${result.awayScore} ${data.awayTeamId} (winner=${result.winnerId}, seed=${seed})`,
   );
 }
 
-const worker = new Worker<SimInput>(QUEUE_NAME, handleSettle, { connection });
+const worker = new Worker<SettleJobData>(QUEUE_NAME, handleSettle, { connection });
 
 worker.on("ready", () => {
   console.log(`[@hwo/worker] listening on queue "${QUEUE_NAME}"`);

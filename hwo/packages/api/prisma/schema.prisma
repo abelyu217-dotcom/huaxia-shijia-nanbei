@@ -1,0 +1,179 @@
+// HWO Prisma Schema
+// 参见：开发计划.html §2.1 数据持久化层
+// 复杂嵌套结构（abilities/lineup/tactic/pbp/box_score）使用 Json 存储，
+// 与 @hwo/shared 的 TypeScript 类型一一对应，保证前后端类型共享。
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── 用户 ───
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  nickname     String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  teams        Team[]
+}
+
+// ─── 联赛 ───
+model League {
+  id        String   @id @default(cuid())
+  name      String
+  level     Int      @default(1) // 1 = 顶级联赛
+  seasonId  String
+  season    Season   @relation(fields: [seasonId], references: [id])
+  teams     Team[]
+  matches   Match[]
+  standings Standing[]
+
+  createdAt DateTime @default(now())
+}
+
+// ─── 赛季 ───
+model Season {
+  id          String    @id @default(cuid())
+  year        Int
+  name        String    // 如 "2026-2027"
+  status      String    @default("regular") // regular | playoff | offseason
+  currentDay  Int       @default(1)
+  leagues     League[]
+  matches     Match[]
+  createdAt   DateTime  @default(now())
+}
+
+// ─── 球队 ───
+model Team {
+  id          String    @id
+  name        String
+  city        String?
+  chemistry   Int       @default(60)
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id])
+
+  leagueId    String?
+  league      League?   @relation(fields: [leagueId], references: [id])
+
+  players     Player[]
+  lineup      Lineup?
+  tactic      Tactic?
+  homeMatches Match[]   @relation("HomeTeam")
+  awayMatches Match[]   @relation("AwayTeam")
+  standings   Standing[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ─── 球员 ───
+model Player {
+  id          String   @id
+  teamId      String
+  team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  name        String
+  position    String   // PG | SG | SF | PF | C
+  abilities   Json     // Abilities 接口（17 项能力值）
+  traits      Json     // string[] 特质 ID 列表
+  age         Int      @default(25)
+  salary      Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([teamId])
+}
+
+// ─── 阵容（首发 + 上场时间） ───
+model Lineup {
+  id        String  @id @default(cuid())
+  teamId    String  @unique
+  team      Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  starters  Json    // string[] 5 个 player id
+  minutes   Json    // Record<string, number> 目标出场时间
+  updatedAt DateTime @updatedAt
+}
+
+// ─── 战术 ───
+model Tactic {
+  id        String  @id @default(cuid())
+  teamId    String  @unique
+  team      Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  presetId  String  // 战术预设 ID（对应 tactics.ts 的预设库）
+  modSet    Json    // TacticModSet 完整参数
+  updatedAt DateTime @updatedAt
+}
+
+// ─── 比赛 ───
+model Match {
+  id            String      @id @default(cuid())
+  seasonId      String
+  season        Season      @relation(fields: [seasonId], references: [id])
+  leagueId      String?
+  league        League?     @relation(fields: [leagueId], references: [id])
+
+  homeTeamId    String
+  homeTeam      Team        @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeamId    String
+  awayTeam      Team        @relation("AwayTeam", fields: [awayTeamId], references: [id])
+
+  day           Int         // 赛季第几日
+  scheduledAt   DateTime?
+  status        String      @default("scheduled") // scheduled | settled
+  seed          Int?        // sim 随机种子
+
+  result        MatchResult?
+
+  createdAt     DateTime    @default(now())
+  settledAt     DateTime?
+
+  @@index([seasonId, day])
+  @@index([status])
+}
+
+// ─── 比赛结果（PBP + Box Score） ───
+model MatchResult {
+  id            String   @id @default(cuid())
+  matchId       String   @unique
+  match         Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  homeScore     Int
+  awayScore     Int
+  winnerId      String
+  loserId       String
+  isClutch      Boolean  @default(false)
+
+  pbp           Json     // PbpEvent[] 逐回合事件
+  boxScore      Json     // BoxScore 技术统计
+  quarterScores Json     // { home: number[], away: number[] }
+  rngLog        Json?    // RngLogEntry[] 审计日志（可选，防作弊）
+  seed          Int
+
+  createdAt     DateTime @default(now())
+}
+
+// ─── 积分榜 ───
+model Standing {
+  id          String   @id @default(cuid())
+  leagueId    String
+  league      League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  teamId      String
+  team        Team     @relation(fields: [teamId], references: [id])
+  seasonId    String
+
+  wins        Int      @default(0)
+  losses      Int      @default(0)
+  pointsFor   Int      @default(0) // 总得分
+  pointsAgainst Int    @default(0) // 总失分
+  streak      String?  // 如 "W3" 或 "L2"
+
+  updatedAt   DateTime @updatedAt
+
+  @@unique([leagueId, teamId])
+}

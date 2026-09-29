@@ -1,7 +1,7 @@
 /**
  * TeamController——球队相关端点
  *
- * - GET /api/teams      全部 6 支球队列表（含球员概要 + ovr）
+ * - GET /api/teams      全部球队列表（含球员概要 + ovr）
  * - GET /api/teams/:id  单支球队完整信息（每个 player 附加 ovr）
  *
  * ovr 由 overallRating(abilities) 计算。
@@ -38,8 +38,9 @@ export class TeamController {
   constructor(private readonly teamService: TeamService) {}
 
   @Get()
-  list(): TeamSummary[] {
-    return this.teamService.getAll().map((t) => ({
+  async list(): Promise<TeamSummary[]> {
+    const teams = await this.teamService.getAll();
+    return teams.map((t) => ({
       id: t.id,
       name: t.name,
       players: t.players.map((p) => ({
@@ -52,8 +53,8 @@ export class TeamController {
   }
 
   @Get(":id")
-  detail(@Param("id") id: string): TeamDetail {
-    const team = this.teamService.getById(id);
+  async detail(@Param("id") id: string): Promise<TeamDetail> {
+    const team = await this.teamService.getById(id);
     if (!team) {
       throw new NotFoundException(`Team ${id} not found`);
     }
