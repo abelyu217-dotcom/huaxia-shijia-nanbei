@@ -8,8 +8,18 @@ import { TeamModule } from "./team/team.module.js";
 import { TacticModule } from "./tactic/tactic.module.js";
 import { PrismaModule } from "./prisma/prisma.module.js";
 import { SeasonModule } from "./season/season.module.js";
+import { AuthModule } from "./auth/auth.module.js";
+import { AiManagerModule } from "./ai/ai-manager.module.js";
 
 @Module({
-  imports: [PrismaModule, SimModule, TeamModule, TacticModule, SeasonModule],
+  imports: [
+    PrismaModule,
+    AuthModule,
+    SimModule,
+    TeamModule,
+    TacticModule,
+    SeasonModule,
+    AiManagerModule,
+  ],
 })
 export class AppModule {}

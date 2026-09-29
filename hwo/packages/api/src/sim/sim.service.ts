@@ -7,7 +7,7 @@
  * 3. 将结果写入 matches + match_results 表（带默认赛季）
  */
 
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, Inject, forwardRef } from "@nestjs/common";
 import {
   DEFAULT_CONFIG,
   simulate,
@@ -38,6 +38,7 @@ export class SimService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly teamService: TeamService,
+    @Inject(forwardRef(() => SeasonService))
     private readonly seasonService: SeasonService,
   ) {}
 

@@ -154,4 +154,97 @@ export class SeasonService {
     });
     return season.currentDay;
   }
+
+  /**
+   * 赛季结束处理：
+   * 1. 标记当前赛季为 offseason
+   * 2. 创建新赛季
+   * 3. 清空积分榜（新赛季重新建档）
+   * 返回 true 表示赛季已交接
+   */
+  async handleSeasonEnd(seasonId: string): Promise<boolean> {
+    const season = await this.prisma.season.findUnique({ where: { id: seasonId } });
+    if (!season) return false;
+
+    // 标记当前赛季结束
+    await this.prisma.season.update({
+      where: { id: seasonId },
+      data: { status: "offseason" },
+    });
+
+    // 创建新赛季
+    const newYear = season.year + 1;
+    const newSeason = await this.prisma.season.create({
+      data: {
+        year: newYear,
+        name: `${newYear}-${newYear + 1}`,
+        status: "regular",
+        currentDay: 1,
+      },
+    });
+
+    // 获取联赛
+    const leagues = await this.prisma.league.findMany({
+      where: { seasonId },
+    });
+
+    // 为联赛在新赛季创建对应记录
+    for (const league of leagues) {
+      const newLeague = await this.prisma.league.create({
+        data: {
+          seasonId: newSeason.id,
+          name: league.name,
+          level: league.level,
+        },
+      });
+
+      // 将球队关联到新联赛
+      const teams = await this.prisma.team.findMany({
+        where: { leagueId: league.id },
+        select: { id: true },
+      });
+      await this.prisma.team.updateMany({
+        where: { id: { in: teams.map((t) => t.id) } },
+        data: { leagueId: newLeague.id },
+      });
+    }
+
+    this.logger.log(`赛季交接：${season.name} → ${newSeason.name}`);
+    return true;
+  }
+
+  /** 获取赛季赛程（按日分组） */
+  async getSchedule(seasonId: string) {
+    const matches = await this.prisma.match.findMany({
+      where: { seasonId },
+      include: {
+        homeTeam: { select: { id: true, name: true } },
+        awayTeam: { select: { id: true, name: true } },
+        result: { select: { homeScore: true, awayScore: true, winnerId: true } },
+      },
+      orderBy: [{ day: "asc" }, { id: "asc" }],
+    });
+
+    // 按日分组
+    const byDay: Record<number, typeof matches> = {};
+    for (const m of matches) {
+      if (!byDay[m.day]) byDay[m.day] = [];
+      byDay[m.day].push(m);
+    }
+
+    return Object.entries(byDay).map(([day, dayMatches]) => ({
+      day: parseInt(day, 10),
+      matches: dayMatches.map((m) => ({
+        id: m.id,
+        homeTeamId: m.homeTeamId,
+        homeTeamName: m.homeTeam.name,
+        awayTeamId: m.awayTeamId,
+        awayTeamName: m.awayTeam.name,
+        status: m.status,
+        homeScore: m.result?.homeScore ?? null,
+        awayScore: m.result?.awayScore ?? null,
+        winnerId: m.result?.winnerId ?? null,
+      })),
+    }));
+  }
 }

@@ -2,14 +2,20 @@
  * HWO Web 前端 API 契约类型
  *
  * 对接后端 REST API：
- *   GET  /api/teams          → TeamRoster[]
- *   GET  /api/teams/:id      → TeamDetail（球员详细能力值 + ovr）
- *   GET  /api/tactics        → TacticPreset[]（20 个战术预设）
- *   POST /api/sim/match      → SimOutput
- *
- * Position / Abilities 复用 @hwo/shared；PbpEvent / PlayerStat / TeamStat /
- * SimOutput 在本地定义，与后端 @hwo/shared 对齐（PbpEvent.type 用 string
- * 保持宽松；SimOutput 含 quarterScores 逐节比分）。
+ *   POST /api/auth/register        → AuthResult
+ *   POST /api/auth/login           → AuthResult
+ *   GET  /api/auth/me              → 当前用户信息
+ *   GET  /api/teams                → TeamRoster[]
+ *   GET  /api/teams/:id            → TeamDetail（球员详细能力值 + ovr）
+ *   GET  /api/teams/:id/lineup     → LineupView
+ *   PUT  /api/teams/:id/lineup     → LineupView（需 JWT）
+ *   GET  /api/tactics              → TacticPreset[]（20 个战术预设）
+ *   POST /api/sim/match            → SimOutput
+ *   GET  /api/season               → SeasonInfo
+ *   GET  /api/season/standings     → StandingRow[]
+ *   GET  /api/season/schedule      → ScheduleDay[]
+ *   POST /api/season/advance       → AdvanceResult（需 JWT）
+ *   POST /api/season/generate      → { generated: number }（需 JWT）
  */
 
 import type { Position, Abilities, MatchResult } from "@hwo/shared";
@@ -148,4 +154,92 @@ export interface SimOutput {
   result: MatchResult;
   quarterScores: { home: number[]; away: number[] };
   seed: number;
+}
+
+// ── 认证 ──
+export interface AuthResult {
+  accessToken: string;
+  user: {
+    id: string;
+    email: string;
+    nickname: string;
+    teamId: string | null;
+  };
+}
+
+export interface UserInfo {
+  id: string;
+  email: string;
+  nickname: string;
+  teamId: string | null;
+}
+
+// ── 赛季 ──
+export interface SeasonInfo {
+  id: string;
+  name: string;
+  year: number;
+  status: string;
+  currentDay: number;
+}
+
+export type SeasonStatus = "regular" | "playoff" | "offseason";
+
+export interface StandingRow {
+  teamId: string;
+  teamName: string;
+  wins: number;
+  losses: number;
+  pointsFor: number;
+  pointsAgainst: number;
+  streak: string | null;
+  winRate: number;
+}
+
+export interface ScheduleMatch {
+  id: string;
+  homeTeamId: string;
+  homeTeamName: string;
+  awayTeamId: string;
+  awayTeamName: string;
+  status: "scheduled" | "in_progress" | "final";
+  homeScore: number | null;
+  awayScore: number | null;
+  winnerId: string | null;
+}
+
+export interface ScheduleDay {
+  day: number;
+  matches: ScheduleMatch[];
+}
+
+export interface AdvanceResult {
+  settled: number;
+  nextDay: number;
+  seasonEnded: boolean;
+}
+
+// ── 阵容 ──
+export interface LineupPlayer {
+  id: string;
+  name: string;
+  position: Position;
+}
+
+export interface LineupView {
+  teamId: string;
+  starters: string[];
+  minutes: Record<string, number>;
+  players: LineupPlayer[];
+}
+
+// ── AI 经理 ──
+export type AiDifficulty = "easy" | "normal" | "hard";
+
+export interface AiRefreshResult {
+  updated: number;
+}
+
+export interface AiTrainResult {
+  playersTrained: number;
 }
