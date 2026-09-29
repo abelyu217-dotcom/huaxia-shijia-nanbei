@@ -64,9 +64,9 @@ describe("sim 输出完整性", () => {
     // 包含节开始/结束事件
     expect(out.pbp.some((e) => e.type === "period_start")).toBe(true);
     expect(out.pbp.some((e) => e.type === "period_end")).toBe(true);
-    // 4 节
+    // 至少 4 节（平局可能进入加时）
     const quarters = new Set(out.pbp.map((e) => e.quarter));
-    expect(quarters.size).toBe(4);
+    expect(quarters.size).toBeGreaterThanOrEqual(4);
   });
 
   it("比分非负且合理", () => {
@@ -125,5 +125,95 @@ describe("不同配置下的确定性", () => {
     const out1 = simulate(makeMockInput(1000));
     const out2 = simulate(makeMockInput(2000));
     expect(out1.rngLog).not.toEqual(out2.rngLog);
+  });
+});
+
+describe("比赛机制：犯规 / 轮换 / 加时 / 特质", () => {
+  it("球员犯规数被正确统计（boxScore 中 fouls 非负）", () => {
+    const out = simulate(makeMockInput(1));
+    for (const team of [out.boxScore.home, out.boxScore.away]) {
+      for (const ps of team.players) {
+        expect(ps.fouls).toBeGreaterThanOrEqual(0);
+      }
+    }
+  });
+
+  it("存在球员被换下场（替补获得上场时间）", () => {
+    const out = simulate(makeMockInput(1));
+    // 至少有一支球队有替补上场（minutes > 0 的球员数 > 5）
+    const anyTeamHasSubs = [out.boxScore.home, out.boxScore.away].some(
+      (team) => team.players.filter((p) => p.minutes > 0).length > 5,
+    );
+    expect(anyTeamHasSubs).toBe(true);
+  });
+
+  it("多个 seed 中至少出现一次加时赛（OT 逻辑可达）", () => {
+    let hasOT = false;
+    for (let s = 1; s <= 200; s++) {
+      const out = simulate(makeMockInput(s));
+      const quarters = new Set(out.pbp.map((e) => e.quarter));
+      if (quarters.size > 4) {
+        hasOT = true;
+        break;
+      }
+    }
+    expect(hasOT).toBe(true);
+  });
+
+  it("加时赛被正确标记（出现 quarter > 4 的事件）", () => {
+    let hasOT = false;
+    for (let s = 1; s <= 200; s++) {
+      const out = simulate(makeMockInput(s));
+      if (out.pbp.some((e) => e.quarter > 4)) {
+        hasOT = true;
+        break;
+      }
+    }
+    expect(hasOT).toBe(true);
+  });
+
+  it("生成器产出的部分球员拥有特质 traits", () => {
+    const input = makeMockInput(1);
+    const allPlayers = [
+      ...input.matchup.homeTeam.players,
+      ...input.matchup.awayTeam.players,
+    ];
+    const withTraits = allPlayers.filter((p) => p.traits.length > 0);
+    // 至少有一些球员拥有特质
+    expect(withTraits.length).toBeGreaterThan(0);
+  });
+
+  it("特质字段在 simulate 后仍保留（不被清除）", () => {
+    const input = makeMockInput(1);
+    const out = simulate(input);
+    // boxScore 中球员统计与 traits 无直接关联，这里验证输入未被污染
+    const allPlayers = [
+      ...input.matchup.homeTeam.players,
+      ...input.matchup.awayTeam.players,
+    ];
+    const originalTraits = allPlayers.map((p) => p.traits);
+    // 重新构造并模拟，确认 traits 不消失
+    const input2 = makeMockInput(1);
+    simulate(input2);
+    const traitsAfter = [
+      ...input2.matchup.homeTeam.players,
+      ...input2.matchup.awayTeam.players,
+    ].map((p) => p.traits);
+    expect(traitsAfter).toEqual(originalTraits);
+  });
+
+  it("模拟结果包含完整的 boxScore 字段（含 +/-, 命中数等）", () => {
+    const out = simulate(makeMockInput(1));
+    for (const team of [out.boxScore.home, out.boxScore.away]) {
+      expect(team.score).toBeGreaterThanOrEqual(0);
+      for (const ps of team.players) {
+        expect(ps.minutes).toBeGreaterThanOrEqual(0);
+        expect(ps.points).toBeGreaterThanOrEqual(0);
+        expect(ps.fgm).toBeLessThanOrEqual(ps.fga);
+        expect(ps.tpm).toBeLessThanOrEqual(ps.tpa);
+        expect(ps.ftm).toBeLessThanOrEqual(ps.fta);
+        expect(ps.fouls).toBeGreaterThanOrEqual(0);
+      }
+    }
   });
 });

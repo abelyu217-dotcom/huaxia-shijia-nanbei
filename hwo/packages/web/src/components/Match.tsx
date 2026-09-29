@@ -116,10 +116,23 @@ export function Match({
 
         {simError && <div className="match-error">模拟失败：{simError}</div>}
 
+        {!simResult && !simLoading && !simError && (
+          <div className="empty-state">
+            <div className="empty-state-icon">🏀</div>
+            <div className="empty-state-title">还没有比赛数据</div>
+            <div className="empty-state-desc">
+              选择主客队与战术后，点击「开始比赛」即可生成完整的模拟战报、技术统计与逐回合记录。
+            </div>
+          </div>
+        )}
+
         {simLoading && (
           <div className="state">
             <span className="spinner" />
             正在模拟比赛…
+            <div className="skeleton-table skeleton" style={{ marginTop: 16 }} />
+            <div className="skeleton-line skeleton" />
+            <div className="skeleton-line skeleton" style={{ width: "70%" }} />
           </div>
         )}
 

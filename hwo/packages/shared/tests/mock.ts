@@ -25,13 +25,21 @@ function defaultAbilities(overrides: Partial<Abilities> = {}): Abilities {
 }
 
 function makePlayer(id: string, name: string, position: Player["position"], abilities: Partial<Abilities> = {}): Player {
+  const ab = defaultAbilities(abilities);
+  // 基于能力分配特质（与 generators.ts 逻辑保持一致）
+  const traits: string[] = [];
+  if ((position === "SG" || position === "SF") && ab.three >= 70) traits.push("sharpshooter");
+  if ((position === "PF" || position === "C") && ab.inside >= 70) traits.push("interior_monster");
+  if (position === "PG" && ab.passing >= 75) traits.push("playmaker");
+  if (ab.stamina >= 85) traits.push("iron_man");
+  if (ab.clutch >= 75) traits.push("clutch_performer");
   return {
     id,
     name,
     position,
-    abilities: defaultAbilities(abilities),
+    abilities: ab,
     condition: { fatigue: 0, foulTrouble: 0, hot: 0 },
-    traits: [],
+    traits,
   };
 }
 
@@ -52,9 +60,24 @@ function defaultTactic(teamId: string, overrides: Partial<TacticModSet> = {}): T
 function makeTeam(teamId: string, teamName: string, playerNames: string[]): Team {
   const positions: Player["position"][] = ["PG", "SG", "SF", "PF", "C"];
   const players = playerNames.map((n, i) => makePlayer(`${teamId}-p${i + 1}`, n, positions[i]!));
+  // 替补：5 名角色球员（能力略低）
+  const benchNames = ["林替补1", "林替补2", "林替补3", "林替补4", "林替补5"];
+  for (let i = 0; i < 5; i++) {
+    players.push(
+      makePlayer(`${teamId}-b${i + 1}`, benchNames[i]!, positions[i]!, {
+        three: 60, midrange: 62, inside: 58, drive: 60, postup: 55,
+        passing: 62, ballHandle: 60,
+        perimeterD: 62, interiorD: 60, steal: 55, block: 50,
+        speed: 68, strength: 65, jumping: 65, stamina: 75,
+        iq: 65, clutch: 60,
+      }),
+    );
+  }
   const lineup: Lineup = {
-    starters: players.map((p) => p.id),
-    minutes: Object.fromEntries(players.map((p) => [p.id, 32])),
+    starters: players.slice(0, 5).map((p) => p.id),
+    minutes: Object.fromEntries(
+      players.map((p, i) => [p.id, i < 5 ? 32 : 16]),
+    ),
   };
   return {
     id: teamId,

@@ -90,18 +90,62 @@ function generateAbilities(position: Position, tier: number, rng: () => number):
   }
 }
 
+/** 特质 ID */
+export type TraitId =
+  | "sharpshooter"      // 神射手：三分命中率 +5%
+  | "interior_monster"  // 禁区霸主：内线/低位命中率 +5%，篮板加成
+  | "iron_man"          // 铁人：疲劳累积 -30%
+  | "clutch_performer"  // 关键先生：关键时刻额外加成
+  | "playmaker";        // 组织核心：助攻概率提升
+
+/** 特质中文标签 */
+export const TRAIT_LABELS: Record<TraitId, string> = {
+  sharpshooter: "神射手",
+  interior_monster: "禁区霸主",
+  iron_man: "铁人",
+  clutch_performer: "关键先生",
+  playmaker: "组织核心",
+};
+
+/** 根据位置与档次生成特质（0-2 个，档次越高概率越大） */
+function generateTraits(position: Position, abilities: Abilities, rng: () => number): TraitId[] {
+  const traits: TraitId[] = [];
+  const roll = rng();
+
+  // 位置相关特质
+  if ((position === "SG" || position === "SF") && abilities.three >= 75 && roll > 0.4) {
+    traits.push("sharpshooter");
+  }
+  if ((position === "PF" || position === "C") && abilities.inside >= 75 && rng() > 0.4) {
+    traits.push("interior_monster");
+  }
+  if (position === "PG" && abilities.passing >= 80 && rng() > 0.5) {
+    traits.push("playmaker");
+  }
+  if (abilities.stamina >= 85 && rng() > 0.6) {
+    traits.push("iron_man");
+  }
+  if (abilities.clutch >= 85 && rng() > 0.5) {
+    traits.push("clutch_performer");
+  }
+
+  return traits;
+}
+
 const POSITIONS: Position[] = ["PG", "SG", "SF", "PF", "C"];
 
 function generatePlayer(id: string, position: Position, tier: number, seed: number): Player {
   const rng = rngFromSeed(seed);
   const name = pick(SURNAMES, rng) + pick(GIVEN_NAMES, rng);
+  const abilities = generateAbilities(position, tier, rng);
+  const traits = generateTraits(position, abilities, rng);
   return {
     id,
     name,
     position,
-    abilities: generateAbilities(position, tier, rng),
+    abilities,
     condition: { fatigue: 0, foulTrouble: 0, hot: 0 },
-    traits: [],
+    traits,
   };
 }
 
