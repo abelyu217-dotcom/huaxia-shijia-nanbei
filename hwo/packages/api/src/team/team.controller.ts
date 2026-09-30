@@ -7,9 +7,11 @@
  * ovr 由 overallRating(abilities) 计算。
  */
 
-import { Controller, Get, NotFoundException, Param } from "@nestjs/common";
+import { Body, Controller, ForbiddenException, Get, NotFoundException, Param, Put, Request, UseGuards } from "@nestjs/common";
 import { overallRating, type Player, type Team } from "@hwo/shared";
 import { TeamService } from "./team.service.js";
+import { JwtAuthGuard } from "../auth/jwt-auth.guard.js";
+import { PrismaService } from "../prisma/prisma.service.js";
 
 /** 球员概要：列表视图只暴露关键字段 + 综合评分 */
 interface PlayerSummary {
@@ -35,7 +37,10 @@ type TeamDetail = Omit<Team, "players"> & { players: PlayerDetail[] };
 
 @Controller("api/teams")
 export class TeamController {
-  constructor(private readonly teamService: TeamService) {}
+  constructor(
+    private readonly teamService: TeamService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @Get()
   async list(): Promise<TeamSummary[]> {
@@ -65,5 +70,34 @@ export class TeamController {
         ovr: overallRating(p.abilities),
       })),
     };
+  }
+
+  /** 设置队长（#20） */
+  @UseGuards(JwtAuthGuard)
+  @Put(":id/captain")
+  async setCaptain(
+    @Param("id") teamId: string,
+    @Body() body: { playerId: string | null },
+    @Request() req: { user: { teamId: string | null } },
+  ) {
+    if (req.user.teamId !== teamId) {
+      throw new ForbiddenException("只能设置自己球队的队长");
+    }
+    // 验证球员属于该球队
+    if (body.playerId) {
+      const player = await this.prisma.player.findUnique({
+        where: { id: body.playerId },
+        select: { teamId: true },
+      });
+      if (!player || player.teamId !== teamId) {
+        throw new ForbiddenException("该球员不属于该球队");
+      }
+    }
+    await this.prisma.team.update({
+      where: { id: teamId },
+      data: { captainId: body.playerId },
+    });
+    await this.teamService.invalidateCache(teamId);
+    return { captainId: body.playerId };
   }
 }

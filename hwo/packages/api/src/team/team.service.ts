@@ -15,6 +15,7 @@ import {
   type Player,
   type TacticModSet,
   type Team,
+  getPlayerStatus,
 } from "@hwo/shared";
 
 const REDIS_URL = process.env.REDIS_URL ?? "redis://localhost:6379";
@@ -64,20 +65,31 @@ export class TeamService {
       id: string;
       name: string;
       chemistry: number;
-      players: { id: string; name: string; position: string; abilities: unknown; traits: unknown; salary?: number | null }[];
+      captainId?: string | null;
+      players: { id: string; name: string; position: string; abilities: unknown; traits: unknown; salary?: number | null; fatigue?: number; age?: number }[];
       lineup: { starters: unknown; minutes: unknown } | null;
       tactic: { modSet: unknown } | null;
     },
   ): Team {
-    const players: Player[] = row.players.map((p) => ({
-      id: p.id,
-      name: p.name,
-      position: p.position as Player["position"],
-      abilities: p.abilities as Abilities,
-      condition: { fatigue: 0, foulTrouble: 0, hot: 0 },
-      traits: (p.traits as string[]) ?? [],
-      salary: p.salary ?? 0,
-    }));
+    const captainId = row.captainId ?? null;
+    const players: Player[] = row.players.map((p) => {
+      const fatigue = p.fatigue ?? 0;
+      return {
+        id: p.id,
+        name: p.name,
+        position: p.position as Player["position"],
+        abilities: p.abilities as Abilities,
+        // DB fatigue 是 0-100 整数，condition.fatigue 是 0-1 浮点
+        condition: { fatigue: fatigue / 100, foulTrouble: 0, hot: 0 },
+        traits: (p.traits as string[]) ?? [],
+        salary: p.salary ?? 0,
+        status: getPlayerStatus(fatigue),
+        // 队长标记（#20）
+        isCaptain: p.id === captainId,
+        // 新秀标记（#20）：年龄 ≤ 22 视为新秀
+        isRookie: (p.age ?? 25) <= 22,
+      };
+    });
 
     const lineup: Lineup = row.lineup
       ? {
@@ -104,6 +116,7 @@ export class TeamService {
       lineup,
       tactic,
       chemistry: row.chemistry,
+      captainId,
     };
   }
 

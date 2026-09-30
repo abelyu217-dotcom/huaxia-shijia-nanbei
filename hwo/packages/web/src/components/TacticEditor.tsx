@@ -105,6 +105,16 @@ export function TacticEditor({ teamId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+  // 格式化保存时间戳
+  const formatSaved = (d: Date | null): string => {
+    if (!d) return "尚未保存";
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mm = String(d.getMinutes()).padStart(2, "0");
+    const ss = String(d.getSeconds()).padStart(2, "0");
+    return `最后保存 ${hh}:${mm}:${ss}`;
+  };
 
   const load = () => {
     setLoading(true);
@@ -136,6 +146,7 @@ export function TacticEditor({ teamId }: Props) {
       const updated = await putTeamTactic(teamId, { presetId });
       setTactic(updated);
       setDirty(false);
+      setLastSaved(new Date());
       const c = await fetchCounterTactic(presetId).catch(() => null);
       if (c) setCounter(c);
     } catch (e: unknown) {
@@ -211,6 +222,7 @@ export function TacticEditor({ teamId }: Props) {
       });
       setTactic(updated);
       setDirty(false);
+      setLastSaved(new Date());
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -246,6 +258,15 @@ export function TacticEditor({ teamId }: Props) {
   return (
     <div className="tactic-editor">
       {error && <div className="state error">{error}</div>}
+
+      {/* 保存状态指示条 */}
+      <div className="save-status-bar">
+        {dirty ? (
+          <span className="chip save-status-dirty">未保存变更</span>
+        ) : (
+          <span className="save-status-ok">{formatSaved(lastSaved)}</span>
+        )}
+      </div>
 
       {/* 当前战术预设 */}
       <div className="panel">

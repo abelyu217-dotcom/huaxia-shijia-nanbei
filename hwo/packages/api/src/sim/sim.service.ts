@@ -128,11 +128,62 @@ export class SimService {
       winnerId: result.winnerId,
     });
 
+    // 更新球员疲劳值（#13 状态色体系）：根据出场时间累积疲劳
+    await this.applyFatigueFromBoxScore(output.boxScore);
+
     this.logger.log(
       `Match saved: ${params.homeTeamId} ${result.homeScore}-${result.awayScore} ${params.awayTeamId} (seed=${seed})`,
     );
 
     return output;
+  }
+
+  /** 根据 boxScore 中的出场时间更新球员疲劳值 */
+  private async applyFatigueFromBoxScore(boxScore: {
+    home: { players: { playerId: string; minutes: number }[] };
+    away: { players: { playerId: string; minutes: number }[] };
+  }): Promise<void> {
+    const allPlayers = [
+      ...boxScore.home.players,
+      ...boxScore.away.players,
+    ];
+    // 出场时间 × 0.5 = 疲劳增量（打满 40 分钟 +20 疲劳）
+    const updates = allPlayers
+      .filter((p) => p.minutes > 0)
+      .map((p) => ({
+        id: p.playerId,
+        fatigueIncrement: Math.round(p.minutes * 0.5),
+      }));
+
+    if (updates.length === 0) return;
+
+    await Promise.all(
+      updates.map((u) =>
+        this.prisma.player.update({
+          where: { id: u.id },
+          data: {
+            fatigue: { increment: u.fatigueIncrement },
+          },
+        }),
+      ),
+    );
+
+    // 疲劳值 clamp 到 0-100（increment 可能超过 100，需要修正）
+    const players = await this.prisma.player.findMany({
+      where: { id: { in: updates.map((u) => u.id) } },
+      select: { id: true, fatigue: true },
+    });
+    const over = players.filter((p) => p.fatigue > 100);
+    if (over.length > 0) {
+      await Promise.all(
+        over.map((p) =>
+          this.prisma.player.update({
+            where: { id: p.id },
+            data: { fatigue: 100 },
+          }),
+        ),
+      );
+    }
   }
 
   /** 纯模拟，不持久化（用于 demo 等无状态场景） */

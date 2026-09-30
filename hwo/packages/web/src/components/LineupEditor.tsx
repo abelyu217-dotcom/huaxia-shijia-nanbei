@@ -23,6 +23,14 @@ function ovrColor(ovr: number): string {
   return "var(--text-muted)";
 }
 
+/** 状态色 —— #13 状态色体系 */
+const STATUS_STYLE: Record<string, { color: string; bg: string; label: string }> = {
+  peak: { color: "#22c55e", bg: "rgba(34,197,94,0.12)", label: "巅峰" },
+  good: { color: "#60a5fa", bg: "rgba(96,165,250,0.12)", label: "良好" },
+  tired: { color: "#f59e0b", bg: "rgba(245,158,11,0.12)", label: "疲劳" },
+  exhausted: { color: "#ef4444", bg: "rgba(239,68,68,0.12)", label: "力竭" },
+};
+
 interface Props {
   teamId: string;
   /** 当前用户是否拥有该球队（影响可编辑性） */
@@ -40,6 +48,16 @@ export function LineupEditor({ teamId, editable, onSaved }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+  // 格式化保存时间戳
+  const formatSaved = (d: Date | null): string => {
+    if (!d) return "尚未保存";
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mm = String(d.getMinutes()).padStart(2, "0");
+    const ss = String(d.getSeconds()).padStart(2, "0");
+    return `最后保存 ${hh}:${mm}:${ss}`;
+  };
 
   // 本地编辑副本：starters + minutes
   const [starters, setStarters] = useState<string[]>([]);
@@ -145,6 +163,7 @@ export function LineupEditor({ teamId, editable, onSaved }: Props) {
       setMinutes({ ...updated.minutes });
       setDirty(false);
       setSaveMsg("阵容已保存");
+      setLastSaved(new Date());
       onSaved?.();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
@@ -178,6 +197,7 @@ export function LineupEditor({ teamId, editable, onSaved }: Props) {
             总出场 {totalMin} min
           </span>
           {dirty && <span className="chip tempo">未保存</span>}
+          {!dirty && <span className="save-status-ok">{formatSaved(lastSaved)}</span>}
         </div>
         {editable && (
           <button
@@ -217,6 +237,13 @@ export function LineupEditor({ teamId, editable, onSaved }: Props) {
                         disabled={!editable}
                         onChange={() => toggleStarter(p.id)}
                       />
+                      <span
+                        className="status-dot"
+                        style={{ background: STATUS_STYLE[p.status ?? "good"].color }}
+                        title={STATUS_STYLE[p.status ?? "good"].label}
+                      />
+                      {p.isCaptain && <span className="tag tag-captain" title="队长">C</span>}
+                      {p.isRookie && <span className="tag tag-rookie" title="新秀">R</span>}
                       <span className="lineup-name">{p.name}</span>
                     </label>
                     <div className="lineup-meta">

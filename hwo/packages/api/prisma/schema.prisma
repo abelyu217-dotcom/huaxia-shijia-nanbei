@@ -85,6 +85,8 @@ model Team {
   players     Player[]
   lineup      Lineup?
   tactic      Tactic?
+  // 队长（#20）：手动指定，每队 1 人
+  captainId   String?
   homeMatches Match[]    @relation("HomeTeam")
   awayMatches Match[]    @relation("AwayTeam")
   standings   Standing[]
@@ -119,6 +121,10 @@ model Player {
   trainExp  Int      @default(0)  // 训练经验值（累积）
   retired   Boolean  @default(false) // 是否已退役
   retireSeason Int?  // 退役赛季年份
+
+  // 状态体系（#13）：疲劳累积 + 状态等级
+  fatigue   Int      @default(0)  // 疲劳值 0-100，随出场时间累积，休息日恢复
+  status    String   @default("good") // peak | good | tired | exhausted
 
   // M3: 关系
   contract  Contract?

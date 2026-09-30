@@ -178,6 +178,18 @@ export function putLineup(
   );
 }
 
+/** PUT /api/teams/:id/captain — 设置队长（#20） */
+export function putTeamCaptain(
+  teamId: string,
+  playerId: string | null,
+): Promise<{ captainId: string | null }> {
+  return sendJson<{ captainId: string | null }>(
+    "PUT",
+    `/api/teams/${encodeURIComponent(teamId)}/captain`,
+    { playerId },
+  );
+}
+
 // ── 战术 ──
 
 /** GET /api/tactics — 20 个战术预设。 */

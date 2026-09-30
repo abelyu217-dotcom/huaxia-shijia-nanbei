@@ -985,6 +985,56 @@ button {
   background: var(--accent-soft);
 }
 
+/* 状态色芯片（#13 状态色体系） */
+.chip.status-chip {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-width: 1px;
+  border-style: solid;
+}
+
+/* 球员标签（#20 队长/新秀） */
+.player-tags {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+.tag-captain {
+  background: var(--gold);
+  color: #1a0d05;
+}
+.tag-rookie {
+  background: rgba(167, 139, 250, 0.2);
+  color: #a78bfa;
+  border: 1px solid rgba(167, 139, 250, 0.4);
+}
+.captain-btn {
+  font-size: 11px;
+  padding: 2px 6px;
+  margin-left: 8px;
+  color: var(--text-muted);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.captain-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 .tc-desc {
   font-size: 12.5px;
   line-height: 1.55;
@@ -3712,6 +3762,14 @@ button {
   cursor: pointer;
   accent-color: var(--accent);
 }
+/* 状态色圆点（#13 状态色体系） */
+.status-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.06);
+}
 .lineup-pos {
   font-size: 11px;
   font-weight: 800;
@@ -3949,6 +4007,28 @@ button {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+/* 保存状态指示条（统一保存机制 #18） */
+.save-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 8px 4px;
+}
+.save-status-dirty {
+  color: var(--warn);
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.12);
+  animation: pulse-dirty 1.6s ease-in-out infinite;
+}
+.save-status-ok {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+@keyframes pulse-dirty {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
 .tactic-preset-grid {

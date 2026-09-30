@@ -51,6 +51,9 @@ export class LineupController {
         name: p.name,
         position: p.position,
         ovr: computeOVR(p.abilities),
+        status: p.status,
+        isCaptain: p.isCaptain,
+        isRookie: p.isRookie,
       })),
     };
   }

@@ -42,6 +42,9 @@ export interface PlayerCondition {
   hot: number;          // 手感热度 0-1
 }
 
+/** 球员状态等级（#13 状态色体系） */
+export type PlayerStatus = "peak" | "good" | "tired" | "exhausted";
+
 /** 球员 */
 export interface Player {
   id: string;
@@ -57,6 +60,12 @@ export interface Player {
   gameRole?: DefensiveRole;
   /** 年薪（单位：万元）。来自 DB Player.salary，seed/世界生成/选秀/青训时写入 */
   salary?: number;
+  /** 状态等级（#13）：基于 fatigue 计算，peak/good/tired/exhausted */
+  status?: PlayerStatus;
+  /** 是否队长（#20）：由 Team.captainId 推导 */
+  isCaptain?: boolean;
+  /** 是否新秀（#20）：年龄 ≤ 22 或当季选秀 */
+  isRookie?: boolean;
 }
 
 /** 球员进攻原型（借鉴 JBL Po Archetype） */
@@ -222,6 +231,8 @@ export interface Team {
   tactic: TacticModSet;
   /** 球队化学反应 0-100 */
   chemistry: number;
+  /** 队长 ID（#20） */
+  captainId?: string | null;
 }
 
 /** 对阵 */

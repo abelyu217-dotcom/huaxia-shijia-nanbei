@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { fetchTactics, fetchTeam } from "../api";
+import { fetchTactics, fetchTeam, putTeamCaptain } from "../api";
 import type { Position, PlayerDetail, TacticPreset, TeamDetail } from "../types";
 import { useAuth } from "../auth/AuthContext";
 import { LineupEditor } from "../components/LineupEditor";
@@ -36,6 +36,14 @@ function ovrColor(ovr: number): string {
   if (ovr >= 65) return "#34d399"; // 绿
   return "var(--text-muted)";
 }
+
+/** 状态色 —— #13 状态色体系 */
+const STATUS_STYLE: Record<string, { color: string; bg: string; label: string }> = {
+  peak: { color: "#22c55e", bg: "rgba(34,197,94,0.12)", label: "巅峰" },
+  good: { color: "#60a5fa", bg: "rgba(96,165,250,0.12)", label: "良好" },
+  tired: { color: "#f59e0b", bg: "rgba(245,158,11,0.12)", label: "疲劳" },
+  exhausted: { color: "#ef4444", bg: "rgba(239,68,68,0.12)", label: "力竭" },
+};
 
 const POS_FILTERS: ("ALL" | Position)[] = ["ALL", "PG", "SG", "SF", "PF", "C"];
 
@@ -107,6 +115,19 @@ export function TeamPage({ teamId }: Props) {
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortAsc(!sortAsc);
     else { setSortKey(key); setSortAsc(false); }
+  }
+
+  /** 设置/取消队长（#20） */
+  async function handleSetCaptain(playerId: string | null) {
+    if (!team) return;
+    try {
+      await putTeamCaptain(team.id, playerId);
+      // 刷新球队数据
+      const refreshed = await fetchTeam(team.id);
+      setTeam(refreshed);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
   }
 
   if (loading) {
@@ -230,6 +251,7 @@ export function TeamPage({ teamId }: Props) {
                     <th onClick={() => toggleSort("name")} className="sortable">姓名 {sortKey === "name" && (sortAsc ? "▲" : "▼")}</th>
                     <th onClick={() => toggleSort("position")} className="sortable">位置 {sortKey === "position" && (sortAsc ? "▲" : "▼")}</th>
                     <th onClick={() => toggleSort("ovr")} className="sortable">OVR {sortKey === "ovr" && (sortAsc ? "▲" : "▼")}</th>
+                    <th>状态</th>
                     <th onClick={() => toggleSort("salary")} className="sortable">年薪(万) {sortKey === "salary" && (sortAsc ? "▲" : "▼")}</th>
                     <th onClick={() => toggleSort("three")} className="sortable">三分 {sortKey === "three" && (sortAsc ? "▲" : "▼")}</th>
                     <th onClick={() => toggleSort("inside")} className="sortable">内线 {sortKey === "inside" && (sortAsc ? "▲" : "▼")}</th>
@@ -240,9 +262,34 @@ export function TeamPage({ teamId }: Props) {
                 <tbody>
                   {visiblePlayers.map((p) => (
                     <tr key={p.id}>
-                      <td className="cell-name">{p.name}</td>
+                      <td className="cell-name">
+                        <span className="player-tags">
+                          {p.isCaptain && <span className="tag tag-captain" title="队长">C</span>}
+                          {p.isRookie && <span className="tag tag-rookie" title="新秀">R</span>}
+                          <span>{p.name}</span>
+                        </span>
+                        {isMine && (
+                          <button
+                            type="button"
+                            className="btn-link captain-btn"
+                            onClick={() => handleSetCaptain(p.isCaptain ? null : p.id)}
+                          >
+                            {p.isCaptain ? "取消队长" : "设为队长"}
+                          </button>
+                        )}
+                      </td>
                       <td><span className="pos-badge">{p.position}</span></td>
                       <td className="cell-ovr" style={{ color: ovrColor(p.ovr) }}>{p.ovr}</td>
+                      <td>
+                        {(() => {
+                          const st = STATUS_STYLE[p.status ?? "good"];
+                          return (
+                            <span className="chip status-chip" style={{ color: st.color, background: st.bg, borderColor: st.bg }}>
+                              {st.label}
+                            </span>
+                          );
+                        })()}
+                      </td>
                       <td>{p.salary ?? "—"}</td>
                       <td>{p.abilities.three}</td>
                       <td>{p.abilities.inside}</td>
@@ -251,7 +298,7 @@ export function TeamPage({ teamId }: Props) {
                     </tr>
                   ))}
                   {visiblePlayers.length === 0 && (
-                    <tr><td colSpan={8} className="empty-row">该位置暂无球员</td></tr>
+                    <tr><td colSpan={9} className="empty-row">该位置暂无球员</td></tr>
                   )}
                 </tbody>
               </table>

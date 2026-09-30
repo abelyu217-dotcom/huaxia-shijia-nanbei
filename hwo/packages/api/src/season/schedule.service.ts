@@ -86,6 +86,25 @@ export class ScheduleService {
 
     const currentDay = season.currentDay;
 
+    // 0. 疲劳恢复（#13）：每日所有球员疲劳值 -15，模拟休息日恢复
+    try {
+      // fatigue >= 15 的直接 -15
+      const recovered = await this.prisma.player.updateMany({
+        where: { fatigue: { gte: 15 } },
+        data: { fatigue: { decrement: 15 } },
+      });
+      // fatigue 在 1-14 之间的归零
+      const zeroed = await this.prisma.player.updateMany({
+        where: { fatigue: { gt: 0, lt: 15 } },
+        data: { fatigue: 0 },
+      });
+      this.logger.log(`疲劳恢复：${recovered.count} 名 -15，${zeroed.count} 名归零`);
+    } catch (e) {
+      this.logger.warn(
+        `疲劳恢复失败（不影响结算）：${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+
     // 1. AI 经理刷新阵容 + 战术（影响当日 sim 输入）
     try {
       const refreshed = await this.aiManager.refreshAllAiTeams("normal");

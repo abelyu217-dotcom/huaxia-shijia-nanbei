@@ -6,7 +6,7 @@
  * 每赛季根据年龄阶段 + 训练量 + 出场时间，能力值自然成长或衰退。
  */
 
-import type { Abilities } from "./types.js";
+import type { Abilities, PlayerStatus } from "./types.js";
 
 /** 生涯阶段 */
 export type CareerStage =
@@ -33,6 +33,22 @@ export const STAGE_LABEL: Record<CareerStage, string> = {
   decline: "下滑",
   retired: "退役",
 };
+
+/** 状态标签（#13 状态色体系） */
+export const STATUS_LABEL: Record<PlayerStatus, string> = {
+  peak: "巅峰",
+  good: "良好",
+  tired: "疲劳",
+  exhausted: "力竭",
+};
+
+/** 根据疲劳值（0-100）计算状态等级 */
+export function getPlayerStatus(fatigue: number): PlayerStatus {
+  if (fatigue < 15) return "peak";
+  if (fatigue < 40) return "good";
+  if (fatigue < 70) return "tired";
+  return "exhausted";
+}
 
 /** 各阶段成长/衰退倍率 */
 const STAGE_GROWTH_RATE: Record<CareerStage, number> = {

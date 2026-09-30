@@ -109,14 +109,20 @@ export interface PlayerDetail {
   position: Position;
   ovr: number;
   abilities: Abilities;
-  /** 年薪（单位：万元）。来自 DB Player.salary */
   salary?: number;
+  /** 状态等级（#13）：peak/good/tired/exhausted */
+  status?: "peak" | "good" | "tired" | "exhausted";
+  /** 是否队长（#20） */
+  isCaptain?: boolean;
+  /** 是否新秀（#20） */
+  isRookie?: boolean;
 }
 
 export interface TeamDetail {
   id: string;
   name: string;
   players: PlayerDetail[];
+  captainId?: string | null;
 }
 
 // ── 战术预设（GET /api/tactics）──
@@ -227,6 +233,9 @@ export interface LineupPlayer {
   name: string;
   position: Position;
   ovr: number;
+  status?: "peak" | "good" | "tired" | "exhausted";
+  isCaptain?: boolean;
+  isRookie?: boolean;
 }
 
 export interface LineupView {
