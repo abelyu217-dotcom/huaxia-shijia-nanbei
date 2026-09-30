@@ -28,6 +28,21 @@ const LEVEL_POTENTIAL_CAP = [0, 70, 76, 82, 88, 94];
 const LEVEL_PROD_COUNT = [0, 1, 1, 2, 2, 3];
 const MAX_LEVEL = 5;
 
+/** 球探评级：基于潜力值 */
+function scoutGrade(potential: number): { grade: string; color: string } {
+  if (potential >= 90) return { grade: "S+ 未来超巨", color: "#ff4757" };
+  if (potential >= 85) return { grade: "S 全明星潜质", color: "#ff6b81" };
+  if (potential >= 80) return { grade: "A 优质首发", color: "#ffa502" };
+  if (potential >= 75) return { grade: "B 可靠轮换", color: "#7bed9f" };
+  if (potential >= 70) return { grade: "C 角色球员", color: "#70a1ff" };
+  return { grade: "D 边缘球员", color: "#a4b0be" };
+}
+
+/** 位置中文名 */
+const POSITION_CN: Record<string, string> = {
+  PG: "控卫", SG: "分卫", SF: "小前", PF: "大前", C: "中锋",
+};
+
 export function AcademyPage({ teamId }: Props) {
   const [academy, setAcademy] = useState<Academy | null>(null);
   const [loading, setLoading] = useState(true);
@@ -242,26 +257,49 @@ export function AcademyPage({ teamId }: Props) {
         </button>
 
         {produceResult.length > 0 && (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>姓名</th>
-                <th>位置</th>
-                <th>潜力</th>
-                <th>OVR</th>
-              </tr>
-            </thead>
-            <tbody>
-              {produceResult.map((p) => (
-                <tr key={p.playerId}>
-                  <td>{p.name}</td>
-                  <td>{p.position}</td>
-                  <td>{p.potential}</td>
-                  <td>{p.ovr}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="scout-reports">
+            <h4>球探报告</h4>
+            <div className="grid grid-2">
+              {produceResult.map((p) => {
+                const { grade, color } = scoutGrade(p.potential);
+                const pct = Math.min(100, (p.potential / 99) * 100);
+                return (
+                  <div key={p.playerId} className="scout-card">
+                    <div className="scout-head">
+                      <strong>{p.name}</strong>
+                      <span className="scout-position">{POSITION_CN[p.position] ?? p.position}</span>
+                    </div>
+                    <div className="scout-grade" style={{ color }}>
+                      {grade}
+                    </div>
+                    <div className="scout-stats">
+                      <div className="stat-row">
+                        <span>当前 OVR</span>
+                        <span className="stat-val">{p.ovr}</span>
+                      </div>
+                      <div className="stat-row">
+                        <span>潜力上限</span>
+                        <span className="stat-val">{p.potential}</span>
+                      </div>
+                    </div>
+                    <div className="potential-bar">
+                      <div
+                        className="potential-fill"
+                        style={{ width: `${pct}%`, background: color }}
+                      />
+                    </div>
+                    <div className="scout-note muted">
+                      {p.potential >= 85
+                        ? "天赋异禀，建议重点培养，给予充足出场时间。"
+                        : p.potential >= 75
+                          ? "即战力尚可，通过训练可进一步提升。"
+                          : "需大量训练投入，发展为角色球员。"}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
       </section>
     </div>

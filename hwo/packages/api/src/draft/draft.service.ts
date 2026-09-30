@@ -49,17 +49,25 @@ export class DraftService {
     prospectsCreated: number;
     lotteryOrder: Array<{ teamId: string; pickNum: number }>;
   }> {
+    // 规范化 worldId：空值或 "default" 统一存储为 null
+    const normalizedWorldId = worldId && worldId !== "default" ? worldId : null;
+
     // 检查是否已初始化
     const existing = await this.prisma.draftPick.findMany({
-      where: { seasonId, worldId },
+      where: { seasonId, worldId: normalizedWorldId },
     });
     if (existing.length > 0) {
       throw new BadRequestException("该赛季选秀大会已初始化");
     }
 
     // 1. 获取世界内所有球队及其战绩
+    // 若 worldId 为空，则使用所有未归属世界的球队（默认模式）
+    // 排除选秀池球队（ID 以 DRAFT_POOL_ 开头）
+    const teamWhere = normalizedWorldId
+      ? { worldId: normalizedWorldId, id: { not: { startsWith: "DRAFT_POOL_" } } }
+      : { worldId: null, id: { not: { startsWith: "DRAFT_POOL_" } } };
     const teams = await this.prisma.team.findMany({
-      where: { worldId },
+      where: teamWhere,
       select: {
         id: true,
         name: true,
@@ -72,7 +80,7 @@ export class DraftService {
     });
 
     if (teams.length === 0) {
-      throw new NotFoundException(`世界 ${worldId} 无球队`);
+      throw new NotFoundException(`世界 ${worldId || "(默认)"} 无球队`);
     }
 
     // 2. 乐透抽签：战绩越差权重越高
@@ -87,7 +95,7 @@ export class DraftService {
     // 3. 创建 DraftPick 记录（首轮按乐透顺序，次轮按战绩倒序）
     const picksData: Array<{
       seasonId: string;
-      worldId: string;
+      worldId: string | null;
       round: number;
       pickNum: number;
       teamId: string;
@@ -97,7 +105,7 @@ export class DraftService {
     lotteryOrder.forEach((slot, idx) => {
       picksData.push({
         seasonId,
-        worldId,
+        worldId: normalizedWorldId,
         round: 1,
         pickNum: idx + 1,
         teamId: slot.teamId,
@@ -118,7 +126,7 @@ export class DraftService {
     secondRoundOrder.forEach((t, idx) => {
       picksData.push({
         seasonId,
-        worldId,
+        worldId: normalizedWorldId,
         round: 2,
         pickNum: idx + 1,
         teamId: t.id,
@@ -127,8 +135,12 @@ export class DraftService {
 
     await this.prisma.draftPick.createMany({ data: picksData });
 
-    // 4. 生成选秀池球员
-    const draftPoolTeamId = await this.ensureDraftPoolTeam(seasonId, worldId);
+    // 4. 生成选秀池球员（先清理该赛季旧的选秀池球员）
+    const draftPoolTeamId = await this.ensureDraftPoolTeam(seasonId, normalizedWorldId);
+    // 删除旧的选秀池球员（防止 ID 冲突）
+    await this.prisma.player.deleteMany({
+      where: { id: { startsWith: `DRAFT_${seasonId.slice(-6)}_` } },
+    });
     const prospectsCreated = await this.generateProspects(
       draftPoolTeamId,
       seasonId,
@@ -201,8 +213,9 @@ export class DraftService {
    * - 选秀池中尚未被选中的球员（按 OVR 降序）
    */
   async getDraftBoard(seasonId: string, worldId: string) {
+    const worldFilter = this.worldFilter(worldId);
     const picks = await this.prisma.draftPick.findMany({
-      where: { seasonId, worldId },
+      where: { seasonId, ...worldFilter },
       orderBy: [{ round: "asc" }, { pickNum: "asc" }],
       include: {
         team: { select: { id: true, name: true } },
@@ -308,8 +321,9 @@ export class DraftService {
     picked: number;
     picks: Array<{ round: number; pickNum: number; teamId: string; playerName: string }>;
   }> {
+    const worldFilter = this.worldFilter(worldId);
     const unpicked = await this.prisma.draftPick.findMany({
-      where: { seasonId, worldId, playerId: null },
+      where: { seasonId, ...worldFilter, playerId: null },
       orderBy: [{ round: "asc" }, { pickNum: "asc" }],
     });
 
@@ -365,8 +379,9 @@ export class DraftService {
 
   /** 获取选秀结果（已选顺位） */
   async getDraftResults(seasonId: string, worldId: string) {
+    const worldFilter = this.worldFilter(worldId);
     const picks = await this.prisma.draftPick.findMany({
-      where: { seasonId, worldId, playerId: { not: null } },
+      where: { seasonId, ...worldFilter, playerId: { not: null } },
       orderBy: [{ round: "asc" }, { pickNum: "asc" }],
       include: {
         team: { select: { id: true, name: true } },
@@ -386,14 +401,19 @@ export class DraftService {
 
   // ─── 内部工具 ───
 
-  private draftPoolTeamId(seasonId: string, worldId: string): string {
-    return `DRAFT_POOL_${worldId}_${seasonId}`;
+  /** 根据 worldId 生成 Prisma 过滤条件：空值或 "default" 匹配 worldId 为 null 的球队 */
+  private worldFilter(worldId: string): { worldId: string } | { worldId: null } {
+    return worldId && worldId !== "default" ? { worldId } : { worldId: null };
+  }
+
+  private draftPoolTeamId(seasonId: string, worldId: string | null): string {
+    return `DRAFT_POOL_${worldId && worldId !== "default" ? worldId : "default"}_${seasonId}`;
   }
 
   /** 确保选秀池球队存在（无联赛/世界归属，不参与积分榜） */
   private async ensureDraftPoolTeam(
     seasonId: string,
-    worldId: string,
+    worldId: string | null,
   ): Promise<string> {
     const teamId = this.draftPoolTeamId(seasonId, worldId);
     let team = await this.prisma.team.findUnique({ where: { id: teamId } });

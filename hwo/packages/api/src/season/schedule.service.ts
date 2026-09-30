@@ -136,6 +136,7 @@ export class ScheduleService {
         awayTacticId: awayTactic,
         seasonId,
         day: currentDay,
+        matchId: match.id,
       });
     }
 

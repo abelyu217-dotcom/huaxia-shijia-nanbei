@@ -106,9 +106,9 @@ model Team {
 
 // ─── 球员 ───
 model Player {
-  id        String @id
-  teamId    String
-  team      Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  id        String  @id
+  teamId    String? // 可为空（自由球员）
+  team      Team?   @relation(fields: [teamId], references: [id], onDelete: SetNull)
   name      String
   position  String // PG | SG | SF | PF | C
   abilities Json // Abilities 接口（17 项能力值）

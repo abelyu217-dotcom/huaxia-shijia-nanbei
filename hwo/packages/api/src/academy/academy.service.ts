@@ -158,6 +158,22 @@ export class AcademyService {
         },
       });
 
+      // 为新秀自动签约（2-3 年新秀合同）
+      const rookieYears = ovr >= 70 ? 3 : 2;
+      await this.prisma.contract.create({
+        data: {
+          playerId: player.id,
+          teamId,
+          yearsTotal: rookieYears,
+          yearsRemain: rookieYears,
+          salaryPerYear: salary,
+          playerOption: false,
+          teamOption: true, // 球队选项
+          noTrade: false,
+          status: "active",
+        },
+      });
+
       produced.push({
         playerId: player.id,
         name: player.name,

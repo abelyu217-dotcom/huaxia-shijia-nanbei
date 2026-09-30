@@ -24,11 +24,11 @@ export class DraftController {
 
   /** 初始化选秀大会 */
   @Post("init")
-  async initDraft(@Body() body: { seasonId: string; worldId: string }) {
-    if (!body.seasonId || !body.worldId) {
-      throw new BadRequestException("seasonId 和 worldId 必填");
+  async initDraft(@Body() body: { seasonId: string; worldId?: string }) {
+    if (!body.seasonId) {
+      throw new BadRequestException("seasonId 必填");
     }
-    return this.draftService.initDraft(body.seasonId, body.worldId);
+    return this.draftService.initDraft(body.seasonId, body.worldId ?? "");
   }
 
   /** 获取选秀看板 */

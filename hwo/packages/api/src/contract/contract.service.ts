@@ -27,8 +27,6 @@ const MIN_YEARS = 1;
 const MAX_YEARS = 5;
 /** 最低年薪（万） */
 const MIN_SALARY = 50;
-/** 基于能力值的合同建议计算 */
-const OVR_SALARY_FACTOR = 12; // 每点 OVR 对应 12 万年薪基数
 
 export interface SignContractParams {
   playerId: string;
@@ -246,7 +244,7 @@ export class ContractService {
    * - 注意：仅返回合同状态为 expired/waived 的球员，
    *   不包含仍在队中但未签合同的球员（如初始阵容）
    */
-  async getFreeAgents(worldId?: string) {
+  async getFreeAgents(_worldId?: string) {
     const expiredContracts = await this.prisma.contract.findMany({
       where: { status: { in: ["expired", "waived"] } },
       select: { playerId: true },
@@ -259,7 +257,6 @@ export class ContractService {
       where: {
         retired: false,
         id: { in: expiredPlayerIds },
-        ...(worldId ? { team: { worldId } } : {}),
       },
       include: {
         team: { select: { id: true, name: true, worldId: true } },
@@ -356,12 +353,26 @@ export class ContractService {
       }
     }
 
-    // 批量标记到期
+    // 批量标记到期并将球员转为自由球员
     if (expiredIds.length > 0) {
-      await this.prisma.contract.updateMany({
+      // 获取到期合同的球员 ID
+      const expiredContracts = await this.prisma.contract.findMany({
         where: { id: { in: expiredIds } },
-        data: { status: "expired", yearsRemain: 0 },
+        select: { playerId: true },
       });
+      const expiredPlayerIds = expiredContracts.map((c) => c.playerId);
+
+      await this.prisma.$transaction([
+        this.prisma.contract.updateMany({
+          where: { id: { in: expiredIds } },
+          data: { status: "expired", yearsRemain: 0 },
+        }),
+        // 将球员转为自由球员（teamId 置空）
+        this.prisma.player.updateMany({
+          where: { id: { in: expiredPlayerIds } },
+          data: { teamId: null },
+        }),
+      ]);
     }
 
     this.logger.log(
@@ -371,9 +382,9 @@ export class ContractService {
     return { decremented, expired };
   }
 
-  /** 根据球员 OVR 计算建议年薪（万） */
+  /** 根据球员 OVR 计算建议年薪（万），与 seed 公式一致 */
   suggestSalary(ovr: number): number {
-    return Math.max(MIN_SALARY, Math.round(ovr * OVR_SALARY_FACTOR / 10) * 10);
+    return Math.max(MIN_SALARY, Math.round(50 + (ovr - 55) * 40));
   }
 
   /** 查询球队薪资状况 */

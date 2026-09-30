@@ -94,6 +94,39 @@ export function CareerPage({ teamId }: Props) {
       {error && <div className="state error">{error}</div>}
       {trainMsg && <div className="state success">{trainMsg}</div>}
 
+      {/* 退役仪式 */}
+      {grouped.retired.length > 0 && (
+        <section className="retirement-ceremony">
+          <div className="ceremony-banner">
+            <span className="ceremony-icon">🏀</span>
+            <div>
+              <h3>退役仪式</h3>
+              <p className="muted">
+                感谢以下球员为球队的付出，他们的球衣将永远悬挂在球馆上空。
+              </p>
+            </div>
+          </div>
+          <div className="retired-players">
+            {grouped.retired.map((p) => (
+              <div key={p.playerId} className="retired-card">
+                <div className="jersey-retired">
+                  <span className="jersey-number">{p.position}</span>
+                </div>
+                <div className="retired-info">
+                  <strong>{p.name}</strong>
+                  <span className="muted">{p.age} 岁 · 退役</span>
+                </div>
+                <div className="retired-stats">
+                  <div><span>巅峰 OVR</span><strong>{p.ovr}</strong></div>
+                  <div><span>潜力</span><strong>{p.potential}</strong></div>
+                  <div><span>训练经验</span><strong>{p.trainExp}</strong></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {careers.length === 0 ? (
         <div className="card"><p className="muted">球队暂无球员数据。</p></div>
       ) : (

@@ -33,6 +33,8 @@ export interface SimMatchParams {
   seasonId?: string;
   /** 赛季第几日，用于赛程排序 */
   day?: number;
+  /** 已有赛程比赛 ID，传入则更新该比赛而非新建 */
+  matchId?: string;
 }
 
 @Injectable()
@@ -108,31 +110,44 @@ export class SimService {
 
     const { result } = output;
 
-    await this.prisma.match.create({
-      data: {
-        seasonId,
-        leagueId,
-        homeTeamId: params.homeTeamId,
-        awayTeamId: params.awayTeamId,
-        day: params.day ?? 1,
-        status: "settled",
-        seed,
-        settledAt: new Date(),
-        result: {
-          create: {
-            homeScore: result.homeScore,
-            awayScore: result.awayScore,
-            winnerId: result.winnerId,
-            loserId: result.loserId,
-            isClutch: result.isClutch ?? false,
-            pbp: output.pbp as unknown as object,
-            boxScore: output.boxScore as unknown as object,
-            quarterScores: output.quarterScores as unknown as object,
-            seed,
-          },
+    const matchData = {
+      status: "settled" as const,
+      seed,
+      settledAt: new Date(),
+      result: {
+        create: {
+          homeScore: result.homeScore,
+          awayScore: result.awayScore,
+          winnerId: result.winnerId,
+          loserId: result.loserId,
+          isClutch: result.isClutch ?? false,
+          pbp: output.pbp as unknown as object,
+          boxScore: output.boxScore as unknown as object,
+          quarterScores: output.quarterScores as unknown as object,
+          seed,
         },
       },
-    });
+    };
+
+    if (params.matchId) {
+      // 更新已有赛程比赛
+      await this.prisma.match.update({
+        where: { id: params.matchId },
+        data: matchData,
+      });
+    } else {
+      // 新建比赛（手动模拟接口）
+      await this.prisma.match.create({
+        data: {
+          seasonId,
+          leagueId,
+          homeTeamId: params.homeTeamId,
+          awayTeamId: params.awayTeamId,
+          day: params.day ?? 1,
+          ...matchData,
+        },
+      });
+    }
 
     // 更新积分榜
     await this.seasonService.applyMatchResult(seasonId, leagueId, {
