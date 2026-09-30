@@ -18,7 +18,7 @@
  *   POST /api/season/generate      → { generated: number }（需 JWT）
  */
 
-import type { Position, Abilities, MatchResult } from "@hwo/shared";
+import type { Position, Abilities, MatchResult, FogValue } from "@hwo/shared";
 
 /** 统一从 ./types 导出 shared 中与 API 契约一致的类型，便于组件单一来源导入。 */
 export type {
@@ -26,7 +26,16 @@ export type {
   Abilities,
   BoxScore,
   MatchResult,
+  FogValue,
 } from "@hwo/shared";
+
+/** ScoutReport 直接从 shared 导出（球探报告） */
+export type { ScoutReport } from "@hwo/shared";
+
+/** 判断 ovr 是否为带雾估值 */
+export function isFoggedOvr(ovr: number | FogValue): ovr is FogValue {
+  return typeof ovr === "object" && ovr !== null;
+}
 
 // ── PBP 事件（type 用 string 保持宽松，与 @hwo/shared 对齐）──
 export interface PbpEvent {
@@ -93,7 +102,9 @@ export interface RosterPlayer {
   id: string;
   name: string;
   position: Position;
-  ovr: number;
+  ovr: number | FogValue;
+  /** 是否已被本队球探探查过 */
+  scouted?: boolean;
 }
 
 export interface TeamRoster {
@@ -107,15 +118,26 @@ export interface PlayerDetail {
   id: string;
   name: string;
   position: Position;
-  ovr: number;
-  abilities: Abilities;
+  /** 综合评分：本队为精确值，对手为带雾估值 */
+  ovr: number | FogValue;
+  /** 能力值：本队为真实 Abilities，对手为带雾的 Partial<Record<key, FogValue>> */
+  abilities: Abilities | Partial<Record<keyof Abilities, FogValue>>;
+  /** 真实能力（仅本队球员可见） */
+  realAbilities?: Abilities;
+  /** 潜力估值（带雾），本队球员为真实值 */
+  peak?: FogValue | number | null;
   salary?: number;
+  age?: number;
   /** 状态等级（#13）：peak/good/tired/exhausted */
   status?: "peak" | "good" | "tired" | "exhausted";
   /** 是否队长（#20） */
   isCaptain?: boolean;
   /** 是否新秀（#20） */
   isRookie?: boolean;
+  /** 是否已被本队球探探查过 */
+  scouted: boolean;
+  /** 特质：本队可见全部，对手仅可见已探查的 traitHints */
+  traits?: string[];
 }
 
 export interface TeamDetail {

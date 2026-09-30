@@ -20,6 +20,7 @@ import {
 } from "../api";
 import type { TradeOffer, PlayerDetail, TeamDetail } from "../types";
 import { fetchTeam } from "../api";
+import { ovrVal } from "../lib";
 
 interface Props {
   myTeamId: string;
@@ -274,7 +275,7 @@ export function TradePage({ myTeamId }: Props) {
                         onChange={() => toggleMyPlayer(p.id)}
                       />
                       <span className="tp-name">{p.name}</span>
-                      <span className="tp-ovr">OVR {p.ovr}</span>
+                      <span className="tp-ovr">OVR {ovrVal(p.ovr)}</span>
                       <span className="tp-salary">
                         {salaryOf(p).toLocaleString()} 万
                       </span>
@@ -313,7 +314,7 @@ export function TradePage({ myTeamId }: Props) {
                         onChange={() => toggleTheirPlayer(p.id)}
                       />
                       <span className="tp-name">{p.name}</span>
-                      <span className="tp-ovr">OVR {p.ovr}</span>
+                      <span className="tp-ovr">OVR {ovrVal(p.ovr)}</span>
                       <span className="tp-salary">
                         {salaryOf(p).toLocaleString()} 万
                       </span>

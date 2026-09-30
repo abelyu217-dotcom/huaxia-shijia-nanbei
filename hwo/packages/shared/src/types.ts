@@ -401,3 +401,66 @@ export interface SimOutput {
   rngLog: RngLogEntry[];
   seed: number;
 }
+
+// ─── The Fog 信息迷雾系统 ───
+// 参见 球探系统设计.html §3
+
+/** 带雾的能力估值：真实值 est，误差范围 ±range */
+export interface FogValue {
+  est: number;    // 球探估值（0-99）
+  range: number;  // 误差范围（±range），fogFloor=2 不可消除
+}
+
+/** 球探报告：某经理对某球员的情报累积 */
+export interface ScoutReport {
+  teamId: string;       // 拥有该报告的球队（球探方）
+  playerId: string;     // 被探查的球员
+  /** 每项能力的 (est, range)。未探查的能力不存在此 map 中 */
+  abilityFog: Partial<Record<keyof Abilities, FogValue>>;
+  /** Peak 潜力估值（仅潜力探查产出，其他任务不更新） */
+  peakFog: FogValue | null;
+  /** 已揭示的特质线索（30% 概率获得） */
+  traitHints: string[];
+  /** 最近一次探查时间（用于 7 日内收益递减判断） */
+  lastScoutedAt: string;
+  /** 累计探查次数（收益递减） */
+  scoutCount: number;
+  /** 球探等级（1-5），影响收窄幅度 */
+  scoutLevel: number;
+}
+
+/** 应用 fog 后的球员视图（返回给前端） */
+export interface FoggedPlayer {
+  id: string;
+  name: string;
+  position: Position;
+  /** 带雾的能力：每项为 {est, range}。本队球员 abilities 为真实值 + fog=null */
+  abilities: Partial<Record<keyof Abilities, FogValue>>;
+  /** 真实能力（仅本队球员可见） */
+  realAbilities?: Abilities;
+  /** Peak 估值（带雾），本队球员为真实值 */
+  peak: FogValue | number | null;
+  /** OVR（带雾时为估值） */
+  ovr: FogValue | number;
+  /** 特质：本队可见全部，对手仅可见 traitHints */
+  traits: string[];
+  salary?: number;
+  age?: number;
+  status?: PlayerStatus;
+  isCaptain?: boolean;
+  isRookie?: boolean;
+  /** 是否已被本队球探探查过 */
+  scouted: boolean;
+}
+
+/** 球探任务类型 */
+export type ScoutTaskType = "player" | "potential";
+
+/** 球探预算（每赛季刷新） */
+export interface ScoutBudget {
+  /** 剩余球探预算 */
+  remaining: number;
+  /** 赛季总预算 */  total: number;
+  /** 已使用 */
+  used: number;
+}

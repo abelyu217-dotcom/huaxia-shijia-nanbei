@@ -6,7 +6,7 @@
 
 import { useState } from "react";
 import type { TeamRoster, TeamDetail } from "../types";
-import { avgOvr } from "../lib";
+import { avgOvr, ovrVal } from "../lib";
 import { PlayerCard } from "./PlayerCard";
 
 interface RosterProps {
@@ -107,7 +107,7 @@ export function Roster({
                     <span className="team-card-meta">
                       <span>{t.players.length} 人</span>
                       <span className="team-card-ovr">
-                        OVR {avgOvr(t.players.map((p) => p.ovr))}
+                        OVR {avgOvr(t.players.map((p) => ovrVal(p.ovr)))}
                       </span>
                     </span>
                   </button>

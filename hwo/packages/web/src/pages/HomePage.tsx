@@ -49,7 +49,7 @@ import type {
   WalletInfo,
 } from "../types";
 import { useAuth } from "../auth/AuthContext";
-import { avgOvr, ovrTier, POSITION_LABEL } from "../lib";
+import { avgOvr, ovrTier, ovrVal, POSITION_LABEL } from "../lib";
 
 interface Props {
   onOpenTeam: (teamId: string) => void;
@@ -152,10 +152,10 @@ export function HomePage({ onOpenTeam, onOpenSchedule }: Props) {
   // 队伍平均 OVR：优先用 TeamDetail（含完整球员列表），回退到 TeamRoster
   const myAvgOvr = useMemo(() => {
     if (myTeam?.players?.length) {
-      return avgOvr(myTeam.players.map((p) => p.ovr));
+      return avgOvr(myTeam.players.map((p) => ovrVal(p.ovr)));
     }
     if (myTeamRoster?.players?.length) {
-      return avgOvr(myTeamRoster.players.map((p) => p.ovr));
+      return avgOvr(myTeamRoster.players.map((p) => ovrVal(p.ovr)));
     }
     return null;
   }, [myTeam, myTeamRoster]);
@@ -484,9 +484,9 @@ function MyTeamCard({
       </div>
     );
   }
-  const ovrs = roster.players.map((p) => p.ovr);
+  const ovrs = roster.players.map((p) => ovrVal(p.ovr));
   const avg = avgOvr(ovrs);
-  const topPlayer = [...roster.players].sort((a, b) => b.ovr - a.ovr)[0];
+  const topPlayer = [...roster.players].sort((a, b) => ovrVal(b.ovr) - ovrVal(a.ovr))[0];
 
   return (
     <div className="my-team-card-inner">
@@ -541,8 +541,8 @@ function MyTeamCard({
         <div className="my-team-top">
           <div className="mts-sub">当家球星</div>
           <div className="top-player">
-            <span className={`top-ovr tier-${ovrTier(topPlayer.ovr)}`}>
-              {topPlayer.ovr}
+            <span className={`top-ovr tier-${ovrTier(ovrVal(topPlayer.ovr))}`}>
+              {ovrVal(topPlayer.ovr)}
             </span>
             <span className="top-pos">
               {POSITION_LABEL[topPlayer.position]}

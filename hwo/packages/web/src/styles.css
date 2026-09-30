@@ -897,16 +897,95 @@ button {
 }
 
 .pc-ab-bar {
+  position: relative;
   height: 4px;
   border-radius: 999px;
   background: var(--panel);
-  overflow: hidden;
 }
 
 .pc-ab-fill {
   height: 100%;
   background: linear-gradient(90deg, var(--tier-color), color-mix(in srgb, var(--tier-color) 60%, white));
   border-radius: 999px;
+}
+
+/* ── The Fog 迷雾系统样式 ── */
+
+.player-card.is-fogged {
+  opacity: 0.92;
+  border-style: dashed;
+}
+
+.pc-ovr-fog {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.65);
+  line-height: 1;
+  margin-top: 1px;
+}
+
+.pc-fog-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.18);
+  color: var(--text-muted);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  align-self: flex-start;
+}
+
+.pc-fog-badge.scouted {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.pc-ab-fog {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-left: 3px;
+}
+
+.pc-ab-fill.is-fogged {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--tier-color),
+    var(--tier-color) 4px,
+    color-mix(in srgb, var(--tier-color) 55%, white) 4px,
+    color-mix(in srgb, var(--tier-color) 55%, white) 8px
+  );
+  opacity: 0.8;
+}
+
+.pc-ab-fog-range {
+  position: absolute;
+  top: -2px;
+  height: calc(100% + 4px);
+  background: rgba(148, 163, 184, 0.22);
+  border: 1px dashed rgba(148, 163, 184, 0.5);
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.pc-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.btn-scout {
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.35);
+}
+
+.btn-scout:hover {
+  background: rgba(99, 102, 241, 0.25);
+  color: #c7d2fe;
 }
 
 /* ───────────────── 战术卡片 ───────────────── */
@@ -6029,6 +6108,33 @@ button {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 14px;
+}
+
+.scout-reports-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scout-report-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 14px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.scout-report-id {
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  color: var(--text);
+  background: rgba(99, 102, 241, 0.12);
+  padding: 2px 8px;
+  border-radius: 6px;
 }
 
 .prospect-card {

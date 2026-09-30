@@ -20,11 +20,12 @@ import {
   fetchTeamCareers,
   postExtendContract,
 } from "../api";
-import { POSITION_LABEL } from "../lib";
+import { POSITION_LABEL, ovrVal, abilityVal } from "../lib";
 import type {
   Abilities,
   CareerStage,
   Contract,
+  FogValue,
   PlayerCareer,
   PlayerDetail,
   TeamDetail,
@@ -90,13 +91,24 @@ interface AbilityRow {
  * - 助攻：传球
  * - 防守：(外防 + 内防 + 抢断 + 盖帽) / 4
  * - 速度：速度
+ *
+ * 支持 The Fog：对手球员的 abilities 可能为带雾估值（FogValue），
+ * 统一用 abilityVal 提取数值。
  */
-function deriveAbilities(a: Abilities): AbilityRow[] {
-  const scoring = Math.round((a.three + a.midrange + a.inside + a.drive) / 4);
-  const rebound = Math.round((a.inside + a.jumping + a.interiorD) / 3);
-  const assist = a.passing;
-  const defense = Math.round((a.perimeterD + a.interiorD + a.steal + a.block) / 4);
-  const speed = a.speed;
+function deriveAbilities(
+  a: Abilities | Partial<Record<keyof Abilities, FogValue>>,
+): AbilityRow[] {
+  const scoring = Math.round(
+    (abilityVal(a.three) + abilityVal(a.midrange) + abilityVal(a.inside) + abilityVal(a.drive)) / 4,
+  );
+  const rebound = Math.round(
+    (abilityVal(a.inside) + abilityVal(a.jumping) + abilityVal(a.interiorD)) / 3,
+  );
+  const assist = abilityVal(a.passing);
+  const defense = Math.round(
+    (abilityVal(a.perimeterD) + abilityVal(a.interiorD) + abilityVal(a.steal) + abilityVal(a.block)) / 4,
+  );
+  const speed = abilityVal(a.speed);
   return [
     { key: "scoring", label: "得分", val: scoring },
     { key: "rebound", label: "篮板", val: rebound },
@@ -167,8 +179,8 @@ export function CorePlayersPage({ teamId: propTeamId }: Props) {
   // 核心球员：OVR >= 75；不足则取 Top 5
   const corePlayers = useMemo(() => {
     if (!team) return [];
-    const sorted = [...team.players].sort((a, b) => b.ovr - a.ovr);
-    const ge75 = sorted.filter((p) => p.ovr >= 75);
+    const sorted = [...team.players].sort((a, b) => ovrVal(b.ovr) - ovrVal(a.ovr));
+    const ge75 = sorted.filter((p) => ovrVal(p.ovr) >= 75);
     return ge75.length > 0 ? ge75 : sorted.slice(0, 5);
   }, [team]);
 
@@ -282,19 +294,20 @@ export function CorePlayersPage({ teamId: propTeamId }: Props) {
             const st = STATUS_STYLE[p.status ?? "good"];
             const isRookie =
               p.isRookie || (career?.age != null && career.age <= 21);
+            const pOvr = ovrVal(p.ovr);
             return (
               <article
                 key={p.id}
-                className={`core-player-card tier-${ovrTierClass(p.ovr)}`}
+                className={`core-player-card tier-${ovrTierClass(pOvr)}`}
               >
                 {/* 头部：OVR + 姓名 / 位置 / 标记 */}
                 <div className="cpc-head">
                   <div
                     className="cpc-ovr"
-                    style={{ color: ovrColor(p.ovr) }}
-                    aria-label={`综合评分 ${p.ovr}`}
+                    style={{ color: ovrColor(pOvr) }}
+                    aria-label={`综合评分 ${pOvr}`}
                   >
-                    {p.ovr}
+                    {pOvr}
                   </div>
                   <div className="cpc-id">
                     <div className="cpc-name-row">

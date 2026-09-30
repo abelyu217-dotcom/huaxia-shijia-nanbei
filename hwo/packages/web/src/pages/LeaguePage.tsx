@@ -23,6 +23,7 @@ import {
   fetchTeam,
   fetchTeams,
 } from "../api";
+import { ovrVal } from "../lib";
 import type {
   Abilities,
   Position,
@@ -128,8 +129,8 @@ export function LeaguePage({ teamId }: Props) {
               position: p.position,
               teamId: detail.id,
               teamName: detail.name,
-              ovr: p.ovr,
-              abilities: p.abilities,
+              ovr: ovrVal(p.ovr),
+              abilities: p.abilities as Abilities,
             });
           }
         }
@@ -159,7 +160,7 @@ export function LeaguePage({ teamId }: Props) {
           position: p.position,
           teamId: t.id,
           teamName: t.name,
-          ovr: p.ovr,
+          ovr: ovrVal(p.ovr),
         });
       }
     }

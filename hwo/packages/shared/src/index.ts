@@ -7,3 +7,4 @@ export * from "./career.js";
 export * from "./balance.js";
 export * from "./sim-config-store.js";
 export * from "./replay.js";
+export * from "./fog.js";

@@ -449,3 +449,35 @@ model DailyActiveSnapshot {
   @@unique([userId, date])
   @@index([date])
 }
+
+// ─── The Fog：球探报告（信息迷雾系统） ───
+// 每 (teamId, playerId) 唯一，记录某经理对某球员的情报累积。
+// 参见 球探系统设计.html §3-§5
+model ScoutReport {
+  id            String   @id @default(cuid())
+  /** 球探方球队 ID */
+  teamId        String
+  /** 被探查球员 ID */
+  playerId      String
+  /** 各能力的 (est, range) 估值，未探查的能力不在此 map 中 */
+  abilityFog    Json     @default("{}")
+  /** Peak 潜力估值 (est, range)，仅潜力探查产出 */
+  peakFog       Json?
+  /** 已揭示的特质线索 ID 列表 */
+  traitHints    Json     @default("[]")
+  /** 最近一次探查时间（用于 7 日内收益递减判断） */
+  lastScoutedAt DateTime @default(now())
+  /** 累计探查次数（收益递减 ×0.7^count） */
+  scoutCount    Int      @default(0)
+  /** 球探等级（1-5），影响收窄幅度 */
+  scoutLevel    Int      @default(3)
+  /** 累计消耗预算 */
+  totalCost     Int      @default(0)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([teamId, playerId])
+  @@index([teamId])
+  @@index([playerId])
+}

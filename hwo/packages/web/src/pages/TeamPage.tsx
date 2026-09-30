@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { fetchTactics, fetchTeam, putTeamCaptain } from "../api";
+import { fetchTactics, fetchTeam, putTeamCaptain, postScoutPlayer } from "../api";
 import type { Position, PlayerDetail, TacticPreset, TeamDetail } from "../types";
 import { useAuth } from "../auth/AuthContext";
 import { LineupEditor } from "../components/LineupEditor";
@@ -18,6 +18,9 @@ import {
   OFFENSE_LABEL,
   TACTIC_CATEGORY_LABEL,
   TEMPO_LABEL,
+  abilityVal,
+  ovrVal,
+  isFoggedAbility,
 } from "../lib";
 
 type Tab = "lineup" | "tactics" | "players";
@@ -92,15 +95,16 @@ export function TeamPage({ teamId }: Props) {
     const list = posFilter === "ALL" ? team.players : team.players.filter((p) => p.position === posFilter);
     const sorted = [...list];
     const getVal = (p: PlayerDetail): number | string => {
+      const ab = p.abilities as Record<string, number | { est: number; range: number }>;
       switch (sortKey) {
         case "name": return p.name;
         case "position": return p.position;
-        case "ovr": return p.ovr;
+        case "ovr": return ovrVal(p.ovr);
         case "salary": return p.salary ?? 0;
-        case "three": return p.abilities.three;
-        case "inside": return p.abilities.inside;
-        case "perimeterD": return p.abilities.perimeterD;
-        case "speed": return p.abilities.speed;
+        case "three": return abilityVal(ab["three"]);
+        case "inside": return abilityVal(ab["inside"]);
+        case "perimeterD": return abilityVal(ab["perimeterD"]);
+        case "speed": return abilityVal(ab["speed"]);
       }
     };
     sorted.sort((a, b) => {
@@ -257,6 +261,7 @@ export function TeamPage({ teamId }: Props) {
                     <th onClick={() => toggleSort("inside")} className="sortable">内线 {sortKey === "inside" && (sortAsc ? "▲" : "▼")}</th>
                     <th onClick={() => toggleSort("perimeterD")} className="sortable">外防 {sortKey === "perimeterD" && (sortAsc ? "▲" : "▼")}</th>
                     <th onClick={() => toggleSort("speed")} className="sortable">速度 {sortKey === "speed" && (sortAsc ? "▲" : "▼")}</th>
+                    {!isMine && <th>球探</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -279,7 +284,12 @@ export function TeamPage({ teamId }: Props) {
                         )}
                       </td>
                       <td><span className="pos-badge">{p.position}</span></td>
-                      <td className="cell-ovr" style={{ color: ovrColor(p.ovr) }}>{p.ovr}</td>
+                      <td className="cell-ovr" style={{ color: ovrColor(ovrVal(p.ovr)) }}>
+                        {ovrVal(p.ovr)}
+                        {typeof p.ovr === "object" && p.ovr && (
+                          <span className="fog-range">±{Math.round(p.ovr.range)}</span>
+                        )}
+                      </td>
                       <td>
                         {(() => {
                           const st = STATUS_STYLE[p.status ?? "good"];
@@ -291,10 +301,36 @@ export function TeamPage({ teamId }: Props) {
                         })()}
                       </td>
                       <td>{p.salary ?? "—"}</td>
-                      <td>{p.abilities.three}</td>
-                      <td>{p.abilities.inside}</td>
-                      <td>{p.abilities.perimeterD}</td>
-                      <td>{p.abilities.speed}</td>
+                      {(["three", "inside", "perimeterD", "speed"] as const).map((k) => {
+                        const ab = p.abilities as Record<string, number | { est: number; range: number }>;
+                        const v = ab[k];
+                        return (
+                          <td key={k}>
+                            {abilityVal(v)}
+                            {isFoggedAbility(v) && (
+                              <span className="fog-range">±{Math.round(v.range)}</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                      {!isMine && (
+                        <td>
+                          <button
+                            className="btn btn-sm btn-scout"
+                            onClick={async () => {
+                              try {
+                                await postScoutPlayer(p.id);
+                                const refreshed = await fetchTeam(team.id);
+                                setTeam(refreshed);
+                              } catch (e) {
+                                setError(e instanceof Error ? e.message : String(e));
+                              }
+                            }}
+                          >
+                            🔍
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                   {visiblePlayers.length === 0 && (

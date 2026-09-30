@@ -39,6 +39,7 @@ import type {
   SalaryStatus,
   FreeAgent,
   WorldInfo,
+  ScoutReport,
 } from "./types";
 
 // ── Token 管理 ──
@@ -674,4 +675,31 @@ export function postSandboxComplete(orderId: string): Promise<{ success: boolean
 /** POST /api/push/subscribe — 订阅推送 */
 export function postPushSubscribe(subscription: PushSubscriptionJSON): Promise<{ id: string }> {
   return sendJson("POST", "/api/push/subscribe", subscription);
+}
+
+// ── The Fog：球探/迷雾系统 ──
+
+/** GET /api/scout/reports — 获取本队所有球探报告 */
+export function fetchScoutReports(): Promise<ScoutReport[]> {
+  return getJson<ScoutReport[]>("/api/scout/reports");
+}
+
+/** GET /api/scout/reports/:playerId — 获取对某球员的球探报告 */
+export function fetchScoutReport(playerId: string): Promise<ScoutReport | null> {
+  return getJson<ScoutReport | null>(`/api/scout/reports/${encodeURIComponent(playerId)}`);
+}
+
+/** GET /api/scout/budget — 获取球探预算状态 */
+export function fetchScoutBudget(): Promise<{ remaining: number; total: number; used: number }> {
+  return getJson<{ remaining: number; total: number; used: number }>("/api/scout/budget");
+}
+
+/** POST /api/scout/players/:playerId — 球员探查（收窄能力 fog） */
+export function postScoutPlayer(playerId: string): Promise<{ report: ScoutReport; cost: number }> {
+  return sendJson("POST", `/api/scout/players/${encodeURIComponent(playerId)}`, {});
+}
+
+/** POST /api/scout/players/:playerId/potential — 潜力探查（收窄 Peak fog） */
+export function postScoutPotential(playerId: string): Promise<{ report: ScoutReport; cost: number }> {
+  return sendJson("POST", `/api/scout/players/${encodeURIComponent(playerId)}/potential`, {});
 }

@@ -9,8 +9,10 @@ import { Module } from "@nestjs/common";
 import { TeamController } from "./team.controller.js";
 import { LineupController } from "./lineup.controller.js";
 import { TeamService } from "./team.service.js";
+import { ScoutModule } from "../scout/scout.module.js";
 
 @Module({
+  imports: [ScoutModule],
   controllers: [TeamController, LineupController],
   providers: [TeamService],
   exports: [TeamService],

@@ -24,6 +24,7 @@ import { PushModule } from "./push/push.module.js";
 import { SimconfigModule } from "./simconfig/simconfig.module.js";
 import { AuditModule } from "./audit/audit.module.js";
 import { AnalyticsModule } from "./analytics/analytics.module.js";
+import { ScoutModule } from "./scout/scout.module.js";
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { AnalyticsModule } from "./analytics/analytics.module.js";
     SimconfigModule,
     AuditModule,
     AnalyticsModule,
+    ScoutModule,
   ],
 })
 export class AppModule {}

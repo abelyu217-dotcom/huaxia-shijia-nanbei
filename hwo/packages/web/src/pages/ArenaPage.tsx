@@ -16,6 +16,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchTactics, fetchTeams, postSimMatch } from "../api";
 import type { SimOutput, TacticPreset, TeamRoster } from "../types";
 import { useAuth } from "../auth/AuthContext";
+import { ovrVal } from "../lib";
 
 interface Props {
   teamId?: string;
@@ -95,7 +96,7 @@ function mockRecord(teamId: string): { wins: number; losses: number } {
 /** 球队平均 OVR */
 function teamOvr(team: TeamRoster): number {
   if (!team.players.length) return 0;
-  const sum = team.players.reduce((s, p) => s + p.ovr, 0);
+  const sum = team.players.reduce((s, p) => s + ovrVal(p.ovr), 0);
   return Math.round(sum / team.players.length);
 }
 

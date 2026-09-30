@@ -10,6 +10,7 @@ import type {
   OffenseTendency,
   DefenseTendency,
   PbpEvent,
+  FogValue,
 } from "./types";
 
 /** OVR 等级分档，用于球员卡片配色。 */
@@ -20,6 +21,23 @@ export function ovrTier(ovr: number): OvrTier {
   if (ovr >= 80) return "purple";
   if (ovr >= 75) return "blue";
   return "gray";
+}
+
+/** The Fog：从能力值（可能为 number 或 FogValue）中提取数值 */
+export function abilityVal(v: number | FogValue | undefined): number {
+  if (v === undefined) return 0;
+  if (typeof v === "number") return v;
+  return v.est;
+}
+
+/** The Fog：判断能力值是否为带雾估值 */
+export function isFoggedAbility(v: number | FogValue | undefined): v is FogValue {
+  return typeof v === "object" && v !== null;
+}
+
+/** The Fog：从 OVR（可能为 number 或 FogValue）中提取数值 */
+export function ovrVal(ovr: number | FogValue): number {
+  return typeof ovr === "number" ? ovr : ovr.est;
 }
 
 export const POSITION_LABEL: Record<Position, string> = {

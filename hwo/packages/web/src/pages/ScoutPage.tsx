@@ -11,8 +11,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { fetchFreeAgents, fetchWorlds } from "../api";
-import type { FreeAgent } from "../types";
+import { fetchFreeAgents, fetchWorlds, fetchScoutBudget, fetchScoutReports } from "../api";
+import type { FreeAgent, ScoutReport } from "../types";
 import { useAuth } from "../auth/AuthContext";
 
 interface Props {
@@ -240,6 +240,10 @@ export function ScoutPage({ teamId }: Props) {
     loadWatchlist(),
   );
 
+  // 真实后端：球探预算与已探查报告
+  const [budget, setBudget] = useState<{ remaining: number; total: number; used: number } | null>(null);
+  const [reports, setReports] = useState<ScoutReport[]>([]);
+
   // 查找我所在世界（用于 fetchFreeAgents 限定世界范围）
   useEffect(() => {
     if (!myTeamId) return;
@@ -281,6 +285,24 @@ export function ScoutPage({ teamId }: Props) {
       cancelled = true;
     };
   }, [worldId]);
+
+  // 加载真实球探预算与已探查报告（需登录且有球队）
+  useEffect(() => {
+    if (!myTeamId) return;
+    let cancelled = false;
+    Promise.all([fetchScoutBudget(), fetchScoutReports()])
+      .then(([b, r]) => {
+        if (cancelled) return;
+        setBudget(b);
+        setReports(r);
+      })
+      .catch(() => {
+        // 预算/报告加载失败不阻塞页面展示
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [myTeamId]);
 
   // 持久化 scout 状态
   useEffect(() => {
@@ -351,6 +373,15 @@ export function ScoutPage({ teamId }: Props) {
               {scoutState.remaining}
             </span>
           </div>
+          {budget && (
+            <div className="scout-metric">
+              <span className="scout-metric-label">赛季球探预算</span>
+              <span className="scout-metric-value">
+                {budget.remaining}
+                <span className="scout-metric-sub"> / {budget.total}</span>
+              </span>
+            </div>
+          )}
         </div>
         <div className="row gap wrap scout-actions">
           <button
@@ -381,6 +412,32 @@ export function ScoutPage({ teamId }: Props) {
                 inWatchlist={watchlist.has(p.id)}
                 onWatch={() => handleWatch(p.id)}
               />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 已探查球员（真实后端球探报告） */}
+      {reports.length > 0 && (
+        <section className="card">
+          <h3>已探查球员（{reports.length}）</h3>
+          <p className="muted">
+            以下球员已被本队球探探查过，迷雾范围已收窄。可在球队页继续探查以进一步缩小误差。
+          </p>
+          <div className="scout-reports-list">
+            {reports.map((r) => (
+              <div className="scout-report-row" key={r.playerId}>
+                <span className="scout-report-id">{r.playerId.slice(0, 8)}</span>
+                <span className="muted">探查 {r.scoutCount} 次</span>
+                <span className="muted">
+                  {r.traitHints.length > 0
+                    ? `特质线索：${r.traitHints.join("、")}`
+                    : "暂无特质线索"}
+                </span>
+                <span className="muted">
+                  {new Date(r.lastScoutedAt).toLocaleDateString()}
+                </span>
+              </div>
             ))}
           </div>
         </section>
