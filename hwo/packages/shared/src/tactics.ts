@@ -534,6 +534,7 @@ export function fillTacticDefaults(tactic: TacticModSet): TacticModSet {
     signatureActions: tactic.signatureActions ?? [],
     familiarity: tactic.familiarity ?? {},
     actionWeights: tactic.actionWeights ?? { ...DEFAULT_ACTION_WEIGHTS },
+    endGameStrategies: tactic.endGameStrategies ?? {},
   };
 }
 

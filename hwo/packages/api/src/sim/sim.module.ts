@@ -9,9 +9,10 @@ import { MatchStreamController } from "./match-stream.controller.js";
 import { MatchStreamService } from "./match-stream.service.js";
 import { TeamModule } from "../team/team.module.js";
 import { SeasonModule } from "../season/season.module.js";
+import { TacticModule } from "../tactic/tactic.module.js";
 
 @Module({
-  imports: [TeamModule, forwardRef(() => SeasonModule)],
+  imports: [TeamModule, forwardRef(() => SeasonModule), TacticModule],
   controllers: [SimController, MatchStreamController],
   providers: [SimService, MatchStreamService],
   exports: [SimService],

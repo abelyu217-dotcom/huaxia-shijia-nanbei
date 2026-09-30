@@ -4031,6 +4031,43 @@ button {
   50% { opacity: 0.6; }
 }
 
+/* #5 基础/进阶模式切换 */
+.tactic-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px;
+}
+.tmt-group {
+  display: inline-flex;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+}
+.tmt-btn {
+  padding: 6px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--radius-sm) - 2px);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tmt-btn:hover {
+  color: var(--text);
+}
+.tmt-btn.is-active {
+  color: #fff;
+  background: var(--accent);
+}
+.tmt-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
 .tactic-preset-grid {
   display: flex;
   flex-direction: column;
@@ -4175,6 +4212,162 @@ button {
 .m4-chip:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* M4: 末节策略 */
+.endgame-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.endgame-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+}
+.endgame-slot-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.endgame-sit-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.endgame-sit-hint {
+  font-size: 11px;
+  color: var(--muted);
+}
+.endgame-strategy-desc {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+  min-height: 30px;
+}
+
+/* M4: 球场可视化战术板 */
+.tactic-board {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.tactic-board-svg {
+  border-radius: var(--radius-sm);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.tactic-board-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+}
+.tbl-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.tbl-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* M4: 战术熟练度 */
+.familiarity-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+.familiarity-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fam-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.fam-label {
+  font-size: 13px;
+  color: var(--text);
+}
+.fam-value {
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.fam-bar {
+  height: 6px;
+  background: var(--bg-soft);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.fam-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* M4 #8: 战术使用率统计表 */
+.usage-table-wrap {
+  overflow-x: auto;
+}
+.usage-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.usage-table th,
+.usage-table td {
+  padding: 8px 10px;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.usage-table th:first-child,
+.usage-table td:first-child {
+  text-align: left;
+}
+.usage-table th {
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 12px;
+  background: var(--bg-soft);
+}
+.usage-table tbody tr:hover {
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+.usage-table tbody tr.is-current {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.usage-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.usage-current-tag {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+}
+
+.empty-hint {
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+  padding: 24px 0;
 }
 
 .counter-card {

@@ -10,14 +10,18 @@
 import { Injectable, Logger, Inject, forwardRef } from "@nestjs/common";
 import {
   DEFAULT_CONFIG,
+  fillTacticDefaults,
   simulate,
   tacticFromPreset,
+  type PlaybookAction,
   type SimOutput,
   type Team,
+  type TacticModSet,
 } from "@hwo/shared";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { TeamService } from "../team/team.service.js";
 import { SeasonService } from "../season/season.service.js";
+import { TacticService } from "../tactic/tactic.service.js";
 
 export interface SimMatchParams {
   homeTeamId: string;
@@ -40,6 +44,7 @@ export class SimService {
     private readonly teamService: TeamService,
     @Inject(forwardRef(() => SeasonService))
     private readonly seasonService: SeasonService,
+    private readonly tacticService: TacticService,
   ) {}
 
   /** 获取或创建默认赛季 + 联赛（M1 阶段单赛季/单联赛模式） */
@@ -69,13 +74,23 @@ export class SimService {
       throw new Error(`Team ${params.awayTeamId} not found`);
     }
 
+    // M4: 使用球队存储的战术（含 familiarity 等自定义参数），
+    // 而非从预设重建，以保证熟练度惩罚生效。
+    // 若球队未配置战术则回退到预设。
+    const homeTactic: TacticModSet = home.tactic
+      ? fillTacticDefaults({ ...home.tactic, teamId: home.id })
+      : tacticFromPreset(home.id, params.homeTacticId);
+    const awayTactic: TacticModSet = away.tactic
+      ? fillTacticDefaults({ ...away.tactic, teamId: away.id })
+      : tacticFromPreset(away.id, params.awayTacticId);
+
     const homeTeam: Team = {
       ...home,
-      tactic: tacticFromPreset(home.id, params.homeTacticId),
+      tactic: homeTactic,
     };
     const awayTeam: Team = {
       ...away,
-      tactic: tacticFromPreset(away.id, params.awayTacticId),
+      tactic: awayTactic,
     };
 
     const seed = params.seed ?? Math.floor(Math.random() * 1_000_000);
@@ -130,6 +145,13 @@ export class SimService {
 
     // 更新球员疲劳值（#13 状态色体系）：根据出场时间累积疲劳
     await this.applyFatigueFromBoxScore(output.boxScore);
+
+    // M4: 更新双方战术熟练度（根据 PBP 中各 action 使用次数）
+    await this.updateFamiliarityFromPbp(params.homeTeamId, output.pbp);
+    await this.updateFamiliarityFromPbp(params.awayTeamId, output.pbp);
+
+    // M4 #8: 更新战术使用率统计
+    await this.recordTacticUsage(params.homeTeamId, params.awayTeamId, result);
 
     this.logger.log(
       `Match saved: ${params.homeTeamId} ${result.homeScore}-${result.awayScore} ${params.awayTeamId} (seed=${seed})`,
@@ -193,5 +215,92 @@ export class SimService {
       seed,
       config: DEFAULT_CONFIG,
     });
+  }
+
+  // ─── M4: 熟练度更新 ───
+
+  /**
+   * 根据一场比赛的 PBP 统计某队各 action 使用次数，并更新战术熟练度。
+   * 每次使用对应 action，熟练度 +1（带递减：越高越难提升），上限 100。
+   */
+  private async updateFamiliarityFromPbp(
+    teamId: string,
+    pbp: Array<{ teamId?: string; playAction?: PlaybookAction }>,
+  ): Promise<void> {
+    // 统计该队各 action 使用次数
+    const usage = new Map<PlaybookAction, number>();
+    for (const ev of pbp) {
+      if (ev.teamId !== teamId || !ev.playAction) continue;
+      usage.set(ev.playAction, (usage.get(ev.playAction) ?? 0) + 1);
+    }
+    if (usage.size === 0) return;
+
+    // 读取当前战术
+    const tactic = await this.prisma.tactic.findUnique({ where: { teamId } });
+    if (!tactic) return;
+
+    const modSet = tactic.modSet as unknown as TacticModSet;
+    const familiarity = { ...(modSet.familiarity ?? {}) };
+
+    let changed = false;
+    for (const [action, count] of usage) {
+      const current = familiarity[action] ?? 0;
+      if (current >= 100) continue;
+      // 递减收益：每点熟练度需要更多使用次数
+      // current 0-50: +1 per use; 50-80: +1 per 2 uses; 80-100: +1 per 4 uses
+      const divisor = current < 50 ? 1 : current < 80 ? 2 : 4;
+      const increment = Math.floor(count / divisor);
+      if (increment > 0) {
+        familiarity[action] = Math.min(100, current + increment);
+        changed = true;
+      }
+    }
+
+    if (!changed) return;
+
+    const updatedModSet = { ...modSet, familiarity };
+    await this.prisma.tactic.update({
+      where: { teamId },
+      data: { modSet: updatedModSet as unknown as object },
+    });
+
+    // 清除球队缓存（战术变更）
+    await this.teamService.invalidateCache(teamId);
+  }
+
+  // ─── M4 #8: 战术使用率统计 ───
+
+  /**
+   * 根据比赛结果更新双方战术的使用率统计
+   */
+  private async recordTacticUsage(
+    homeTeamId: string,
+    awayTeamId: string,
+    result: { homeScore: number; awayScore: number; winnerId: string },
+  ): Promise<void> {
+    const [homeTactic, awayTactic] = await Promise.all([
+      this.prisma.tactic.findUnique({ where: { teamId: homeTeamId } }),
+      this.prisma.tactic.findUnique({ where: { teamId: awayTeamId } }),
+    ]);
+
+    const homePresetId = homeTactic?.presetId;
+    const awayPresetId = awayTactic?.presetId;
+
+    if (homePresetId) {
+      await this.tacticService.recordUsage(
+        homePresetId,
+        result.winnerId === homeTeamId,
+        result.homeScore,
+        result.awayScore,
+      );
+    }
+    if (awayPresetId) {
+      await this.tacticService.recordUsage(
+        awayPresetId,
+        result.winnerId === awayTeamId,
+        result.awayScore,
+        result.homeScore,
+      );
+    }
   }
 }

@@ -144,6 +144,29 @@ export interface TacticModSet {
   familiarity?: Partial<Record<string, number>>;
   /** Playbook action 加权分布（覆盖默认） */
   actionWeights?: Partial<Record<PlaybookAction, number>>;
+  /** M4: 末节策略（领先/落后/焦灼时分别触发） */
+  endGameStrategies?: EndGameStrategies;
+}
+
+// ─── M4: 末节策略 ───
+
+/** 末节单策略类型 */
+export type EndGameStrategy =
+  | "normal"          // 正常战术
+  | "milk_clock"      // 压时间（领先时）
+  | "quick_three"     // 抢投三分（落后时）
+  | "foul_strategy"   // 砍鲨/故意犯规（落后时）
+  | "isolate_star"    // 球星单打（焦灼时）
+  | "double_team";    // 包夹对方球星（防守端）
+
+/** 末节策略配置：按比分情境分别设置 */
+export interface EndGameStrategies {
+  /** 领先时（分差 > 5）策略 */
+  leading?: EndGameStrategy;
+  /** 落后时（分差 < -5）策略 */
+  trailing?: EndGameStrategy;
+  /** 焦灼时（|分差| ≤ 5）策略 */
+  close?: EndGameStrategy;
 }
 
 /** 进攻强调点（每个带明确 +/- 权衡，借鉴 JBL Emphasis Points） */

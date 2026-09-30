@@ -317,6 +317,23 @@ export interface TacticModSet {
   closerId?: string;
   familiarity?: Partial<Record<string, number>>;
   actionWeights?: Partial<Record<PlaybookAction, number>>;
+  // M4: 末节策略
+  endGameStrategies?: EndGameStrategies;
+}
+
+// M4: 末节策略
+export type EndGameStrategy =
+  | "normal"
+  | "milk_clock"
+  | "quick_three"
+  | "foul_strategy"
+  | "isolate_star"
+  | "double_team";
+
+export interface EndGameStrategies {
+  leading?: EndGameStrategy;
+  trailing?: EndGameStrategy;
+  close?: EndGameStrategy;
 }
 
 export interface TeamTactic {
@@ -329,6 +346,18 @@ export interface TeamTactic {
 export interface CounterTacticResult {
   counter: TacticPreset;
   reason: string;
+}
+
+/** M4 #8: 战术使用率统计 */
+export interface TacticUsageStat {
+  presetId: string;
+  gamesPlayed: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+  avgPointsFor: number;
+  avgPointsAgainst: number;
+  pointDifferential: number;
 }
 
 // ── 交易系统 ──

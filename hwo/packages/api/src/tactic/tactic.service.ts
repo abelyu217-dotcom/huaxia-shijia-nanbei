@@ -198,6 +198,59 @@ export class TacticService {
     return PRESET_TACTICS;
   }
 
+  // ─── M4 #8: 战术使用率统计 ───
+
+  /**
+   * 记录一场比赛中某战术的使用结果，更新统计
+   */
+  async recordUsage(
+    presetId: string,
+    won: boolean,
+    pointsFor: number,
+    pointsAgainst: number,
+  ): Promise<void> {
+    await this.prisma.tacticUsage.upsert({
+      where: { presetId },
+      create: {
+        presetId,
+        gamesPlayed: 1,
+        wins: won ? 1 : 0,
+        losses: won ? 0 : 1,
+        pointsFor,
+        pointsAgainst,
+      },
+      update: {
+        gamesPlayed: { increment: 1 },
+        wins: { increment: won ? 1 : 0 },
+        losses: { increment: won ? 0 : 1 },
+        pointsFor: { increment: pointsFor },
+        pointsAgainst: { increment: pointsAgainst },
+      },
+    });
+  }
+
+  /**
+   * 获取所有战术预设的使用率统计
+   * 返回按使用场次降序排列的统计列表
+   */
+  async getUsageStats() {
+    const records = await this.prisma.tacticUsage.findMany({
+      orderBy: { gamesPlayed: "desc" },
+    });
+    return records.map((r) => ({
+      presetId: r.presetId,
+      gamesPlayed: r.gamesPlayed,
+      wins: r.wins,
+      losses: r.losses,
+      winRate: r.gamesPlayed > 0 ? +(r.wins / r.gamesPlayed).toFixed(3) : 0,
+      avgPointsFor: r.gamesPlayed > 0 ? +(r.pointsFor / r.gamesPlayed).toFixed(1) : 0,
+      avgPointsAgainst: r.gamesPlayed > 0 ? +(r.pointsAgainst / r.gamesPlayed).toFixed(1) : 0,
+      pointDifferential: r.gamesPlayed > 0
+        ? +((r.pointsFor - r.pointsAgainst) / r.gamesPlayed).toFixed(1)
+        : 0,
+    }));
+  }
+
   // ── 内部方法 ──
 
   private validateModSet(modSet: TacticModSet): void {
@@ -309,6 +362,22 @@ export class TacticService {
       for (const [k, v] of Object.entries(modSet.familiarity)) {
         if (v === undefined || v < 0 || v > 100) {
           throw new BadRequestException(`familiarity.${k} 必须在 [0, 100] 范围内`);
+        }
+      }
+    }
+
+    // M4: 末节策略校验
+    if (modSet.endGameStrategies) {
+      const validStrategies = [
+        "normal", "milk_clock", "quick_three", "foul_strategy", "isolate_star", "double_team",
+      ];
+      const validSituations = ["leading", "trailing", "close"];
+      for (const [sit, strat] of Object.entries(modSet.endGameStrategies)) {
+        if (!validSituations.includes(sit)) {
+          throw new BadRequestException(`endGameStrategies 包含非法情境: ${sit}`);
+        }
+        if (strat && !validStrategies.includes(strat)) {
+          throw new BadRequestException(`endGameStrategies.${sit} 包含非法策略: ${strat}`);
         }
       }
     }

@@ -20,6 +20,7 @@ import type {
   SimOutput,
   StandingRow,
   TacticPreset,
+  TacticUsageStat,
   TeamDetail,
   TeamTactic,
   TeamRoster,
@@ -283,6 +284,11 @@ export function fetchCounterTactic(presetId: string): Promise<CounterTacticResul
   return getJson<CounterTacticResult>(
     `/api/tactics/counter/${encodeURIComponent(presetId)}`,
   );
+}
+
+/** GET /api/tactics/usage — 战术使用率统计（M4 #8） */
+export function fetchTacticUsage(): Promise<TacticUsageStat[]> {
+  return getJson<TacticUsageStat[]>("/api/tactics/usage");
 }
 
 // ── 交易系统 ──

@@ -157,6 +157,18 @@ model Tactic {
   updatedAt DateTime @updatedAt
 }
 
+// ─── 战术使用率统计（M4 #8） ───
+model TacticUsage {
+  id            String  @id @default(cuid())
+  presetId      String  @unique // 战术预设 ID
+  gamesPlayed   Int     @default(0) // 使用该战术的比赛场数
+  wins          Int     @default(0) // 胜场
+  losses        Int     @default(0) // 负场
+  pointsFor     Int     @default(0) // 总得分
+  pointsAgainst Int     @default(0) // 总失分
+  updatedAt     DateTime @updatedAt
+}
+
 // ─── 比赛 ───
 model Match {
   id       String  @id @default(cuid())

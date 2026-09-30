@@ -6,6 +6,7 @@
  * - GET  /api/tactics/team/:teamId       获取球队当前战术
  * - PUT  /api/tactics/team/:teamId       更新球队战术（切换预设或微调参数）
  * - GET  /api/tactics/counter/:presetId  反制策略推荐
+ * - GET  /api/tactics/usage              战术使用率统计（M4 #8）
  */
 
 import { Body, Controller, Get, Param, Put } from "@nestjs/common";
@@ -63,5 +64,10 @@ export class TacticController {
   @Get("counter/:presetId")
   suggestCounter(@Param("presetId") presetId: string) {
     return this.tacticService.suggestCounter(presetId);
+  }
+
+  @Get("usage")
+  async getUsageStats() {
+    return this.tacticService.getUsageStats();
   }
 }

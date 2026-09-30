@@ -11,6 +11,8 @@ import {
   Abilities,
   BoxScore,
   DEFAULT_CONFIG,
+  EndGameStrategies,
+  EndGameStrategy,
   LineupCondition,
   MatchResult,
   PbpEvent,
@@ -62,6 +64,8 @@ interface TacticalContext {
   screenDefGuards: "over" | "under" | "switch";
   /** 大个子防挡拆 */
   screenDefBigs: "drop" | "hedge" | "blitz";
+  /** M4: 末节策略配置 */
+  endGameStrategies: EndGameStrategies;
 }
 
 /** Action → 偏好 ShotType 映射（用于 action 选定后微调出手倾向） */
@@ -132,6 +136,7 @@ function buildTacticalContext(team: Team): TacticalContext {
     ballDistribution: t.ballDistribution ?? "natural",
     screenDefGuards: t.screenDefGuards ?? "over",
     screenDefBigs: t.screenDefBigs ?? "drop",
+    endGameStrategies: t.endGameStrategies ?? {},
   };
 }
 
@@ -140,6 +145,110 @@ function familiarityFactor(fam: Partial<Record<string, number>>, key: string): n
   const v = fam[key];
   if (v === undefined) return 1.0;
   return 0.85 + (v / 100) * 0.15;
+}
+
+// ─── M4: 末节策略 ───
+
+/**
+ * 根据当前分差解析某队应触发的末节策略。
+ * scoreDiff 为该队视角的分差（正=领先，负=落后）。
+ * 仅在关键时刻（isClutch）调用。
+ */
+function resolveEndGameStrategy(
+  strategies: EndGameStrategies,
+  scoreDiff: number,
+): EndGameStrategy {
+  if (scoreDiff > 5) return strategies.leading ?? "normal";
+  if (scoreDiff < -5) return strategies.trailing ?? "normal";
+  return strategies.close ?? "normal";
+}
+
+/** 末节策略对进攻端的即时影响 */
+interface OffenseStrategyEffect {
+  /** action 权重倍率 */
+  actionWeightMul: Partial<Record<PlaybookAction, number>>;
+  /** 投篮类型倾向叠加（加到 chooseShotType 的 weights 上） */
+  shotBias: Partial<Record<ShotType, number>>;
+  /** closer 接管概率加成 */
+  closerBoost: number;
+  /** 回合时长偏移（秒） */
+  possessionDelta: number;
+}
+
+/** 末节策略对防守端的即时影响 */
+interface DefenseStrategyEffect {
+  /** 故意犯规概率加成（大幅提升） */
+  foulBoost: number;
+  /** 协防概率加成 */
+  helpDefBoost: number;
+  /** 盖帽概率加成 */
+  blockBoost: number;
+  /** 对手底角三分惩罚（包夹漏人） */
+  cornerThreeBoost: number;
+}
+
+const NO_OFF_EFFECT: OffenseStrategyEffect = {
+  actionWeightMul: {},
+  shotBias: {},
+  closerBoost: 0,
+  possessionDelta: 0,
+};
+const NO_DEF_EFFECT: DefenseStrategyEffect = {
+  foulBoost: 0,
+  helpDefBoost: 0,
+  blockBoost: 0,
+  cornerThreeBoost: 0,
+};
+
+/** 根据进攻策略计算效果 */
+function offenseStrategyEffect(s: EndGameStrategy): OffenseStrategyEffect {
+  switch (s) {
+    case "milk_clock":
+      return {
+        actionWeightMul: {},
+        shotBias: { three: -0.3, midrange: 0.15, inside: 0.1 },
+        closerBoost: 0,
+        possessionDelta: 4, // 压时间
+      };
+    case "quick_three":
+      return {
+        actionWeightMul: { transition: 1.4, spot_up: 1.3 },
+        shotBias: { three: 0.5, midrange: -0.15, inside: -0.15, drive: -0.1 },
+        closerBoost: 0,
+        possessionDelta: -3, // 抢攻
+      };
+    case "isolate_star":
+      return {
+        actionWeightMul: { isolation: 1.8, pnr_ball_handler: 1.2 },
+        shotBias: { midrange: 0.1, drive: 0.1 },
+        closerBoost: 0.2, // 更高概率交给 closer
+        possessionDelta: 2,
+      };
+    default:
+      return NO_OFF_EFFECT;
+  }
+}
+
+/** 根据防守策略计算效果 */
+function defenseStrategyEffect(s: EndGameStrategy): DefenseStrategyEffect {
+  switch (s) {
+    case "foul_strategy":
+      return {
+        foulBoost: 0.5, // 故意犯规概率大幅提升
+        helpDefBoost: 0,
+        blockBoost: 0,
+        cornerThreeBoost: 0,
+      };
+    case "double_team":
+      return {
+        foulBoost: 0.05,
+        helpDefBoost: 0.25,
+        blockBoost: 0.05,
+        cornerThreeBoost: 0.08, // 包夹漏底角
+      };
+    default:
+      return NO_DEF_EFFECT;
+  }
 }
 
 /** 一个回合的进攻决策上下文 */
@@ -385,8 +494,12 @@ function applyRotationSlot(
 /**
  * M4: 选择本回合的 PlaybookAction。
  * 基于 actionWeights 加权随机，关键时刻偏好 isolation/pnr_ball_handler。
+ * 可叠加末节策略的 action 权重倍率。
  */
-function choosePlayAction(ctx: PossessionContext): PlaybookAction {
+function choosePlayAction(
+  ctx: PossessionContext,
+  extraMul: Partial<Record<PlaybookAction, number>> = {},
+): PlaybookAction {
   const { rng, offTac, isClutch } = ctx;
   const weights = { ...offTac.actionWeights };
   // 关键时刻提升 isolation / pnr_ball_handler 权重（清晰终结）
@@ -394,6 +507,10 @@ function choosePlayAction(ctx: PossessionContext): PlaybookAction {
     weights.isolation *= 1.5;
     weights.pnr_ball_handler *= 1.3;
     weights.post_up *= 1.1;
+  }
+  // 末节策略倍率叠加
+  for (const a of Object.keys(extraMul) as PlaybookAction[]) {
+    weights[a] *= extraMul[a] ?? 1;
   }
   const actions = Object.keys(weights) as PlaybookAction[];
   const total = actions.reduce((s, a) => s + weights[a], 0);
@@ -405,8 +522,13 @@ function choosePlayAction(ctx: PossessionContext): PlaybookAction {
   return "spot_up";
 }
 
-/** 根据战术倾向、球员能力与 action 偏好选择投篮类型 */
-function chooseShotType(ctx: PossessionContext, shooter: Player, action: PlaybookAction): ShotType {
+/** 根据战术倾向、球员能力与 action 偏好选择投篮类型。可叠加末节策略 shotBias。 */
+function chooseShotType(
+  ctx: PossessionContext,
+  shooter: Player,
+  action: PlaybookAction,
+  extraBias: Partial<Record<ShotType, number>> = {},
+): ShotType {
   const { rng, offense, offTac } = ctx;
   const tactic = offense.tactic;
   const a = shooter.abilities;
@@ -424,10 +546,10 @@ function chooseShotType(ctx: PossessionContext, shooter: Player, action: Playboo
   const mod = tactic.tendencyMod;
   const emphTend = offTac.mods.tendency ?? {};
   const weights: Record<ShotType, number> = {
-    three: baseWeights.three * (1 + mod.three + (emphTend.three ?? 0)),
-    midrange: baseWeights.midrange * (1 + mod.midrange + (emphTend.midrange ?? 0)),
-    inside: baseWeights.inside * (1 + mod.inside + (emphTend.inside ?? 0)),
-    drive: baseWeights.drive * (1 + mod.drive + (emphTend.drive ?? 0)),
+    three: baseWeights.three * (1 + mod.three + (emphTend.three ?? 0) + (extraBias.three ?? 0)),
+    midrange: baseWeights.midrange * (1 + mod.midrange + (emphTend.midrange ?? 0) + (extraBias.midrange ?? 0)),
+    inside: baseWeights.inside * (1 + mod.inside + (emphTend.inside ?? 0) + (extraBias.inside ?? 0)),
+    drive: baseWeights.drive * (1 + mod.drive + (emphTend.drive ?? 0) + (extraBias.drive ?? 0)),
     postup: baseWeights.postup * (1 + mod.postup + (emphTend.postup ?? 0)),
   };
 
@@ -461,15 +583,19 @@ function chooseShotType(ctx: PossessionContext, shooter: Player, action: Playboo
   return "midrange";
 }
 
-/** 选择主攻手（含 ballDistribution + closer 机制） */
-function chooseShooter(ctx: PossessionContext, action: PlaybookAction): Player {
+/** 选择主攻手（含 ballDistribution + closer 机制）。closerBoost 为末节策略加成。 */
+function chooseShooter(
+  ctx: PossessionContext,
+  action: PlaybookAction,
+  closerBoost: number = 0,
+): Player {
   const { rng, offense, offenseState, isClutch, offTac } = ctx;
   const onCourt = onCourtPlayers(offense, offenseState);
 
   // 关键时刻 + 指定 closer：高概率交给 closer
   if (isClutch && offTac.closerId) {
     const closer = onCourt.find((p) => p.id === offTac.closerId);
-    if (closer && rng.chance(0.55, "closerOverride")) {
+    if (closer && rng.chance(0.55 + closerBoost, "closerOverride")) {
       return closer;
     }
   }
@@ -508,12 +634,13 @@ function chooseShooter(ctx: PossessionContext, action: PlaybookAction): Player {
   return onCourt[0]!;
 }
 
-/** 计算投篮命中率 */
+/** 计算投篮命中率。defStratEffect 为防守方末节策略效果。 */
 function shotChance(
   ctx: PossessionContext,
   shooter: Player,
   shotType: ShotType,
   action: PlaybookAction,
+  defStratEffect: DefenseStrategyEffect = NO_DEF_EFFECT,
 ): number {
   const { defense, rng, offense, config, isClutch, offTac, defTac } = ctx;
   const a = effectiveAbilities(shooter, ctx.isHome, config, offense.chemistry);
@@ -594,10 +721,15 @@ function shotChance(
   // M4: 熟练度惩罚（低熟悉度降命中）
   chance *= familiarityFactor(offTac.familiarity, action);
 
-  // 协防概率削减（含 emphasis）
-  const helpChance = defense.tactic.helpDefChance + (defTac.mods.helpDefChance ?? 0);
+  // 协防概率削减（含 emphasis + 末节包夹策略）
+  const helpChance = defense.tactic.helpDefChance + (defTac.mods.helpDefChance ?? 0) + defStratEffect.helpDefBoost;
   if (rng.chance(helpChance, "helpDef")) {
     chance -= 0.04;
+  }
+
+  // 末节包夹策略漏底角三分
+  if (shotType === "three" && defStratEffect.cornerThreeBoost > 0) {
+    chance += defStratEffect.cornerThreeBoost;
   }
 
   return clamp(chance, 0.05, 0.92);
@@ -629,8 +761,20 @@ function simulatePossession(ctx: PossessionContext, possessionIdx: number, confi
   // 当前累计比分快照（每个事件携带最新比分）
   const snap = () => ({ scoreHome: scoreHome + homePts, scoreAway: scoreAway + awayPts });
 
+  // M4: 末节策略 —— 仅关键时刻生效，按分差解析攻防双方策略
+  const offDiff = ctx.isHome ? scoreHome - scoreAway : scoreAway - scoreHome;
+  const defDiff = -offDiff;
+  const offStrategy = ctx.isClutch
+    ? resolveEndGameStrategy(ctx.offTac.endGameStrategies, offDiff)
+    : "normal";
+  const defStrategy = ctx.isClutch
+    ? resolveEndGameStrategy(ctx.defTac.endGameStrategies, defDiff)
+    : "normal";
+  const offEff = offenseStrategyEffect(offStrategy);
+  const defEff = defenseStrategyEffect(defStrategy);
+
   // M4: 先选择本回合进攻动作（影响 shooter/shtype/chance/PBP 标签）
-  const action = choosePlayAction(ctx);
+  const action = choosePlayAction(ctx, offEff.actionWeightMul);
 
   // 失误判定（含 emphasis turnover 修正 + PnR blitz 失误风险）
   let turnoverChance = 0.12 + (1 - offense.chemistry / 100) * 0.03;
@@ -663,27 +807,28 @@ function simulatePossession(ctx: PossessionContext, possessionIdx: number, confi
   }
 
   // 选择投篮（基于 action）
-  const shooter = chooseShooter(ctx, action);
-  const shotType = chooseShotType(ctx, shooter, action);
-  const chance = shotChance(ctx, shooter, shotType, action);
+  const shooter = chooseShooter(ctx, action, offEff.closerBoost);
+  const shotType = chooseShotType(ctx, shooter, action, offEff.shotBias);
+  const chance = shotChance(ctx, shooter, shotType, action, defEff);
   const isThree = shotType === "three";
   const basePoints = isThree ? 3 : 2;
   const made = rng.chance(chance, "shot");
 
-  // 投篮犯规判定（含 emphasis foul 修正）
-  let foulChance = 0.13 + (ctx.defTac.mods.foulMod ?? 0);
+  // 投篮犯规判定（含 emphasis foul 修正 + 末节砍鲨策略）
+  let foulChance = 0.13 + (ctx.defTac.mods.foulMod ?? 0) + defEff.foulBoost;
   // 防守方 force_turnovers / aggressive → 犯规上升
   if (ctx.defTac.screenDefBigs === "blitz" && isPnrAction(action)) foulChance += 0.02;
   const shootingFoul = rng.chance(foulChance, "foul");
   const fouler = shootingFoul ? rng.pick(onCourtPlayers(defense, ctx.defenseState), "fouler") : null;
 
-  // 盖帽判定（仅未中时；含 emphasis blockMod）
+  // 盖帽判定（仅未中时；含 emphasis blockMod + 末节包夹策略）
   let blocker: Player | null = null;
   if (!made) {
     const defCourt = onCourtPlayers(defense, ctx.defenseState);
     const maxBlock = Math.max(...defCourt.map((p) => p.abilities.block));
     let blockChance = 0.06 + (maxBlock / 99) * 0.08;
     blockChance += ctx.defTac.mods.blockMod ?? 0;
+    blockChance += defEff.blockBoost;
     // 保护禁区的防守对内线出手盖帽加成
     if ((shotType === "inside" || shotType === "postup") && (ctx.defTac.mods.blockMod ?? 0) > 0) {
       blockChance += 0.02;
