@@ -64,7 +64,7 @@ export class TeamService {
       id: string;
       name: string;
       chemistry: number;
-      players: { id: string; name: string; position: string; abilities: unknown; traits: unknown }[];
+      players: { id: string; name: string; position: string; abilities: unknown; traits: unknown; salary?: number | null }[];
       lineup: { starters: unknown; minutes: unknown } | null;
       tactic: { modSet: unknown } | null;
     },
@@ -76,6 +76,7 @@ export class TeamService {
       abilities: p.abilities as Abilities,
       condition: { fatigue: 0, foulTrouble: 0, hot: 0 },
       traits: (p.traits as string[]) ?? [],
+      salary: p.salary ?? 0,
     }));
 
     const lineup: Lineup = row.lineup

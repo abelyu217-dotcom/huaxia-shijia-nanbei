@@ -108,8 +108,8 @@ export function TradePage({ myTeamId }: Props) {
     [targetTeam, theirSelected],
   );
 
-  // 薪资计算（用 ovr 作为薪资近似）
-  const salaryOf = (p: PlayerDetail) => p.ovr * 100;
+  // 薪资计算（单位：万元，来自后端 Player.salary）
+  const salaryOf = (p: PlayerDetail) => p.salary ?? 0;
   const mySalary = mySelectedPlayers.reduce(
     (s, p) => s + salaryOf(p),
     0,
@@ -276,14 +276,14 @@ export function TradePage({ myTeamId }: Props) {
                       <span className="tp-name">{p.name}</span>
                       <span className="tp-ovr">OVR {p.ovr}</span>
                       <span className="tp-salary">
-                        ${salaryOf(p).toLocaleString()}
+                        {salaryOf(p).toLocaleString()} 万
                       </span>
                     </label>
                   ))}
                 </div>
                 <div className="trade-cash">
                   <label>
-                    现金送出：
+                    现金送出（万）：
                     <input
                       type="number"
                       value={myCash}
@@ -315,14 +315,14 @@ export function TradePage({ myTeamId }: Props) {
                       <span className="tp-name">{p.name}</span>
                       <span className="tp-ovr">OVR {p.ovr}</span>
                       <span className="tp-salary">
-                        ${salaryOf(p).toLocaleString()}
+                        {salaryOf(p).toLocaleString()} 万
                       </span>
                     </label>
                   ))}
                 </div>
                 <div className="trade-cash">
                   <label>
-                    索要现金：
+                    索要现金（万）：
                     <input
                       type="number"
                       value={theirCash}
@@ -340,21 +340,21 @@ export function TradePage({ myTeamId }: Props) {
             <div className="trade-summary">
               <div className="ts-row">
                 <span>我方送出薪资：</span>
-                <b>${mySalary.toLocaleString()}</b>
+                <b>{mySalary.toLocaleString()} 万</b>
                 {myCash > 0 && (
                   <span className="ts-cash">
                     {" "}
-                    + 现金 ${myCash.toLocaleString()}
+                    + 现金 {myCash.toLocaleString()} 万
                   </span>
                 )}
               </div>
               <div className="ts-row">
                 <span>对方送出薪资：</span>
-                <b>${theirSalary.toLocaleString()}</b>
+                <b>{theirSalary.toLocaleString()} 万</b>
                 {theirCash > 0 && (
                   <span className="ts-cash">
                     {" "}
-                    + 现金 ${theirCash.toLocaleString()}
+                    + 现金 {theirCash.toLocaleString()} 万
                   </span>
                 )}
               </div>
@@ -362,7 +362,7 @@ export function TradePage({ myTeamId }: Props) {
                 {salaryMatch ? (
                   <span className="ts-ok">✓ 薪资匹配</span>
                 ) : (
-                  <span className="ts-bad">✗ 薪资不匹配（差异 {diff.toLocaleString()}）</span>
+                  <span className="ts-bad">✗ 薪资不匹配（差异 {diff.toLocaleString()} 万）</span>
                 )}
               </div>
               <button
@@ -459,7 +459,7 @@ function TradeOfferCard({
           <span className="tc-players">
             {offer.offerorPlayers.length} 名球员
             {offer.offerorCash > 0 &&
-              ` + $${offer.offerorCash.toLocaleString()}`}
+              ` + ${offer.offerorCash.toLocaleString()} 万`}
           </span>
         </div>
         <div className="tc-arrow">→</div>
@@ -470,7 +470,7 @@ function TradeOfferCard({
           <span className="tc-players">
             {offer.offereePlayers.length} 名球员
             {offer.offereeCash > 0 &&
-              ` + $${offer.offereeCash.toLocaleString()}`}
+              ` + ${offer.offereeCash.toLocaleString()} 万`}
           </span>
         </div>
       </div>

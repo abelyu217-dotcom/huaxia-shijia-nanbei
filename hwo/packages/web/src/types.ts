@@ -109,6 +109,8 @@ export interface PlayerDetail {
   position: Position;
   ovr: number;
   abilities: Abilities;
+  /** 年薪（单位：万元）。来自 DB Player.salary */
+  salary?: number;
 }
 
 export interface TeamDetail {

@@ -55,6 +55,8 @@ export interface Player {
   archetype?: PlayerArchetype;
   /** M4: 防守角色（影响对位防守） */
   gameRole?: DefensiveRole;
+  /** 年薪（单位：万元）。来自 DB Player.salary，seed/世界生成/选秀/青训时写入 */
+  salary?: number;
 }
 
 /** 球员进攻原型（借鉴 JBL Po Archetype） */

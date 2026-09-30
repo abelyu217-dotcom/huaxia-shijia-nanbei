@@ -9,7 +9,13 @@
 
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { generateAllTeams, tacticFromPreset, type Team } from "@hwo/shared";
+import { generateAllTeams, overallRating, tacticFromPreset, type Team } from "@hwo/shared";
+
+/** 年薪计算（单位：万元）。与 world.service.calculateSalary 一致：
+ * OVR 60 → 200万, OVR 75 → 800万, OVR 90 → 2000万 */
+function calcSalary(ovr: number): number {
+  return Math.round(200 + (ovr - 60) * 120);
+}
 
 const DATABASE_URL =
   process.env.DATABASE_URL ?? "postgresql://hwo:hwo_dev@localhost:5432/hwo";
@@ -43,6 +49,7 @@ async function seedTeam(team: Team): Promise<void> {
       position: p.position,
       abilities: p.abilities,
       traits: p.traits,
+      salary: calcSalary(overallRating(p.abilities)),
     })),
   });
 
