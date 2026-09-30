@@ -96,13 +96,14 @@ button {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: radial-gradient(
-      1200px 600px at 80% -10%,
-      rgba(255, 107, 53, 0.08),
-      transparent 60%
-    ),
-    radial-gradient(900px 500px at 0% 0%, rgba(74, 168, 255, 0.06), transparent 55%),
+  /* M6: 球馆背景图（暗色叠加保持文字可读性） */
+  background:
+    linear-gradient(180deg, rgba(11, 15, 23, 0.92) 0%, rgba(11, 15, 23, 0.88) 50%, rgba(11, 15, 23, 0.95) 100%),
+    radial-gradient(1200px 600px at 80% -10%, rgba(255, 107, 53, 0.10), transparent 60%),
+    radial-gradient(900px 500px at 0% 0%, rgba(74, 168, 255, 0.08), transparent 55%),
+    url("/img/arena-bg.png") center center / cover no-repeat fixed,
     var(--bg);
+  background-attachment: fixed;
 }
 
 .app-header {
@@ -2859,12 +2860,12 @@ button {
   align-items: center;
   justify-content: center;
   padding: 40px 22px;
-  background: radial-gradient(
-      900px 500px at 70% -10%,
-      rgba(255, 107, 53, 0.12),
-      transparent 60%
-    ),
-    radial-gradient(700px 400px at 0% 100%, rgba(74, 168, 255, 0.1), transparent 60%),
+  /* M6: 登录页球馆背景（更强对比度突出登录卡） */
+  background:
+    linear-gradient(180deg, rgba(11, 15, 23, 0.78) 0%, rgba(11, 15, 23, 0.85) 60%, rgba(11, 15, 23, 0.92) 100%),
+    radial-gradient(900px 500px at 70% -10%, rgba(255, 107, 53, 0.18), transparent 60%),
+    radial-gradient(700px 400px at 0% 100%, rgba(74, 168, 255, 0.14), transparent 60%),
+    url("/img/arena-bg.png") center center / cover no-repeat fixed,
     var(--bg);
 }
 .auth-card {
