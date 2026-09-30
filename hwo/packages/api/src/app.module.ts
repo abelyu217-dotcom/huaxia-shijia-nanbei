@@ -13,6 +13,9 @@ import { AiManagerModule } from "./ai/ai-manager.module.js";
 import { WorldModule } from "./world/world.module.js";
 import { TradeModule } from "./trade/trade.module.js";
 import { CareerModule } from "./career/career.module.js";
+import { AcademyModule } from "./academy/academy.module.js";
+import { DraftModule } from "./draft/draft.module.js";
+import { ContractModule } from "./contract/contract.module.js";
 
 @Module({
   imports: [
@@ -26,6 +29,9 @@ import { CareerModule } from "./career/career.module.js";
     WorldModule,
     TradeModule,
     CareerModule,
+    AcademyModule,
+    DraftModule,
+    ContractModule,
   ],
 })
 export class AppModule {}

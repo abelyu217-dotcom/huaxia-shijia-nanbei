@@ -6,9 +6,18 @@ import { SimModule } from "../sim/sim.module.js";
 import { AuthModule } from "../auth/auth.module.js";
 import { AiManagerModule } from "../ai/ai-manager.module.js";
 import { CareerModule } from "../career/career.module.js";
+import { AcademyModule } from "../academy/academy.module.js";
+import { ContractModule } from "../contract/contract.module.js";
 
 @Module({
-  imports: [forwardRef(() => SimModule), AuthModule, AiManagerModule, forwardRef(() => CareerModule)],
+  imports: [
+    forwardRef(() => SimModule),
+    AuthModule,
+    AiManagerModule,
+    forwardRef(() => CareerModule),
+    forwardRef(() => AcademyModule),
+    forwardRef(() => ContractModule),
+  ],
   controllers: [SeasonController],
   providers: [SeasonService, ScheduleService],
   exports: [SeasonService, ScheduleService],

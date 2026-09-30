@@ -310,3 +310,147 @@ export interface SseStreamEvent {
   scoreAway?: number;
   done?: boolean;
 }
+
+// ── M3: 球员生涯弧线 ──
+export type CareerStage = "rookie" | "rising" | "prime" | "decline" | "retired";
+
+export interface PlayerCareer {
+  playerId: string;
+  name: string;
+  age: number;
+  position: Position;
+  ovr: number;
+  potential: number;
+  stage: CareerStage;
+  stageLabel: string;
+  trainExp: number;
+  retired?: boolean;
+  retireSeason?: number | null;
+  growthRoom: number;
+  salary?: number;
+}
+
+export interface TrainResult {
+  playerId: string;
+  ovrBefore: number;
+  ovrAfter: number;
+  improved: boolean;
+}
+
+// ── M3: 青训学院 ──
+export interface Academy {
+  id: string;
+  teamId: string;
+  level: number;
+  investment: number;
+  lastProdYear: number | null;
+}
+
+export interface AcademyUpgradeResult extends Academy {
+  upgradeCost: number | null;
+  nextLevelPotential: number | null;
+}
+
+// ── M3: 选秀 ──
+export interface DraftPickView {
+  id: string;
+  seasonId: string;
+  worldId: string | null;
+  round: number;
+  pickNum: number;
+  teamId: string | null;
+  team?: { id: string; name: string } | null;
+  playerId: string | null;
+  player?: {
+    id: string;
+    name: string;
+    position: string;
+    age: number;
+    potential: number | null;
+  } | null;
+}
+
+export interface DraftProspect {
+  id: string;
+  name: string;
+  position: string;
+  age: number;
+  potential: number | null;
+  ovr: number;
+}
+
+export interface DraftBoard {
+  picks: DraftPickView[];
+  available: DraftProspect[];
+}
+
+export interface DraftInitResult {
+  picksCreated: number;
+  prospectsCreated: number;
+  lotteryOrder: Array<{ teamId: string; pickNum: number }>;
+}
+
+export interface DraftAutoResult {
+  picked: number;
+  picks: Array<{
+    round: number;
+    pickNum: number;
+    teamId: string;
+    playerName: string;
+  }>;
+}
+
+// ── M3: 合同 ──
+export type ContractStatus = "active" | "expired" | "waived";
+
+export interface Contract {
+  id: string;
+  playerId: string;
+  teamId: string;
+  yearsTotal: number;
+  yearsRemain: number;
+  salaryPerYear: number;
+  playerOption: boolean;
+  teamOption: boolean;
+  noTrade: boolean;
+  status: ContractStatus;
+  player?: {
+    id: string;
+    name: string;
+    position: string;
+    age: number;
+    potential: number | null;
+    retired: boolean;
+  } | null;
+}
+
+export interface SalaryStatus {
+  teamId: string;
+  totalSalary: number;
+  salaryCap: number;
+  remaining: number;
+  capHit: number;
+  contractCount: number;
+}
+
+export interface FreeAgent {
+  id: string;
+  name: string;
+  position: string;
+  age: number;
+  potential: number | null;
+  salary: number;
+  team: { id: string; name: string; worldId: string | null } | null;
+}
+
+// ── M3: 世界（用于选秀页查找所在世界）──
+export interface WorldInfo {
+  id: string;
+  name: string;
+  seasonId: string;
+  seasonName: string;
+  seasonStatus: string;
+  teamCount: number;
+  teams: Array<{ id: string; name: string }>;
+  leagues: Array<{ id: string; name: string; level: number }>;
+}

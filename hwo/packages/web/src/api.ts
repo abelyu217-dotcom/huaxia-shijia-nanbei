@@ -25,6 +25,19 @@ import type {
   TeamRoster,
   TradeOffer,
   UserInfo,
+  PlayerCareer,
+  TrainResult,
+  Academy,
+  AcademyUpgradeResult,
+  DraftBoard,
+  DraftInitResult,
+  DraftAutoResult,
+  DraftPickView,
+  Contract,
+  ContractStatus,
+  SalaryStatus,
+  FreeAgent,
+  WorldInfo,
 } from "./types";
 
 // ── Token 管理 ──
@@ -206,6 +219,13 @@ export function postGenerateSchedule(): Promise<{ generated: number }> {
   return sendJson<{ generated: number }>("POST", "/api/season/generate", {});
 }
 
+// ── 世界（M2）──
+
+/** GET /api/worlds — 列出所有世界（含球队列表，用于查找所在世界） */
+export function fetchWorlds(): Promise<WorldInfo[]> {
+  return getJson<WorldInfo[]>("/api/worlds");
+}
+
 // ── AI 经理 ──
 
 /** POST /api/ai/refresh — 手动刷新 AI 球队阵容 + 战术（需 JWT） */
@@ -346,4 +366,206 @@ export function subscribeMatchStream(
   };
   if (onError) es.onerror = onError;
   return es;
+}
+
+// ── M3: 球员生涯弧线 ──
+
+/** GET /api/career/player/:playerId — 球员生涯信息 */
+export function fetchPlayerCareer(playerId: string): Promise<PlayerCareer | null> {
+  return getJson<PlayerCareer | null>(
+    `/api/career/player/${encodeURIComponent(playerId)}`,
+  );
+}
+
+/** GET /api/career/team/:teamId — 球队全部球员生涯信息 */
+export function fetchTeamCareers(teamId: string): Promise<PlayerCareer[]> {
+  return getJson<PlayerCareer[]>(
+    `/api/career/team/${encodeURIComponent(teamId)}`,
+  );
+}
+
+/** POST /api/career/train/:playerId — 手动训练球员 */
+export function postTrainPlayer(playerId: string): Promise<TrainResult | null> {
+  return sendJson<TrainResult | null>(
+    "POST",
+    `/api/career/train/${encodeURIComponent(playerId)}`,
+    {},
+  );
+}
+
+// ── M3: 青训学院 ──
+
+/** GET /api/academy/:teamId — 获取青训学院 */
+export function fetchAcademy(teamId: string): Promise<Academy> {
+  return getJson<Academy>(`/api/academy/${encodeURIComponent(teamId)}`);
+}
+
+/** POST /api/academy/:teamId/upgrade — 升级学院 */
+export function postUpgradeAcademy(teamId: string): Promise<AcademyUpgradeResult> {
+  return sendJson<AcademyUpgradeResult>(
+    "POST",
+    `/api/academy/${encodeURIComponent(teamId)}/upgrade`,
+    {},
+  );
+}
+
+/** POST /api/academy/:teamId/invest — 投入资金 */
+export function postInvestAcademy(
+  teamId: string,
+  amount: number,
+): Promise<Academy> {
+  return sendJson<Academy>(
+    "POST",
+    `/api/academy/${encodeURIComponent(teamId)}/invest`,
+    { amount },
+  );
+}
+
+/** POST /api/academy/:teamId/produce — 手动产出新秀（测试用） */
+export function postProduceRookies(
+  teamId: string,
+): Promise<{ produced: Array<{ playerId: string; name: string; position: string; potential: number; ovr: number }> }> {
+  return sendJson(
+    "POST",
+    `/api/academy/${encodeURIComponent(teamId)}/produce`,
+    {},
+  );
+}
+
+// ── M3: 选秀系统 ──
+
+/** POST /api/draft/init — 初始化选秀大会（乐透抽签 + 生成选秀池） */
+export function postInitDraft(
+  seasonId: string,
+  worldId: string,
+): Promise<DraftInitResult> {
+  return sendJson<DraftInitResult>("POST", "/api/draft/init", {
+    seasonId,
+    worldId,
+  });
+}
+
+/** GET /api/draft/:seasonId/:worldId — 选秀看板 */
+export function fetchDraftBoard(
+  seasonId: string,
+  worldId: string,
+): Promise<DraftBoard> {
+  return getJson<DraftBoard>(
+    `/api/draft/${encodeURIComponent(seasonId)}/${encodeURIComponent(worldId)}`,
+  );
+}
+
+/** POST /api/draft/:draftPickId/pick — 手动选人 */
+export function postMakeDraftPick(
+  draftPickId: string,
+  playerId: string,
+): Promise<{ success: true; pick: number; round: number; player: { id: string; name: string } }> {
+  return sendJson(
+    "POST",
+    `/api/draft/${encodeURIComponent(draftPickId)}/pick`,
+    { playerId },
+  );
+}
+
+/** POST /api/draft/:seasonId/:worldId/auto — AI 自动选秀 */
+export function postAutoDraft(
+  seasonId: string,
+  worldId: string,
+): Promise<DraftAutoResult> {
+  return sendJson<DraftAutoResult>(
+    "POST",
+    `/api/draft/${encodeURIComponent(seasonId)}/${encodeURIComponent(worldId)}/auto`,
+    {},
+  );
+}
+
+/** GET /api/draft/:seasonId/:worldId/results — 选秀结果 */
+export function fetchDraftResults(
+  seasonId: string,
+  worldId: string,
+): Promise<DraftPickView[]> {
+  return getJson<DraftPickView[]>(
+    `/api/draft/${encodeURIComponent(seasonId)}/${encodeURIComponent(worldId)}/results`,
+  );
+}
+
+// ── M3: 签约与合同 ──
+
+/** GET /api/contract/team/:teamId — 球队合同列表 */
+export function fetchTeamContracts(
+  teamId: string,
+  status?: ContractStatus,
+): Promise<Contract[]> {
+  const q = status ? `?status=${encodeURIComponent(status)}` : "";
+  return getJson<Contract[]>(
+    `/api/contract/team/${encodeURIComponent(teamId)}${q}`,
+  );
+}
+
+/** GET /api/contract/team/:teamId/salary — 球队薪资状况 */
+export function fetchTeamSalary(teamId: string): Promise<SalaryStatus> {
+  return getJson<SalaryStatus>(
+    `/api/contract/team/${encodeURIComponent(teamId)}/salary`,
+  );
+}
+
+/** GET /api/contract/free-agents — 自由球员 */
+export function fetchFreeAgents(worldId?: string): Promise<FreeAgent[]> {
+  const q = worldId ? `?worldId=${encodeURIComponent(worldId)}` : "";
+  return getJson<FreeAgent[]>(`/api/contract/free-agents${q}`);
+}
+
+/** POST /api/contract/sign — 签约 */
+export function postSignContract(payload: {
+  playerId: string;
+  teamId: string;
+  yearsTotal: number;
+  salaryPerYear: number;
+  playerOption?: boolean;
+  teamOption?: boolean;
+  noTrade?: boolean;
+}): Promise<Contract> {
+  return sendJson<Contract>("POST", "/api/contract/sign", payload);
+}
+
+/** POST /api/contract/free-agent/sign — 签约自由球员 */
+export function postSignFreeAgent(payload: {
+  playerId: string;
+  teamId: string;
+  yearsTotal: number;
+  salaryPerYear: number;
+  playerOption?: boolean;
+  teamOption?: boolean;
+  noTrade?: boolean;
+}): Promise<Contract> {
+  return sendJson<Contract>("POST", "/api/contract/free-agent/sign", payload);
+}
+
+/** POST /api/contract/:contractId/extend — 续约 */
+export function postExtendContract(
+  contractId: string,
+  payload: {
+    addYears: number;
+    newSalaryPerYear: number;
+    playerOption?: boolean;
+    teamOption?: boolean;
+    noTrade?: boolean;
+  },
+): Promise<Contract> {
+  return sendJson<Contract>(
+    "POST",
+    `/api/contract/${encodeURIComponent(contractId)}/extend`,
+    payload,
+  );
+}
+
+/** POST /api/contract/:contractId/waive — 裁员 */
+export function postWaivePlayer(
+  contractId: string,
+): Promise<{ waived: true; playerId: string }> {
+  return sendJson(
+    "POST",
+    `/api/contract/${encodeURIComponent(contractId)}/waive`,
+    {},
+  );
 }

@@ -3699,3 +3699,136 @@ button {
   background: var(--panel-2);
   border-radius: var(--radius-sm);
 }
+
+/* ── M3: 生涯 / 青训 / 选秀 ── */
+
+.page-head {
+  margin-bottom: 16px;
+}
+.page-head h2 {
+  margin: 0 0 4px;
+}
+.page-head .muted {
+  margin: 0;
+  font-size: 13px;
+}
+
+.grid {
+  gap: 16px;
+}
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 8px 0 0;
+}
+.kv > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.kv dt {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.kv dd {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.badge-big {
+  font-size: 14px;
+  padding: 4px 10px;
+}
+
+/* 生涯阶段徽章 */
+.badge-new { background: #1f7a3d22; color: #5dd97f; }
+.badge-rise { background: #2d6cdf22; color: #6fa8ff; }
+.badge-prime { background: #8a5cf622; color: #b894ff; }
+.badge-fall { background: #d98c2122; color: #f0b35d; }
+.badge-retire { background: #88888822; color: #b0b0b0; }
+
+.lottery {
+  list-style: decimal inside;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 4px 12px;
+}
+.lottery li {
+  font-size: 13px;
+  padding: 3px 0;
+}
+
+.table.compact {
+  font-size: 13px;
+}
+.table.compact th,
+.table.compact td {
+  padding: 6px 8px;
+}
+.table tr.is-selected {
+  background: var(--panel-2);
+}
+
+.row {
+  display: flex;
+  align-items: flex-end;
+}
+.row.gap {
+  gap: 10px;
+}
+.row.wrap {
+  flex-wrap: wrap;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.field input {
+  width: 140px;
+  padding: 6px 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.btn-sm {
+  padding: 3px 10px;
+  font-size: 12px;
+}
+
+.pos {
+  color: #5dd97f;
+  font-weight: 600;
+}
+
+.state.success {
+  color: #5dd97f;
+  background: #1f7a3d1a;
+  border: 1px solid #1f7a3d33;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 13px;
+}
+

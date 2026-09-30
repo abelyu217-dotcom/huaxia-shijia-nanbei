@@ -10,6 +10,8 @@
 import { Injectable, Logger, forwardRef, Inject } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { CareerService } from "../career/career.service.js";
+import { AcademyService } from "../academy/academy.service.js";
+import { ContractService } from "../contract/contract.service.js";
 
 @Injectable()
 export class SeasonService {
@@ -19,6 +21,10 @@ export class SeasonService {
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => CareerService))
     private readonly careerService: CareerService,
+    @Inject(forwardRef(() => AcademyService))
+    private readonly academyService: AcademyService,
+    @Inject(forwardRef(() => ContractService))
+    private readonly contractService: ContractService,
   ) {}
 
   /** 获取当前激活的常规赛赛季，不存在则创建 */
@@ -274,6 +280,21 @@ export class SeasonService {
     // M3: 推进球员生涯成长 + 退役
     const { grown, retired } = await this.careerService.advanceAllPlayers(season.year);
     this.logger.log(`生涯成长：${grown} 人成长，${retired} 人退役`);
+
+    // M3: 合同推进（剩余年数 -1，到期球员成为自由球员）
+    const { decremented: contractsRenewed, expired: contractsExpired } =
+      await this.contractService.advanceAllContracts();
+    this.logger.log(
+      `合同推进：${contractsRenewed} 份续期，${contractsExpired} 份到期`,
+    );
+
+    // M3: 青训学院产出新秀
+    const { teamsProcessed, totalRookies } = await this.academyService.produceAllRookies(
+      newSeason.year,
+    );
+    this.logger.log(
+      `青训产出：${teamsProcessed} 支球队，共 ${totalRookies} 名新秀加入各队`,
+    );
 
     this.logger.log(`赛季交接：${season.name} → ${newSeason.name}`);
     return true;
