@@ -11,10 +11,12 @@ import {
   Abilities,
   BoxScore,
   DEFAULT_CONFIG,
+  LineupCondition,
   MatchResult,
   PbpEvent,
   Player,
   PlayerStat,
+  PlaybookAction,
   Position,
   SimConfig,
   SimInput,
@@ -23,9 +25,122 @@ import {
   TeamStat,
 } from "./types.js";
 import { Rng } from "./prng.js";
+import {
+  ARCHETYPE_ACTION_AFFINITY,
+  DEFAULT_ACTION_WEIGHTS,
+  EmphasisMods,
+  SIGNATURE_ACTION_BOOST,
+  combineEmphasisMods,
+  fillTacticDefaults,
+} from "./tactics.js";
 
 /** 投篮类型 */
 type ShotType = "three" | "midrange" | "inside" | "drive" | "postup";
+
+// ─── M4: 战术上下文（每队预计算一次） ───
+
+/**
+ * 预计算的战术上下文。把 emphasis 修正、action 权重、熟练度惩罚
+ * 合并为一组有效参数，供 possession 决策直接消费。
+ */
+interface TacticalContext {
+  /** 合并 emphasis 后的有效修正 */
+  mods: EmphasisMods;
+  /** 有效 action 权重（已叠加 signature + archetype 倾向，归一化前） */
+  actionWeights: Record<PlaybookAction, number>;
+  /** 战术熟练度（0-100，低熟练度降效） */
+  familiarity: Partial<Record<string, number>>;
+  /** 关键球执行者 id */
+  closerId?: string;
+  /** 节奏 */
+  pace: "faster" | "balanced" | "slower";
+  /** 进攻侧重 */
+  offenseFocus: "balanced" | "drive" | "outside" | "inside" | "bully" | "pnr";
+  /** 球权分配 */
+  ballDistribution: "natural" | "heliocentric" | "egalitarian";
+  /** 后卫防挡拆 */
+  screenDefGuards: "over" | "under" | "switch";
+  /** 大个子防挡拆 */
+  screenDefBigs: "drop" | "hedge" | "blitz";
+}
+
+/** Action → 偏好 ShotType 映射（用于 action 选定后微调出手倾向） */
+const ACTION_SHOT_BIAS: Partial<Record<PlaybookAction, Partial<Record<ShotType, number>>>> = {
+  pnr_ball_handler: { three: 0.15, midrange: 0.2, drive: 0.2, inside: 0.1, postup: -0.2 },
+  pnr_roll_man: { inside: 0.25, midrange: 0.1, three: -0.1, postup: -0.1 },
+  isolation: { midrange: 0.15, drive: 0.15, three: 0.05, inside: 0.05, postup: 0.05 },
+  post_up: { postup: 0.35, inside: 0.15, midrange: 0.05, three: -0.2, drive: -0.15 },
+  spot_up: { three: 0.3, midrange: 0.1, inside: -0.1, drive: -0.1, postup: -0.2 },
+  hand_off: { midrange: 0.15, three: 0.15, drive: 0.1, postup: -0.15 },
+  off_screen: { midrange: 0.2, three: 0.2, inside: -0.1, drive: -0.1, postup: -0.2 },
+  cut: { inside: 0.3, drive: 0.15, three: -0.15, postup: -0.1, midrange: -0.1 },
+  transition: { three: 0.15, inside: 0.2, drive: 0.15, midrange: -0.1, postup: -0.2 },
+  putback: { inside: 0.4, postup: 0.1, three: -0.3, midrange: -0.2, drive: -0.2 },
+  second_chance: { inside: 0.25, postup: 0.1, midrange: 0.05, three: -0.15, drive: -0.1 },
+};
+
+/** 是否为挡拆类动作（触发 screen defense 判定） */
+function isPnrAction(a: PlaybookAction): boolean {
+  return a === "pnr_ball_handler" || a === "pnr_roll_man";
+}
+
+/**
+ * 为一支球队构建战术上下文。
+ * 合并 emphasis 修正、叠加 signature/archetype 到 action 权重。
+ */
+function buildTacticalContext(team: Team): TacticalContext {
+  const t = fillTacticDefaults(team.tactic);
+  const mods = combineEmphasisMods(
+    t.offenseEmphasis ?? [],
+    t.defenseEmphasis ?? [],
+  );
+
+  // action 权重：默认 + signature 加权
+  const base = { ...DEFAULT_ACTION_WEIGHTS };
+  const sigSet = new Set(t.signatureActions ?? []);
+  for (const a of Object.keys(base) as PlaybookAction[]) {
+    if (sigSet.has(a)) base[a] *= SIGNATURE_ACTION_BOOST;
+  }
+
+  // 叠加场上球员 archetype 倾向（取首发主导原型）
+  const starters = team.lineup.starters
+    .map((id) => team.players.find((p) => p.id === id))
+    .filter((p): p is Player => p !== undefined);
+  for (const p of starters) {
+    if (!p.archetype) continue;
+    const aff = ARCHETYPE_ACTION_AFFINITY[p.archetype];
+    if (!aff) continue;
+    for (const a of Object.keys(aff) as PlaybookAction[]) {
+      base[a] = (base[a] ?? 1) * (aff[a] ?? 1);
+    }
+  }
+
+  // 用户自定义 actionWeights 覆盖
+  if (t.actionWeights) {
+    for (const a of Object.keys(t.actionWeights) as PlaybookAction[]) {
+      base[a] = t.actionWeights[a]!;
+    }
+  }
+
+  return {
+    mods,
+    actionWeights: base,
+    familiarity: t.familiarity ?? {},
+    closerId: t.closerId,
+    pace: t.pace ?? "balanced",
+    offenseFocus: t.offenseFocus ?? "balanced",
+    ballDistribution: t.ballDistribution ?? "natural",
+    screenDefGuards: t.screenDefGuards ?? "over",
+    screenDefBigs: t.screenDefBigs ?? "drop",
+  };
+}
+
+/** 熟练度惩罚系数（0-100 → 0.85-1.0，越低越打折） */
+function familiarityFactor(fam: Partial<Record<string, number>>, key: string): number {
+  const v = fam[key];
+  if (v === undefined) return 1.0;
+  return 0.85 + (v / 100) * 0.15;
+}
 
 /** 一个回合的进攻决策上下文 */
 interface PossessionContext {
@@ -41,6 +156,10 @@ interface PossessionContext {
   isClutch: boolean;
   rng: Rng;
   config: SimConfig;
+  /** M4: 进攻方战术上下文 */
+  offTac: TacticalContext;
+  /** M4: 防守方战术上下文 */
+  defTac: TacticalContext;
 }
 
 // ─── 工具函数 ───
@@ -188,11 +307,107 @@ function rotateAtQuarterBreak(team: Team, state: TeamRuntimeState): void {
   }
 }
 
+// ─── M4: 轮换网格 + 条件阵容 ───
+
+/** 评估当前比分情境，返回匹配的 conditional lineup（含情境标签；无匹配返回 undefined） */
+function resolveConditionalLineup(
+  team: Team,
+  scoreDiff: number,
+  possessionInQuarter: number,
+  possessionsPerQuarter: number,
+): { starters: string[]; condition: LineupCondition } | undefined {
+  const conds = team.lineup.conditionalLineups;
+  if (!conds || conds.length === 0) return undefined;
+
+  // 判定当前情境（仅特殊情境，default 作为最后兜底）
+  const conditions: LineupCondition[] = [];
+  const isLateGame =
+    possessionInQuarter >= Math.floor(possessionsPerQuarter * 0.83);
+  if (isLateGame) conditions.push("late_game");
+
+  if (Math.abs(scoreDiff) >= 15) {
+    conditions.push(scoreDiff > 0 ? "blowout_up" : "blowout_down");
+  } else if (Math.abs(scoreDiff) <= 5) {
+    conditions.push("close_game");
+  }
+
+  // 按优先级匹配特殊情境
+  const sorted = [...conds].sort(
+    (a, b) => (a.priority ?? Number.MAX_SAFE_INTEGER) - (b.priority ?? Number.MAX_SAFE_INTEGER),
+  );
+  for (const c of conditions) {
+    const match = sorted.find((cl) => cl.condition === c);
+    if (match) return { starters: match.starters, condition: c };
+  }
+  // 无特殊情境：返回 default（若有）
+  const def = sorted.find((cl) => cl.condition === "default");
+  if (def) return { starters: def.starters, condition: "default" };
+  return undefined;
+}
+
+/**
+ * 应用轮换网格：根据当前节次与回合索引，查找覆盖该时段的 slot，
+ * 将场上球员设置为 slot.onCourt（仅当 slot 球员均未犯下离场时）。
+ * 返回是否应用了轮换网格。
+ */
+function applyRotationSlot(
+  team: Team,
+  state: TeamRuntimeState,
+  quarter: number,
+  possessionIdx: number,
+): boolean {
+  const grid = team.lineup.rotation;
+  if (!grid || !grid.quarters || grid.quarters.length === 0) return false;
+  // 加时复用第 4 节网格
+  const qIdx = Math.min(quarter, 4) - 1;
+  const slots = grid.quarters[qIdx];
+  if (!slots) return false;
+  for (const slot of slots) {
+    if (
+      possessionIdx >= slot.possessionStart &&
+      possessionIdx < slot.possessionEnd
+    ) {
+      // 仅当 slot 球员均未被罚出场才应用
+      const valid = slot.onCourt.filter((id) => !state.fouledOut.has(id));
+      if (valid.length === 5) {
+        state.activeIds = [...valid];
+        return true;
+      }
+      break;
+    }
+  }
+  return false;
+}
+
+
 // ─── 进攻决策 ───
 
-/** 根据战术倾向与球员能力选择投篮类型 */
-function chooseShotType(ctx: PossessionContext, shooter: Player): ShotType {
-  const { rng, offense } = ctx;
+/**
+ * M4: 选择本回合的 PlaybookAction。
+ * 基于 actionWeights 加权随机，关键时刻偏好 isolation/pnr_ball_handler。
+ */
+function choosePlayAction(ctx: PossessionContext): PlaybookAction {
+  const { rng, offTac, isClutch } = ctx;
+  const weights = { ...offTac.actionWeights };
+  // 关键时刻提升 isolation / pnr_ball_handler 权重（清晰终结）
+  if (isClutch) {
+    weights.isolation *= 1.5;
+    weights.pnr_ball_handler *= 1.3;
+    weights.post_up *= 1.1;
+  }
+  const actions = Object.keys(weights) as PlaybookAction[];
+  const total = actions.reduce((s, a) => s + weights[a], 0);
+  let r = rng.float("playAction") * total;
+  for (const a of actions) {
+    r -= weights[a];
+    if (r <= 0) return a;
+  }
+  return "spot_up";
+}
+
+/** 根据战术倾向、球员能力与 action 偏好选择投篮类型 */
+function chooseShotType(ctx: PossessionContext, shooter: Player, action: PlaybookAction): ShotType {
+  const { rng, offense, offTac } = ctx;
   const tactic = offense.tactic;
   const a = shooter.abilities;
 
@@ -205,38 +420,84 @@ function chooseShotType(ctx: PossessionContext, shooter: Player): ShotType {
     postup: a.postup,
   };
 
-  // 战术倾向修正
+  // 战术倾向修正（含 emphasis 叠加）
   const mod = tactic.tendencyMod;
+  const emphTend = offTac.mods.tendency ?? {};
   const weights: Record<ShotType, number> = {
-    three: baseWeights.three * (1 + mod.three),
-    midrange: baseWeights.midrange * (1 + mod.midrange),
-    inside: baseWeights.inside * (1 + mod.inside),
-    drive: baseWeights.drive * (1 + mod.drive),
-    postup: baseWeights.postup * (1 + mod.postup),
+    three: baseWeights.three * (1 + mod.three + (emphTend.three ?? 0)),
+    midrange: baseWeights.midrange * (1 + mod.midrange + (emphTend.midrange ?? 0)),
+    inside: baseWeights.inside * (1 + mod.inside + (emphTend.inside ?? 0)),
+    drive: baseWeights.drive * (1 + mod.drive + (emphTend.drive ?? 0)),
+    postup: baseWeights.postup * (1 + mod.postup + (emphTend.postup ?? 0)),
   };
 
+  // offenseFocus 全局偏好叠加
+  const focusBias: Record<string, Partial<Record<ShotType, number>>> = {
+    outside: { three: 0.2, midrange: 0.05, inside: -0.1, postup: -0.1 },
+    inside: { inside: 0.2, postup: 0.15, three: -0.1, drive: -0.05 },
+    drive: { drive: 0.25, inside: 0.1, three: -0.05, postup: -0.1 },
+    bully: { postup: 0.25, inside: 0.15, three: -0.2, drive: -0.1 },
+    pnr: { midrange: 0.1, drive: 0.15, inside: 0.1, three: 0.05 },
+    balanced: {},
+  };
+  const fb = focusBias[offTac.offenseFocus] ?? {};
+  for (const k of Object.keys(fb) as ShotType[]) {
+    weights[k] *= 1 + (fb[k] ?? 0);
+  }
+
+  // action 偏好叠加
+  const ab = ACTION_SHOT_BIAS[action] ?? {};
+  for (const k of Object.keys(ab) as ShotType[]) {
+    weights[k] *= 1 + (ab[k] ?? 0);
+  }
+
   // 加权随机选择
-  const total = Object.values(weights).reduce((s, w) => s + w, 0);
+  const total = Object.values(weights).reduce((s, w) => s + Math.max(0.01, w), 0);
   let r = rng.float("shotType") * total;
   for (const [type, w] of Object.entries(weights)) {
-    r -= w;
+    r -= Math.max(0.01, w);
     if (r <= 0) return type as ShotType;
   }
   return "midrange";
 }
 
-/** 选择主攻手（简化：从在场球员中按进攻能力加权） */
-function chooseShooter(ctx: PossessionContext): Player {
-  const { rng, offense, offenseState, isClutch } = ctx;
+/** 选择主攻手（含 ballDistribution + closer 机制） */
+function chooseShooter(ctx: PossessionContext, action: PlaybookAction): Player {
+  const { rng, offense, offenseState, isClutch, offTac } = ctx;
   const onCourt = onCourtPlayers(offense, offenseState);
+
+  // 关键时刻 + 指定 closer：高概率交给 closer
+  if (isClutch && offTac.closerId) {
+    const closer = onCourt.find((p) => p.id === offTac.closerId);
+    if (closer && rng.chance(0.55, "closerOverride")) {
+      return closer;
+    }
+  }
+
   const weights = onCourt.map((p) => {
     const a = p.abilities;
     let w = a.three + a.midrange + a.inside + a.drive + a.postup + a.ballHandle;
+
+    // ballDistribution：heliocentric 主控持球加权，egalitarian 趋均
+    if (offTac.ballDistribution === "heliocentric") {
+      w *= 1 + (a.ballHandle / 99) * 0.6; // 控球越好越核心化
+    } else if (offTac.ballDistribution === "egalitarian") {
+      // 压缩最高最低差距
+      w = Math.pow(w, 0.85);
+    }
+
+    // action 倾向：archetype 擅长该 action 的球员加权
+    if (p.archetype) {
+      const aff = ARCHETYPE_ACTION_AFFINITY[p.archetype];
+      const affVal = aff?.[action];
+      if (affVal !== undefined) w *= affVal;
+    }
+
     // 关键时刻：关键球能力越高，出手权重越大
     if (isClutch) {
       w += a.clutch * 1.5;
     }
-    return w;
+    return Math.max(0.01, w);
   });
   const total = weights.reduce((s, w) => s + w, 0);
   let r = rng.float("shooterPick") * total;
@@ -248,8 +509,13 @@ function chooseShooter(ctx: PossessionContext): Player {
 }
 
 /** 计算投篮命中率 */
-function shotChance(ctx: PossessionContext, shooter: Player, shotType: ShotType): number {
-  const { defense, rng, offense, config, isClutch } = ctx;
+function shotChance(
+  ctx: PossessionContext,
+  shooter: Player,
+  shotType: ShotType,
+  action: PlaybookAction,
+): number {
+  const { defense, rng, offense, config, isClutch, offTac, defTac } = ctx;
   const a = effectiveAbilities(shooter, ctx.isHome, config, offense.chemistry);
 
   // 基础命中率（按投篮类型）
@@ -271,6 +537,15 @@ function shotChance(ctx: PossessionContext, shooter: Player, shotType: ShotType)
     chance += 0.05;
   }
 
+  // M4: emphasis 命中率修正（进攻方加成/惩罚）
+  if (shotType === "three") chance += offTac.mods.threePctMod ?? 0;
+  if (shotType === "inside" || shotType === "drive") chance += offTac.mods.rimPctMod ?? 0;
+  if (shotType === "midrange") chance += offTac.mods.midPctMod ?? 0;
+
+  // M4: 防守方 emphasis 反向作用（防守方限制外线 → 进攻方三分下降）
+  if (shotType === "three") chance += defTac.mods.threePctMod ?? 0; // 已为负值
+  if (shotType === "three") chance += defTac.mods.cornerThreeAllowedMod ?? 0;
+
   // 防守干扰：选防守方最强相关防守者
   const onCourtDef = onCourtPlayers(defense, ctx.defenseState);
   const defAbility =
@@ -278,8 +553,31 @@ function shotChance(ctx: PossessionContext, shooter: Player, shotType: ShotType)
       ? Math.max(...onCourtDef.map((p) => p.abilities.interiorD))
       : Math.max(...onCourtDef.map((p) => p.abilities.perimeterD));
 
-  const contest = 1 + defense.tactic.defenseContest;
+  const contest = 1 + defense.tactic.defenseContest + (defTac.mods.defenseContest ?? 0);
   chance -= (defAbility / 99) * 0.15 * contest;
+
+  // M4: 挡拆 screen defense（仅 PnR 动作触发）
+  if (isPnrAction(action)) {
+    // screenDefBigs: drop=稳守禁区（降筐下命中率），blitz=激进包夹（降命中率但升失误），hedge=中性
+    if (defTac.screenDefBigs === "drop" && (shotType === "inside" || shotType === "drive")) {
+      chance -= 0.04;
+    } else if (defTac.screenDefBigs === "blitz") {
+      chance -= 0.06; // 包夹降命中
+    } else if (defTac.screenDefBigs === "hedge") {
+      chance -= 0.02;
+    }
+    // screenDefGuards: switch=换防消除错位，over=绕过（放三分），under=沉退
+    if (defTac.screenDefGuards === "switch") {
+      chance -= 0.02; // 换防减少错位
+    } else if (defTac.screenDefGuards === "under" && shotType === "three") {
+      chance += 0.03; // 沉退放三分
+    }
+  }
+
+  // M4: 防守方 blownBy 风险 → 突破/内线命中率上升
+  if ((shotType === "drive" || shotType === "inside") && (defTac.mods.blownByMod ?? 0) > 0) {
+    chance += defTac.mods.blownByMod! * 0.5;
+  }
 
   // 手感热度加成
   chance += shooter.condition.hot * 0.05;
@@ -293,8 +591,12 @@ function shotChance(ctx: PossessionContext, shooter: Player, shotType: ShotType)
     }
   }
 
-  // 协防概率削减
-  if (rng.chance(defense.tactic.helpDefChance, "helpDef")) {
+  // M4: 熟练度惩罚（低熟悉度降命中）
+  chance *= familiarityFactor(offTac.familiarity, action);
+
+  // 协防概率削减（含 emphasis）
+  const helpChance = defense.tactic.helpDefChance + (defTac.mods.helpDefChance ?? 0);
+  if (rng.chance(helpChance, "helpDef")) {
     chance -= 0.04;
   }
 
@@ -327,10 +629,21 @@ function simulatePossession(ctx: PossessionContext, possessionIdx: number, confi
   // 当前累计比分快照（每个事件携带最新比分）
   const snap = () => ({ scoreHome: scoreHome + homePts, scoreAway: scoreAway + awayPts });
 
-  // 失误判定
-  const turnoverChance = 0.12 + (1 - offense.chemistry / 100) * 0.03;
+  // M4: 先选择本回合进攻动作（影响 shooter/shtype/chance/PBP 标签）
+  const action = choosePlayAction(ctx);
+
+  // 失误判定（含 emphasis turnover 修正 + PnR blitz 失误风险）
+  let turnoverChance = 0.12 + (1 - offense.chemistry / 100) * 0.03;
+  turnoverChance += ctx.offTac.mods.turnoverMod ?? 0;
+  // 防守方 blitz 包夹 → 失误概率上升
+  if (isPnrAction(action) && ctx.defTac.screenDefBigs === "blitz") {
+    turnoverChance += 0.03;
+  }
+  // 防守方 force_turnovers emphasis → 失误概率上升
+  turnoverChance += Math.max(0, ctx.defTac.mods.blownByMod ?? 0) * 0.3;
   if (rng.chance(turnoverChance, "turnover")) {
-    if (rng.chance(defense.tactic.stealChance + 0.05, "stealAttempt")) {
+    const stealAttempt = defense.tactic.stealChance + 0.05 + (ctx.defTac.mods.stealChance ?? 0);
+    if (rng.chance(stealAttempt, "stealAttempt")) {
       const stealer = rng.pick(onCourtPlayers(defense, ctx.defenseState), "stealer");
       const s = snap();
       events.push({
@@ -342,31 +655,39 @@ function simulatePossession(ctx: PossessionContext, possessionIdx: number, confi
       const s = snap();
       events.push({
         quarter, clock, scoreHome: s.scoreHome, scoreAway: s.scoreAway,
-        type: "turnover", teamId: offense.id,
+        type: "turnover", teamId: offense.id, playAction: action,
         desc: `${offense.name} 失误`,
       });
     }
     return { events, homeScoreDelta: homePts, awayScoreDelta: awayPts };
   }
 
-  // 选择投篮
-  const shooter = chooseShooter(ctx);
-  const shotType = chooseShotType(ctx, shooter);
-  const chance = shotChance(ctx, shooter, shotType);
+  // 选择投篮（基于 action）
+  const shooter = chooseShooter(ctx, action);
+  const shotType = chooseShotType(ctx, shooter, action);
+  const chance = shotChance(ctx, shooter, shotType, action);
   const isThree = shotType === "three";
   const basePoints = isThree ? 3 : 2;
   const made = rng.chance(chance, "shot");
 
-  // 投篮犯规判定（独立概率，仅出现在投篮回合）
-  const shootingFoul = rng.chance(0.13, "foul");
+  // 投篮犯规判定（含 emphasis foul 修正）
+  let foulChance = 0.13 + (ctx.defTac.mods.foulMod ?? 0);
+  // 防守方 force_turnovers / aggressive → 犯规上升
+  if (ctx.defTac.screenDefBigs === "blitz" && isPnrAction(action)) foulChance += 0.02;
+  const shootingFoul = rng.chance(foulChance, "foul");
   const fouler = shootingFoul ? rng.pick(onCourtPlayers(defense, ctx.defenseState), "fouler") : null;
 
-  // 盖帽判定（仅未中时）
+  // 盖帽判定（仅未中时；含 emphasis blockMod）
   let blocker: Player | null = null;
   if (!made) {
     const defCourt = onCourtPlayers(defense, ctx.defenseState);
     const maxBlock = Math.max(...defCourt.map((p) => p.abilities.block));
-    const blockChance = 0.06 + (maxBlock / 99) * 0.08;
+    let blockChance = 0.06 + (maxBlock / 99) * 0.08;
+    blockChance += ctx.defTac.mods.blockMod ?? 0;
+    // 保护禁区的防守对内线出手盖帽加成
+    if ((shotType === "inside" || shotType === "postup") && (ctx.defTac.mods.blockMod ?? 0) > 0) {
+      blockChance += 0.02;
+    }
     if (rng.chance(blockChance, "block")) {
       const candidates = defCourt.filter((p) => p.abilities.block >= 55);
       blocker = candidates.length > 0
@@ -397,7 +718,7 @@ function simulatePossession(ctx: PossessionContext, possessionIdx: number, confi
     events.push({
       quarter, clock, scoreHome: s.scoreHome, scoreAway: s.scoreAway,
       type: isThree ? "three_made" : "shot_made",
-      actorId: shooter.id, assistId, teamId: offense.id,
+      actorId: shooter.id, assistId, teamId: offense.id, playAction: action,
       desc: `${shooter.name} ${isThree ? "三分命中" : basePoints + "分命中"}${assistId ? "（助攻）" : ""}`,
     });
     shooter.condition.hot = clamp(shooter.condition.hot + 0.1, 0, 1);
@@ -427,7 +748,7 @@ function simulatePossession(ctx: PossessionContext, possessionIdx: number, confi
     events.push({
       quarter, clock, scoreHome: s0.scoreHome, scoreAway: s0.scoreAway,
       type: isThree ? "three_miss" : "shot_miss",
-      actorId: shooter.id, teamId: offense.id,
+      actorId: shooter.id, teamId: offense.id, playAction: action,
       desc: blocker ? `${shooter.name} 投篮被 ${blocker.name} 封盖` : `${shooter.name} ${isThree ? "三分不中" : "投篮不中"}`,
     });
     if (blocker) {
@@ -464,7 +785,9 @@ function simulatePossession(ctx: PossessionContext, possessionIdx: number, confi
       }
     } else {
       // 篮板判定（仅非犯规回合；犯规回合球权转入罚球）
-      const offRebChance = 0.25 + (offense.chemistry / 100) * 0.05;
+      // M4: 含 emphasis offRebMod（进攻方 box_out 加成 / 防守方 limit_fast_breaks 惩罚）
+      let offRebChance = 0.25 + (offense.chemistry / 100) * 0.05;
+      offRebChance += ctx.offTac.mods.offRebMod ?? 0;
       // 加权选择篮板手：禁区霸主特质权重 ×2
       const weightedPick = (players: Player[], label: string): Player => {
         const pool: Player[] = [];
@@ -540,17 +863,26 @@ export function simulate(input: SimInput): SimOutput {
     tactic: { ...matchup.awayTeam.tactic, tendencyMod: { ...matchup.awayTeam.tactic.tendencyMod } },
   };
 
+  // M4: 预计算双方战术上下文（emphasis 合并 + action 权重 + archetype 倾向）
+  const homeTac = buildTacticalContext(homeTeam);
+  const awayTac = buildTacticalContext(awayTeam);
+
   const pbp: PbpEvent[] = [];
   const homeStat = emptyTeamStat(homeTeam.id, homeTeam.players);
   const awayStat = emptyTeamStat(awayTeam.id, awayTeam.players);
 
   // 运行时阵容状态：首发开局，6 犯离场或疲劳过高时换人
+  // M4: 若有 conditional lineup default 命中，开局即应用其 starters
+  const homeInit = resolveConditionalLineup(homeTeam, 0, 0, config.possessionsPerQuarter);
+  const awayInit = resolveConditionalLineup(awayTeam, 0, 0, config.possessionsPerQuarter);
+  const homeInitialStarters = homeInit?.starters ?? homeTeam.lineup.starters;
+  const awayInitialStarters = awayInit?.starters ?? awayTeam.lineup.starters;
   const homeState: TeamRuntimeState = {
-    activeIds: [...homeTeam.lineup.starters],
+    activeIds: [...homeInitialStarters],
     fouledOut: new Set<string>(),
   };
   const awayState: TeamRuntimeState = {
-    activeIds: [...awayTeam.lineup.starters],
+    activeIds: [...awayInitialStarters],
     fouledOut: new Set<string>(),
   };
 
@@ -600,6 +932,24 @@ export function simulate(input: SimInput): SimOutput {
       const offenseState = isHomeOffense ? homeState : awayState;
       const defenseState = isHomeOffense ? awayState : homeState;
 
+      // M4: 轮换网格 —— 每回合按 slot 设定场上球员（覆盖疲劳轮换）
+      applyRotationSlot(homeTeam, homeState, periodNumber, i);
+      applyRotationSlot(awayTeam, awayState, periodNumber, i);
+
+      // M4: 条件阵容 —— 仅特殊情境（大比分/焦灼/末节）覆盖轮换网格
+      const homeDiff = scoreHome - scoreAway;
+      const awayDiff = -homeDiff;
+      const homeCondLU = resolveConditionalLineup(homeTeam, homeDiff, i, possessions);
+      const awayCondLU = resolveConditionalLineup(awayTeam, awayDiff, i, possessions);
+      if (homeCondLU && homeCondLU.condition !== "default") {
+        const valid = homeCondLU.starters.filter((id) => !homeState.fouledOut.has(id));
+        if (valid.length === 5) homeState.activeIds = [...valid];
+      }
+      if (awayCondLU && awayCondLU.condition !== "default") {
+        const valid = awayCondLU.starters.filter((id) => !awayState.fouledOut.has(id));
+        if (valid.length === 5) awayState.activeIds = [...valid];
+      }
+
       // 关键时刻判定：第4节/加时 + 分差≤5 + 最后约2分钟
       const isClutch =
         periodNumber >= 4 &&
@@ -618,6 +968,8 @@ export function simulate(input: SimInput): SimOutput {
         isClutch,
         rng,
         config: periodConfig,
+        offTac: isHomeOffense ? homeTac : awayTac,
+        defTac: isHomeOffense ? awayTac : homeTac,
       };
 
       const result = simulatePossession(ctx, i, periodConfig);

@@ -110,7 +110,7 @@ function AppInner() {
         <div className="brand">
           <span className="brand-mark">HWO</span>
           <span className="brand-sub">Hoops World Online</span>
-          <span className="brand-ver">v0.3.0</span>
+          <span className="brand-ver">v0.5.0</span>
         </div>
         <nav className="tab-nav">
           {NAV_ITEMS.map((it) => (

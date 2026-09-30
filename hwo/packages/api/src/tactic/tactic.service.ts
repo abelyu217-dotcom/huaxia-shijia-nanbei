@@ -13,10 +13,14 @@ import { Injectable, NotFoundException, BadRequestException } from "@nestjs/comm
 import { PrismaService } from "../prisma/prisma.service.js";
 import {
   PRESET_TACTICS,
+  fillTacticDefaults,
   getPresetById,
   tacticFromPreset,
   type PresetTactic,
   type TacticModSet,
+  type OffenseEmphasis,
+  type DefenseEmphasis,
+  type PlaybookAction,
 } from "@hwo/shared";
 
 @Injectable()
@@ -35,16 +39,18 @@ export class TacticService {
         teamId,
         presetId: preset.id,
         presetName: preset.name,
-        modSet: tacticFromPreset(teamId, preset.id),
+        modSet: fillTacticDefaults(tacticFromPreset(teamId, preset.id)),
       };
     }
 
     const preset = getPresetById(tactic.presetId);
+    // M4: 填充默认值，确保旧数据缺失新字段时前端拿到完整结构
+    const modSet = fillTacticDefaults(tactic.modSet as unknown as TacticModSet);
     return {
       teamId,
       presetId: tactic.presetId,
       presetName: preset?.name ?? "自定义",
-      modSet: tactic.modSet as unknown as TacticModSet,
+      modSet,
     };
   }
 
@@ -88,7 +94,8 @@ export class TacticService {
       };
     }
 
-    // 验证参数范围
+    // M4: 填充默认值（确保新字段完整）+ 验证
+    modSet = fillTacticDefaults(modSet);
     this.validateModSet(modSet);
 
     const result = await this.prisma.tactic.upsert({
@@ -100,7 +107,7 @@ export class TacticService {
     return {
       teamId,
       presetId: result.presetId,
-      modSet: result.modSet as unknown as TacticModSet,
+      modSet: fillTacticDefaults(result.modSet as unknown as TacticModSet),
     };
   }
 
@@ -224,6 +231,86 @@ export class TacticService {
     }
     if (modSet.pickRollChance < 0 || modSet.pickRollChance > 1) {
       throw new BadRequestException("pickRollChance 必须在 [0, 1] 范围内");
+    }
+
+    // M4: 新字段校验
+    const validPace = ["faster", "balanced", "slower"];
+    if (modSet.pace && !validPace.includes(modSet.pace)) {
+      throw new BadRequestException(`pace 必须为 ${validPace.join("/")} 之一`);
+    }
+    const validFocus = ["balanced", "drive", "outside", "inside", "bully", "pnr"];
+    if (modSet.offenseFocus && !validFocus.includes(modSet.offenseFocus)) {
+      throw new BadRequestException(`offenseFocus 必须为 ${validFocus.join("/")} 之一`);
+    }
+    const validDist = ["natural", "heliocentric", "egalitarian"];
+    if (modSet.ballDistribution && !validDist.includes(modSet.ballDistribution)) {
+      throw new BadRequestException(`ballDistribution 必须为 ${validDist.join("/")} 之一`);
+    }
+    const validFreedom = ["set_plays", "freelance"];
+    if (modSet.offenseFreedom && !validFreedom.includes(modSet.offenseFreedom)) {
+      throw new BadRequestException(`offenseFreedom 必须为 ${validFreedom.join("/")} 之一`);
+    }
+    const validDefIntensity = ["aggressive", "balanced", "conservative"];
+    if (modSet.defenseIntensity && !validDefIntensity.includes(modSet.defenseIntensity)) {
+      throw new BadRequestException(`defenseIntensity 必须为 ${validDefIntensity.join("/")} 之一`);
+    }
+    const validDefFocus = ["interior", "balanced", "perimeter"];
+    if (modSet.defenseFocus && !validDefFocus.includes(modSet.defenseFocus)) {
+      throw new BadRequestException(`defenseFocus 必须为 ${validDefFocus.join("/")} 之一`);
+    }
+    const validScreenGuards = ["over", "under", "switch"];
+    if (modSet.screenDefGuards && !validScreenGuards.includes(modSet.screenDefGuards)) {
+      throw new BadRequestException(`screenDefGuards 必须为 ${validScreenGuards.join("/")} 之一`);
+    }
+    const validScreenBigs = ["drop", "hedge", "blitz"];
+    if (modSet.screenDefBigs && !validScreenBigs.includes(modSet.screenDefBigs)) {
+      throw new BadRequestException(`screenDefBigs 必须为 ${validScreenBigs.join("/")} 之一`);
+    }
+
+    // emphasis 数组上限 2 个
+    const validOffEmph: OffenseEmphasis[] = ["box_out", "early_threes", "get_to_rim", "midrange_drops", "protect_ball"];
+    if (modSet.offenseEmphasis) {
+      if (modSet.offenseEmphasis.length > 2) {
+        throw new BadRequestException("offenseEmphasis 最多 2 个强调点");
+      }
+      for (const e of modSet.offenseEmphasis) {
+        if (!validOffEmph.includes(e)) {
+          throw new BadRequestException(`offenseEmphasis 包含非法值: ${e}`);
+        }
+      }
+    }
+    const validDefEmph: DefenseEmphasis[] = ["no_fouls", "limit_fast_breaks", "force_turnovers", "protect_rim", "limit_perimeter"];
+    if (modSet.defenseEmphasis) {
+      if (modSet.defenseEmphasis.length > 2) {
+        throw new BadRequestException("defenseEmphasis 最多 2 个强调点");
+      }
+      for (const e of modSet.defenseEmphasis) {
+        if (!validDefEmph.includes(e)) {
+          throw new BadRequestException(`defenseEmphasis 包含非法值: ${e}`);
+        }
+      }
+    }
+
+    // signatureActions 校验
+    const validActions: PlaybookAction[] = [
+      "pnr_ball_handler", "pnr_roll_man", "isolation", "post_up", "spot_up",
+      "hand_off", "off_screen", "cut", "transition", "putback", "second_chance",
+    ];
+    if (modSet.signatureActions) {
+      for (const a of modSet.signatureActions) {
+        if (!validActions.includes(a)) {
+          throw new BadRequestException(`signatureActions 包含非法值: ${a}`);
+        }
+      }
+    }
+
+    // familiarity 熟练度范围 0-100
+    if (modSet.familiarity) {
+      for (const [k, v] of Object.entries(modSet.familiarity)) {
+        if (v === undefined || v < 0 || v > 100) {
+          throw new BadRequestException(`familiarity.${k} 必须在 [0, 100] 范围内`);
+        }
+      }
     }
   }
 }

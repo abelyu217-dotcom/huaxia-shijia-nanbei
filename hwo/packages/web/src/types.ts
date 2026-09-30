@@ -253,6 +253,34 @@ export interface TacticTendencyMod {
   midrange: number;
 }
 
+// M4: 高级战术层（借鉴 JBL）
+export type OffenseEmphasis =
+  | "box_out"
+  | "early_threes"
+  | "get_to_rim"
+  | "midrange_drops"
+  | "protect_ball";
+
+export type DefenseEmphasis =
+  | "no_fouls"
+  | "limit_fast_breaks"
+  | "force_turnovers"
+  | "protect_rim"
+  | "limit_perimeter";
+
+export type PlaybookAction =
+  | "pnr_ball_handler"
+  | "pnr_roll_man"
+  | "isolation"
+  | "post_up"
+  | "spot_up"
+  | "hand_off"
+  | "off_screen"
+  | "cut"
+  | "transition"
+  | "putback"
+  | "second_chance";
+
 export interface TacticModSet {
   teamId: string;
   stealChance: number;
@@ -262,6 +290,21 @@ export interface TacticModSet {
   pickRollChance: number;
   fastBreakChance: number;
   possessionTimeDelta: number;
+  // M4: 高级战术层
+  pace?: "faster" | "balanced" | "slower";
+  offenseFocus?: "balanced" | "drive" | "outside" | "inside" | "bully" | "pnr";
+  ballDistribution?: "natural" | "heliocentric" | "egalitarian";
+  offenseFreedom?: "set_plays" | "freelance";
+  offenseEmphasis?: OffenseEmphasis[];
+  defenseIntensity?: "aggressive" | "balanced" | "conservative";
+  defenseFocus?: "interior" | "balanced" | "perimeter";
+  screenDefGuards?: "over" | "under" | "switch";
+  screenDefBigs?: "drop" | "hedge" | "blitz";
+  defenseEmphasis?: DefenseEmphasis[];
+  signatureActions?: PlaybookAction[];
+  closerId?: string;
+  familiarity?: Partial<Record<string, number>>;
+  actionWeights?: Partial<Record<PlaybookAction, number>>;
 }
 
 export interface TeamTactic {
