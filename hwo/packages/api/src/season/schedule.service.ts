@@ -34,19 +34,35 @@ export class ScheduleService {
       return existing;
     }
 
-    // 获取联赛所有球队
-    const teams = await this.prisma.team.findMany({
-      where: { leagueId },
-      orderBy: { id: "asc" },
-      select: { id: true },
+    // 获取联赛信息（判断是否为国际联赛）
+    const league = await this.prisma.league.findUnique({
+      where: { id: leagueId },
+      select: { type: true },
     });
-    if (teams.length < 2) {
+
+    // 获取联赛所有球队：
+    // - 国内联赛(domestic)：通过 Team.leagueId 查询
+    // - 国际联赛(international)：通过 LeagueTeam 关联表查询
+    let teamIds: string[];
+    if (league?.type === "international") {
+      const leagueTeams = await this.prisma.leagueTeam.findMany({
+        where: { leagueId },
+        select: { teamId: true },
+      });
+      teamIds = leagueTeams.map((lt) => lt.teamId);
+    } else {
+      const teams = await this.prisma.team.findMany({
+        where: { leagueId },
+        orderBy: { id: "asc" },
+        select: { id: true },
+      });
+      teamIds = teams.map((t) => t.id);
+    }
+
+    if (teamIds.length < 2) {
       this.logger.warn(`联赛 ${leagueId} 球队不足，无法生成赛程`);
       return 0;
     }
-
-    // 单循环赛程：round-robin 算法
-    const teamIds = teams.map((t) => t.id);
     const matchups = this.roundRobin(teamIds);
 
     // 分配到每日（每天 3 场，最后一日可能不满）

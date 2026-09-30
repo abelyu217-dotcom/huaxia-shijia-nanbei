@@ -18,6 +18,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   fetchCurrentSeason,
+  fetchLeagues,
   fetchSchedule,
   fetchStandings,
   fetchTeam,
@@ -42,6 +43,15 @@ interface Props {
 
 type LeagueTab = "standings" | "leaders" | "season";
 type LeaderKind = "scoring" | "rebound" | "assist";
+
+/** 联赛信息（来自 GET /api/season/leagues） */
+interface LeagueInfo {
+  id: string;
+  name: string;
+  level: number;
+  type: string;
+  worldId: string | null;
+}
 
 /** 数据榜条目：球员 + 所属球队 + 能力值（abilities 仅前 3 队有） */
 interface LeaderEntry {
@@ -78,27 +88,33 @@ export function LeaguePage({ teamId }: Props) {
   const [teams, setTeams] = useState<TeamRoster[] | null>(null);
   const [season, setSeason] = useState<SeasonInfo | null>(null);
   const [schedule, setSchedule] = useState<ScheduleDay[] | null>(null);
+  const [leagues, setLeagues] = useState<LeagueInfo[]>([]);
+  const [selectedLeagueId, setSelectedLeagueId] = useState<string | null>(null);
   const [leaderEntries, setLeaderEntries] = useState<LeaderEntry[]>([]);
   const [leadersLoading, setLeadersLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 主数据加载（积分榜 / 球队 / 赛季 / 赛程 并行）
+  // 主数据加载（联赛列表 / 积分榜 / 球队 / 赛季 / 赛程 并行）
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     Promise.all([
-      fetchStandings(),
+      fetchLeagues(),
       fetchTeams(),
       fetchCurrentSeason(),
       fetchSchedule(),
     ])
-      .then(([st, ts, se, sch]) => {
+      .then(([ls, ts, se, sch]) => {
         if (cancelled) return;
-        setStandings(st);
+        setLeagues(ls);
         setTeams(ts);
         setSeason(se);
         setSchedule(sch);
+        // 默认选择第一个国内 L1 联赛
+        const defaultLeague =
+          ls.find((l) => l.type === "domestic" && l.level === 1) ?? ls[0] ?? null;
+        setSelectedLeagueId(defaultLeague ? defaultLeague.id : null);
       })
       .catch((e: unknown) => {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
@@ -110,6 +126,25 @@ export function LeaguePage({ teamId }: Props) {
       cancelled = true;
     };
   }, []);
+
+  // 积分榜：根据选中的联赛过滤
+  useEffect(() => {
+    if (!selectedLeagueId) {
+      setStandings([]);
+      return;
+    }
+    let cancelled = false;
+    fetchStandings(selectedLeagueId)
+      .then((st) => {
+        if (!cancelled) setStandings(st);
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : String(e));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedLeagueId]);
 
   // 数据榜：取前 3 支球队的详情（含 abilities），用于篮板/助攻榜
   useEffect(() => {
@@ -218,6 +253,28 @@ export function LeaguePage({ teamId }: Props) {
           </span>
         )}
       </div>
+
+      {/* 联赛选择器：国内 L1/L2 + 国际联赛 */}
+      {leagues.length > 0 && (
+        <div className="tab-nav league-selector">
+          {leagues.map((l) => {
+            const isActive = l.id === selectedLeagueId;
+            const typeLabel = l.type === "international" ? "🌍 国际" : `L${l.level}`;
+            return (
+              <button
+                key={l.id}
+                type="button"
+                className={`tab${isActive ? " is-active" : ""}`}
+                onClick={() => setSelectedLeagueId(l.id)}
+                title={l.name}
+              >
+                <span className="league-selector-type">{typeLabel}</span>
+                <span className="league-selector-name">{l.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div className="tab-nav league-tabs">
         <button

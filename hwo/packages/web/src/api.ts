@@ -103,6 +103,24 @@ async function sendJson<T>(
   return (await res.json()) as T;
 }
 
+/** POST 便捷封装 */
+async function postJson<T>(
+  url: string,
+  body: unknown,
+  opts: { auth?: boolean } = {},
+): Promise<T> {
+  return sendJson<T>("POST", url, body, opts);
+}
+
+/** PUT 便捷封装 */
+async function putJson<T>(
+  url: string,
+  body: unknown,
+  opts: { auth?: boolean } = {},
+): Promise<T> {
+  return sendJson<T>("PUT", url, body, opts);
+}
+
 async function httpError(label: string, res: Response): Promise<Error> {
   let detail = "";
   try {
@@ -213,9 +231,19 @@ export function fetchCurrentSeason(): Promise<SeasonInfo> {
   return getJson<SeasonInfo>("/api/season");
 }
 
-/** GET /api/season/standings — 当前积分榜 */
-export function fetchStandings(): Promise<StandingRow[]> {
-  return getJson<StandingRow[]>("/api/season/standings");
+/** GET /api/season/standings — 当前积分榜（可选按 leagueId 过滤） */
+export function fetchStandings(leagueId?: string): Promise<StandingRow[]> {
+  const q = leagueId ? `?leagueId=${encodeURIComponent(leagueId)}` : "";
+  return getJson<StandingRow[]>(`/api/season/standings${q}`);
+}
+
+/** GET /api/season/leagues — 当前赛季所有联赛列表（国内 L1/L2 + 国际） */
+export function fetchLeagues(): Promise<
+  Array<{ id: string; name: string; level: number; type: string; worldId: string | null }>
+> {
+  return getJson<
+    Array<{ id: string; name: string; level: number; type: string; worldId: string | null }>
+  >("/api/season/leagues");
 }
 
 /** GET /api/season/schedule — 当前赛季赛程（按日分组） */
@@ -238,6 +266,40 @@ export function postGenerateSchedule(): Promise<{ generated: number }> {
 /** GET /api/worlds — 列出所有世界（含球队列表，用于查找所在世界） */
 export function fetchWorlds(): Promise<WorldInfo[]> {
   return getJson<WorldInfo[]>("/api/worlds");
+}
+
+/** GET /api/worlds/:id — 世界详情 */
+export function fetchWorld(id: string): Promise<WorldInfo> {
+  return getJson<WorldInfo>(`/api/worlds/${encodeURIComponent(id)}`);
+}
+
+/** POST /api/worlds — 创建新世界（需 JWT） */
+export function createWorld(
+  name: string,
+  seed: number = 42,
+  region?: string,
+): Promise<WorldInfo> {
+  return postJson<WorldInfo>("/api/worlds", { name, seed, region });
+}
+
+/** PUT /api/teams/:id — 修改球队资料（需 JWT） */
+export function updateTeam(
+  teamId: string,
+  data: { name?: string; city?: string },
+): Promise<{ ok: boolean }> {
+  return putJson<{ ok: boolean }>(`/api/teams/${encodeURIComponent(teamId)}`, data);
+}
+
+/** PUT /api/teams/:id/players/:playerId — 修改球员姓名（需 JWT） */
+export function updatePlayer(
+  teamId: string,
+  playerId: string,
+  name: string,
+): Promise<{ ok: boolean; name: string }> {
+  return putJson<{ ok: boolean; name: string }>(
+    `/api/teams/${encodeURIComponent(teamId)}/players/${encodeURIComponent(playerId)}`,
+    { name },
+  );
 }
 
 // ── AI 经理 ──

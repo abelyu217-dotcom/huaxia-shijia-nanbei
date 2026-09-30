@@ -6727,6 +6727,60 @@ button {
   font-family: var(--mono, ui-monospace, monospace);
 }
 
+.world-card-region {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 4px;
+}
+
+/* 联赛选择器 */
+.league-selector {
+  margin-bottom: 8px;
+}
+.league-selector .tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 14px;
+}
+.league-selector-type {
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.8;
+}
+.league-selector-name {
+  font-size: 13px;
+}
+
+/* 球队/球员资料编辑 */
+.team-edit-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.team-edit-input {
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 14px;
+}
+.team-edit-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.error-text {
+  color: var(--danger, #ef4444);
+  font-size: 12px;
+}
+
 .world-card-status {
   flex-shrink: 0;
   font-size: 11.5px;

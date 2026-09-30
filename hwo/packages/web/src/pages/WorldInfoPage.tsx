@@ -240,6 +240,9 @@ export function WorldInfoPage({ onOpenTeam }: WorldInfoPageProps = {}) {
                         {w.name}
                       </span>
                       <span className="world-card-id">#{w.id}</span>
+                      <span className="world-card-region" title="地区/国家">
+                        {w.region || "CN"}
+                      </span>
                     </div>
                     <span
                       className={`world-card-status status-${w.seasonStatus}`}
@@ -264,7 +267,12 @@ export function WorldInfoPage({ onOpenTeam }: WorldInfoPageProps = {}) {
                     {w.leagues.length > 0 && (
                       <div>
                         <dt>联赛层级</dt>
-                        <dd>{w.leagues.map((l) => `L${l.level}`).join(" · ")}</dd>
+                        <dd>
+                          {w.leagues
+                            .filter((l) => l.type === "domestic")
+                            .map((l) => `L${l.level}`)
+                            .join(" · ") || "—"}
+                        </dd>
                       </div>
                     )}
                   </dl>

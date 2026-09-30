@@ -222,4 +222,57 @@ export class TeamController {
     await this.teamService.invalidateCache(teamId);
     return { captainId: body.playerId };
   }
+
+  /** 修改球队资料（名称 / 城市），仅球队所有者可操作 */
+  @UseGuards(JwtAuthGuard)
+  @Put(":id")
+  async updateTeam(
+    @Param("id") teamId: string,
+    @Body() body: { name?: string; city?: string },
+    @Request() req: { user: { teamId: string | null } },
+  ) {
+    if (req.user.teamId !== teamId) {
+      throw new ForbiddenException("只能修改自己球队的资料");
+    }
+    const data: { name?: string; city?: string } = {};
+    if (body.name !== undefined) data.name = body.name.trim() || undefined;
+    if (body.city !== undefined) data.city = body.city.trim() || undefined;
+    if (Object.keys(data).length === 0) {
+      return { ok: true };
+    }
+    await this.prisma.team.update({ where: { id: teamId }, data });
+    await this.teamService.invalidateCache(teamId);
+    return { ok: true };
+  }
+
+  /** 修改球员姓名，仅该球员所属球队的所有者可操作 */
+  @UseGuards(JwtAuthGuard)
+  @Put(":id/players/:playerId")
+  async updatePlayer(
+    @Param("id") teamId: string,
+    @Param("playerId") playerId: string,
+    @Body() body: { name: string },
+    @Request() req: { user: { teamId: string | null } },
+  ) {
+    if (req.user.teamId !== teamId) {
+      throw new ForbiddenException("只能修改自己球队的球员资料");
+    }
+    const player = await this.prisma.player.findUnique({
+      where: { id: playerId },
+      select: { teamId: true },
+    });
+    if (!player || player.teamId !== teamId) {
+      throw new ForbiddenException("该球员不属于该球队");
+    }
+    const name = body.name?.trim();
+    if (!name) {
+      throw new ForbiddenException("球员姓名不能为空");
+    }
+    await this.prisma.player.update({
+      where: { id: playerId },
+      data: { name },
+    });
+    await this.teamService.invalidateCache(teamId);
+    return { ok: true, name };
+  }
 }

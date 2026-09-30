@@ -143,6 +143,7 @@ export interface PlayerDetail {
 export interface TeamDetail {
   id: string;
   name: string;
+  city?: string | null;
   players: PlayerDetail[];
   captainId?: string | null;
 }
@@ -553,12 +554,13 @@ export interface FreeAgent {
 export interface WorldInfo {
   id: string;
   name: string;
+  region: string;
   seasonId: string;
   seasonName: string;
   seasonStatus: string;
   teamCount: number;
   teams: Array<{ id: string; name: string }>;
-  leagues: Array<{ id: string; name: string; level: number }>;
+  leagues: Array<{ id: string; name: string; level: number; type: string }>;
 }
 
 // ── M4: 钱包 ──

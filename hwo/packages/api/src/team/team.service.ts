@@ -64,6 +64,7 @@ export class TeamService {
     row: {
       id: string;
       name: string;
+      city?: string | null;
       chemistry: number;
       captainId?: string | null;
       userId?: string | null;
@@ -113,6 +114,7 @@ export class TeamService {
     return {
       id: row.id,
       name: row.name,
+      city: row.city ?? null,
       players,
       lineup,
       tactic,

@@ -20,6 +20,10 @@ import { SeasonService } from "../season/season.service.js";
 const WORLD_TEAM_COUNT = 16;
 const L1_TEAM_COUNT = 8;
 const L2_TEAM_COUNT = 8;
+/** 国际联赛从每个 world 的 L1 取前 N 名 */
+const INTL_QUALIFY_PER_WORLD = 2;
+/** 国际联赛名称 */
+const INTERNATIONAL_LEAGUE_NAME = "国际冠军杯";
 
 @Injectable()
 export class WorldService {
@@ -34,13 +38,18 @@ export class WorldService {
   /**
    * 创建一个新世界：
    * 1. 创建 Season（若不存在则创建）
-   * 2. 创建 World 记录
-   * 3. 创建 L1 / L2 两个联赛
+   * 2. 创建 World 记录（含 region 地区标识）
+   * 3. 创建 L1 / L2 两个国内联赛（type=domestic）
    * 4. 生成 16 支球队（含球员、阵容、战术），前 8 入 L1，后 8 入 L2
    * 5. 为每支球队创建 Standing 记录
    * 6. 为两个联赛生成赛程
+   * 7. 刷新国际联赛参赛资格（跨 world 的顶级赛事）
    */
-  async createWorld(name: string, seed = 42): Promise<{
+  async createWorld(
+    name: string,
+    seed = 42,
+    region = "CN",
+  ): Promise<{
     worldId: string;
     seasonId: string;
     l1LeagueId: string;
@@ -52,14 +61,15 @@ export class WorldService {
 
     // 2. 创建 World
     const world = await this.prisma.world.create({
-      data: { name, seasonId: season.id },
+      data: { name, region, seasonId: season.id },
     });
 
-    // 3. 创建 L1 / L2 联赛
+    // 3. 创建 L1 / L2 国内联赛
     const l1League = await this.prisma.league.create({
       data: {
         name: `${name} - L1`,
         level: 1,
+        type: "domestic",
         worldId: world.id,
         seasonId: season.id,
       },
@@ -69,6 +79,7 @@ export class WorldService {
       data: {
         name: `${name} - L2`,
         level: 2,
+        type: "domestic",
         worldId: world.id,
         seasonId: season.id,
       },
@@ -145,6 +156,15 @@ export class WorldService {
     await this.scheduleService.generateSchedule(season.id, l1League.id);
     await this.scheduleService.generateSchedule(season.id, l2League.id);
 
+    // 7. 刷新国际联赛参赛资格（新 world 的 L1 前 N 名可能入围）
+    try {
+      await this.refreshInternationalLeague(season.id);
+    } catch (e) {
+      this.logger.warn(
+        `国际联赛刷新失败（不影响世界创建）：${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+
     this.logger.log(
       `世界 "${name}" 创建完成：${WORLD_TEAM_COUNT} 队 (L1=${L1_TEAM_COUNT}, L2=${L2_TEAM_COUNT})`,
     );
@@ -158,13 +178,92 @@ export class WorldService {
     };
   }
 
+  /**
+   * 刷新（创建或重建）当前赛季的国际联赛：
+   * - 从所有 world 的 L1 国内联赛取前 INTL_QUALIFY_PER_WORLD 名
+   * - 组成国际冠军杯联赛，生成赛程
+   * - 若已存在国际联赛，先清空其 standings 和 matches 再重建
+   */
+  async refreshInternationalLeague(seasonId: string): Promise<string | null> {
+    // 获取所有 L1 国内联赛
+    const l1Leagues = await this.prisma.league.findMany({
+      where: { seasonId, type: "domestic", level: 1 },
+      select: { id: true, worldId: true },
+    });
+
+    if (l1Leagues.length === 0) return null;
+
+    // 收集所有 L1 的积分榜前 N 名
+    const qualifiedTeamIds: string[] = [];
+    for (const l1 of l1Leagues) {
+      const topStandings = await this.prisma.standing.findMany({
+        where: { leagueId: l1.id },
+        orderBy: [{ wins: "desc" }, { pointsFor: "desc" }],
+        take: INTL_QUALIFY_PER_WORLD,
+        select: { teamId: true },
+      });
+      qualifiedTeamIds.push(...topStandings.map((s) => s.teamId));
+    }
+
+    if (qualifiedTeamIds.length < 2) return null;
+
+    // 删除已有的国际联赛（及其 standings/matches）
+    const existingIntl = await this.prisma.league.findFirst({
+      where: { seasonId, type: "international" },
+    });
+    if (existingIntl) {
+      await this.prisma.standing.deleteMany({ where: { leagueId: existingIntl.id } });
+      await this.prisma.match.deleteMany({ where: { leagueId: existingIntl.id } });
+      await this.prisma.league.delete({ where: { id: existingIntl.id } });
+    }
+
+    // 创建新的国际联赛
+    const intlLeague = await this.prisma.league.create({
+      data: {
+        name: INTERNATIONAL_LEAGUE_NAME,
+        level: 1,
+        type: "international",
+        worldId: null,
+        seasonId,
+      },
+    });
+
+    // 通过 LeagueTeam 关联表将入围球队加入国际联赛
+    // （不修改 Team.leagueId，球队仍保留其国内联赛归属）
+    await this.prisma.leagueTeam.createMany({
+      data: qualifiedTeamIds.map((teamId) => ({
+        leagueId: intlLeague.id,
+        teamId,
+      })),
+      skipDuplicates: true,
+    });
+
+    // 创建国际联赛积分榜
+    await this.prisma.standing.createMany({
+      data: qualifiedTeamIds.map((teamId) => ({
+        leagueId: intlLeague.id,
+        teamId,
+        seasonId,
+      })),
+      skipDuplicates: true,
+    });
+
+    // 生成国际联赛赛程
+    await this.scheduleService.generateSchedule(seasonId, intlLeague.id);
+
+    this.logger.log(
+      `国际联赛 "${INTERNATIONAL_LEAGUE_NAME}" 已创建：${qualifiedTeamIds.length} 支球队入围`,
+    );
+    return intlLeague.id;
+  }
+
   /** 列出所有世界（简要信息） */
   async listWorlds() {
     const worlds = await this.prisma.world.findMany({
       include: {
         season: { select: { id: true, name: true, status: true } },
         teams: { select: { id: true, name: true }, orderBy: { name: "asc" } },
-        leagues: { select: { id: true, name: true, level: true } },
+        leagues: { select: { id: true, name: true, level: true, type: true } },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -172,11 +271,12 @@ export class WorldService {
     return worlds.map((w) => ({
       id: w.id,
       name: w.name,
+      region: w.region,
       seasonId: w.seasonId,
       seasonName: w.season.name,
       seasonStatus: w.season.status,
       teamCount: w.teams.length,
-      leagues: w.leagues.map((l) => ({ id: l.id, name: l.name, level: l.level })),
+      leagues: w.leagues.map((l) => ({ id: l.id, name: l.name, level: l.level, type: l.type })),
       teams: w.teams,
       createdAt: w.createdAt,
     }));
@@ -217,11 +317,13 @@ export class WorldService {
     return {
       id: world.id,
       name: world.name,
+      region: world.region,
       season: world.season,
       leagues: world.leagues.map((l) => ({
         id: l.id,
         name: l.name,
         level: l.level,
+        type: l.type,
         teams: l.teams,
         standings: l.standings.map((s) => ({
           teamId: s.teamId,

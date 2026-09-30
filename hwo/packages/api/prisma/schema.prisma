@@ -45,6 +45,8 @@ model User {
 model World {
   id          String       @id @default(cuid())
   name        String
+  /** 地区/国家标识，用于国际联赛分组（如 "CN", "US", "EU"） */
+  region      String       @default("CN")
   seasonId    String
   season      Season       @relation(fields: [seasonId], references: [id])
   teams       Team[]
@@ -59,15 +61,31 @@ model League {
   id        String     @id @default(cuid())
   name      String
   level     Int        @default(1) // 1 = L1 顶级联赛 | 2 = L2 次级联赛
+  /** 联赛类型：domestic=国内联赛（隶属于某个 world），international=国际联赛（跨 world） */
+  type      String     @default("domestic")
   worldId   String?
   world     World?     @relation(fields: [worldId], references: [id])
   seasonId  String
   season    Season     @relation(fields: [seasonId], references: [id])
   teams     Team[]
+  leagueTeams LeagueTeam[]
   matches   Match[]
   standings Standing[]
 
   createdAt DateTime @default(now())
+}
+
+// ─── 联赛-球队 多对多关联 ───
+// 国内联赛通过 Team.leagueId 直接关联（保持兼容）；
+// 国际联赛通过此表关联（一支球队可同时参加国内+国际联赛）
+model LeagueTeam {
+  leagueId String
+  teamId   String
+  league   League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  team     Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@id([leagueId, teamId])
+  @@index([teamId])
 }
 
 // ─── 赛季 ───
@@ -101,6 +119,7 @@ model Team {
   players     Player[]
   lineup      Lineup?
   tactic      Tactic?
+  leagueTeams LeagueTeam[]
   // 队长（#20）：手动指定，每队 1 人
   captainId   String?
   homeMatches Match[]    @relation("HomeTeam")

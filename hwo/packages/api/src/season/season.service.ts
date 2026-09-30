@@ -47,9 +47,11 @@ export class SeasonService {
   }
 
   /** 查询某赛季的积分榜（按胜率排序） */
-  async getStandings(seasonId: string) {
+  async getStandings(seasonId: string, leagueId?: string) {
+    const where: { seasonId: string; leagueId?: string } = { seasonId };
+    if (leagueId) where.leagueId = leagueId;
     const standings = await this.prisma.standing.findMany({
-      where: { seasonId },
+      where,
       include: { team: { select: { id: true, name: true } } },
       orderBy: [
         { wins: "desc" },
@@ -296,8 +298,70 @@ export class SeasonService {
       `青训产出：${teamsProcessed} 支球队，共 ${totalRookies} 名新秀加入各队`,
     );
 
+    // 两级联赛：创建新赛季的国际冠军杯
+    try {
+      await this.createInternationalLeague(newSeason.id);
+    } catch (e) {
+      this.logger.warn(
+        `国际联赛创建失败（不影响赛季交接）：${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+
     this.logger.log(`赛季交接：${season.name} → ${newSeason.name}`);
     return true;
+  }
+
+  /**
+   * 为指定赛季创建国际冠军杯联赛：
+   * 从所有 world 的 L1 国内联赛取前 2 名组成国际联赛
+   */
+  private async createInternationalLeague(seasonId: string): Promise<void> {
+    const l1Leagues = await this.prisma.league.findMany({
+      where: { seasonId, type: "domestic", level: 1 },
+      select: { id: true },
+    });
+    if (l1Leagues.length === 0) return;
+
+    const qualifiedTeamIds: string[] = [];
+    for (const l1 of l1Leagues) {
+      const topStandings = await this.prisma.standing.findMany({
+        where: { leagueId: l1.id },
+        orderBy: [{ wins: "desc" }, { pointsFor: "desc" }],
+        take: 2,
+        select: { teamId: true },
+      });
+      qualifiedTeamIds.push(...topStandings.map((s) => s.teamId));
+    }
+    if (qualifiedTeamIds.length < 2) return;
+
+    const intlLeague = await this.prisma.league.create({
+      data: {
+        name: "国际冠军杯",
+        level: 1,
+        type: "international",
+        worldId: null,
+        seasonId,
+      },
+    });
+
+    await this.prisma.leagueTeam.createMany({
+      data: qualifiedTeamIds.map((teamId) => ({
+        leagueId: intlLeague.id,
+        teamId,
+      })),
+      skipDuplicates: true,
+    });
+
+    await this.prisma.standing.createMany({
+      data: qualifiedTeamIds.map((teamId) => ({
+        leagueId: intlLeague.id,
+        teamId,
+        seasonId,
+      })),
+      skipDuplicates: true,
+    });
+
+    this.logger.log(`国际冠军杯已创建：${qualifiedTeamIds.length} 支球队入围`);
   }
 
   /**

@@ -18,8 +18,12 @@ export class WorldController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  async create(@Body() body: { name: string; seed?: number }) {
-    return this.worldService.createWorld(body.name, body.seed ?? 42);
+  async create(@Body() body: { name: string; seed?: number; region?: string }) {
+    return this.worldService.createWorld(
+      body.name,
+      body.seed ?? 42,
+      body.region,
+    );
   }
 
   @Get()

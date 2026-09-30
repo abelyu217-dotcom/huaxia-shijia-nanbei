@@ -8,7 +8,7 @@
  * - POST /api/season/generate     生成赛程
  */
 
-import { Controller, Get, Post, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
 import { SeasonService } from "./season.service.js";
 import { ScheduleService } from "./schedule.service.js";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard.js";
@@ -35,9 +35,20 @@ export class SeasonController {
   }
 
   @Get("standings")
-  async standings() {
+  async standings(@Query("leagueId") leagueId?: string) {
     const season = await this.seasonService.getCurrentSeason();
-    return this.seasonService.getStandings(season.id);
+    return this.seasonService.getStandings(season.id, leagueId || undefined);
+  }
+
+  /** 当前赛季的所有联赛列表（国内 L1/L2 + 国际联赛） */
+  @Get("leagues")
+  async leagues() {
+    const season = await this.seasonService.getCurrentSeason();
+    return this.prisma.league.findMany({
+      where: { seasonId: season.id },
+      select: { id: true, name: true, level: true, type: true, worldId: true },
+      orderBy: [{ type: "asc" }, { level: "asc" }],
+    });
   }
 
   @Get("schedule")

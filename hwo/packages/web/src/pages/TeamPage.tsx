@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { fetchTactics, fetchTeam, putTeamCaptain, postScoutPlayer } from "../api";
+import { fetchTactics, fetchTeam, putTeamCaptain, postScoutPlayer, updateTeam, updatePlayer } from "../api";
 import type { Position, PlayerDetail, TacticPreset, TeamDetail } from "../types";
 import { useAuth } from "../auth/AuthContext";
 import { LineupEditor } from "../components/LineupEditor";
@@ -68,6 +68,17 @@ export function TeamPage({ teamId }: Props) {
   const [posFilter, setPosFilter] = useState<"ALL" | Position>("ALL");
   const [sortKey, setSortKey] = useState<SortKey>("ovr");
   const [sortAsc, setSortAsc] = useState(false);
+
+  // 球队资料编辑
+  const [editingTeam, setEditingTeam] = useState(false);
+  const [teamNameDraft, setTeamNameDraft] = useState("");
+  const [teamCityDraft, setTeamCityDraft] = useState("");
+  const [teamEditError, setTeamEditError] = useState<string | null>(null);
+
+  // 球员姓名编辑
+  const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
+  const [playerNameDraft, setPlayerNameDraft] = useState("");
+  const [playerEditError, setPlayerEditError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -134,6 +145,60 @@ export function TeamPage({ teamId }: Props) {
     }
   }
 
+  /** 保存球队资料修改 */
+  async function handleSaveTeam() {
+    if (!team) return;
+    setTeamEditError(null);
+    try {
+      const name = teamNameDraft.trim();
+      const city = teamCityDraft.trim();
+      const data: { name?: string; city?: string } = {};
+      if (name) data.name = name;
+      if (city) data.city = city;
+      await updateTeam(team.id, data);
+      const refreshed = await fetchTeam(team.id);
+      setTeam(refreshed);
+      setEditingTeam(false);
+    } catch (e) {
+      setTeamEditError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  /** 开始编辑球队资料 */
+  function startEditTeam() {
+    if (!team) return;
+    setTeamNameDraft(team.name);
+    setTeamCityDraft(team.city ?? "");
+    setTeamEditError(null);
+    setEditingTeam(true);
+  }
+
+  /** 保存球员姓名修改 */
+  async function handleSavePlayer(playerId: string) {
+    if (!team) return;
+    setPlayerEditError(null);
+    const name = playerNameDraft.trim();
+    if (!name) {
+      setPlayerEditError("球员姓名不能为空");
+      return;
+    }
+    try {
+      await updatePlayer(team.id, playerId, name);
+      const refreshed = await fetchTeam(team.id);
+      setTeam(refreshed);
+      setEditingPlayerId(null);
+    } catch (e) {
+      setPlayerEditError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  /** 开始编辑球员姓名 */
+  function startEditPlayer(player: PlayerDetail) {
+    setPlayerNameDraft(player.name);
+    setPlayerEditError(null);
+    setEditingPlayerId(player.id);
+  }
+
   if (loading) {
     return (
       <div className="state">
@@ -150,22 +215,60 @@ export function TeamPage({ teamId }: Props) {
     <div className="team-page">
       <div className="team-page-head">
         <div>
-          <h2 className="team-page-name">{team.name}</h2>
-          <span className="team-page-sub">
-            {isMine ? "我的球队" : "其他球队（仅查看）"}
-          </span>
+          {editingTeam ? (
+            <div className="team-edit-form">
+              <input
+                className="team-edit-input"
+                value={teamNameDraft}
+                onChange={(e) => setTeamNameDraft(e.target.value)}
+                placeholder="球队名称"
+              />
+              <input
+                className="team-edit-input"
+                value={teamCityDraft}
+                onChange={(e) => setTeamCityDraft(e.target.value)}
+                placeholder="所在城市"
+              />
+              <button type="button" className="btn btn-primary btn-sm" onClick={handleSaveTeam}>
+                保存
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => setEditingTeam(false)}
+              >
+                取消
+              </button>
+              {teamEditError && <span className="error-text">{teamEditError}</span>}
+            </div>
+          ) : (
+            <>
+              <h2 className="team-page-name">{team.name}</h2>
+              <span className="team-page-sub">
+                {isMine ? "我的球队" : "其他球队（仅查看）"}
+                {team.city ? ` · ${team.city}` : ""}
+              </span>
+            </>
+          )}
         </div>
-        <div className="team-page-tabs">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              className={`tab${tab === t.id ? " is-active" : ""}`}
-              onClick={() => setTab(t.id)}
-            >
-              {t.label}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {isMine && !editingTeam && (
+            <button type="button" className="btn btn-ghost btn-sm" onClick={startEditTeam}>
+              ✎ 编辑资料
             </button>
-          ))}
+          )}
+          <div className="team-page-tabs">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={`tab${tab === t.id ? " is-active" : ""}`}
+                onClick={() => setTab(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -271,16 +374,61 @@ export function TeamPage({ teamId }: Props) {
                         <span className="player-tags">
                           {p.isCaptain && <span className="tag tag-captain" title="队长">C</span>}
                           {p.isRookie && <span className="tag tag-rookie" title="新秀">R</span>}
-                          <span>{p.name}</span>
+                          {isMine && editingPlayerId === p.id ? (
+                            <input
+                              className="team-edit-input"
+                              style={{ width: 140 }}
+                              value={playerNameDraft}
+                              autoFocus
+                              onChange={(e) => setPlayerNameDraft(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") handleSavePlayer(p.id);
+                                if (e.key === "Escape") setEditingPlayerId(null);
+                              }}
+                            />
+                          ) : (
+                            <span>{p.name}</span>
+                          )}
                         </span>
                         {isMine && (
-                          <button
-                            type="button"
-                            className="btn-link captain-btn"
-                            onClick={() => handleSetCaptain(p.isCaptain ? null : p.id)}
-                          >
-                            {p.isCaptain ? "取消队长" : "设为队长"}
-                          </button>
+                          <div style={{ display: "flex", gap: 6, marginTop: 2 }}>
+                            {editingPlayerId === p.id ? (
+                              <>
+                                <button
+                                  type="button"
+                                  className="btn-link captain-btn"
+                                  onClick={() => handleSavePlayer(p.id)}
+                                >
+                                  保存
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-link captain-btn"
+                                  onClick={() => setEditingPlayerId(null)}
+                                >
+                                  取消
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                type="button"
+                                className="btn-link captain-btn"
+                                onClick={() => startEditPlayer(p)}
+                              >
+                                ✎ 改名
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className="btn-link captain-btn"
+                              onClick={() => handleSetCaptain(p.isCaptain ? null : p.id)}
+                            >
+                              {p.isCaptain ? "取消队长" : "设为队长"}
+                            </button>
+                          </div>
+                        )}
+                        {isMine && editingPlayerId === p.id && playerEditError && (
+                          <span className="error-text" style={{ fontSize: 12 }}>{playerEditError}</span>
                         )}
                       </td>
                       <td><span className="pos-badge">{p.position}</span></td>

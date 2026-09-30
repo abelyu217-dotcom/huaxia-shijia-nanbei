@@ -249,6 +249,8 @@ export interface ConditionalLineup {
 export interface Team {
   id: string;
   name: string;
+  /** 所在城市 */
+  city?: string | null;
   players: Player[];
   lineup: Lineup;
   tactic: TacticModSet;
