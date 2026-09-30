@@ -20,7 +20,20 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  // M4: 双货币
+  coins    Int  @default(50000) // Coins（游戏内产出）
+  credits  Int  @default(0)     // Credits（付费购买）
+
   teams Team[]
+
+  // M4: VIP 订阅
+  vipSubscription VipSubscription?
+  // M4: 外观拥有
+  userCosmetics    UserCosmetic[]
+  // M4: 支付订单
+  paymentOrders   PaymentOrder[]
+  // M4: 推送订阅
+  pushSubscriptions PushSubscription[]
 }
 
 // ─── 世界 ───
@@ -320,4 +333,74 @@ model Contract {
   updatedAt   DateTime @updatedAt
 
   @@index([teamId, status])
+}
+
+// ─── M4: VIP 订阅 ───
+model VipSubscription {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // monthly | seasonal
+  status    String   @default("active") // active | expired
+  startedAt  DateTime @default(now())
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// ─── M4: 外观商店 ───
+model CosmeticItem {
+  id          String   @id @default(cuid())
+  type        String   // jersey | arena_skin | avatar_frame
+  name        String
+  description String?
+  price       Int      // 价格（Credits）
+  rarity      String   @default("common") // common | rare | epic | legendary
+  data        Json     // 外观数据（颜色/图案等）
+  userCosmetics UserCosmetic[]
+
+  createdAt   DateTime @default(now())
+}
+
+model UserCosmetic {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId    String
+  item      CosmeticItem @relation(fields: [itemId], references: [id])
+  equipped  Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, itemId])
+}
+
+// ─── M4: 支付订单 ───
+model PaymentOrder {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount        Int      // 金额（分）
+  credits       Int      // 购买的 Credits 数量
+  provider      String   // stripe | alipay | wechat
+  providerOrderId String? // 支付商订单 ID
+  status        String   @default("pending") // pending | paid | failed | refunded
+  paidAt        DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId, status])
+}
+
+// ─── M4: Web Push 推送订阅 ───
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique // 推送服务端点 URL
+  keys      Json     // { p256dh, auth }
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }

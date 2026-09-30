@@ -4713,3 +4713,109 @@ button {
   font-size: 14px;
 }
 
+/* ─── M4 商店 ─── */
+.wallet-bar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.wallet-coins, .wallet-credits, .wallet-vip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wallet-icon {
+  font-size: 20px;
+}
+
+.wallet-bar strong {
+  font-size: 18px;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid var(--border);
+}
+
+.tab {
+  padding: 8px 20px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+}
+
+.tab.is-active {
+  color: var(--text);
+  border-bottom-color: var(--accent, #3498db);
+  font-weight: 600;
+}
+
+.credit-pkg {
+  text-align: center;
+  padding: 20px;
+}
+
+.credit-amount {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.credit-amount strong {
+  font-size: 28px;
+}
+
+.credit-pkg .price {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 8px 0 12px;
+  color: #e74c3c;
+}
+
+.vip-card {
+  text-align: center;
+  padding: 20px;
+}
+
+.vip-benefits {
+  list-style: none;
+  text-align: left;
+  margin: 12px 0;
+  padding: 0;
+  font-size: 13px;
+}
+
+.vip-benefits li {
+  padding: 4px 0;
+  color: var(--muted);
+}
+
+.cosmetic-card {
+  padding: 14px;
+}
+
+.cosmetic-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.cosmetic-price {
+  margin: 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+

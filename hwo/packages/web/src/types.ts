@@ -538,3 +538,55 @@ export interface WorldInfo {
   teams: Array<{ id: string; name: string }>;
   leagues: Array<{ id: string; name: string; level: number }>;
 }
+
+// ── M4: 钱包 ──
+export interface WalletInfo {
+  userId: string;
+  coins: number;
+  credits: number;
+}
+
+// ── M4: VIP ──
+export interface VipStatus {
+  active: boolean;
+  type: "monthly" | "seasonal" | null;
+  expiresAt: string | null;
+}
+
+// ── M4: 外观 ──
+export interface CosmeticItem {
+  id: string;
+  type: "jersey" | "arena_skin" | "avatar_frame";
+  name: string;
+  description: string | null;
+  price: number;
+  rarity: "common" | "rare" | "epic" | "legendary";
+  data: Record<string, unknown>;
+}
+
+export interface OwnedCosmetic {
+  id: string;
+  userId: string;
+  itemId: string;
+  equipped: boolean;
+  item: CosmeticItem;
+}
+
+// ── M4: 支付 ──
+export interface CreditPackage {
+  id: string;
+  credits: number;
+  priceCents: number;
+  label: string;
+  bonus?: number;
+}
+
+export interface PaymentOrderResult {
+  orderId: string;
+  packageId: string;
+  credits: number;
+  amount: number;
+  provider: string;
+  checkoutUrl: string;
+  sandbox: boolean;
+}

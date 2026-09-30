@@ -28,6 +28,7 @@ import { CareerPage } from "./pages/CareerPage";
 import { AcademyPage } from "./pages/AcademyPage";
 import { DraftPage } from "./pages/DraftPage";
 import { MatchSimView } from "./views/MatchSimView";
+import { ShopPage } from "./pages/ShopPage";
 import { fetchWorlds, fetchCurrentSeason } from "./api";
 import type { SeasonInfo } from "./types";
 
@@ -39,7 +40,8 @@ type View =
   | { kind: "career" }
   | { kind: "academy" }
   | { kind: "draft" }
-  | { kind: "sim" };
+  | { kind: "sim" }
+  | { kind: "shop" };
 
 type NavKind =
   | "home"
@@ -49,7 +51,8 @@ type NavKind =
   | "career"
   | "academy"
   | "draft"
-  | "sim";
+  | "sim"
+  | "shop";
 
 /** 侧边栏分组导航 —— 参考 Rim Attack / BasketPulse 的分组菜单 */
 const NAV_GROUPS: { group: string; items: { id: NavKind; label: string }[] }[] = [
@@ -76,6 +79,12 @@ const NAV_GROUPS: { group: string; items: { id: NavKind; label: string }[] }[] =
       { id: "sim", label: "模拟" },
     ],
   },
+  {
+    group: "商城",
+    items: [
+      { id: "shop", label: "商店" },
+    ],
+  },
 ];
 
 function navToView(kind: NavKind, teamId?: string): View {
@@ -86,6 +95,7 @@ function navToView(kind: NavKind, teamId?: string): View {
   if (kind === "career") return { kind: "career" };
   if (kind === "academy") return { kind: "academy" };
   if (kind === "draft") return { kind: "draft" };
+  if (kind === "shop") return { kind: "shop" };
   return { kind: "sim" };
 }
 
@@ -242,6 +252,7 @@ function AppInner() {
             <DraftPage worldId={myWorldId} myTeamId={myTeamId ?? undefined} />
           )}
           {view.kind === "sim" && <MatchSimView />}
+          {view.kind === "shop" && <ShopPage />}
         </main>
       </div>
     </div>

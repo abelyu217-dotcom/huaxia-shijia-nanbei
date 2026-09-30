@@ -16,6 +16,11 @@ import { CareerModule } from "./career/career.module.js";
 import { AcademyModule } from "./academy/academy.module.js";
 import { DraftModule } from "./draft/draft.module.js";
 import { ContractModule } from "./contract/contract.module.js";
+import { WalletModule } from "./wallet/wallet.module.js";
+import { VipModule } from "./vip/vip.module.js";
+import { CosmeticModule } from "./cosmetic/cosmetic.module.js";
+import { PaymentModule } from "./payment/payment.module.js";
+import { PushModule } from "./push/push.module.js";
 
 @Module({
   imports: [
@@ -32,6 +37,11 @@ import { ContractModule } from "./contract/contract.module.js";
     AcademyModule,
     DraftModule,
     ContractModule,
+    WalletModule,
+    VipModule,
+    CosmeticModule,
+    PaymentModule,
+    PushModule,
   ],
 })
 export class AppModule {}

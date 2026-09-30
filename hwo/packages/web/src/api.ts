@@ -587,3 +587,91 @@ export function postWaivePlayer(
     {},
   );
 }
+
+import type {
+  WalletInfo,
+  VipStatus,
+  CosmeticItem,
+  OwnedCosmetic,
+  CreditPackage,
+  PaymentOrderResult,
+} from "./types";
+
+// ── M4: 钱包（双货币）──
+
+/** GET /api/wallet — 查询余额 */
+export function fetchWallet(): Promise<WalletInfo> {
+  return getJson<WalletInfo>("/api/wallet");
+}
+
+/** POST /api/wallet/spend-coins — 消费 Coins */
+export function postSpendCoins(amount: number, reason: string): Promise<WalletInfo & { spent: number }> {
+  return sendJson("POST", "/api/wallet/spend-coins", { amount, reason });
+}
+
+// ── M4: VIP ──
+
+/** GET /api/vip — VIP 订阅状态 */
+export function fetchVipStatus(): Promise<VipStatus> {
+  return getJson<VipStatus>("/api/vip");
+}
+
+/** GET /api/vip/plans — VIP 套餐 */
+export function fetchVipPlans(): Promise<Record<string, { price: number; durationDays: number; coins: number }>> {
+  return getJson("/api/vip/plans");
+}
+
+/** POST /api/vip/subscribe — 订阅 VIP */
+export function postSubscribeVip(type: "monthly" | "seasonal"): Promise<{ id: string; type: string; expiresAt: string }> {
+  return sendJson("POST", "/api/vip/subscribe", { type });
+}
+
+// ── M4: 外观商店 ──
+
+/** GET /api/cosmetics — 外观商品列表 */
+export function fetchCosmetics(type?: string): Promise<CosmeticItem[]> {
+  const q = type ? `?type=${encodeURIComponent(type)}` : "";
+  return getJson<CosmeticItem[]>(`/api/cosmetics${q}`);
+}
+
+/** GET /api/cosmetics/owned — 已拥有外观 */
+export function fetchOwnedCosmetics(): Promise<OwnedCosmetic[]> {
+  return getJson<OwnedCosmetic[]>("/api/cosmetics/owned");
+}
+
+/** POST /api/cosmetics/buy — 购买外观 */
+export function postBuyCosmetic(itemId: string): Promise<{ success: boolean; itemId: string; price: number }> {
+  return sendJson("POST", "/api/cosmetics/buy", { itemId });
+}
+
+/** POST /api/cosmetics/equip — 装备外观 */
+export function postEquipCosmetic(itemId: string): Promise<{ id: string; equipped: boolean }> {
+  return sendJson("POST", "/api/cosmetics/equip", { itemId });
+}
+
+// ── M4: 支付 ──
+
+/** GET /api/payment/packages — Credits 套餐 */
+export function fetchCreditPackages(): Promise<CreditPackage[]> {
+  return getJson<CreditPackage[]>("/api/payment/packages");
+}
+
+/** POST /api/payment/create-order — 创建订单 */
+export function postCreatePaymentOrder(
+  packageId: string,
+  provider: "stripe" | "alipay" | "wechat",
+): Promise<PaymentOrderResult> {
+  return sendJson("POST", "/api/payment/create-order", { packageId, provider });
+}
+
+/** POST /api/payment/:orderId/sandbox-complete — 沙箱完成支付 */
+export function postSandboxComplete(orderId: string): Promise<{ success: boolean; orderId: string; credits: number }> {
+  return sendJson("POST", `/api/payment/${encodeURIComponent(orderId)}/sandbox-complete`, {});
+}
+
+// ── M4: Web Push ──
+
+/** POST /api/push/subscribe — 订阅推送 */
+export function postPushSubscribe(subscription: PushSubscriptionJSON): Promise<{ id: string }> {
+  return sendJson("POST", "/api/push/subscribe", subscription);
+}
