@@ -40,9 +40,6 @@ export class CareerService {
     // 获取所有未退役球员
     const players = await this.prisma.player.findMany({
       where: { retired: false },
-      include: {
-        lineup: true,
-      },
     });
 
     // 获取上场时间（从 lineup 表的 minutes 字段）
@@ -65,7 +62,6 @@ export class CareerService {
         abilities,
         newAge,
         potential,
-        player.trainExp,
         minutesPerGame,
       );
 
@@ -172,7 +168,7 @@ export class CareerService {
     ovrBefore: number;
     ovrAfter: number;
     improved: boolean;
-  }> {
+  } | null> {
     const player = await this.prisma.player.findUnique({
       where: { id: playerId },
     });

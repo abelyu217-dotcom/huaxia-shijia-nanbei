@@ -66,7 +66,6 @@ export function applySeasonGrowth(
   abilities: Abilities,
   age: number,
   potential: number,
-  trainExp: number,
   minutesPerGame: number,
 ): {
   abilities: Abilities;
@@ -79,7 +78,6 @@ export function applySeasonGrowth(
 
   // 训练经验增长：出场时间 + 基础训练
   const trainExpGained = Math.round(20 + minutesPerGame * 1.5);
-  const totalExp = trainExp + trainExpGained;
 
   // 每点训练经验带来的成长（受阶段倍率影响）
   // const expGrowth = (totalExp / 100) * rate;  // 未来扩展用
