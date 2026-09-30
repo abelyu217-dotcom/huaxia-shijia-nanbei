@@ -3,18 +3,22 @@
  *
  * 用 SVG 渲染半场俯视图，根据战术参数动态展示：
  * - 球员站位（由 offenseFocus 决定）
+ *   - 若传入 lineup，则显示真实首发球员姓名/OVR/状态/队长标记
+ *   - 否则回退显示位置缩写（PG/SG/SF/PF/C）
  * - 出手热区（由 tendencyMod 决定，颜色越深出手权重越高）
  * - 教练标志性动作（高亮对应区域）
  *
  * 纯展示组件，不触发网络请求。
  */
 
-import type { PlaybookAction, TacticModSet } from "../types";
+import type { LineupPlayer, PlaybookAction, TacticModSet } from "../types";
 
 interface Props {
   modSet: TacticModSet;
   /** 球场宽度（px），高度按比例自适应 */
   width?: number;
+  /** 可选：首发阵容，传入后显示真实球员卡片 */
+  lineup?: { starters: string[]; players: LineupPlayer[] } | null;
 }
 
 // 半场尺寸（英尺）：宽 50，长 47（底线到中线）
@@ -114,10 +118,35 @@ function heatOpacity(v: number): number {
   return Math.round(t * 70) / 100;
 }
 
-export function TacticBoard({ modSet, width = 300 }: Props) {
+/** 球员状态色（与 Roster / PlayerCard 保持一致） */
+const STATUS_COLORS: Record<string, string> = {
+  peak: "#22c55e",
+  good: "#84cc16",
+  tired: "#f59e0b",
+  exhausted: "#ef4444",
+};
+
+/** OVR 配色（参考 Roster 组件） */
+function ovrColor(ovr: number): string {
+  if (ovr >= 90) return "#fbbf24";
+  if (ovr >= 80) return "#22c55e";
+  if (ovr >= 70) return "#3b82f6";
+  if (ovr >= 60) return "#a3a3a3";
+  return "#71717a";
+}
+
+export function TacticBoard({ modSet, width = 300, lineup }: Props) {
   const focus = modSet.offenseFocus ?? "balanced";
   const layout = POSITION_LAYOUTS[focus] ?? POSITION_LAYOUTS.balanced;
   const signatureSet = new Set(modSet.signatureActions ?? []);
+
+  // 由 starters 解析出 5 名首发球员（按 layout 顺序对应首发 5 人）
+  const starterPlayers: (LineupPlayer | null)[] = layout.map((_slot, idx) => {
+    if (!lineup) return null;
+    const sid = lineup.starters[idx];
+    if (!sid) return null;
+    return lineup.players.find((p) => p.id === sid) ?? null;
+  });
 
   return (
     <div className="tactic-board" style={{ width }}>
@@ -193,24 +222,81 @@ export function TacticBoard({ modSet, width = 300 }: Props) {
         })}
 
         {/* 球员站位 */}
-        {layout.map((p, i) => (
-          <g key={i}>
-            <circle
-              cx={p.x} cy={p.y} r={10}
-              fill="#2d3436"
-              stroke="#fff" strokeWidth={2}
-            />
-            <text
-              x={p.x} y={p.y + 3}
-              textAnchor="middle"
-              fontSize={9}
-              fill="#fff"
-              fontWeight={700}
-            >
-              {p.pos}
-            </text>
-          </g>
-        ))}
+        {layout.map((p, i) => {
+          const player = starterPlayers[i];
+          const statusColor = player?.status
+            ? STATUS_COLORS[player.status] ?? "#2d3436"
+            : "#2d3436";
+          // 球员卡片：圆形头像背景（按位置色），中心显示位置缩写或姓名首字
+          // 若有真实球员，外环显示状态色（疲劳/状态等级）
+          const ringColor = player?.status ? statusColor : "#2d3436";
+          const fillBg = player ? "#1e3a8a" : "#2d3436";
+          const label = player
+            ? (player.name.slice(0, 2) || p.pos)
+            : p.pos;
+          return (
+            <g key={i} className="tactic-board-player">
+              {/* 队长标记 */}
+              {player?.isCaptain && (
+                <circle
+                  cx={p.x} cy={p.y - 16} r={3.5}
+                  fill="#fbbf24" stroke="#fff" strokeWidth={0.5}
+                />
+              )}
+              {/* 新秀标记 */}
+              {player?.isRookie && (
+                <circle
+                  cx={p.x + 10} cy={p.y - 16} r={3.5}
+                  fill="#38bdf8" stroke="#fff" strokeWidth={0.5}
+                />
+              )}
+              {/* 状态色外环 */}
+              {player?.status && (
+                <circle cx={p.x} cy={p.y} r={13} fill="none" stroke={ringColor} strokeWidth={2} />
+              )}
+              {/* 主头像 */}
+              <circle
+                cx={p.x} cy={p.y} r={10}
+                fill={fillBg}
+                stroke="#fff" strokeWidth={2}
+              />
+              {/* 显示球员名首2字或位置缩写 */}
+              <text
+                x={p.x} y={p.y + 3}
+                textAnchor="middle"
+                fontSize={8}
+                fill="#fff"
+                fontWeight={700}
+              >
+                {label}
+              </text>
+              {/* 显示球员 OVR（若有） */}
+              {player && (
+                <text
+                  x={p.x} y={p.y + 22}
+                  textAnchor="middle"
+                  fontSize={8}
+                  fill={ovrColor(player.ovr)}
+                  fontWeight={700}
+                >
+                  {player.ovr}
+                </text>
+              )}
+              {/* 显示位置缩写（在球员下方，OVR 上方） */}
+              {player && (
+                <text
+                  x={p.x} y={p.y + 32}
+                  textAnchor="middle"
+                  fontSize={7}
+                  fill="#64748b"
+                  fontWeight={500}
+                >
+                  {p.pos}
+                </text>
+              )}
+            </g>
+          );
+        })}
 
         {/* 标志性动作标注 */}
         {Array.from(signatureSet).map((a) => {
@@ -243,9 +329,21 @@ export function TacticBoard({ modSet, width = 300 }: Props) {
           <span>出手热区（越深权重越高）</span>
         </div>
         <div className="tbl-item">
-          <span className="tbl-dot" style={{ background: "#2d3436" }} />
-          <span>球员站位</span>
+          <span className="tbl-dot" style={{ background: "#1e3a8a" }} />
+          <span>球员站位{lineup ? "（显示真实首发）" : "（位置缩写）"}</span>
         </div>
+        {lineup && (
+          <div className="tbl-item">
+            <span className="tbl-dot" style={{ background: "#fbbf24" }} />
+            <span>队长</span>
+          </div>
+        )}
+        {lineup && (
+          <div className="tbl-item">
+            <span className="tbl-dot" style={{ background: "#38bdf8" }} />
+            <span>新秀</span>
+          </div>
+        )}
         <div className="tbl-item">
           <span className="tbl-dot" style={{ background: "#f39c12" }} />
           <span>标志性动作</span>

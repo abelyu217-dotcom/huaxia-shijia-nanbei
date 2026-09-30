@@ -372,14 +372,18 @@ export function TacticEditor({ teamId }: Props) {
         </div>
       </div>
 
-      {/* M4: 球场可视化战术板 */}
+      {/* M4: 球场可视化战术板（M6: 显示真实首发球员） */}
       <div className="panel">
         <div className="panel-head">
-          <h2>战术板 <HelpTooltip text="根据当前战术参数可视化球员站位、出手热区和标志性动作。" /></h2>
-          <span className="hint">半场俯视图</span>
+          <h2>战术板 <HelpTooltip text="根据当前战术参数可视化球员站位、出手热区和标志性动作。显示当前首发 5 人，外环颜色表示状态（绿/黄/橙/红）。" /></h2>
+          <span className="hint">半场俯视图{lineup ? " · 真实首发" : ""}</span>
         </div>
         <div className="panel-body">
-          <TacticBoard modSet={tactic.modSet} width={320} />
+          <TacticBoard
+            modSet={tactic.modSet}
+            width={320}
+            lineup={lineup ? { starters: lineup.starters, players: lineup.players } : null}
+          />
         </div>
       </div>
 
