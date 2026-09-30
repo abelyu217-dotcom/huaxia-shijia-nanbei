@@ -4,11 +4,15 @@
  * - 展示球队所有球员的生涯信息：年龄 / 阶段 / OVR / 潜力 / 成长空间
  * - 手动训练球员（提升 OVR，仅成长阶段有效）
  * - 按生涯阶段分组：新秀 / 上升 / 巅峰 / 下滑 / 退役
+ * - Drill 选择升级：每种训练项目对球员有适配度评级（A/B/C/D），
+ *   评级基于球员位置（投篮对 SG/SF 更高、控球对 PG 更高、防守对 C/PF 更高）。
+ *   评级影响训练效果（前端 mock：A=1.5x, B=1.2x, C=1.0x, D=0.7x），
+ *   实际 OVR 变化由现有 postTrainPlayer API（sim 层）返回。
  */
 
 import { useCallback, useEffect, useState } from "react";
 import { fetchTeamCareers, postTrainPlayer } from "../api";
-import type { PlayerCareer, CareerStage } from "../types";
+import type { PlayerCareer, CareerStage, Position } from "../types";
 
 interface Props {
   teamId: string;
@@ -31,12 +35,116 @@ const STAGE_COLORS: Record<CareerStage, string> = {
   retired: "badge-retire",
 };
 
+// ── Drill 库（前端 mock 常量）：6 种训练项目 ──
+type DrillId = "shooting" | "ballHandling" | "passing" | "defense" | "conditioning" | "allAround";
+type DrillGrade = "A" | "B" | "C" | "D";
+
+interface Drill {
+  id: DrillId;
+  name: string; // 中文名
+  nameEn: string; // 英文名
+  desc: string; // 提升的能力
+  short: string; // 评级条短标签（单字）
+  /** 各位置对该 Drill 的适配度评级（投篮对 SG/SF 高、控球对 PG 高、防守对 C/PF 高） */
+  positionGrades: Record<Position, DrillGrade>;
+}
+
+const DRILLS: Drill[] = [
+  {
+    id: "shooting",
+    name: "投篮训练",
+    nameEn: "Shooting Drill",
+    desc: "提升投篮能力（三分 / 中投）",
+    short: "投",
+    positionGrades: { PG: "B", SG: "A", SF: "A", PF: "C", C: "D" },
+  },
+  {
+    id: "ballHandling",
+    name: "控球训练",
+    nameEn: "Ball Handling Drill",
+    desc: "提升控球与突破能力",
+    short: "控",
+    positionGrades: { PG: "A", SG: "B", SF: "C", PF: "C", C: "D" },
+  },
+  {
+    id: "passing",
+    name: "传球训练",
+    nameEn: "Passing Drill",
+    desc: "提升传球与组织能力",
+    short: "传",
+    positionGrades: { PG: "A", SG: "B", SF: "B", PF: "C", C: "C" },
+  },
+  {
+    id: "defense",
+    name: "防守训练",
+    nameEn: "Defense Drill",
+    desc: "提升防守（外线 / 内线 / 抢断 / 盖帽）",
+    short: "防",
+    positionGrades: { PG: "C", SG: "C", SF: "B", PF: "A", C: "A" },
+  },
+  {
+    id: "conditioning",
+    name: "体能训练",
+    nameEn: "Conditioning Drill",
+    desc: "提升体能 / 速度 / 力量 / 弹跳",
+    short: "体",
+    positionGrades: { PG: "B", SG: "B", SF: "B", PF: "B", C: "B" },
+  },
+  {
+    id: "allAround",
+    name: "综合训练",
+    nameEn: "All-Around Drill",
+    desc: "均衡提升各项能力",
+    short: "综",
+    positionGrades: { PG: "B", SG: "B", SF: "B", PF: "B", C: "B" },
+  },
+];
+
+/** 评级 → 训练效果倍率（前端 mock 投影，实际效果由 sim 层返回） */
+const GRADE_MULTIPLIER: Record<DrillGrade, number> = {
+  A: 1.5,
+  B: 1.2,
+  C: 1.0,
+  D: 0.7,
+};
+
+const GRADE_RANK: Record<DrillGrade, number> = { A: 4, B: 3, C: 2, D: 1 };
+
+function drillById(id: DrillId): Drill {
+  return DRILLS.find((d) => d.id === id) ?? DRILLS[0];
+}
+
+/** 该位置下评级最高的 Drill（默认推荐） */
+function bestDrillFor(position: Position): DrillId {
+  let best = DRILLS[0].id;
+  let bestRank = GRADE_RANK[DRILLS[0].positionGrades[position]];
+  for (const d of DRILLS) {
+    const r = GRADE_RANK[d.positionGrades[position]];
+    if (r > bestRank) {
+      best = d.id;
+      bestRank = r;
+    }
+  }
+  return best;
+}
+
+function gradeClass(g: DrillGrade): string {
+  return `drill-grade-${g.toLowerCase()}`;
+}
+
+/** 可训练阶段：新秀 / 上升 / 巅峰 */
+function isTrainableStage(stage: CareerStage): boolean {
+  return stage === "rookie" || stage === "rising" || stage === "prime";
+}
+
 export function CareerPage({ teamId }: Props) {
   const [careers, setCareers] = useState<PlayerCareer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [trainMsg, setTrainMsg] = useState<string | null>(null);
+  /** 每位球员选中的 Drill（未选则回退到该位置评级最高的 Drill） */
+  const [drillChoice, setDrillChoice] = useState<Partial<Record<string, DrillId>>>({});
 
   const load = useCallback(() => {
     setLoading(true);
@@ -50,17 +158,29 @@ export function CareerPage({ teamId }: Props) {
     load();
   }, [load]);
 
-  async function handleTrain(playerId: string, name: string) {
+  function selectedDrillFor(playerId: string, position: Position): DrillId {
+    return drillChoice[playerId] ?? bestDrillFor(position);
+  }
+
+  async function handleTrain(
+    playerId: string,
+    name: string,
+    drill: Drill,
+    grade: DrillGrade,
+  ) {
     setBusyId(playerId);
     setTrainMsg(null);
     try {
       const r = await postTrainPlayer(playerId);
+      const mult = GRADE_MULTIPLIER[grade];
       if (!r) {
-        setTrainMsg(`${name}：无法训练`);
+        setTrainMsg(`${name} · ${drill.name} [${grade}]：无法训练`);
       } else if (r.improved) {
-        setTrainMsg(`${name}：OVR ${r.ovrBefore} → ${r.ovrAfter} ✓`);
+        setTrainMsg(
+          `${name} · ${drill.name} [${grade}·${mult}x]：OVR ${r.ovrBefore} → ${r.ovrAfter} ✓`,
+        );
       } else {
-        setTrainMsg(`${name}：已到成长上限（OVR ${r.ovrAfter}）`);
+        setTrainMsg(`${name} · ${drill.name} [${grade}]：已到成长上限（OVR ${r.ovrAfter}）`);
       }
       load();
     } catch (e: unknown) {
@@ -89,6 +209,14 @@ export function CareerPage({ teamId }: Props) {
         <p className="muted">
           球员生涯弧线：新秀(19-22) → 上升(23-27) → 巅峰(28-32) → 下滑(33-36) → 退役(37+)
         </p>
+        <div className="drill-legend">
+          <span>训练 Drill 适配度：</span>
+          <span className="drill-grade drill-grade-a">A</span><span>1.5x</span>
+          <span className="drill-grade drill-grade-b">B</span><span>1.2x</span>
+          <span className="drill-grade drill-grade-c">C</span><span>1.0x</span>
+          <span className="drill-grade drill-grade-d">D</span><span>0.7x</span>
+          <span className="muted">· 评级基于球员位置</span>
+        </div>
       </header>
 
       {error && <div className="state error">{error}</div>}
@@ -133,6 +261,7 @@ export function CareerPage({ teamId }: Props) {
         STAGE_ORDER.map((stage) => {
           const list = grouped[stage];
           if (list.length === 0) return null;
+          const trainable = isTrainableStage(stage);
           return (
             <section key={stage} className="card">
               <h3>
@@ -151,43 +280,97 @@ export function CareerPage({ teamId }: Props) {
                     <th>潜力</th>
                     <th>成长空间</th>
                     <th>训练经验</th>
+                    {trainable && <th>训练 Drill</th>}
                     {stage !== "retired" && <th></th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {list.map((p) => (
-                    <tr key={p.playerId}>
-                      <td>{p.name}</td>
-                      <td>{p.position}</td>
-                      <td>{p.age}</td>
-                      <td><strong>{p.ovr}</strong></td>
-                      <td>{p.potential}</td>
-                      <td>
-                        {p.growthRoom > 0 ? (
-                          <span className="pos">+{p.growthRoom}</span>
-                        ) : (
-                          <span className="muted">—</span>
-                        )}
-                      </td>
-                      <td>{p.trainExp}</td>
-                      {stage !== "retired" && (
+                  {list.map((p) => {
+                    const selectedId = selectedDrillFor(p.playerId, p.position);
+                    const selectedDrill = drillById(selectedId);
+                    const selectedGrade = selectedDrill.positionGrades[p.position];
+                    return (
+                      <tr key={p.playerId}>
+                        <td>{p.name}</td>
+                        <td>{p.position}</td>
+                        <td>{p.age}</td>
+                        <td><strong>{p.ovr}</strong></td>
+                        <td>{p.potential}</td>
                         <td>
-                          {stage === "rookie" || stage === "rising" || stage === "prime" ? (
-                            <button
-                              type="button"
-                              className="btn btn-sm"
-                              disabled={busyId === p.playerId}
-                              onClick={() => handleTrain(p.playerId, p.name)}
-                            >
-                              {busyId === p.playerId ? "训练中…" : "训练"}
-                            </button>
+                          {p.growthRoom > 0 ? (
+                            <span className="pos">+{p.growthRoom}</span>
                           ) : (
-                            <span className="muted">不可训练</span>
+                            <span className="muted">—</span>
                           )}
                         </td>
-                      )}
-                    </tr>
-                  ))}
+                        <td>{p.trainExp}</td>
+                        {trainable && (
+                          <td className="drill-cell">
+                            <div className="drill-selector">
+                              <select
+                                className="drill-select"
+                                value={selectedId}
+                                disabled={busyId === p.playerId}
+                                onChange={(e) =>
+                                  setDrillChoice((prev) => ({
+                                    ...prev,
+                                    [p.playerId]: e.target.value as DrillId,
+                                  }))
+                                }
+                              >
+                                {DRILLS.map((d) => {
+                                  const g = d.positionGrades[p.position];
+                                  return (
+                                    <option key={d.id} value={d.id}>
+                                      {d.name} [{g}] · {GRADE_MULTIPLIER[g]}x
+                                    </option>
+                                  );
+                                })}
+                              </select>
+                              <span
+                                className={`drill-grade ${gradeClass(selectedGrade)}`}
+                                title={`${selectedDrill.name} · 适配度 ${selectedGrade} · 效果 ${GRADE_MULTIPLIER[selectedGrade]}x`}
+                              >
+                                {selectedGrade}
+                              </span>
+                            </div>
+                            <div className="drill-grade-strip">
+                              {DRILLS.map((d) => {
+                                const g = d.positionGrades[p.position];
+                                return (
+                                  <span
+                                    key={d.id}
+                                    className={`drill-grade-mini ${gradeClass(g)}`}
+                                    title={`${d.name}：${g} · ${GRADE_MULTIPLIER[g]}x`}
+                                  >
+                                    {d.short}{g}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </td>
+                        )}
+                        {stage !== "retired" && (
+                          <td>
+                            {trainable ? (
+                              <button
+                                type="button"
+                                className="btn btn-sm"
+                                disabled={busyId === p.playerId}
+                                onClick={() =>
+                                  handleTrain(p.playerId, p.name, selectedDrill, selectedGrade)
+                                }
+                              >
+                                {busyId === p.playerId ? "训练中…" : "训练"}
+                              </button>
+                            ) : (
+                              <span className="muted">不可训练</span>
+                            )}
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </section>

@@ -29,6 +29,19 @@ import { AcademyPage } from "./pages/AcademyPage";
 import { DraftPage } from "./pages/DraftPage";
 import { MatchSimView } from "./views/MatchSimView";
 import { ShopPage } from "./pages/ShopPage";
+import { FinancePage } from "./pages/FinancePage";
+import { LeaguePage } from "./pages/LeaguePage";
+import { MatchTacticPage } from "./pages/MatchTacticPage";
+import { ScoutPage } from "./pages/ScoutPage";
+import { WatchlistPage } from "./pages/WatchlistPage";
+import { PlayoffPage } from "./pages/PlayoffPage";
+import { BoardPage } from "./pages/BoardPage";
+import { WorldInfoPage } from "./pages/WorldInfoPage";
+import { ArenaPage } from "./pages/ArenaPage";
+import { CorePlayersPage } from "./pages/CorePlayersPage";
+import { BoardOfDirectorsPage } from "./pages/BoardOfDirectorsPage";
+import { GuidePage } from "./pages/GuidePage";
+import { DailyReward } from "./components/DailyReward";
 import { fetchWorlds, fetchCurrentSeason } from "./api";
 import type { SeasonInfo } from "./types";
 
@@ -41,7 +54,19 @@ type View =
   | { kind: "academy" }
   | { kind: "draft" }
   | { kind: "sim" }
-  | { kind: "shop" };
+  | { kind: "shop" }
+  | { kind: "finance" }
+  | { kind: "league" }
+  | { kind: "matchTactic"; matchId?: string }
+  | { kind: "scout" }
+  | { kind: "watchlist" }
+  | { kind: "playoff" }
+  | { kind: "board" }
+  | { kind: "worldInfo" }
+  | { kind: "arena" }
+  | { kind: "corePlayers" }
+  | { kind: "bod" }
+  | { kind: "guide" };
 
 type NavKind =
   | "home"
@@ -52,7 +77,19 @@ type NavKind =
   | "academy"
   | "draft"
   | "sim"
-  | "shop";
+  | "shop"
+  | "finance"
+  | "league"
+  | "matchTactic"
+  | "scout"
+  | "watchlist"
+  | "playoff"
+  | "board"
+  | "worldInfo"
+  | "arena"
+  | "corePlayers"
+  | "bod"
+  | "guide";
 
 /** 侧边栏分组导航 —— 参考 Rim Attack / BasketPulse 的分组菜单 */
 const NAV_GROUPS: { group: string; items: { id: NavKind; label: string }[] }[] = [
@@ -60,12 +97,19 @@ const NAV_GROUPS: { group: string; items: { id: NavKind; label: string }[] }[] =
     group: "球會",
     items: [
       { id: "home", label: "主页" },
+      { id: "league", label: "联赛资讯" },
+      { id: "board", label: "公布栏" },
+      { id: "worldInfo", label: "世界资讯" },
     ],
   },
   {
     group: "人事",
     items: [
       { id: "team", label: "我的球队" },
+      { id: "corePlayers", label: "核心球员" },
+      { id: "finance", label: "财务" },
+      { id: "scout", label: "球探" },
+      { id: "watchlist", label: "观察名单" },
       { id: "trade", label: "交易" },
       { id: "career", label: "生涯" },
       { id: "academy", label: "青训" },
@@ -76,13 +120,23 @@ const NAV_GROUPS: { group: string; items: { id: NavKind; label: string }[] }[] =
     group: "比赛",
     items: [
       { id: "schedule", label: "赛程" },
+      { id: "matchTactic", label: "单场战术" },
+      { id: "playoff", label: "季后赛" },
+      { id: "arena", label: "竞技场" },
       { id: "sim", label: "模拟" },
+    ],
+  },
+  {
+    group: "管理",
+    items: [
+      { id: "bod", label: "董事会" },
     ],
   },
   {
     group: "商城",
     items: [
       { id: "shop", label: "商店" },
+      { id: "guide", label: "游戏说明" },
     ],
   },
 ];
@@ -96,6 +150,18 @@ function navToView(kind: NavKind, teamId?: string): View {
   if (kind === "academy") return { kind: "academy" };
   if (kind === "draft") return { kind: "draft" };
   if (kind === "shop") return { kind: "shop" };
+  if (kind === "finance") return { kind: "finance" };
+  if (kind === "league") return { kind: "league" };
+  if (kind === "matchTactic") return { kind: "matchTactic" };
+  if (kind === "scout") return { kind: "scout" };
+  if (kind === "watchlist") return { kind: "watchlist" };
+  if (kind === "playoff") return { kind: "playoff" };
+  if (kind === "board") return { kind: "board" };
+  if (kind === "worldInfo") return { kind: "worldInfo" };
+  if (kind === "arena") return { kind: "arena" };
+  if (kind === "corePlayers") return { kind: "corePlayers" };
+  if (kind === "bod") return { kind: "bod" };
+  if (kind === "guide") return { kind: "guide" };
   return { kind: "sim" };
 }
 
@@ -192,6 +258,7 @@ function AppInner() {
         </div>
         <div className="header-user">
           <span className="header-user-name">{user.nickname}</span>
+          <DailyReward />
           <button
             type="button"
             className="btn btn-ghost btn-sm"
@@ -253,6 +320,34 @@ function AppInner() {
           )}
           {view.kind === "sim" && <MatchSimView />}
           {view.kind === "shop" && <ShopPage />}
+          {view.kind === "finance" && myTeamId && (
+            <FinancePage teamId={myTeamId} />
+          )}
+          {view.kind === "league" && (
+            <LeaguePage teamId={myTeamId ?? undefined} />
+          )}
+          {view.kind === "matchTactic" && (
+            <MatchTacticPage teamId={myTeamId ?? undefined} />
+          )}
+          {view.kind === "scout" && (
+            <ScoutPage teamId={myTeamId ?? undefined} />
+          )}
+          {view.kind === "watchlist" && <WatchlistPage />}
+          {view.kind === "playoff" && <PlayoffPage />}
+          {view.kind === "board" && <BoardPage />}
+          {view.kind === "worldInfo" && (
+            <WorldInfoPage onOpenTeam={openTeam} />
+          )}
+          {view.kind === "arena" && (
+            <ArenaPage teamId={myTeamId ?? undefined} />
+          )}
+          {view.kind === "corePlayers" && (
+            <CorePlayersPage teamId={myTeamId ?? undefined} />
+          )}
+          {view.kind === "bod" && (
+            <BoardOfDirectorsPage teamId={myTeamId ?? undefined} />
+          )}
+          {view.kind === "guide" && <GuidePage />}
         </main>
       </div>
     </div>

@@ -1,33 +1,52 @@
 /**
- * HomePage — 世界 / 赛季主页
+ * HomePage — 仪表盘式主页
  *
- * 三块内容：
- *   1. 我的球队卡片：当前用户绑定的球队，显示战绩 + 今日对阵
- *   2. 积分榜：全部球队按胜率排序
- *   3. 今日赛程：当前 day 的比赛列表
+ * 参考 BasketPulse 主页 5 模块卡片设计，整页布局为：
+ *   - 顶部：赛季横幅（生成赛程 / 推进一日）
+ *   - AI 经理控制条
+ *   - 5 张仪表盘卡片（CSS grid，3/2/1 列响应式）：
+ *       1. 战绩卡：球队战绩、胜率、连胜、今日对阵、当家球星
+ *       2. 财务摘要卡：薪资总额 / 薪资帽 / 剩余空间 / 合同数 + 钱包（Coins/Credits）
+ *       3. 训练概览卡：队伍平均 OVR / 最近训练提升数 / 青训学院等级
+ *       4. 排名卡（精简版）：Top 8，高亮我的球队
+ *       5. 赛程卡：今日比赛列表
  *
- * 右上角为管理操作：生成赛程 / 推进一日。
+ * 所有数据在 loadAll 中并行加载；任一接口失败时显示 "—" 而非崩溃。
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import {
+  fetchAcademy,
   fetchCurrentSeason,
   fetchSchedule,
   fetchStandings,
   fetchTeam,
+  fetchTeamCareers,
+  fetchTeamSalary,
   fetchTeams,
+  fetchWallet,
   postAdvanceDay,
   postAiRefresh,
   postAiTrain,
   postGenerateSchedule,
 } from "../api";
 import type {
+  Academy,
   AiDifficulty,
+  PlayerCareer,
+  SalaryStatus,
   ScheduleDay,
   SeasonInfo,
   StandingRow,
   TeamDetail,
   TeamRoster,
+  WalletInfo,
 } from "../types";
 import { useAuth } from "../auth/AuthContext";
 import { avgOvr, ovrTier, POSITION_LABEL } from "../lib";
@@ -37,6 +56,8 @@ interface Props {
   onOpenSchedule: () => void;
 }
 
+const TOP_STANDINGS = 8;
+
 export function HomePage({ onOpenTeam, onOpenSchedule }: Props) {
   const { user } = useAuth();
   const [season, setSeason] = useState<SeasonInfo | null>(null);
@@ -44,6 +65,13 @@ export function HomePage({ onOpenTeam, onOpenSchedule }: Props) {
   const [schedule, setSchedule] = useState<ScheduleDay[] | null>(null);
   const [teams, setTeams] = useState<TeamRoster[] | null>(null);
   const [myTeam, setMyTeam] = useState<TeamDetail | null>(null);
+
+  // 新增：财务 + 训练相关状态
+  const [salary, setSalary] = useState<SalaryStatus | null>(null);
+  const [wallet, setWallet] = useState<WalletInfo | null>(null);
+  const [careers, setCareers] = useState<PlayerCareer[] | null>(null);
+  const [academy, setAcademy] = useState<Academy | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,6 +86,7 @@ export function HomePage({ onOpenTeam, onOpenSchedule }: Props) {
     setLoading(true);
     setError(null);
     try {
+      // 公共数据并行加载
       const [s, st, sch, ts] = await Promise.all([
         fetchCurrentSeason(),
         fetchStandings(),
@@ -68,35 +97,42 @@ export function HomePage({ onOpenTeam, onOpenSchedule }: Props) {
       setStandings(st);
       setSchedule(sch);
       setTeams(ts);
+
+      // 用户绑定球队相关数据并行加载；任一失败不阻塞其他
+      const teamId = user?.teamId;
+      if (teamId) {
+        const [teamRes, salaryRes, walletRes, careersRes, academyRes] =
+          await Promise.allSettled([
+            fetchTeam(teamId),
+            fetchTeamSalary(teamId),
+            fetchWallet(),
+            fetchTeamCareers(teamId),
+            fetchAcademy(teamId),
+          ]);
+        setMyTeam(teamRes.status === "fulfilled" ? teamRes.value : null);
+        setSalary(salaryRes.status === "fulfilled" ? salaryRes.value : null);
+        setWallet(walletRes.status === "fulfilled" ? walletRes.value : null);
+        setCareers(
+          careersRes.status === "fulfilled" ? careersRes.value : null,
+        );
+        setAcademy(academyRes.status === "fulfilled" ? academyRes.value : null);
+      } else {
+        setMyTeam(null);
+        setSalary(null);
+        setWallet(null);
+        setCareers(null);
+        setAcademy(null);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.teamId]);
 
   useEffect(() => {
     void loadAll();
   }, [loadAll]);
-
-  // 加载我的球队详情（用户绑定的球队）
-  useEffect(() => {
-    if (!user?.teamId) {
-      setMyTeam(null);
-      return;
-    }
-    let cancelled = false;
-    fetchTeam(user.teamId)
-      .then((t) => {
-        if (!cancelled) setMyTeam(t);
-      })
-      .catch(() => {
-        if (!cancelled) setMyTeam(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.teamId]);
 
   const todayMatches = useMemo(() => {
     if (!schedule || !season) return [];
@@ -112,6 +148,17 @@ export function HomePage({ onOpenTeam, onOpenSchedule }: Props) {
     if (!teams || !user?.teamId) return null;
     return teams.find((t) => t.id === user.teamId) ?? null;
   }, [teams, user?.teamId]);
+
+  // 队伍平均 OVR：优先用 TeamDetail（含完整球员列表），回退到 TeamRoster
+  const myAvgOvr = useMemo(() => {
+    if (myTeam?.players?.length) {
+      return avgOvr(myTeam.players.map((p) => p.ovr));
+    }
+    if (myTeamRoster?.players?.length) {
+      return avgOvr(myTeamRoster.players.map((p) => p.ovr));
+    }
+    return null;
+  }, [myTeam, myTeamRoster]);
 
   const myTodayMatch = useMemo(() => {
     if (!user?.teamId || todayMatches.length === 0) return null;
@@ -204,6 +251,7 @@ export function HomePage({ onOpenTeam, onOpenSchedule }: Props) {
   }
 
   const hasSchedule = (schedule?.length ?? 0) > 0;
+  const teamBound = Boolean(user?.teamId);
 
   return (
     <div className="home-page">
@@ -284,9 +332,10 @@ export function HomePage({ onOpenTeam, onOpenSchedule }: Props) {
         </div>
       </section>
 
-      <div className="home-grid">
-        {/* 左侧：我的球队 */}
-        <aside className="home-aside">
+      {/* 5 模块仪表盘卡片 */}
+      <div className="dashboard-grid">
+        {/* 1. 战绩卡 */}
+        <DashboardCard title="战绩" hint="我的球队">
           <MyTeamCard
             team={myTeam}
             roster={myTeamRoster}
@@ -295,36 +344,49 @@ export function HomePage({ onOpenTeam, onOpenSchedule }: Props) {
             opponent={myOpponent}
             onOpenTeam={() => user?.teamId && onOpenTeam(user.teamId)}
           />
-        </aside>
+        </DashboardCard>
 
-        {/* 中间：积分榜 */}
-        <section className="panel home-standings">
-          <div className="panel-head">
-            <h2>积分榜</h2>
-            <span className="hint">按胜率排序</span>
-          </div>
-          <div className="panel-body">
-            <StandingsTable
-              rows={standings ?? []}
-              myTeamId={user?.teamId ?? null}
-            />
-          </div>
-        </section>
-      </div>
+        {/* 2. 财务摘要卡 */}
+        <DashboardCard title="财务摘要" hint="薪资与钱包">
+          <FinanceSummaryCard
+            salary={salary}
+            wallet={wallet}
+            teamBound={teamBound}
+          />
+        </DashboardCard>
 
-      {/* 今日赛程 */}
-      <section className="panel home-today">
-        <div className="panel-head">
-          <h2>今日赛程 · 第 {season?.currentDay ?? 0} 日</h2>
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={onOpenSchedule}
-          >
-            查看全部赛程
-          </button>
-        </div>
-        <div className="panel-body">
+        {/* 3. 训练概览卡 */}
+        <DashboardCard title="训练概览" hint="能力提升与青训">
+          <TrainingSummaryCard
+            careers={careers}
+            academy={academy}
+            avgOvrValue={myAvgOvr}
+            teamBound={teamBound}
+          />
+        </DashboardCard>
+
+        {/* 4. 排名卡（精简版 Top 8） */}
+        <DashboardCard title="积分榜" hint={`Top ${TOP_STANDINGS} · 按胜率排序`}>
+          <StandingsTable
+            rows={(standings ?? []).slice(0, TOP_STANDINGS)}
+            myTeamId={user?.teamId ?? null}
+          />
+        </DashboardCard>
+
+        {/* 5. 赛程卡（跨 2 列） */}
+        <DashboardCard
+          title={`今日赛程 · 第 ${season?.currentDay ?? 0} 日`}
+          wide
+          action={
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={onOpenSchedule}
+            >
+              查看全部赛程
+            </button>
+          }
+        >
           {todayMatches.length === 0 ? (
             <div className="empty-block">今日休赛日，无比赛安排。</div>
           ) : (
@@ -333,8 +395,8 @@ export function HomePage({ onOpenTeam, onOpenSchedule }: Props) {
               myTeamId={user?.teamId ?? null}
             />
           )}
-        </div>
-      </section>
+        </DashboardCard>
+      </div>
     </div>
   );
 }
@@ -350,6 +412,50 @@ function seasonStatusBadge(status: string): string {
     default:
       return status;
   }
+}
+
+/** 金额格式化：薪资数据后端以"万"为单位返回（与 TeamPage/TradePage 对齐）。 */
+function fmtSalary(n: number | null | undefined): string {
+  if (n == null || Number.isNaN(n)) return "—";
+  return `${n.toLocaleString()} 万`;
+}
+
+interface DashboardCardProps {
+  title: string;
+  hint?: string;
+  action?: ReactNode;
+  /** 跨 2 列（大屏）/ 全宽（小屏） */
+  wide?: boolean;
+  className?: string;
+  children: ReactNode;
+}
+
+function DashboardCard({
+  title,
+  hint,
+  action,
+  wide,
+  className,
+  children,
+}: DashboardCardProps) {
+  const cls = [
+    "panel",
+    "dashboard-card",
+    wide ? "dashboard-card--wide" : "",
+    className ?? "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return (
+    <section className={cls}>
+      <div className="panel-head">
+        <h2>{title}</h2>
+        {hint && <span className="hint">{hint}</span>}
+        {action && <div className="dashboard-card-action">{action}</div>}
+      </div>
+      <div className="panel-body">{children}</div>
+    </section>
+  );
 }
 
 interface MyTeamCardProps {
@@ -371,14 +477,10 @@ function MyTeamCard({
 }: MyTeamCardProps) {
   if (!team || !roster) {
     return (
-      <div className="panel my-team-card">
-        <div className="panel-body">
-          <div className="empty-block">
-            当前账号尚未绑定球队。
-            <br />
-            请注册新账号以领取球队。
-          </div>
-        </div>
+      <div className="empty-block">
+        当前账号尚未绑定球队。
+        <br />
+        请注册新账号以领取球队。
       </div>
     );
   }
@@ -387,81 +489,179 @@ function MyTeamCard({
   const topPlayer = [...roster.players].sort((a, b) => b.ovr - a.ovr)[0];
 
   return (
-    <div className="panel my-team-card">
-      <div className="panel-head">
-        <h2>我的球队</h2>
-        <button
-          type="button"
-          className="btn btn-ghost btn-sm"
-          onClick={onOpenTeam}
-        >
-          管理 →
-        </button>
+    <div className="my-team-card-inner">
+      <div className="my-team-head">
+        <div className="my-team-name">{team.name}</div>
+        <div className="my-team-ovr">
+          <span className="ovr-pill">{avg}</span>
+          <span className="ovr-label">平均 OVR</span>
+        </div>
       </div>
-      <div className="panel-body">
-        <div className="my-team-head">
-          <div className="my-team-name">{team.name}</div>
-          <div className="my-team-ovr">
-            <span className="ovr-pill">{avg}</span>
-            <span className="ovr-label">平均 OVR</span>
-          </div>
-        </div>
 
-        <div className="my-team-stats">
-          <div className="mts-item">
-            <span className="mts-label">战绩</span>
-            <span className="mts-value">
-              {standing ? `${standing.wins}-${standing.losses}` : "—"}
+      <div className="my-team-stats">
+        <div className="mts-item">
+          <span className="mts-label">战绩</span>
+          <span className="mts-value">
+            {standing ? `${standing.wins}-${standing.losses}` : "—"}
+          </span>
+        </div>
+        <div className="mts-item">
+          <span className="mts-label">胜率</span>
+          <span className="mts-value">
+            {standing ? `${(standing.winRate * 100).toFixed(1)}%` : "—"}
+          </span>
+        </div>
+        <div className="mts-item">
+          <span className="mts-label">连胜/连败</span>
+          <span className="mts-value">{standing?.streak ?? "—"}</span>
+        </div>
+      </div>
+
+      <div className="my-team-today">
+        <div className="mts-sub">今日对阵</div>
+        {todayMatch && opponent ? (
+          <div className="today-vs">
+            <span className={opponent.isHome ? "side home" : "side"}>
+              {opponent.isHome ? "主" : "客"}
             </span>
-          </div>
-          <div className="mts-item">
-            <span className="mts-label">胜率</span>
-            <span className="mts-value">
-              {standing ? `${(standing.winRate * 100).toFixed(1)}%` : "—"}
-            </span>
-          </div>
-          <div className="mts-item">
-            <span className="mts-label">连胜/连败</span>
-            <span className="mts-value">{standing?.streak ?? "—"}</span>
-          </div>
-        </div>
-
-        <div className="my-team-today">
-          <div className="mts-sub">今日对阵</div>
-          {todayMatch && opponent ? (
-            <div className="today-vs">
-              <span className={opponent.isHome ? "side home" : "side"}>
-                {opponent.isHome ? "主" : "客"}
+            <span className="today-vs-vs">vs</span>
+            <span className="today-opp">{opponent.name}</span>
+            {todayMatch.status === "final" && todayMatch.homeScore != null && (
+              <span className="today-score">
+                {todayMatch.homeScore}:{todayMatch.awayScore}
               </span>
-              <span className="today-vs-vs">vs</span>
-              <span className="today-opp">{opponent.name}</span>
-              {todayMatch.status === "final" && todayMatch.homeScore != null && (
-                <span className="today-score">
-                  {todayMatch.homeScore}:{todayMatch.awayScore}
-                </span>
-              )}
-            </div>
-          ) : (
-            <div className="today-vs empty">今日休战</div>
-          )}
-        </div>
-
-        {topPlayer && (
-          <div className="my-team-top">
-            <div className="mts-sub">当家球星</div>
-            <div className="top-player">
-              <span
-                className={`top-ovr tier-${ovrTier(topPlayer.ovr)}`}
-              >
-                {topPlayer.ovr}
-              </span>
-              <span className="top-pos">
-                {POSITION_LABEL[topPlayer.position]}
-              </span>
-              <span className="top-name">{topPlayer.name}</span>
-            </div>
+            )}
           </div>
+        ) : (
+          <div className="today-vs empty">今日休战</div>
         )}
+      </div>
+
+      {topPlayer && (
+        <div className="my-team-top">
+          <div className="mts-sub">当家球星</div>
+          <div className="top-player">
+            <span className={`top-ovr tier-${ovrTier(topPlayer.ovr)}`}>
+              {topPlayer.ovr}
+            </span>
+            <span className="top-pos">
+              {POSITION_LABEL[topPlayer.position]}
+            </span>
+            <span className="top-name">{topPlayer.name}</span>
+          </div>
+        </div>
+      )}
+
+      <button
+        type="button"
+        className="btn btn-ghost btn-sm my-team-manage"
+        onClick={onOpenTeam}
+      >
+        管理球队 →
+      </button>
+    </div>
+  );
+}
+
+interface FinanceSummaryCardProps {
+  salary: SalaryStatus | null;
+  wallet: WalletInfo | null;
+  teamBound: boolean;
+}
+
+function FinanceSummaryCard({
+  salary,
+  wallet,
+  teamBound,
+}: FinanceSummaryCardProps) {
+  if (!teamBound) {
+    return <div className="empty-block">未绑定球队</div>;
+  }
+  return (
+    <div className="summary-grid finance-grid">
+      <div className="summary-item">
+        <span className="summary-label">薪资总额</span>
+        <span className="summary-value">
+          {salary ? fmtSalary(salary.totalSalary) : "—"}
+        </span>
+      </div>
+      <div className="summary-item">
+        <span className="summary-label">薪资帽</span>
+        <span className="summary-value">
+          {salary ? fmtSalary(salary.salaryCap) : "—"}
+        </span>
+      </div>
+      <div className="summary-item">
+        <span className="summary-label">剩余空间</span>
+        <span
+          className={`summary-value${
+            salary && salary.remaining < 0 ? " is-bad" : ""
+          }`}
+        >
+          {salary ? fmtSalary(salary.remaining) : "—"}
+        </span>
+      </div>
+      <div className="summary-item">
+        <span className="summary-label">合同数</span>
+        <span className="summary-value">
+          {salary ? salary.contractCount : "—"}
+        </span>
+      </div>
+      <div className="summary-item summary-wallet">
+        <span className="summary-label">🪙 游戏币</span>
+        <span className="summary-value">
+          {wallet ? wallet.coins.toLocaleString() : "—"}
+        </span>
+      </div>
+      <div className="summary-item summary-wallet">
+        <span className="summary-label">💎 充值币</span>
+        <span className="summary-value">
+          {wallet ? wallet.credits.toLocaleString() : "—"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+interface TrainingSummaryCardProps {
+  careers: PlayerCareer[] | null;
+  academy: Academy | null;
+  avgOvrValue: number | null;
+  teamBound: boolean;
+}
+
+function TrainingSummaryCard({
+  careers,
+  academy,
+  avgOvrValue,
+  teamBound,
+}: TrainingSummaryCardProps) {
+  if (!teamBound) {
+    return <div className="empty-block">未绑定球队</div>;
+  }
+  // PlayerCareer 没有 ovrBefore/ovrAfter 字段，使用 trainExp > 0 作为"已发生训练提升"的代理指标
+  const trainedCount = careers
+    ? careers.filter((c) => (c.trainExp ?? 0) > 0).length
+    : null;
+  return (
+    <div className="summary-grid training-grid">
+      <div className="summary-item">
+        <span className="summary-label">队伍平均 OVR</span>
+        <span className="summary-value">
+          {avgOvrValue != null ? avgOvrValue : "—"}
+        </span>
+      </div>
+      <div className="summary-item">
+        <span className="summary-label">最近训练提升</span>
+        <span className="summary-value">
+          {trainedCount != null ? `${trainedCount} 人` : "—"}
+        </span>
+      </div>
+      <div className="summary-item">
+        <span className="summary-label">青训学院</span>
+        <span className="summary-value">
+          {academy ? `Lv.${academy.level}` : "—"}
+        </span>
       </div>
     </div>
   );
