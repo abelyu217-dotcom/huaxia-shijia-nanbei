@@ -239,7 +239,7 @@
 
 ## 五、HWO 具体改进优先级（按 ROI 排序）
 
-> ✅ = 已实施　🔲 = 待实施
+> ✅ = 已实施　🔲 = 待实施　🚧 = 部分实施
 
 ### P0 — 布局架构升级（影响所有页面）✅
 1. ✅ **引入左侧栏导航**：顶栏精简为品牌+赛季信息+用户区；左栏放所有功能模块，分 球會/人事/比赛 三组。参考 RA 的分组菜单 + JBL/BP。
@@ -249,18 +249,19 @@
 3. ✅ **阵容页升级为表格视图**：位置筛选（全部/PG/SG/SF/PF/C）、可排序列（姓名/位置/OVR/年薪/三分/内线/外防/速度）、OVR 等级色。参考 RA Roster。
 4. ✅ **新增 Depth Chart 深度图**：5 位置列 × N 档，首发/替补/第N梯标签，OVR 显示 + 分钟输入，首发高亮。参考 BP 輪替 + JBL Depth Chart。
 
-### P2 — 战术系统增强
+### P2 — 战术系统增强 🚧
 5. 🔲 **战术页加 Basic/Advanced 切换**。参考 RA Tactics。
 6. 🔲 **加球场可视化战术板**（SVG 半场 + 球员卡片）。参考 RA。
-7. 🔲 **加 Familiarity 熟练度机制**。参考 JBL Strategy。
+7. 🚧 **加 Familiarity 熟练度机制**：字段已存在（`TacticModSet.familiarity`），sim 已预计算但未应用到概率；待实现累加 + 效果。参考 JBL Strategy。
 8. 🔲 **加战术使用率统计可视化**。参考 JBL Playbook。
 9. 🔲 **补充末节策略**：故意犯规（领先/落后）、最后一攻选择、犯规前压迫防守。参考 BP 球隊戰術。
 10. ✅ **加帮助提示系统**：可复用 HelpTooltip 组件，战术页三大分区标题配 "?" 说明气泡。参考 BP。
+- ✅ **M4 高级战术层**（已实施）：pace / offenseFocus / ballDistribution / offenseFreedom / offenseEmphasis / defenseIntensity / defenseFocus / screenDefGuards / screenDefBigs / defenseEmphasis / signatureActions / closerId。
 
 ### P3 — 训练、球探与状态体系
 11. 🔲 **训练升级为项目选择 + 字母评级**。参考 RA Training。
 12. 🔲 **训练进度可视化**：图表展示能力随时间变化。参考 BP 跳躍進步。
-13. 🔲 **引入球员状态色体系**（Peak/Good/Tired/Exhausted）。参考 RA。
+13. 🔲 **引入球员状态色体系**（Peak/Good/Tired/Exhausted）。sim 已有 fatigue/foulTrouble，待加 status 字段 + 前端展示。参考 RA。
 14. 🔲 **球探发现新秀机制**：每周发现新人才 + 预估潜力范围 + 球员性格系统。参考 BP Scouting。
 
 ### P4 — 市场与经济
@@ -269,7 +270,7 @@
 
 ### P5 — 视觉与体验
 17. ✅ **OVR 等级色细化**（金/紫/蓝/绿/灰）：应用于阵容表格 + 深度图。参考 RA 评级色。
-18. 🔲 **统一保存机制**：战术页顶部"Save All Changes" + "Last saved"时间戳 + "未保存变更"指示。参考 JBL + BP。
+18. 🔲 **统一保存机制**：战术页顶部"Save All Changes" + "Last saved"时间戳 + "未保存变更"指示。现有 dirty 状态 + 单独保存按钮，待加时间戳。参考 JBL + BP。
 19. 🔲 **加 TOP 球员/球队排行榜**。参考 BP。
 20. 🔲 **球员队长标记** + 租借/新秀标签。参考 BP。
 
