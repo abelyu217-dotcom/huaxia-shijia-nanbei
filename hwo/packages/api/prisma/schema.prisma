@@ -34,6 +34,9 @@ model User {
   paymentOrders   PaymentOrder[]
   // M4: 推送订阅
   pushSubscriptions PushSubscription[]
+  // M5 §6.3: 行为埋点 + 日活快照
+  analyticsEvents    AnalyticsEvent[]
+  dailyActiveSnapshots DailyActiveSnapshot[]
 }
 
 // ─── 世界 ───
@@ -403,4 +406,46 @@ model PushSubscription {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+// ─── M5 §6.3: 行为埋点（Analytics Events） ───
+// 设计：所有关键用户行为 + 系统事件统一记入此表，用于留存漏斗、转化分析、看板。
+// 注意：高频事件（如 PBP）不入此表，仅记录用户主动行为 + 关键节点。
+model AnalyticsEvent {
+  id         String   @id @default(cuid())
+  userId     String?  // 可空（系统事件无 user）
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /** 事件类型（如 login / register / lineup_edit / sim_match / season_advance / payment_paid / vip_subscribe） */
+  event      String
+  /** 事件分类（auth / game / commerce / retention / system） */
+  category   String
+  /** 事件附加属性（JSON，如 { teamId, worldId, amount }） */
+  properties Json?
+  /** 触发时间（UTC） */
+  occurredAt DateTime @default(now())
+
+  @@index([userId, occurredAt])
+  @@index([event, occurredAt])
+  @@index([category, occurredAt])
+}
+
+// ─── M5 §6.3: 用户日活快照（用于快速计算 DAU/留存，无需扫全表） ───
+// 每个 (userId, date) 唯一一行，记录当日是否活跃 + 当日付费状态。
+model DailyActiveSnapshot {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /** 日期（仅日期，不含时间，UTC） */
+  date        DateTime
+  /** 当日是否付费（升级 Credits / 订阅 VIP / 购买外观） */
+  paid        Boolean  @default(false)
+  /** 当日付费金额（分） */
+  paidAmount  Int      @default(0)
+  /** 当日游戏内行为次数（sim_match / lineup_edit 等） */
+  actions     Int      @default(0)
+
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([date])
 }

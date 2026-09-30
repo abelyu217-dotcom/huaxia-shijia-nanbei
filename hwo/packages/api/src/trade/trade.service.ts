@@ -57,6 +57,20 @@ export class TradeService {
       throw new BadRequestException("不能与自己交易");
     }
 
+    // M5 §6.4 多世界并行运行隔离：禁止跨世界交易
+    // 双方必须在同一世界（世界内经济封闭）；M1 单联赛模式双方 worldId 均为 null 也允许
+    if (offeror.worldId !== offeree.worldId) {
+      throw new BadRequestException(
+        `跨世界交易被禁止：报价方位于世界 ${offeror.worldId ?? "M1"}，接收方位于世界 ${offeree.worldId ?? "M1"}`,
+      );
+    }
+    // 若指定了 worldId，必须与球队 worldId 一致
+    if (dto.worldId && offeror.worldId !== dto.worldId) {
+      throw new BadRequestException(`报价方球队不在指定世界 ${dto.worldId} 中`);
+    }
+    // 同步校正 worldId（来自球队自身）
+    const effectiveWorldId = offeror.worldId ?? dto.worldId;
+
     // 验证球员归属
     await this.validatePlayerOwnership(dto.offerorTeamId, dto.offerorPlayers);
     await this.validatePlayerOwnership(dto.offereeTeamId, dto.offereePlayers);
@@ -84,7 +98,7 @@ export class TradeService {
 
     const offer = await this.prisma.tradeOffer.create({
       data: {
-        worldId: dto.worldId,
+        worldId: effectiveWorldId,
         offerorTeamId: dto.offerorTeamId,
         offereeTeamId: dto.offereeTeamId,
         offerorPlayers: dto.offerorPlayers,

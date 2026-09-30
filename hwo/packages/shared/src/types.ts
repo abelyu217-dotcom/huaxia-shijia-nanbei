@@ -256,6 +256,8 @@ export interface Team {
   chemistry: number;
   /** 队长 ID（#20） */
   captainId?: string | null;
+  /** M5 §6.3：关联用户 ID（用于埋点 + 留存分析，AI 球队为 null） */
+  userId?: string | null;
 }
 
 /** 对阵 */

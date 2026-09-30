@@ -4,3 +4,6 @@ export * from "./sim.js";
 export * from "./tactics.js";
 export * from "./generators.js";
 export * from "./career.js";
+export * from "./balance.js";
+export * from "./sim-config-store.js";
+export * from "./replay.js";

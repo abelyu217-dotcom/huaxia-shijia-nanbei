@@ -21,6 +21,9 @@ import { VipModule } from "./vip/vip.module.js";
 import { CosmeticModule } from "./cosmetic/cosmetic.module.js";
 import { PaymentModule } from "./payment/payment.module.js";
 import { PushModule } from "./push/push.module.js";
+import { SimconfigModule } from "./simconfig/simconfig.module.js";
+import { AuditModule } from "./audit/audit.module.js";
+import { AnalyticsModule } from "./analytics/analytics.module.js";
 
 @Module({
   imports: [
@@ -42,6 +45,9 @@ import { PushModule } from "./push/push.module.js";
     CosmeticModule,
     PaymentModule,
     PushModule,
+    SimconfigModule,
+    AuditModule,
+    AnalyticsModule,
   ],
 })
 export class AppModule {}

@@ -4,6 +4,7 @@ import { PassportModule } from "@nestjs/passport";
 import { AuthController } from "./auth.controller.js";
 import { AuthService } from "./auth.service.js";
 import { JwtStrategy } from "./jwt.strategy.js";
+import { AnalyticsModule } from "../analytics/analytics.module.js";
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { JwtStrategy } from "./jwt.strategy.js";
       secret: process.env.JWT_SECRET ?? "hwo_dev_secret_change_in_prod",
       signOptions: { expiresIn: "7d" },
     }),
+    AnalyticsModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],

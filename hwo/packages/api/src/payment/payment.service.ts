@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service.js";
+import { AnalyticsService } from "../analytics/analytics.service.js";
 
 /** Credits 购买套餐 */
 const CREDIT_PACKAGES = [
@@ -11,7 +12,10 @@ const CREDIT_PACKAGES = [
 
 @Injectable()
 export class PaymentService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private analytics: AnalyticsService,
+  ) {}
 
   getPackages() {
     return CREDIT_PACKAGES;
@@ -64,6 +68,25 @@ export class PaymentService {
         data: { credits: { increment: order.credits } },
       }),
     ]);
+
+    // M5 §6.3 埋点：付费行为（触发日活快照 paid 标记 + 付费金额累加）
+    await this.analytics.track({
+      userId: order.userId,
+      event: "payment_paid",
+      category: "commerce",
+      properties: {
+        orderId,
+        amount: order.amount,
+        credits: order.credits,
+        provider: order.provider,
+      },
+    });
+    await this.analytics.touchDailyActive({
+      userId: order.userId,
+      paid: true,
+      paidAmount: order.amount,
+      isGameAction: true,
+    });
 
     return { success: true, orderId, credits: order.credits };
   }

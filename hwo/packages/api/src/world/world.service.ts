@@ -262,6 +262,71 @@ export class WorldService {
     return { teamId };
   }
 
+  /**
+   * M5 §6.4 多世界并行运行隔离：多世界运行概览
+   *
+   * 用于看板：每个世界的活跃玩家数 / 已结算比赛数 / 联赛进度
+   */
+  async getWorldsStats() {
+    const worlds = await this.prisma.world.findMany({
+      include: {
+        season: { select: { id: true, name: true, status: true, currentDay: true } },
+        leagues: {
+          select: {
+            id: true,
+            name: true,
+            level: true,
+            _count: { select: { matches: true, standings: true } },
+          },
+        },
+        teams: {
+          select: {
+            id: true,
+            userId: true,
+            leagueId: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return Promise.all(
+      worlds.map(async (w) => {
+        // 统计每个世界的已结算比赛数（跨联赛聚合）
+        const settledMatches = await this.prisma.match.count({
+          where: {
+            league: { worldId: w.id },
+            status: "settled",
+          },
+        });
+
+        const totalTeams = w.teams.length;
+        const activePlayers = w.teams.filter((t) => t.userId !== null).length;
+        const aiTeams = totalTeams - activePlayers;
+
+        return {
+          id: w.id,
+          name: w.name,
+          season: w.season,
+          createdAt: w.createdAt,
+          totalTeams,
+          activePlayers,
+          aiTeams,
+          // 填充率：真实玩家占比（用于判断世界是否需要扩容/合并）
+          fillRate: totalTeams > 0 ? activePlayers / totalTeams : 0,
+          settledMatches,
+          leagues: w.leagues.map((l) => ({
+            id: l.id,
+            name: l.name,
+            level: l.level,
+            teamsCount: l._count.standings,
+            matchesCount: l._count.matches,
+          })),
+        };
+      }),
+    );
+  }
+
   // ── 工具方法 ──
 
   /** 计算球队平均 OVR（用于 L1/L2 分级） */

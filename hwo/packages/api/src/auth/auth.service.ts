@@ -15,6 +15,7 @@ import {
 import { JwtService } from "@nestjs/jwt";
 import bcrypt from "bcryptjs";
 import { PrismaService } from "../prisma/prisma.service.js";
+import { AnalyticsService } from "../analytics/analytics.service.js";
 
 export interface AuthResult {
   accessToken: string;
@@ -33,6 +34,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   async register(email: string, password: string, nickname: string): Promise<AuthResult> {
@@ -61,6 +63,14 @@ export class AuthService {
 
     this.logger.log(`User registered: ${email} → team ${freeTeam?.id ?? "none"}`);
 
+    // M5 §6.3 埋点：注册 + 当日活跃
+    await this.analytics.track({
+      userId: user.id,
+      event: "register",
+      category: "auth",
+      properties: { email, teamId: freeTeam?.id ?? null },
+    });
+
     return this.issueToken(user.id, user.email, user.nickname, user.teams[0]?.id ?? null);
   }
 
@@ -77,6 +87,14 @@ export class AuthService {
     if (!valid) {
       throw new UnauthorizedException("邮箱或密码错误");
     }
+
+    // M5 §6.3 埋点：登录 + 当日活跃
+    await this.analytics.track({
+      userId: user.id,
+      event: "login",
+      category: "auth",
+      properties: { email },
+    });
 
     return this.issueToken(user.id, user.email, user.nickname, user.teams[0]?.id ?? null);
   }

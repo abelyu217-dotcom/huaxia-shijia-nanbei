@@ -15,7 +15,8 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 import {
-  DEFAULT_CONFIG,
+  fillTacticDefaults,
+  getActiveConfig,
   simulate,
   tacticFromPreset,
   type Abilities,
@@ -29,6 +30,10 @@ const QUEUE_NAME = "settle-queue";
 const REDIS_URL = process.env.REDIS_URL ?? "redis://localhost:6379";
 const DATABASE_URL =
   process.env.DATABASE_URL ?? "postgresql://hwo:hwo_dev@localhost:5432/hwo";
+
+// M5 §6.4 多世界并行运行隔离：worker 并发度
+// 每个并发 worker 独立处理一个 world 的 job，互不阻塞
+const WORKER_CONCURRENCY = parseInt(process.env.WORKER_CONCURRENCY ?? "8", 10);
 
 // ─── Prisma 客户端 ───
 const pool = new pg.Pool({ connectionString: DATABASE_URL });
@@ -122,7 +127,42 @@ async function loadTeam(teamId: string): Promise<Team> {
     lineup,
     tactic,
     chemistry: row.chemistry,
+    // M5 §6.3：传递 userId 用于埋点（虽然 worker 不直接埋点，但保持数据完整）
+    userId: row.userId,
   };
+}
+
+/**
+ * M5 §6.4 多世界并行运行隔离：
+ * 根据球队的 worldId + leagueId 解析正确的联赛上下文。
+ * 多世界模式下，每个世界都有独立的 L1/L2 联赛，必须按 worldId 过滤。
+ */
+async function resolveLeagueContext(
+  homeTeamId: string,
+  _awayTeamId: string,
+  seasonId?: string,
+): Promise<{ seasonId: string; leagueId: string }> {
+  // 优先使用球队自身的 leagueId（每支球队都关联到一个联赛）
+  const home = await prisma.team.findUnique({
+    where: { id: homeTeamId },
+    select: { leagueId: true, worldId: true },
+  });
+
+  if (home?.leagueId) {
+    // 球队已绑定联赛，直接使用
+    let sid = seasonId;
+    if (!sid) {
+      const league = await prisma.league.findUnique({
+        where: { id: home.leagueId },
+        select: { seasonId: true },
+      });
+      sid = league?.seasonId;
+    }
+    if (sid) return { seasonId: sid, leagueId: home.leagueId };
+  }
+
+  // 回退：按 seasonId 找第一个联赛（M1 单联赛模式）
+  return getSeasonContext(seasonId);
 }
 
 /** 更新积分榜（单支球队） */
@@ -178,6 +218,10 @@ async function upsertStanding(
 
 /**
  * 处理函数：模拟比赛 → 持久化 → 更新积分榜
+ *
+ * M5 §6.4：多世界并行运行隔离
+ *   - 使用球队自身的 worldId/leagueId，避免误写他世界积分榜
+ *   - 配合 WORKER_CONCURRENCY 实现多世界并行消费
  */
 async function handleSettle(job: Job<SettleJobData>): Promise<void> {
   const data = job.data;
@@ -186,25 +230,32 @@ async function handleSettle(job: Job<SettleJobData>): Promise<void> {
     loadTeam(data.awayTeamId),
   ]);
 
-  const homeTeam: Team = {
-    ...home,
-    tactic: tacticFromPreset(home.id, data.homeTacticId),
-  };
-  const awayTeam: Team = {
-    ...away,
-    tactic: tacticFromPreset(away.id, data.awayTacticId),
-  };
+  // M4：优先使用球队自身战术，无则回退到预设
+  const homeTeam: Team = home.tactic
+    ? { ...home, tactic: fillTacticDefaults({ ...home.tactic, teamId: home.id }) }
+    : { ...home, tactic: tacticFromPreset(home.id, data.homeTacticId) };
+  const awayTeam: Team = away.tactic
+    ? { ...away, tactic: fillTacticDefaults({ ...away.tactic, teamId: away.id }) }
+    : { ...away, tactic: tacticFromPreset(away.id, data.awayTacticId) };
 
   const seed = data.seed ?? Math.floor(Math.random() * 1_000_000);
+
+  // M5 §6.1：使用热更新配置（支持灰度调参）
+  const config = getActiveConfig();
 
   const output = simulate({
     matchup: { homeTeam, awayTeam },
     seed,
-    config: DEFAULT_CONFIG,
+    config,
   });
 
   const { result } = output;
-  const { seasonId, leagueId } = await getSeasonContext(data.seasonId);
+  // M5 §6.4：按球队自身 leagueId 解析上下文（多世界隔离）
+  const { seasonId, leagueId } = await resolveLeagueContext(
+    data.homeTeamId,
+    data.awayTeamId,
+    data.seasonId,
+  );
 
   // 持久化比赛 + 结果
   await prisma.match.create({
@@ -227,6 +278,8 @@ async function handleSettle(job: Job<SettleJobData>): Promise<void> {
           pbp: output.pbp as unknown as object,
           boxScore: output.boxScore as unknown as object,
           quarterScores: output.quarterScores as unknown as object,
+          // M5 §6.2：rngLog 审计（防作弊）
+          rngLog: output.rngLog as unknown as object,
           seed,
         },
       },
@@ -245,7 +298,11 @@ async function handleSettle(job: Job<SettleJobData>): Promise<void> {
   );
 }
 
-const worker = new Worker<SettleJobData>(QUEUE_NAME, handleSettle, { connection });
+// M5 §6.4：多 worker 并发处理（默认 8 个，可通过 WORKER_CONCURRENCY 调整）
+const worker = new Worker<SettleJobData>(QUEUE_NAME, handleSettle, {
+  connection,
+  concurrency: WORKER_CONCURRENCY,
+});
 
 worker.on("ready", () => {
   console.log(`[@hwo/worker] listening on queue "${QUEUE_NAME}"`);

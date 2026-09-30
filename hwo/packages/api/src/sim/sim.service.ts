@@ -11,6 +11,7 @@ import { Injectable, Logger, Inject, forwardRef } from "@nestjs/common";
 import {
   DEFAULT_CONFIG,
   fillTacticDefaults,
+  getActiveConfig,
   simulate,
   tacticFromPreset,
   type PlaybookAction,
@@ -22,6 +23,7 @@ import { PrismaService } from "../prisma/prisma.service.js";
 import { TeamService } from "../team/team.service.js";
 import { SeasonService } from "../season/season.service.js";
 import { TacticService } from "../tactic/tactic.service.js";
+import { AnalyticsService } from "../analytics/analytics.service.js";
 
 export interface SimMatchParams {
   homeTeamId: string;
@@ -47,6 +49,7 @@ export class SimService {
     @Inject(forwardRef(() => SeasonService))
     private readonly seasonService: SeasonService,
     private readonly tacticService: TacticService,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   /** 获取或创建默认赛季 + 联赛（M1 阶段单赛季/单联赛模式） */
@@ -97,10 +100,13 @@ export class SimService {
 
     const seed = params.seed ?? Math.floor(Math.random() * 1_000_000);
 
+    // M5 §6.1：使用热更新配置而非硬编码 DEFAULT_CONFIG（支持灰度调参）
+    const config = getActiveConfig();
+
     const output = simulate({
       matchup: { homeTeam, awayTeam },
       seed,
-      config: DEFAULT_CONFIG,
+      config,
     });
 
     const ctx = params.seasonId
@@ -124,6 +130,8 @@ export class SimService {
           pbp: output.pbp as unknown as object,
           boxScore: output.boxScore as unknown as object,
           quarterScores: output.quarterScores as unknown as object,
+          // M5 §6.2：rngLog 用于审计 + 重放（防作弊）
+          rngLog: output.rngLog as unknown as object,
           seed,
         },
       },
@@ -171,6 +179,42 @@ export class SimService {
     this.logger.log(
       `Match saved: ${params.homeTeamId} ${result.homeScore}-${result.awayScore} ${params.awayTeamId} (seed=${seed})`,
     );
+
+    // M5 §6.3 埋点：对真实玩家（home/away userId 存在）记录 sim_match 行为
+    // 用于留存漏斗 + DAU 统计
+    const trackedUsers = new Set<string>();
+    if (home.userId && !trackedUsers.has(home.userId)) {
+      trackedUsers.add(home.userId);
+      await this.analytics.track({
+        userId: home.userId,
+        event: "sim_match",
+        category: "game",
+        properties: {
+          teamId: params.homeTeamId,
+          opponentId: params.awayTeamId,
+          isHome: true,
+          score: result.homeScore,
+          opponentScore: result.awayScore,
+          won: result.winnerId === params.homeTeamId,
+        },
+      });
+    }
+    if (away.userId && !trackedUsers.has(away.userId)) {
+      trackedUsers.add(away.userId);
+      await this.analytics.track({
+        userId: away.userId,
+        event: "sim_match",
+        category: "game",
+        properties: {
+          teamId: params.awayTeamId,
+          opponentId: params.homeTeamId,
+          isHome: false,
+          score: result.awayScore,
+          opponentScore: result.homeScore,
+          won: result.winnerId === params.awayTeamId,
+        },
+      });
+    }
 
     return output;
   }

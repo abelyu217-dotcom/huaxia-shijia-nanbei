@@ -66,6 +66,7 @@ export class TeamService {
       name: string;
       chemistry: number;
       captainId?: string | null;
+      userId?: string | null;
       players: { id: string; name: string; position: string; abilities: unknown; traits: unknown; salary?: number | null; fatigue?: number; age?: number }[];
       lineup: { starters: unknown; minutes: unknown } | null;
       tactic: { modSet: unknown } | null;
@@ -117,6 +118,7 @@ export class TeamService {
       tactic,
       chemistry: row.chemistry,
       captainId,
+      userId: row.userId ?? null,
     };
   }
 
