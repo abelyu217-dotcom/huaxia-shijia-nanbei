@@ -27,13 +27,35 @@ export class TeamService {
 
   constructor(private readonly prisma: PrismaService) {
     try {
-      this.redis = new Redis(REDIS_URL);
+      this.redis = new Redis(REDIS_URL, {
+        // Redis 不可用时让命令快速失败（reject），而不是无限排队挂死请求。
+        // 默认 maxRetriesPerRequest=null 会导致离线命令永不 reject，引发 504。
+        maxRetriesPerRequest: 1,
+        enableOfflineQueue: false,
+        connectTimeout: 1000,
+        retryStrategy: (times) => (times > 2 ? null : Math.min(times * 200, 1000)),
+        lazyConnect: true,
+      });
       this.redis.on("error", (err) => {
         this.logger.warn(`Redis 连接失败，降级为直连 DB: ${err.message}`);
       });
+      // 后台尝试连接；连不上也不影响服务（命令会快速 reject）
+      this.redis.connect().catch(() => {});
     } catch {
       this.redis = null;
     }
+  }
+
+  /** 仅在 Redis 处于就绪态时才用缓存，否则直连 DB，避免命令排队挂起 */
+  private async cacheGet<T>(key: string): Promise<T | null> {
+    if (!this.redis || this.redis.status !== "ready") return null;
+    const cached = await this.redis.get(key).catch(() => null);
+    return cached ? (JSON.parse(cached) as T) : null;
+  }
+
+  private async cacheSet(key: string, value: string): Promise<void> {
+    if (!this.redis || this.redis.status !== "ready") return;
+    await this.redis.set(key, value, "EX", CACHE_TTL).catch(() => {});
   }
 
   /** 把 DB 的 team + players + lineup + tactic 组装成 shared 的 Team 类型 */
@@ -87,10 +109,8 @@ export class TeamService {
   /** 全部球队（带缓存） */
   async getAll(): Promise<Team[]> {
     const cacheKey = "teams:all";
-    if (this.redis) {
-      const cached = await this.redis.get(cacheKey).catch(() => null);
-      if (cached) return JSON.parse(cached) as Team[];
-    }
+    const cached = await this.cacheGet<Team[]>(cacheKey);
+    if (cached) return cached;
 
     const rows = await this.prisma.team.findMany({
       include: { players: true, lineup: true, tactic: true },
@@ -98,19 +118,15 @@ export class TeamService {
     });
     const teams = rows.map((r) => this.assemble(r));
 
-    if (this.redis) {
-      await this.redis.set(cacheKey, JSON.stringify(teams), "EX", CACHE_TTL).catch(() => {});
-    }
+    await this.cacheSet(cacheKey, JSON.stringify(teams));
     return teams;
   }
 
   /** 按 id 查单支球队（带缓存） */
   async getById(id: string): Promise<Team | null> {
     const cacheKey = `team:${id}`;
-    if (this.redis) {
-      const cached = await this.redis.get(cacheKey).catch(() => null);
-      if (cached) return JSON.parse(cached) as Team;
-    }
+    const cached = await this.cacheGet<Team>(cacheKey);
+    if (cached) return cached;
 
     const row = await this.prisma.team.findUnique({
       where: { id },
@@ -119,15 +135,13 @@ export class TeamService {
     if (!row) return null;
 
     const team = this.assemble(row);
-    if (this.redis) {
-      await this.redis.set(cacheKey, JSON.stringify(team), "EX", CACHE_TTL).catch(() => {});
-    }
+    await this.cacheSet(cacheKey, JSON.stringify(team));
     return team;
   }
 
   /** 清除球队相关缓存（阵容/战术变更后调用） */
   async invalidateCache(teamId?: string): Promise<void> {
-    if (!this.redis) return;
+    if (!this.redis || this.redis.status !== "ready") return;
     if (teamId) {
       await this.redis.del(`team:${teamId}`).catch(() => {});
     }
