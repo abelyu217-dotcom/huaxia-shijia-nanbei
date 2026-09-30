@@ -19,6 +19,7 @@ import {
 import { PrismaService } from "../prisma/prisma.service.js";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard.js";
 import { TeamService } from "./team.service.js";
+import { computeOVR } from "@hwo/shared";
 
 interface UpdateLineupDto {
   starters: string[]; // 5 个 player id
@@ -49,6 +50,7 @@ export class LineupController {
         id: p.id,
         name: p.name,
         position: p.position,
+        ovr: computeOVR(p.abilities),
       })),
     };
   }

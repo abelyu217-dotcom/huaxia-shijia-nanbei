@@ -7,12 +7,11 @@
  * - 球员：PlayerGrid 展示球队所有球员卡片
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fetchTactics, fetchTeam } from "../api";
-import type { TacticPreset, TeamDetail } from "../types";
+import type { Position, PlayerDetail, TacticPreset, TeamDetail } from "../types";
 import { useAuth } from "../auth/AuthContext";
 import { LineupEditor } from "../components/LineupEditor";
-import { PlayerCard } from "../components/PlayerCard";
 import { TacticEditor } from "../components/TacticEditor";
 import {
   DEFENSE_LABEL,
@@ -29,6 +28,19 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "players", label: "球员详情" },
 ];
 
+/** OVR 等级色 —— 参考 RA 评级色 */
+function ovrColor(ovr: number): string {
+  if (ovr >= 80) return "var(--ok)"; // 金色
+  if (ovr >= 75) return "#a78bfa"; // 紫
+  if (ovr >= 70) return "#60a5fa"; // 蓝
+  if (ovr >= 65) return "#34d399"; // 绿
+  return "var(--text-muted)";
+}
+
+const POS_FILTERS: ("ALL" | Position)[] = ["ALL", "PG", "SG", "SF", "PF", "C"];
+
+type SortKey = "name" | "position" | "ovr" | "salary" | "three" | "inside" | "perimeterD" | "speed";
+
 interface Props {
   teamId: string;
 }
@@ -42,6 +54,9 @@ export function TeamPage({ teamId }: Props) {
   const [tactics, setTactics] = useState<TacticPreset[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [posFilter, setPosFilter] = useState<"ALL" | Position>("ALL");
+  const [sortKey, setSortKey] = useState<SortKey>("ovr");
+  const [sortAsc, setSortAsc] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -62,6 +77,37 @@ export function TeamPage({ teamId }: Props) {
       cancelled = true;
     };
   }, [teamId]);
+
+  // 阵容表格：位置筛选 + 排序（参考 Rim Attack Roster 表格视图）
+  const visiblePlayers = useMemo(() => {
+    if (!team) return [];
+    const list = posFilter === "ALL" ? team.players : team.players.filter((p) => p.position === posFilter);
+    const sorted = [...list];
+    const getVal = (p: PlayerDetail): number | string => {
+      switch (sortKey) {
+        case "name": return p.name;
+        case "position": return p.position;
+        case "ovr": return p.ovr;
+        case "salary": return p.salary ?? 0;
+        case "three": return p.abilities.three;
+        case "inside": return p.abilities.inside;
+        case "perimeterD": return p.abilities.perimeterD;
+        case "speed": return p.abilities.speed;
+      }
+    };
+    sorted.sort((a, b) => {
+      const va = getVal(a);
+      const vb = getVal(b);
+      if (typeof va === "string" && typeof vb === "string") return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+      return sortAsc ? (va as number) - (vb as number) : (vb as number) - (va as number);
+    });
+    return sorted;
+  }, [team, posFilter, sortKey, sortAsc]);
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) setSortAsc(!sortAsc);
+    else { setSortKey(key); setSortAsc(false); }
+  }
 
   if (loading) {
     return (
@@ -160,13 +206,55 @@ export function TeamPage({ teamId }: Props) {
         <section className="panel">
           <div className="panel-head">
             <h2>球员详情</h2>
-            <span className="hint">{team.players.length} 名球员</span>
+            <div className="roster-toolbar">
+              <div className="pos-filters">
+                {POS_FILTERS.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    className={`pos-filter${posFilter === p ? " is-active" : ""}`}
+                    onClick={() => setPosFilter(p)}
+                  >
+                    {p === "ALL" ? "全部" : p}
+                  </button>
+                ))}
+              </div>
+              <span className="hint">{visiblePlayers.length} / {team.players.length} 名球员</span>
+            </div>
           </div>
           <div className="panel-body">
-            <div className="player-grid">
-              {team.players.map((p) => (
-                <PlayerCard key={p.id} player={p} />
-              ))}
+            <div className="roster-table-wrap">
+              <table className="roster-table">
+                <thead>
+                  <tr>
+                    <th onClick={() => toggleSort("name")} className="sortable">姓名 {sortKey === "name" && (sortAsc ? "▲" : "▼")}</th>
+                    <th onClick={() => toggleSort("position")} className="sortable">位置 {sortKey === "position" && (sortAsc ? "▲" : "▼")}</th>
+                    <th onClick={() => toggleSort("ovr")} className="sortable">OVR {sortKey === "ovr" && (sortAsc ? "▲" : "▼")}</th>
+                    <th onClick={() => toggleSort("salary")} className="sortable">年薪(万) {sortKey === "salary" && (sortAsc ? "▲" : "▼")}</th>
+                    <th onClick={() => toggleSort("three")} className="sortable">三分 {sortKey === "three" && (sortAsc ? "▲" : "▼")}</th>
+                    <th onClick={() => toggleSort("inside")} className="sortable">内线 {sortKey === "inside" && (sortAsc ? "▲" : "▼")}</th>
+                    <th onClick={() => toggleSort("perimeterD")} className="sortable">外防 {sortKey === "perimeterD" && (sortAsc ? "▲" : "▼")}</th>
+                    <th onClick={() => toggleSort("speed")} className="sortable">速度 {sortKey === "speed" && (sortAsc ? "▲" : "▼")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visiblePlayers.map((p) => (
+                    <tr key={p.id}>
+                      <td className="cell-name">{p.name}</td>
+                      <td><span className="pos-badge">{p.position}</span></td>
+                      <td className="cell-ovr" style={{ color: ovrColor(p.ovr) }}>{p.ovr}</td>
+                      <td>{p.salary ?? "—"}</td>
+                      <td>{p.abilities.three}</td>
+                      <td>{p.abilities.inside}</td>
+                      <td>{p.abilities.perimeterD}</td>
+                      <td>{p.abilities.speed}</td>
+                    </tr>
+                  ))}
+                  {visiblePlayers.length === 0 && (
+                    <tr><td colSpan={8} className="empty-row">该位置暂无球员</td></tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </section>

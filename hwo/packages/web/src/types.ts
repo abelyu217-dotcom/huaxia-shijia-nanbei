@@ -226,6 +226,7 @@ export interface LineupPlayer {
   id: string;
   name: string;
   position: Position;
+  ovr: number;
 }
 
 export interface LineupView {

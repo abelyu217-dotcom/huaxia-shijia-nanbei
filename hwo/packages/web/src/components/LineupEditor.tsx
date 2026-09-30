@@ -9,8 +9,19 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { fetchLineup, putLineup } from "../api";
-import type { LineupView } from "../types";
+import type { LineupPlayer, LineupView, Position } from "../types";
 import { POSITION_LABEL } from "../lib";
+
+const POS_ORDER: Position[] = ["PG", "SG", "SF", "PF", "C"];
+
+/** OVR 等级色 —— 参考 RA 评级色 */
+function ovrColor(ovr: number): string {
+  if (ovr >= 80) return "var(--ok)";
+  if (ovr >= 75) return "#a78bfa";
+  if (ovr >= 70) return "#60a5fa";
+  if (ovr >= 65) return "#34d399";
+  return "var(--text-muted)";
+}
 
 interface Props {
   teamId: string;
@@ -66,6 +77,24 @@ export function LineupEditor({ teamId, editable, onSaved }: Props) {
       starters.reduce((sum, pid) => sum + (minutes[pid] ?? 0), 0),
     [starters, minutes],
   );
+
+  // 按位置分组的深度图（hooks 必须在 early return 之前）
+  const groupedPlayers = useMemo(() => {
+    const map: Record<Position, LineupPlayer[]> = {
+      PG: [], SG: [], SF: [], PF: [], C: [],
+    };
+    if (!data) return map;
+    for (const p of data.players) map[p.position].push(p);
+    for (const pos of POS_ORDER) {
+      map[pos].sort((a, b) => {
+        const as = starters.includes(a.id) ? 0 : 1;
+        const bs = starters.includes(b.id) ? 0 : 1;
+        if (as !== bs) return as - bs;
+        return b.ovr - a.ovr;
+      });
+    }
+    return map;
+  }, [data, starters]);
 
   function toggleStarter(pid: string) {
     if (!editable) return;
@@ -136,14 +165,6 @@ export function LineupEditor({ teamId, editable, onSaved }: Props) {
   }
   if (!data) return null;
 
-  // 按 OVR/位置 排序：首发优先，然后按位置 + 名字
-  const sortedPlayers = [...data.players].sort((a, b) => {
-    const aStart = starters.includes(a.id) ? 0 : 1;
-    const bStart = starters.includes(b.id) ? 0 : 1;
-    if (aStart !== bStart) return aStart - bStart;
-    return a.position.localeCompare(b.position) || a.name.localeCompare(b.name);
-  });
-
   return (
     <div className="lineup-editor">
       <div className="lineup-head">
@@ -176,38 +197,52 @@ export function LineupEditor({ teamId, editable, onSaved }: Props) {
         <div className="lineup-hint">你只能编辑自己球队的阵容。</div>
       )}
 
-      <div className="lineup-grid">
-        {sortedPlayers.map((p) => {
-          const isStarter = starters.includes(p.id);
-          return (
-            <div
-              key={p.id}
-              className={`lineup-row${isStarter ? " is-starter" : ""}`}
-            >
-              <label className="lineup-check">
-                <input
-                  type="checkbox"
-                  checked={isStarter}
-                  disabled={!editable}
-                  onChange={() => toggleStarter(p.id)}
-                />
-                <span className="lineup-pos">{POSITION_LABEL[p.position]}</span>
-                <span className="lineup-name">{p.name}</span>
-              </label>
-              <div className="lineup-min">
-                <input
-                  type="number"
-                  min={0}
-                  max={48}
-                  value={minutes[p.id] ?? 0}
-                  disabled={!editable || !isStarter}
-                  onChange={(e) => setMin(p.id, Number(e.target.value))}
-                />
-                <span className="lineup-min-unit">min</span>
-              </div>
+      <div className="depth-chart">
+        {POS_ORDER.map((pos) => (
+          <div className="depth-col" key={pos}>
+            <div className="depth-pos-header">{POSITION_LABEL[pos]}</div>
+            <div className="depth-rows">
+              {groupedPlayers[pos].map((p, idx) => {
+                const isStarter = starters.includes(p.id);
+                const tier = idx === 0 ? "先发" : idx === 1 ? "替补" : `第${idx + 1}梯`;
+                return (
+                  <div
+                    key={p.id}
+                    className={`lineup-row${isStarter ? " is-starter" : ""}`}
+                  >
+                    <label className="lineup-check">
+                      <input
+                        type="checkbox"
+                        checked={isStarter}
+                        disabled={!editable}
+                        onChange={() => toggleStarter(p.id)}
+                      />
+                      <span className="lineup-name">{p.name}</span>
+                    </label>
+                    <div className="lineup-meta">
+                      <span className="lineup-ovr" style={{ color: ovrColor(p.ovr) }}>{p.ovr}</span>
+                      <span className="depth-tier">{tier}</span>
+                    </div>
+                    <div className="lineup-min">
+                      <input
+                        type="number"
+                        min={0}
+                        max={48}
+                        value={minutes[p.id] ?? 0}
+                        disabled={!editable || !isStarter}
+                        onChange={(e) => setMin(p.id, Number(e.target.value))}
+                      />
+                      <span className="lineup-min-unit">min</span>
+                    </div>
+                  </div>
+                );
+              })}
+              {groupedPlayers[pos].length === 0 && (
+                <div className="depth-empty">无球员</div>
+              )}
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
     </div>
   );

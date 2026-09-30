@@ -29,6 +29,7 @@ import type {
   TeamTactic,
 } from "../types";
 import { TACTIC_CATEGORY_LABEL } from "../lib";
+import { HelpTooltip } from "./HelpTooltip";
 
 interface Props {
   teamId: string;
@@ -249,7 +250,7 @@ export function TacticEditor({ teamId }: Props) {
       {/* 当前战术预设 */}
       <div className="panel">
         <div className="panel-head">
-          <h2>战术预设</h2>
+          <h2>战术预设 <HelpTooltip text="选择球队的整体战术风格。预设会影响进攻节奏、得分分布和防守策略。" /></h2>
           <span className="hint">当前：{tactic.presetName}</span>
         </div>
         <div className="panel-body">
@@ -284,7 +285,7 @@ export function TacticEditor({ teamId }: Props) {
       {/* 参数微调 */}
       <div className="panel">
         <div className="panel-head">
-          <h2>参数微调</h2>
+          <h2>参数微调 <HelpTooltip text="精细调整战术执行的各项倾向。滑块值越高，该行为发生的概率越大。" /></h2>
           <span className="hint">调整后点击保存</span>
         </div>
         <div className="panel-body">
@@ -365,7 +366,7 @@ export function TacticEditor({ teamId }: Props) {
       {/* M4: 高级战术层 */}
       <div className="panel">
         <div className="panel-head">
-          <h2>高级战术（M4）</h2>
+          <h2>高级战术 <HelpTooltip text="设置进攻重心、球权分配、防守强度等高级选项，进一步定制球队打法。" /></h2>
           <span className="hint">强调点 / 防挡拆 / 关键球执行者</span>
         </div>
         <div className="panel-body">
