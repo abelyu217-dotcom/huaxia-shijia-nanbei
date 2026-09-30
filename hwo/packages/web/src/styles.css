@@ -2939,12 +2939,12 @@ button {
   align-items: center;
   justify-content: center;
   padding: 40px 22px;
-  /* M6: 登录页球馆背景（更强对比度突出登录卡） */
+  /* 登录页专用背景图（登录进入游戏后切换为球馆背景 arena-bg.png） */
   background:
-    linear-gradient(180deg, rgba(11, 15, 23, 0.78) 0%, rgba(11, 15, 23, 0.85) 60%, rgba(11, 15, 23, 0.92) 100%),
+    linear-gradient(180deg, rgba(11, 15, 23, 0.72) 0%, rgba(11, 15, 23, 0.82) 60%, rgba(11, 15, 23, 0.92) 100%),
     radial-gradient(900px 500px at 70% -10%, rgba(255, 107, 53, 0.18), transparent 60%),
     radial-gradient(700px 400px at 0% 100%, rgba(74, 168, 255, 0.14), transparent 60%),
-    url("/img/arena-bg.png") center center / cover no-repeat fixed,
+    url("/img/login-bg.png") center center / cover no-repeat fixed,
     var(--bg);
 }
 .auth-card {
