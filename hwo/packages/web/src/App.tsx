@@ -30,6 +30,7 @@ import { DraftPage } from "./pages/DraftPage";
 import { MatchSimView } from "./views/MatchSimView";
 import { ShopPage } from "./pages/ShopPage";
 import { FinancePage } from "./pages/FinancePage";
+import { ContractPage } from "./pages/ContractPage";
 import { LeaguePage } from "./pages/LeaguePage";
 import { MatchTacticPage } from "./pages/MatchTacticPage";
 import { ScoutPage } from "./pages/ScoutPage";
@@ -56,6 +57,7 @@ type View =
   | { kind: "sim" }
   | { kind: "shop" }
   | { kind: "finance" }
+  | { kind: "contract" }
   | { kind: "league" }
   | { kind: "matchTactic"; matchId?: string }
   | { kind: "scout" }
@@ -79,6 +81,7 @@ type NavKind =
   | "sim"
   | "shop"
   | "finance"
+  | "contract"
   | "league"
   | "matchTactic"
   | "scout"
@@ -108,6 +111,7 @@ const NAV_GROUPS: { group: string; items: { id: NavKind; label: string }[] }[] =
       { id: "team", label: "我的球队" },
       { id: "corePlayers", label: "核心球员" },
       { id: "finance", label: "财务" },
+      { id: "contract", label: "合同" },
       { id: "scout", label: "球探" },
       { id: "watchlist", label: "观察名单" },
       { id: "trade", label: "交易" },
@@ -151,6 +155,7 @@ function navToView(kind: NavKind, teamId?: string): View {
   if (kind === "draft") return { kind: "draft" };
   if (kind === "shop") return { kind: "shop" };
   if (kind === "finance") return { kind: "finance" };
+  if (kind === "contract") return { kind: "contract" };
   if (kind === "league") return { kind: "league" };
   if (kind === "matchTactic") return { kind: "matchTactic" };
   if (kind === "scout") return { kind: "scout" };
@@ -322,6 +327,9 @@ function AppInner() {
           {view.kind === "shop" && <ShopPage />}
           {view.kind === "finance" && myTeamId && (
             <FinancePage teamId={myTeamId} />
+          )}
+          {view.kind === "contract" && myTeamId && (
+            <ContractPage teamId={myTeamId} worldId={myWorldId} />
           )}
           {view.kind === "league" && (
             <LeaguePage teamId={myTeamId ?? undefined} />

@@ -8,6 +8,7 @@ import { AiManagerModule } from "../ai/ai-manager.module.js";
 import { CareerModule } from "../career/career.module.js";
 import { AcademyModule } from "../academy/academy.module.js";
 import { ContractModule } from "../contract/contract.module.js";
+import { DraftModule } from "../draft/draft.module.js";
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { ContractModule } from "../contract/contract.module.js";
     forwardRef(() => CareerModule),
     forwardRef(() => AcademyModule),
     forwardRef(() => ContractModule),
+    DraftModule,
   ],
   controllers: [SeasonController],
   providers: [SeasonService, ScheduleService],

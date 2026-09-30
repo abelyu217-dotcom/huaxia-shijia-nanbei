@@ -91,20 +91,25 @@ export class ContractService {
     // 工资帽检查
     await this.assertUnderSalaryCap(teamId, salaryPerYear);
 
-    // 创建合同
-    const contract = await this.prisma.contract.create({
-      data: {
-        playerId,
-        teamId,
-        yearsTotal,
-        yearsRemain: yearsTotal,
-        salaryPerYear,
-        playerOption,
-        teamOption,
-        noTrade,
-        status: "active",
-      },
-    });
+    // 创建或复用合同（playerId 唯一，已有 expired/waived 合同时更新而非新建）
+    const contractData = {
+      teamId,
+      yearsTotal,
+      yearsRemain: yearsTotal,
+      salaryPerYear,
+      playerOption,
+      teamOption,
+      noTrade,
+      status: "active" as const,
+    };
+    const contract = existing
+      ? await this.prisma.contract.update({
+          where: { id: existing.id },
+          data: contractData,
+        })
+      : await this.prisma.contract.create({
+          data: { playerId, ...contractData },
+        });
 
     // 同步更新球员年薪
     await this.prisma.player.update({

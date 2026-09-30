@@ -12,6 +12,7 @@ import { PrismaService } from "../prisma/prisma.service.js";
 import { CareerService } from "../career/career.service.js";
 import { AcademyService } from "../academy/academy.service.js";
 import { ContractService } from "../contract/contract.service.js";
+import { DraftService } from "../draft/draft.service.js";
 
 @Injectable()
 export class SeasonService {
@@ -25,6 +26,7 @@ export class SeasonService {
     private readonly academyService: AcademyService,
     @Inject(forwardRef(() => ContractService))
     private readonly contractService: ContractService,
+    private readonly draftService: DraftService,
   ) {}
 
   /** 获取当前激活的常规赛赛季，不存在则创建 */
@@ -296,6 +298,31 @@ export class SeasonService {
     );
     this.logger.log(
       `青训产出：${teamsProcessed} 支球队，共 ${totalRookies} 名新秀加入各队`,
+    );
+
+    // M3: 为每个有球队的世界初始化新赛季选秀大会（乐透抽签 + 生成选秀池）
+    // 注意：不能仅依赖 worlds（来自联赛），否则无联赛的世界会漏掉选秀
+    const worldTeams = await this.prisma.team.findMany({
+      where: { id: { not: { startsWith: "DRAFT_POOL_" } } },
+      select: { worldId: true },
+      distinct: ["worldId"],
+    });
+    const worldIds = worldTeams.map((t) => t.worldId ?? "default");
+    let totalDraftPicks = 0;
+    let totalProspects = 0;
+    for (const worldId of worldIds) {
+      try {
+        const result = await this.draftService.initDraft(newSeason.id, worldId);
+        totalDraftPicks += result.picksCreated;
+        totalProspects += result.prospectsCreated;
+      } catch (e) {
+        this.logger.warn(
+          `世界 ${worldId} 选秀初始化失败（不影响赛季交接）：${e instanceof Error ? e.message : String(e)}`,
+        );
+      }
+    }
+    this.logger.log(
+      `选秀初始化：${worldIds.length} 个世界，共 ${totalDraftPicks} 个顺位，${totalProspects} 名选秀球员`,
     );
 
     // 两级联赛：创建新赛季的国际冠军杯
