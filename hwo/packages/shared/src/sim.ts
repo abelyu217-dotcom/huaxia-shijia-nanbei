@@ -1016,6 +1016,15 @@ export function simulate(input: SimInput): SimOutput {
   const homeStat = emptyTeamStat(homeTeam.id, homeTeam.players);
   const awayStat = emptyTeamStat(awayTeam.id, awayTeam.players);
 
+  // 统一 PBP 事件入队：自动注入当前双方场上 5 人 ID，供直播前端同步阵容
+  const pushPbp = (ev: PbpEvent) => {
+    pbp.push({
+      ...ev,
+      onCourtHome: homeState.activeIds.slice(),
+      onCourtAway: awayState.activeIds.slice(),
+    });
+  };
+
   // 运行时阵容状态：首发开局，6 犯离场或疲劳过高时换人
   // M4: 若有 conditional lineup default 命中，开局即应用其 starters
   const homeInit = resolveConditionalLineup(homeTeam, 0, 0, config.possessionsPerQuarter);
@@ -1053,7 +1062,7 @@ export function simulate(input: SimInput): SimOutput {
 
     const qStartHome = scoreHome;
     const qStartAway = scoreAway;
-    pbp.push({
+    pushPbp({
       quarter: periodNumber,
       clock: isOvertime ? "5:00" : "12:00",
       scoreHome,
@@ -1118,7 +1127,7 @@ export function simulate(input: SimInput): SimOutput {
       };
 
       const result = simulatePossession(ctx, i, periodConfig);
-      for (const ev of result.events) pbp.push(ev);
+      for (const ev of result.events) pushPbp(ev);
       scoreHome += result.homeScoreDelta;
       scoreAway += result.awayScoreDelta;
 
@@ -1132,7 +1141,7 @@ export function simulate(input: SimInput): SimOutput {
             const sub = substitute(team, st, id);
             if (sub) {
               const s = { scoreHome, scoreAway };
-              pbp.push({
+              pushPbp({
                 quarter: periodNumber,
                 clock: formatClock(i, possessions, periodConfig),
                 scoreHome: s.scoreHome,
@@ -1193,7 +1202,7 @@ export function simulate(input: SimInput): SimOutput {
       p.condition.fatigue = clamp(p.condition.fatigue - 0.08, 0, 1);
     }
 
-    pbp.push({
+    pushPbp({
       quarter: periodNumber,
       clock: "0:00",
       scoreHome,

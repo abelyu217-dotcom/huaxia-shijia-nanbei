@@ -27,8 +27,19 @@ import {
 export class MatchStreamService {
   private readonly logger = new Logger(MatchStreamService.name);
 
-  // 每条 PBP 事件的推送间隔（毫秒），模拟实时节奏
-  private readonly EVENT_INTERVAL_MS = 300;
+  /**
+   * 比赛时间流速倍率：N 个比赛秒 = 1 个真实秒。
+   * 默认 4 → 一节 12 分钟（720 比赛秒）约 3 分钟真实时间，全场约 12 分钟。
+   * 设为 1 则 1:1 真实流速（全场约 48 分钟）。
+   */
+  private readonly DEFAULT_GAME_TIME_SCALE = 4;
+
+  /** 单条事件最大推送间隔（毫秒），避免节间/死球时过长等待 */
+  private readonly MAX_EVENT_DELAY_MS = 5000;
+  /** 单条事件最小推送间隔（毫秒），保证可读性 */
+  private readonly MIN_EVENT_DELAY_MS = 200;
+  /** 节间额外停顿（毫秒） */
+  private readonly PERIOD_BREAK_MS = 3000;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -38,12 +49,17 @@ export class MatchStreamService {
   /**
    * 订阅比赛实时事件流。
    * 返回 Observable，由 NestJS SSE 装饰器转换为 text/event-stream。
+   * @param speed 可选流速倍率（比赛秒/真实秒），默认 4
    */
-  async streamMatch(matchId: string): Promise<Observable<MessageEvent>> {
+  async streamMatch(
+    matchId: string,
+    speed?: number,
+  ): Promise<Observable<MessageEvent>> {
     const subject = new Subject<MessageEvent>();
+    const scale = this.resolveScale(speed);
 
     // 异步推送事件
-    this.pushEvents(matchId, subject).catch((err) => {
+    this.pushEvents(matchId, subject, scale).catch((err) => {
       this.logger.error(`比赛流推送失败: ${err.message}`);
       subject.next({
         data: JSON.stringify({ type: "error", message: err.message }),
@@ -54,7 +70,22 @@ export class MatchStreamService {
     return subject.asObservable();
   }
 
-  private async pushEvents(matchId: string, subject: Subject<MessageEvent>): Promise<void> {
+  private resolveScale(speed: number | undefined): number {
+    if (speed == null || Number.isNaN(speed)) return this.DEFAULT_GAME_TIME_SCALE;
+    return Math.max(0.5, Math.min(60, speed));
+  }
+
+  /** 解析 "mm:ss" 为剩余秒数 */
+  private parseClock(clock: string): number {
+    const [m, s] = clock.split(":").map((x) => parseInt(x, 10));
+    return (Number.isFinite(m) ? m : 0) * 60 + (Number.isFinite(s) ? s : 0);
+  }
+
+  private async pushEvents(
+    matchId: string,
+    subject: Subject<MessageEvent>,
+    scale: number,
+  ): Promise<void> {
     const match = await this.prisma.match.findUnique({
       where: { id: matchId },
       include: { result: true, homeTeam: true, awayTeam: true },
@@ -75,7 +106,7 @@ export class MatchStreamService {
         awayScore: match.result.awayScore,
         winnerId: match.result.winnerId,
       };
-      this.logger.log(`观战已结算比赛 ${matchId}，共 ${pbpEvents.length} 条 PBP`);
+      this.logger.log(`观战已结算比赛 ${matchId}，共 ${pbpEvents.length} 条 PBP，流速 ${scale}x`);
     } else {
       // 未结算：模拟比赛
       const home = await this.teamService.getById(match.homeTeamId);
@@ -103,15 +134,44 @@ export class MatchStreamService {
         awayScore: output.result.awayScore,
         winnerId: output.result.winnerId,
       };
-      this.logger.log(`观战模拟比赛 ${matchId}，共 ${pbpEvents.length} 条 PBP`);
+      this.logger.log(`观战模拟比赛 ${matchId}，共 ${pbpEvents.length} 条 PBP，流速 ${scale}x`);
     }
 
-    // 逐条推送 PBP 事件
+    // 逐条推送 PBP 事件，按事件间真实比赛时间差决定间隔
+    let prevClockSec: number | null = null;
+    let prevQuarter: number | null = null;
+
     for (const event of pbpEvents) {
       subject.next({
         data: JSON.stringify({ type: "pbp", event }),
       } as MessageEvent);
-      await this.delay(this.EVENT_INTERVAL_MS);
+
+      const curClockSec = this.parseClock(event.clock);
+
+      // 节间停顿：进入新的一节（period_start 且 quarter 变化）
+      if (prevQuarter !== null && event.quarter !== prevQuarter) {
+        await this.delay(this.PERIOD_BREAK_MS);
+        prevClockSec = curClockSec;
+        prevQuarter = event.quarter;
+        continue;
+      }
+
+      if (prevClockSec !== null) {
+        // 比赛时间流逝 = 上一事件剩余秒 - 当前事件剩余秒
+        const gameDeltaSec = prevClockSec - curClockSec;
+        if (gameDeltaSec > 0) {
+          // 比赛秒 / 倍率 = 真实秒
+          let delayMs = (gameDeltaSec / scale) * 1000;
+          delayMs = Math.max(this.MIN_EVENT_DELAY_MS, Math.min(this.MAX_EVENT_DELAY_MS, delayMs));
+          await this.delay(delayMs);
+        } else {
+          // 时钟未推进（如同回合内多次罚球/犯规），用最小间隔
+          await this.delay(this.MIN_EVENT_DELAY_MS);
+        }
+      }
+
+      prevClockSec = curClockSec;
+      prevQuarter = event.quarter;
     }
 
     // 推送最终结果

@@ -51,6 +51,10 @@ export interface PbpEvent {
   reboundType?: "off" | "def";
   /** 罚球是否命中（仅罚球事件有值） */
   made?: boolean;
+  /** 当前场上主队 5 人 ID（用于直播同步场上阵容） */
+  onCourtHome?: string[];
+  /** 当前场上客队 5 人 ID */
+  onCourtAway?: string[];
   desc: string;
 }
 

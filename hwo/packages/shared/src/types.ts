@@ -326,6 +326,10 @@ export interface PbpEvent {
   made?: boolean;
   /** M4: 本回合进攻动作类型（Synergy 分类标签，投篮事件携带） */
   playAction?: PlaybookAction;
+  /** 当前场上主队 5 人 ID（用于直播同步场上阵容） */
+  onCourtHome?: string[];
+  /** 当前场上客队 5 人 ID */
+  onCourtAway?: string[];
   desc: string;           // 叙事文本
 }
 

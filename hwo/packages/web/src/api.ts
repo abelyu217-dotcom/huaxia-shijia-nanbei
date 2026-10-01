@@ -430,14 +430,20 @@ export function postAiDecideTrade(tradeId: string): Promise<TradeOffer> {
  * 订阅 /api/matches/:id/stream 的 SSE 流。
  * 返回 EventSource；调用方负责 close()。
  * onMessage 解析后通过回调传出。
+ * @param speed 可选流速倍率（比赛秒/真实秒），默认 4；传 1 即 1:1 真实流速
  */
 export function subscribeMatchStream(
   matchId: string,
   onMessage: (data: unknown) => void,
   onError?: (err: Event) => void,
+  speed?: number,
 ): EventSource {
-  const url = `/api/matches/${encodeURIComponent(matchId)}/stream`;
-  const es = new EventSource(url);
+  const url = new URL(
+    `/api/matches/${encodeURIComponent(matchId)}/stream`,
+    window.location.origin,
+  );
+  if (speed != null) url.searchParams.set("speed", String(speed));
+  const es = new EventSource(url.toString());
   es.onmessage = (ev) => {
     try {
       onMessage(JSON.parse(ev.data));

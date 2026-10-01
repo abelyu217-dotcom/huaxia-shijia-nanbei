@@ -308,7 +308,12 @@ function AppInner() {
             />
           )}
           {view.kind === "schedule" && (
-            <SchedulePage initialMatchId={view.matchId ?? null} />
+            <SchedulePage
+              initialMatchId={view.matchId ?? null}
+              onOpenMatchTactic={(matchId) =>
+                setView({ kind: "matchTactic", matchId })
+              }
+            />
           )}
           {view.kind === "team" && <TeamPage teamId={view.teamId} />}
           {view.kind === "trade" && myTeamId && (

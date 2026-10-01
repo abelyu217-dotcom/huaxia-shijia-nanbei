@@ -112,8 +112,9 @@ export function MatchTacticPage({ matchId, teamId }: Props) {
   }, [notice]);
 
   // 主数据加载链：定位比赛 → 并行拉取预设/我方/对手战术 → 反制建议
+  // 若无 matchId，自动选取我方球队的下一场未结算比赛
   useEffect(() => {
-    if (!matchId || !myTeamId) {
+    if (!myTeamId) {
       setLoading(false);
       return;
     }
@@ -122,13 +123,44 @@ export function MatchTacticPage({ matchId, teamId }: Props) {
     setError(null);
     (async () => {
       try {
-        // 1. 定位比赛
+        // 1. 定位比赛：有 matchId 用指定的，否则自动找下一场
         const schedule = await fetchSchedule();
         if (cancelled) return;
-        const found = findScheduleMatch(schedule, matchId);
+
+        let found: { day: number; match: ScheduleMatch } | null = null;
+        if (matchId) {
+          found = findScheduleMatch(schedule, matchId);
+        } else {
+          // 自动选取我方球队最近的一场未结算比赛
+          for (const d of schedule) {
+            const m = d.matches.find(
+              (mm) =>
+                (mm.homeTeamId === myTeamId || mm.awayTeamId === myTeamId) &&
+                mm.status !== "final",
+            );
+            if (m) {
+              found = { day: d.day, match: m };
+              break;
+            }
+          }
+          // 若无未结算比赛，取最近一场已结算的
+          if (!found) {
+            for (const d of schedule) {
+              const m = d.matches.find(
+                (mm) =>
+                  mm.homeTeamId === myTeamId || mm.awayTeamId === myTeamId,
+              );
+              if (m) {
+                found = { day: d.day, match: m };
+                break;
+              }
+            }
+          }
+        }
+
         if (!found) {
           if (!cancelled) {
-            setError("未找到该比赛，请从赛程页重新选择");
+            setError("暂无比赛数据");
             setLoading(false);
           }
           return;
@@ -195,15 +227,15 @@ export function MatchTacticPage({ matchId, teamId }: Props) {
     }
   };
 
-  // 无比赛：引导从赛程页选择
-  if (!matchId) {
+  // 无球队：提示
+  if (!myTeamId) {
     return (
       <div className="match-tactic-page">
         <div className="page-head">
           <h2>单场战术设定</h2>
           <p className="muted">为当前比赛定制我方战术，并查看对手分析与反制策略</p>
         </div>
-        <div className="empty-block">请从赛程页选择一场比赛</div>
+        <div className="empty-block">请先登录并认领球队</div>
       </div>
     );
   }

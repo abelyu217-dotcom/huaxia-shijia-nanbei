@@ -37,7 +37,6 @@ interface LiveMatchProps {
 }
 
 const SPEEDS = [1, 2, 4, 8, 16] as const;
-const BASE_INTERVAL = 650; // 1x 时每事件间隔 ms
 
 /** 球员实时统计（从已展示事件聚合） */
 interface LivePlayerStat {
@@ -425,26 +424,44 @@ export function LiveMatch({
     return marks;
   }, [allEvents]);
 
-  const homeStarters = startersOf(homeTeam);
-  const awayStarters = startersOf(awayTeam);
+  // 场上五人：从最新 PBP 事件的 onCourtHome/onCourtAway 读取，与实际换人同步
+  // 若事件未携带 onCourt 字段（旧数据），回退到首发五人
+  const homeOnCourtIds = cur?.onCourtHome;
+  const awayOnCourtIds = cur?.onCourtAway;
+  const homeStarters = homeOnCourtIds
+    ? homeOnCourtIds
+        .map((id) => homeTeam?.players.find((p) => p.id === id))
+        .filter((p): p is PlayerDetail => !!p)
+    : startersOf(homeTeam);
+  const awayStarters = awayOnCourtIds
+    ? awayOnCourtIds
+        .map((id) => awayTeam?.players.find((p) => p.id === id))
+        .filter((p): p is PlayerDetail => !!p)
+    : startersOf(awayTeam);
 
   // 清理定时器
   const clearTimer = () => {
     if (timerRef.current) {
-      clearInterval(timerRef.current);
+      clearTimeout(timerRef.current);
       timerRef.current = null;
     }
   };
 
-  // 播放推进
+  // 解析 "mm:ss" 为剩余秒数
+  const parseClockSec = (clock: string): number => {
+    const [m, s] = clock.split(":").map((x) => parseInt(x, 10));
+    return (Number.isFinite(m) ? m : 0) * 60 + (Number.isFinite(s) ? s : 0);
+  };
+
+  // 播放推进：按事件间真实比赛时间差决定间隔（时钟驱动）
   useEffect(() => {
     if (playState !== "playing") return;
     if (playbackIndex >= allEvents.length) {
       setPlayState("finished");
       return;
     }
-    const interval = BASE_INTERVAL / speed;
-    timerRef.current = setInterval(() => {
+
+    const tick = () => {
       setPlaybackIndex((idx) => {
         const next = idx + 1;
         if (next >= allEvents.length) {
@@ -452,11 +469,28 @@ export function LiveMatch({
           setPlayState("finished");
           return allEvents.length;
         }
+
+        // 计算下一事件与当前事件的比赛时间差，换算为真实延迟
+        const cur = allEvents[idx];
+        const nxt = allEvents[next];
+        let delayMs: number;
+        if (cur && nxt && cur.quarter === nxt.quarter) {
+          const deltaSec = parseClockSec(cur.clock) - parseClockSec(nxt.clock);
+          // 比赛秒 / (speed * 4) ≈ 真实秒（与后端 DEFAULT_GAME_TIME_SCALE=4 对齐）
+          delayMs = Math.max(120, Math.min(4000, (deltaSec / (speed * 4)) * 1000));
+        } else if (cur && nxt && cur.quarter !== nxt.quarter) {
+          delayMs = 1500; // 节间停顿
+        } else {
+          delayMs = 650 / speed;
+        }
+        timerRef.current = setTimeout(tick, delayMs);
         return next;
       });
-    }, interval);
+    };
+
+    timerRef.current = setTimeout(tick, 200);
     return clearTimer;
-  }, [playState, speed, allEvents.length]);
+  }, [playState, speed, allEvents]);
 
   // 自动滚动到最新事件
   useEffect(() => {

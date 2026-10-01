@@ -31,9 +31,10 @@ import { QuarterScoreTable } from "../components/QuarterScoreTable";
 
 interface Props {
   initialMatchId?: string | null;
+  onOpenMatchTactic?: (matchId: string) => void;
 }
 
-export function SchedulePage({ initialMatchId }: Props) {
+export function SchedulePage({ initialMatchId, onOpenMatchTactic }: Props) {
   const { user } = useAuth();
   const [season, setSeason] = useState<SeasonInfo | null>(null);
   const [schedule, setSchedule] = useState<ScheduleDay[] | null>(null);
@@ -270,6 +271,18 @@ export function SchedulePage({ initialMatchId }: Props) {
                           <span className="live">进行中</span>
                         )}
                         {m.status === "final" && "已结束 · 点击回看"}
+                        {isMine && onOpenMatchTactic && (
+                          <button
+                            type="button"
+                            className="btn btn-ghost btn-sm dm-tactic-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onOpenMatchTactic(m.id);
+                            }}
+                          >
+                            战术
+                          </button>
+                        )}
                       </div>
                     </button>
                   );
