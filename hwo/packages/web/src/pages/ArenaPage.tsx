@@ -5,16 +5,19 @@
  *   - 友好对战：从全部球队中挑选对手（排除自己），点击"挑战"模拟一场比赛
  *   - 排位赛：前端 mock 排位积分（localStorage 持久化）、赛季信息与排行榜，
  *     "开始匹配"后模拟一场比赛并根据胜负调整积分
+ *   - 球馆设施：训练馆 / 主场馆升级，影响训练成长与比赛日营收（P2-3）
  *
  * 对接：
  *   GET  /api/teams   → TeamRoster[]（对手列表）
  *   GET  /api/tactics → TacticPreset[]（取首个作为默认战术，与赛程页一致）
  *   POST /api/sim/match → SimOutput
+ *   GET  /api/facility/:teamId → Facility
+ *   POST /api/facility/:teamId/upgrade → Facility
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { fetchTactics, fetchTeams, postSimMatch } from "../api";
-import type { SimOutput, TacticPreset, TeamRoster } from "../types";
+import { fetchFacility, fetchTactics, fetchTeams, postSimMatch, postUpgradeFacility } from "../api";
+import type { Facility, FacilityType, SimOutput, TacticPreset, TeamRoster } from "../types";
 import { useAuth } from "../auth/AuthContext";
 import { ovrVal } from "../lib";
 
@@ -22,7 +25,7 @@ interface Props {
   teamId?: string;
 }
 
-type Tab = "friendly" | "ranked";
+type Tab = "friendly" | "ranked" | "facility";
 
 const RANK_KEY = "hwo_arena_rank";
 const RANK_BASE = 1000;
@@ -129,6 +132,11 @@ export function ArenaPage({ teamId }: Props) {
   const [matchmaking, setMatchmaking] = useState(false);
   const [rankedResult, setRankedResult] = useState<MatchSummary | null>(null);
 
+  // P2-3: 球馆设施状态
+  const [facility, setFacility] = useState<Facility | null>(null);
+  const [upgrading, setUpgrading] = useState<FacilityType | null>(null);
+  const [facilityError, setFacilityError] = useState<string | null>(null);
+
   // 取首个战术作为默认（与赛程页一致，回退 "pace_space"）
   const defaultTacticId = tactics[0]?.id ?? "pace_space";
 
@@ -140,10 +148,11 @@ export function ArenaPage({ teamId }: Props) {
     }
     setLoading(true);
     setError(null);
-    Promise.all([fetchTeams(), fetchTactics()])
-      .then(([ts, tcs]) => {
+    Promise.all([fetchTeams(), fetchTactics(), fetchFacility(myTeamId).catch(() => null)])
+      .then(([ts, tcs, fac]) => {
         setTeams(ts);
         setTactics(tcs);
+        if (fac) setFacility(fac);
       })
       .catch((e: unknown) =>
         setError(e instanceof Error ? e.message : String(e)),
@@ -240,6 +249,21 @@ export function ArenaPage({ teamId }: Props) {
     }
   };
 
+  /** P2-3: 升级球馆设施（消耗 Coins，由后端扣款） */
+  const handleUpgradeFacility = async (type: FacilityType) => {
+    if (!myTeamId || upgrading) return;
+    setFacilityError(null);
+    setUpgrading(type);
+    try {
+      const updated = await postUpgradeFacility(myTeamId, type);
+      setFacility(updated);
+    } catch (e: unknown) {
+      setFacilityError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setUpgrading(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="arena-page">
@@ -274,19 +298,19 @@ export function ArenaPage({ teamId }: Props) {
       {error && <div className="state error">{error}</div>}
 
       <div className="arena-tabs">
-        {(["friendly", "ranked"] as Tab[]).map((t) => (
+        {(["friendly", "ranked", "facility"] as Tab[]).map((t) => (
           <button
             key={t}
             type="button"
             className={`arena-tab${tab === t ? " is-active" : ""}`}
             onClick={() => setTab(t)}
           >
-            {t === "friendly" ? "友好对战" : "排位赛"}
+            {t === "friendly" ? "友好对战" : t === "ranked" ? "排位赛" : "球馆设施"}
           </button>
         ))}
       </div>
 
-      {tab === "friendly" ? (
+      {tab === "friendly" && (
         <section className="panel">
           <div className="panel-head">
             <h2>对手列表</h2>
@@ -353,7 +377,9 @@ export function ArenaPage({ teamId }: Props) {
             )}
           </div>
         </section>
-      ) : (
+      )}
+
+      {tab === "ranked" && (
         <div className="ranked-layout">
           <section className="panel rank-panel">
             <div className="panel-head">
@@ -421,6 +447,146 @@ export function ArenaPage({ teamId }: Props) {
           </section>
         </div>
       )}
+
+      {tab === "facility" && (
+        <section className="panel">
+          <div className="panel-head">
+            <h2>球馆设施</h2>
+            <span className="hint">
+              {myTeam ? `我方：${myTeam.name}` : "—"}
+            </span>
+          </div>
+          <div className="panel-body">
+            {facilityError && (
+              <div className="state error">{facilityError}</div>
+            )}
+            {!facility ? (
+              <div className="empty-block">暂无球馆设施数据</div>
+            ) : (
+              <div className="facility-grid">
+                <FacilityCard
+                  title="训练馆"
+                  level={facility.trainingHallLv}
+                  effects={[
+                    {
+                      label: "训练成长倍率",
+                      value: `×${facility.trainingMultiplier.toFixed(2)}`,
+                    },
+                  ]}
+                  next={
+                    facility.upgrades.trainingHall.cost != null
+                      ? {
+                          cost: facility.upgrades.trainingHall.cost,
+                          nextLabel:
+                            facility.upgrades.trainingHall.nextMultiplier != null
+                              ? `×${facility.upgrades.trainingHall.nextMultiplier.toFixed(2)}`
+                              : null,
+                        }
+                      : null
+                  }
+                  upgrading={upgrading === "trainingHall"}
+                  onUpgrade={() => handleUpgradeFacility("trainingHall")}
+                />
+                <FacilityCard
+                  title="主场馆"
+                  level={facility.arenaLv}
+                  effects={[
+                    {
+                      label: "比赛日营收倍率",
+                      value: `×${facility.arenaRevenueMultiplier.toFixed(2)}`,
+                    },
+                    {
+                      label: "主场优势加成",
+                      value:
+                        facility.homeAdvantageBonus > 0
+                          ? `+${facility.homeAdvantageBonus.toFixed(1)}`
+                          : "—",
+                    },
+                  ]}
+                  next={
+                    facility.upgrades.arena.cost != null
+                      ? {
+                          cost: facility.upgrades.arena.cost,
+                          nextLabel:
+                            facility.upgrades.arena.nextRevenue != null
+                              ? `×${facility.upgrades.arena.nextRevenue.toFixed(2)}`
+                              : null,
+                        }
+                      : null
+                  }
+                  upgrading={upgrading === "arena"}
+                  onUpgrade={() => handleUpgradeFacility("arena")}
+                />
+              </div>
+            )}
+            <p className="muted facility-tip">
+              训练馆等级越高，手动训练属性成长越快；主场馆等级越高，比赛日门票营收与主场判罚优势越强。
+            </p>
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
+// ─── P2-3: 球馆设施卡片 ───
+
+interface FacilityCardProps {
+  title: string;
+  level: number;
+  effects: { label: string; value: string }[];
+  next: { cost: number; nextLabel: string | null } | null;
+  upgrading: boolean;
+  onUpgrade: () => void;
+}
+
+function FacilityCard({
+  title,
+  level,
+  effects,
+  next,
+  upgrading,
+  onUpgrade,
+}: FacilityCardProps) {
+  return (
+    <div className="facility-card">
+      <div className="facility-card-head">
+        <span className="facility-name">{title}</span>
+        <span className="facility-level">Lv {level}</span>
+      </div>
+      <div className="facility-effects">
+        {effects.map((e) => (
+          <div key={e.label} className="facility-effect-row">
+            <span>{e.label}</span>
+            <strong>{e.value}</strong>
+          </div>
+        ))}
+      </div>
+      <div className="facility-upgrade">
+        {next ? (
+          <>
+            <div className="facility-upgrade-info">
+              <span>下一级</span>
+              <strong>
+                {next.nextLabel ?? "已封顶"}
+              </strong>
+              <span className="facility-cost">
+                花费 {next.cost.toLocaleString()} Coins
+              </span>
+            </div>
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={onUpgrade}
+              disabled={upgrading}
+            >
+              {upgrading ? "升级中…" : "升级"}
+            </button>
+          </>
+        ) : (
+          <div className="facility-maxed">已满级</div>
+        )}
+      </div>
     </div>
   );
 }

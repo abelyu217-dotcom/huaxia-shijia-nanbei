@@ -135,8 +135,23 @@ model Team {
   draftPicks  DraftPick[]  @relation("DraftPicks")
   contracts   Contract[]   @relation("Contracts")
 
+  // P2-3: 球馆设施（训练馆 + 主场馆）
+  facility    Facility?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ─── P2-3: 球馆设施 ───
+// 训练馆等级影响训练成长倍率；主场馆等级影响比赛日营收与主场优势
+model Facility {
+  id             String   @id @default(cuid())
+  teamId         String   @unique
+  team           Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  trainingHallLv Int     @default(1) // 训练馆等级 1-5
+  arenaLv        Int     @default(1) // 主场馆等级 1-5
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 // ─── 球员 ───

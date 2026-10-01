@@ -449,6 +449,8 @@ export interface TrainResult {
   ovrAfter: number;
   improved: boolean;
   attributeChanges: { ability: string; before: number; after: number; delta: number }[];
+  /** P2-3: 训练馆等级带来的训练成长倍率 */
+  trainingMultiplier?: number;
 }
 
 // ── M3: 青训学院 ──
@@ -463,6 +465,28 @@ export interface Academy {
 export interface AcademyUpgradeResult extends Academy {
   upgradeCost: number | null;
   nextLevelPotential: number | null;
+}
+
+// ── P2-3: 球馆设施 ──
+export type FacilityType = "trainingHall" | "arena";
+
+export interface FacilityUpgrades {
+  trainingHall: { cost: number | null; nextMultiplier: number | null };
+  arena: { cost: number | null; nextRevenue: number | null; nextHomeBonus: number | null };
+}
+
+export interface Facility {
+  teamId: string;
+  trainingHallLv: number;
+  arenaLv: number;
+  /** 当前训练成长倍率 */
+  trainingMultiplier: number;
+  /** 当前比赛日营收倍率 */
+  arenaRevenueMultiplier: number;
+  /** 当前主场优势加成 */
+  homeAdvantageBonus: number;
+  /** 升级费用与下一级效果（满级为 null） */
+  upgrades: FacilityUpgrades;
 }
 
 // ── M3: 选秀 ──
@@ -620,4 +644,66 @@ export interface PaymentOrderResult {
   provider: string;
   checkoutUrl: string;
   sandbox: boolean;
+}
+
+// ── P2: 管理后台类型 ──
+
+export interface DauOverview {
+  date: string;
+  dau: number;
+  wau: number;
+  mau: number;
+  paying: number;
+}
+
+export interface RetentionPoint {
+  date: string;
+  cohort: number;
+  retained: number;
+  rate: number;
+}
+
+export interface AnalyticsEvent {
+  id: string;
+  userId: string | null;
+  event: string;
+  category: string;
+  properties: unknown;
+  createdAt: string;
+}
+
+export interface AuditScanResult {
+  matchId: string;
+  homeTeamId: string;
+  awayTeamId: string;
+  homeScore: number;
+  awayScore: number;
+  anomaly: boolean;
+  reason?: string;
+}
+
+export interface AuditReplayResult {
+  matchId: string;
+  replayed: boolean;
+  homeScore: number;
+  awayScore: number;
+  originalHomeScore?: number;
+  originalAwayScore?: number;
+  mismatch?: boolean;
+}
+
+export interface SimConfigActive {
+  quarterLength: number;
+  possessionsPerQuarter: number;
+  homeAdvantage: number;
+  basePossessionTime: number;
+  version: number;
+  updatedAt: string;
+}
+
+export interface SimConfigVersion {
+  version: number;
+  config: Record<string, number>;
+  note: string;
+  createdAt: string;
 }

@@ -163,6 +163,39 @@ function resolveEndGameStrategy(
   return strategies.close ?? "normal";
 }
 
+/**
+ * P2: 半场调整 —— 在 Q2 结束后修改球队战术倾向。
+ * 直接修改 team.tactic 上的对应字段。
+ */
+function applyHalftimeAdjust(team: Team): void {
+  const adj = team.tactic.halftimeAdjust;
+  if (!adj) return;
+
+  if (adj.offenseFocus) {
+    team.tactic.offenseFocus = adj.offenseFocus;
+  }
+  if (adj.defenseIntensity) {
+    team.tactic.defenseIntensity = adj.defenseIntensity;
+  }
+  if (adj.pace) {
+    team.tactic.pace = adj.pace;
+  }
+  if (typeof adj.threeAdjust === "number") {
+    team.tactic.tendencyMod.three = clamp(
+      team.tactic.tendencyMod.three + adj.threeAdjust,
+      -0.3,
+      0.3,
+    );
+  }
+  if (typeof adj.defenseContestAdjust === "number") {
+    team.tactic.defenseContest = clamp(
+      team.tactic.defenseContest + adj.defenseContestAdjust,
+      -0.2,
+      0.5,
+    );
+  }
+}
+
 /** 末节策略对进攻端的即时影响 */
 interface OffenseStrategyEffect {
   /** action 权重倍率 */
@@ -1200,6 +1233,12 @@ export function simulate(input: SimInput): SimOutput {
     }
     for (const p of awayTeam.players) {
       p.condition.fatigue = clamp(p.condition.fatigue - 0.08, 0, 1);
+    }
+
+    // P2: 半场调整 —— Q2 结束后应用 halftimeAdjust
+    if (periodNumber === 2) {
+      applyHalftimeAdjust(homeTeam);
+      applyHalftimeAdjust(awayTeam);
     }
 
     pushPbp({

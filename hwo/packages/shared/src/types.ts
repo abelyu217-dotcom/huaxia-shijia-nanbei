@@ -146,6 +146,20 @@ export interface TacticModSet {
   actionWeights?: Partial<Record<PlaybookAction, number>>;
   /** M4: 末节策略（领先/落后/焦灼时分别触发） */
   endGameStrategies?: EndGameStrategies;
+
+  /** P2: 半场调整 —— Q2 结束后自动切换战术倾向 */
+  halftimeAdjust?: {
+    /** 进攻侧重切换 */
+    offenseFocus?: "balanced" | "drive" | "outside" | "inside" | "bully" | "pnr";
+    /** 防守强度切换 */
+    defenseIntensity?: "aggressive" | "balanced" | "conservative";
+    /** 节奏切换 */
+    pace?: "faster" | "balanced" | "slower";
+    /** 三分倾向调整（-0.1 ~ +0.1） */
+    threeAdjust?: number;
+    /** 防守干扰调整（-0.05 ~ +0.05） */
+    defenseContestAdjust?: number;
+  };
 }
 
 // ─── M4: 末节策略 ───

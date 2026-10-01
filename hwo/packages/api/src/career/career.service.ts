@@ -18,6 +18,7 @@ import {
   type Abilities,
 } from "@hwo/shared";
 import type { Prisma } from "@prisma/client";
+import { FacilityService } from "../facility/facility.service.js";
 
 /** 训练类型及其主攻属性 */
 export type DrillType =
@@ -73,7 +74,10 @@ const DRILL_CONFIGS: Record<DrillType, DrillConfig> = {
 export class CareerService {
   private readonly logger = new Logger(CareerService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly facilityService: FacilityService,
+  ) {}
 
   /**
    * 赛季结束时推进所有球员的成长
@@ -226,6 +230,8 @@ export class CareerService {
     improved: boolean;
     /** 各属性变化量（仅包含有变化的属性） */
     attributeChanges: { ability: keyof Abilities; before: number; after: number; delta: number }[];
+    /** P2-3: 训练馆等级带来的训练成长倍率 */
+    trainingMultiplier?: number;
   } | null> {
     const player = await this.prisma.player.findUnique({
       where: { id: playerId },
@@ -260,6 +266,11 @@ export class CareerService {
     const attributeChanges: { ability: keyof Abilities; before: number; after: number; delta: number }[] = [];
     let improved = false;
 
+    // P2-3: 训练馆等级影响训练成长倍率（Lv1=1.0, Lv5=1.45）
+    const trainingMultiplier = player.teamId
+      ? await this.facilityService.getTrainingMultiplier(player.teamId)
+      : 1.0;
+
     // 合并主攻 + 次要属性权重
     const weights: Partial<Record<keyof Abilities, number>> = {
       ...cfg.secondary,
@@ -273,9 +284,9 @@ export class CareerService {
       const room = potential - current;
       if (room <= 0) continue;
 
-      // 基础成长 0.3-0.8，乘以权重，向潜力上限靠拢
+      // 基础成长 0.3-0.8，乘以权重与训练馆倍率，向潜力上限靠拢
       const baseGrowth = 0.3 + Math.random() * 0.5;
-      const growth = Math.min(room, baseGrowth * weight);
+      const growth = Math.min(room, baseGrowth * weight * trainingMultiplier);
       const after = Math.min(99, Math.round((current + growth) * 10) / 10);
       const delta = Math.round((after - current) * 10) / 10;
 
@@ -304,6 +315,7 @@ export class CareerService {
       ovrAfter,
       improved,
       attributeChanges,
+      trainingMultiplier,
     };
   }
 }

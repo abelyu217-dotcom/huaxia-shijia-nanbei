@@ -40,6 +40,15 @@ import type {
   FreeAgent,
   WorldInfo,
   ScoutReport,
+  DauOverview,
+  RetentionPoint,
+  AnalyticsEvent,
+  AuditScanResult,
+  AuditReplayResult,
+  SimConfigActive,
+  SimConfigVersion,
+  Facility,
+  FacilityType,
 } from "./types";
 
 // ── Token 管理 ──
@@ -785,4 +794,86 @@ export function postScoutPlayer(playerId: string): Promise<{ report: ScoutReport
 /** POST /api/scout/players/:playerId/potential — 潜力探查（收窄 Peak fog） */
 export function postScoutPotential(playerId: string): Promise<{ report: ScoutReport; cost: number }> {
   return sendJson("POST", `/api/scout/players/${encodeURIComponent(playerId)}/potential`, {});
+}
+
+// ── P2: 管理后台 (analytics / audit / simconfig) ──
+
+/** GET /api/analytics/dau — DAU 概览 */
+export function fetchDau(date?: string): Promise<DauOverview> {
+  return getJson<DauOverview>(`/api/analytics/dau${date ? `?date=${date}` : ""}`);
+}
+
+/** GET /api/analytics/retention/series — 留存序列 */
+export function fetchRetentionSeries(days = 14, type: "d1" | "d7" | "d30" = "d1"): Promise<RetentionPoint[]> {
+  return getJson<RetentionPoint[]>(`/api/analytics/retention/series?days=${days}&type=${type}`);
+}
+
+/** GET /api/analytics/events — 事件流 */
+export function fetchAnalyticsEvents(params?: {
+  category?: string; event?: string; userId?: string; limit?: number;
+}): Promise<AnalyticsEvent[]> {
+  const qs = new URLSearchParams();
+  if (params?.category) qs.set("category", params.category);
+  if (params?.event) qs.set("event", params.event);
+  if (params?.userId) qs.set("userId", params.userId);
+  if (params?.limit) qs.set("limit", String(params.limit));
+  const q = qs.toString();
+  return getJson<AnalyticsEvent[]>(`/api/analytics/events${q ? `?${q}` : ""}`);
+}
+
+/** GET /api/audit/scan — 批量扫描比赛异常 */
+export function fetchAuditScan(limit = 100): Promise<AuditScanResult[]> {
+  return getJson<AuditScanResult[]>(`/api/audit/scan?limit=${limit}`);
+}
+
+/** GET /api/audit/replay/:matchId — 重放验证 */
+export function fetchAuditReplay(matchId: string): Promise<AuditReplayResult> {
+  return getJson<AuditReplayResult>(`/api/audit/replay/${encodeURIComponent(matchId)}`);
+}
+
+/** GET /api/simconfig — 当前生效配置 */
+export function fetchSimConfig(): Promise<SimConfigActive> {
+  return getJson<SimConfigActive>("/api/simconfig");
+}
+
+/** GET /api/simconfig/history — 配置历史 */
+export function fetchSimConfigHistory(): Promise<SimConfigVersion[]> {
+  return getJson<SimConfigVersion[]>("/api/simconfig/history");
+}
+
+/** POST /api/simconfig/update — 热更新 */
+export function postSimConfigUpdate(
+  patch: Partial<{ quarterLength: number; possessionsPerQuarter: number; homeAdvantage: number; basePossessionTime: number }>,
+  note: string,
+): Promise<SimConfigActive> {
+  return sendJson<SimConfigActive>("POST", "/api/simconfig/update", { patch, note });
+}
+
+/** POST /api/simconfig/rollback — 回滚 */
+export function postSimConfigRollback(version: number): Promise<SimConfigActive> {
+  return sendJson<SimConfigActive>("POST", "/api/simconfig/rollback", { version });
+}
+
+/** POST /api/simconfig/reset — 重置 */
+export function postSimConfigReset(): Promise<SimConfigActive> {
+  return sendJson<SimConfigActive>("POST", "/api/simconfig/reset", {});
+}
+
+// ── P2-3: 球馆设施 ──
+
+/** GET /api/facility/:teamId — 获取球馆设施 */
+export function fetchFacility(teamId: string): Promise<Facility> {
+  return getJson<Facility>(`/api/facility/${encodeURIComponent(teamId)}`);
+}
+
+/** POST /api/facility/:teamId/upgrade — 升级球馆设施 */
+export function postUpgradeFacility(
+  teamId: string,
+  type: FacilityType,
+): Promise<Facility> {
+  return sendJson<Facility>(
+    "POST",
+    `/api/facility/${encodeURIComponent(teamId)}/upgrade`,
+    { type },
+  );
 }

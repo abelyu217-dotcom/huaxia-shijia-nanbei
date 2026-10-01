@@ -104,6 +104,19 @@ export function MatchTacticPage({ matchId, teamId }: Props) {
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
 
+  // P2: 半场调整 + Clutch 战术卡 state
+  const [halftime, setHalftime] = useState<{
+    offenseFocus?: string;
+    defenseIntensity?: string;
+    pace?: string;
+    threeAdjust?: number;
+  }>({});
+  const [clutch, setClutch] = useState<{
+    leading?: string;
+    trailing?: string;
+    close?: string;
+  }>({});
+
   // 成功提示自动消失
   useEffect(() => {
     if (!notice || notice.kind !== "success") return;
@@ -402,6 +415,106 @@ export function MatchTacticPage({ matchId, teamId }: Props) {
                       </div>
                     </div>
                   ))}
+                </div>
+
+                {/* P2: 半场调整 + Clutch 战术卡 */}
+                <div className="halftime-section">
+                  <h3 className="section-title" style={{ marginTop: 16 }}>
+                    半场调整 & Clutch 战术
+                  </h3>
+                  <p className="muted" style={{ fontSize: 12, marginBottom: 10 }}>
+                    Q2 结束后自动切换战术；末节焦灼时执行 clutch 策略
+                  </p>
+                  <div className="halftime-grid">
+                    <label className="halftime-field">
+                      <span>半场进攻侧重</span>
+                      <select
+                        value={halftime.offenseFocus ?? ""}
+                        onChange={(e) => setHalftime({ ...halftime, offenseFocus: e.target.value || undefined })}
+                      >
+                        <option value="">不变</option>
+                        <option value="balanced">均衡</option>
+                        <option value="drive">突破</option>
+                        <option value="outside">外线</option>
+                        <option value="inside">内线</option>
+                        <option value="pnr">挡拆</option>
+                      </select>
+                    </label>
+                    <label className="halftime-field">
+                      <span>半场防守强度</span>
+                      <select
+                        value={halftime.defenseIntensity ?? ""}
+                        onChange={(e) => setHalftime({ ...halftime, defenseIntensity: e.target.value || undefined })}
+                      >
+                        <option value="">不变</option>
+                        <option value="aggressive">激进</option>
+                        <option value="balanced">均衡</option>
+                        <option value="conservative">保守</option>
+                      </select>
+                    </label>
+                    <label className="halftime-field">
+                      <span>半场节奏</span>
+                      <select
+                        value={halftime.pace ?? ""}
+                        onChange={(e) => setHalftime({ ...halftime, pace: e.target.value || undefined })}
+                      >
+                        <option value="">不变</option>
+                        <option value="faster">加快</option>
+                        <option value="balanced">均衡</option>
+                        <option value="slower">放慢</option>
+                      </select>
+                    </label>
+                    <label className="halftime-field">
+                      <span>三分倾向微调</span>
+                      <input
+                        type="number"
+                        step="0.02"
+                        min="-0.1"
+                        max="0.1"
+                        value={halftime.threeAdjust ?? 0}
+                        onChange={(e) => setHalftime({ ...halftime, threeAdjust: +e.target.value })}
+                      />
+                    </label>
+                  </div>
+                  <div className="clutch-grid">
+                    <label className="halftime-field">
+                      <span>Clutch 领先策略</span>
+                      <select
+                        value={clutch.leading ?? ""}
+                        onChange={(e) => setClutch({ ...clutch, leading: e.target.value || undefined })}
+                      >
+                        <option value="">默认</option>
+                        <option value="normal">正常</option>
+                        <option value="milk_clock">压时间</option>
+                        <option value="isolate_star">球星单打</option>
+                      </select>
+                    </label>
+                    <label className="halftime-field">
+                      <span>Clutch 落后策略</span>
+                      <select
+                        value={clutch.trailing ?? ""}
+                        onChange={(e) => setClutch({ ...clutch, trailing: e.target.value || undefined })}
+                      >
+                        <option value="">默认</option>
+                        <option value="normal">正常</option>
+                        <option value="quick_three">抢投三分</option>
+                        <option value="foul_strategy">砍鲨战术</option>
+                        <option value="isolate_star">球星单打</option>
+                      </select>
+                    </label>
+                    <label className="halftime-field">
+                      <span>Clutch 焦灼策略</span>
+                      <select
+                        value={clutch.close ?? ""}
+                        onChange={(e) => setClutch({ ...clutch, close: e.target.value || undefined })}
+                      >
+                        <option value="">默认</option>
+                        <option value="normal">正常</option>
+                        <option value="isolate_star">球星单打</option>
+                        <option value="double_team">包夹对方球星</option>
+                      </select>
+                    </label>
+                  </div>
                 </div>
               </>
             ) : (

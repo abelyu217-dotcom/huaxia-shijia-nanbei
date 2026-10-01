@@ -6302,6 +6302,105 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
+/* ─── P2-3: 球馆设施 ─── */
+.facility-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.facility-card {
+  padding: 16px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.facility-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.facility-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.facility-level {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.facility-effects {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border-radius: var(--radius-xs);
+}
+
+.facility-effect-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.facility-effect-row strong {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.facility-upgrade {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-soft);
+}
+
+.facility-upgrade-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.facility-upgrade-info strong {
+  color: var(--text);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.facility-cost {
+  font-size: 11px;
+  color: var(--gold, #d4a017);
+}
+
+.facility-maxed {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  align-self: flex-end;
+}
+
+.facility-tip {
+  margin-top: 16px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
 .arena-result {
   margin-top: 16px;
   padding: 16px;
@@ -8164,6 +8263,198 @@ button {
   border-radius: 4px;
   background: #eee;
   color: #666;
+}
+
+/* ── 管理后台 (AdminPage) ── */
+.admin-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid var(--border, #e0e0e0);
+}
+.admin-tabs button {
+  padding: 8px 20px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-muted, #888);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.15s;
+}
+.admin-tabs button:hover { color: var(--text, #333); }
+.admin-tabs button.active {
+  color: var(--accent, #4f8cff);
+  border-bottom-color: var(--accent, #4f8cff);
+  font-weight: 600;
+}
+
+.admin-section { display: flex; flex-direction: column; gap: 20px; }
+
+.admin-card {
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 10px;
+  padding: 16px 20px;
+  background: var(--card-bg, #fff);
+}
+.admin-card h3 { margin: 0 0 14px; font-size: 16px; }
+
+.stat-row { display: flex; gap: 24px; }
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.stat-value { font-size: 28px; font-weight: 700; color: var(--accent, #4f8cff); }
+.stat-label { font-size: 12px; color: var(--text-muted, #888); }
+
+.retention-chart { display: flex; flex-direction: column; gap: 4px; }
+.retention-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.retention-date { width: 40px; text-align: right; color: var(--text-muted, #888); }
+.retention-bar-track {
+  flex: 1;
+  position: relative;
+  height: 22px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.retention-bar-fill {
+  height: 100%;
+  background: var(--accent, #4f8cff);
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+.retention-bar-label {
+  position: absolute;
+  right: 6px;
+  top: 2px;
+  font-size: 11px;
+  color: #333;
+  white-space: nowrap;
+}
+
+.admin-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.admin-input {
+  padding: 6px 10px;
+  border: 1px solid var(--border, #ccc);
+  border-radius: 6px;
+  font-size: 14px;
+  flex: 1;
+  max-width: 300px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.data-table th {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 2px solid var(--border, #e0e0e0);
+  color: var(--text-muted, #888);
+  font-weight: 600;
+}
+.data-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.data-table .mono { font-family: monospace; font-size: 12px; }
+.data-table .center { text-align: center; }
+.data-table .row-anomaly { background: rgba(255, 152, 0, 0.08); }
+
+.tag-ok { background: #e8f5e9; color: #2e7d32; }
+.tag-warn { background: #fff3e0; color: #e65100; }
+
+.config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+.config-field span { color: var(--text-muted, #888); }
+.config-field input {
+  padding: 6px 10px;
+  border: 1px solid var(--border, #ccc);
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.btn-mini {
+  padding: 2px 10px;
+  font-size: 12px;
+  border: 1px solid var(--accent, #4f8cff);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--accent, #4f8cff);
+  cursor: pointer;
+}
+.btn-mini:hover { background: rgba(79, 140, 255, 0.1); }
+.btn-danger {
+  border-color: #e53935 !important;
+  color: #e53935 !important;
+}
+.btn-danger:hover { background: rgba(229, 57, 53, 0.08); }
+
+.replay-result {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.replay-result p { margin: 4px 0; }
+
+/* ── 半场调整 + Clutch 战术卡 (MatchTacticPage) ── */
+.halftime-section {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 8px;
+  background: #f8f9fa;
+}
+.halftime-grid,
+.clutch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.clutch-grid {
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+.halftime-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12px;
+}
+.halftime-field span { color: var(--text-muted, #888); }
+.halftime-field select,
+.halftime-field input {
+  padding: 4px 8px;
+  border: 1px solid var(--border, #ccc);
+  border-radius: 4px;
+  font-size: 13px;
 }
 
 

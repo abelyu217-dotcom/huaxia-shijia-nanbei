@@ -44,6 +44,7 @@ import { BoardOfDirectorsPage } from "./pages/BoardOfDirectorsPage";
 import { GuidePage } from "./pages/GuidePage";
 import { DailyReward } from "./components/DailyReward";
 import WorldSelectPage from "./pages/WorldSelectPage";
+import AdminPage from "./pages/AdminPage";
 import { fetchWorlds, fetchCurrentSeason } from "./api";
 import type { SeasonInfo } from "./types";
 
@@ -69,7 +70,8 @@ type View =
   | { kind: "arena" }
   | { kind: "corePlayers" }
   | { kind: "bod" }
-  | { kind: "guide" };
+  | { kind: "guide" }
+  | { kind: "admin" };
 
 type NavKind =
   | "home"
@@ -93,7 +95,8 @@ type NavKind =
   | "arena"
   | "corePlayers"
   | "bod"
-  | "guide";
+  | "guide"
+  | "admin";
 
 /** 侧边栏分组导航 —— 参考 Rim Attack / BasketPulse 的分组菜单 */
 const NAV_GROUPS: { group: string; items: { id: NavKind; label: string }[] }[] = [
@@ -135,6 +138,7 @@ const NAV_GROUPS: { group: string; items: { id: NavKind; label: string }[] }[] =
     group: "管理",
     items: [
       { id: "bod", label: "董事会" },
+      { id: "admin", label: "管理后台" },
     ],
   },
   {
@@ -168,6 +172,7 @@ function navToView(kind: NavKind, teamId?: string): View {
   if (kind === "corePlayers") return { kind: "corePlayers" };
   if (kind === "bod") return { kind: "bod" };
   if (kind === "guide") return { kind: "guide" };
+  if (kind === "admin") return { kind: "admin" };
   return { kind: "sim" };
 }
 
@@ -371,6 +376,7 @@ function AppInner() {
             <BoardOfDirectorsPage teamId={myTeamId ?? undefined} />
           )}
           {view.kind === "guide" && <GuidePage />}
+          {view.kind === "admin" && <AdminPage />}
         </main>
       </div>
     </div>
