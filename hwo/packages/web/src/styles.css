@@ -6780,6 +6780,49 @@ button {
   gap: 16px;
 }
 
+.create-world {
+  margin-bottom: 20px;
+}
+
+.create-world-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  max-width: 520px;
+}
+
+.create-world-row .input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.create-world-row .input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.create-world-row .btn-primary {
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.create-world-row .btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .world-card {
   background: var(--panel-2);
   border: 1px solid var(--border);

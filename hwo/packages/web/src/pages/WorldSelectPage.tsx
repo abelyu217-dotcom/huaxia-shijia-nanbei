@@ -12,7 +12,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { fetchWorlds, joinWorld } from "../api";
+import { createWorld, fetchWorlds, joinWorld } from "../api";
 import type { WorldInfo } from "../types";
 import { useAuth } from "../auth/AuthContext";
 
@@ -28,6 +28,8 @@ export default function WorldSelectPage({ onJoined }: WorldSelectPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [selectedWorldId, setSelectedWorldId] = useState<string | null>(null);
   const [joining, setJoining] = useState<string | null>(null);
+  const [newWorldName, setNewWorldName] = useState("");
+  const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -56,6 +58,21 @@ export default function WorldSelectPage({ onJoined }: WorldSelectPageProps) {
     [selectedWorld],
   );
 
+  async function handleCreateWorld() {
+    const name = newWorldName.trim() || `新世界-${Date.now().toString(36).slice(-4)}`;
+    setCreating(true);
+    setError(null);
+    try {
+      await createWorld(name, 42, "CN");
+      setNewWorldName("");
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setCreating(false);
+    }
+  }
+
   async function handleJoin(teamId: string) {
     if (!user || !selectedWorld) return;
     setJoining(teamId);
@@ -83,6 +100,28 @@ export default function WorldSelectPage({ onJoined }: WorldSelectPageProps) {
       </header>
 
       {error && <div className="alert alert-error">{error}</div>}
+
+      {/* 创建新世界 */}
+      <section className="create-world">
+        <div className="create-world-row">
+          <input
+            type="text"
+            className="input"
+            placeholder="输入世界名称（可留空自动生成）"
+            value={newWorldName}
+            onChange={(e) => setNewWorldName(e.target.value)}
+            disabled={creating}
+          />
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={handleCreateWorld}
+            disabled={creating}
+          >
+            {creating ? "创建中…" : "创建新世界"}
+          </button>
+        </div>
+      </section>
 
       {/* 世界列表 */}
       <div className="world-grid">
