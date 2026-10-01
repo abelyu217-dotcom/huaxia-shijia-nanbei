@@ -355,7 +355,10 @@ function AppInner() {
             <LeaguePage teamId={myTeamId ?? undefined} />
           )}
           {view.kind === "matchTactic" && (
-            <MatchTacticPage teamId={myTeamId ?? undefined} />
+            <MatchTacticPage
+              teamId={myTeamId ?? undefined}
+              matchId={view.matchId}
+            />
           )}
           {view.kind === "scout" && (
             <ScoutPage teamId={myTeamId ?? undefined} />
