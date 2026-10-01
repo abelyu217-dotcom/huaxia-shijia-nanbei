@@ -282,23 +282,41 @@ export class SeasonService {
     }
 
     // M3: 推进球员生涯成长 + 退役
-    const { grown, retired } = await this.careerService.advanceAllPlayers(season.year);
-    this.logger.log(`生涯成长：${grown} 人成长，${retired} 人退役`);
+    try {
+      const { grown, retired } = await this.careerService.advanceAllPlayers(season.year);
+      this.logger.log(`生涯成长：${grown} 人成长，${retired} 人退役`);
+    } catch (e) {
+      this.logger.warn(
+        `生涯推进失败（不影响赛季交接）：${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
 
     // M3: 合同推进（剩余年数 -1，到期球员成为自由球员）
-    const { decremented: contractsRenewed, expired: contractsExpired } =
-      await this.contractService.advanceAllContracts();
-    this.logger.log(
-      `合同推进：${contractsRenewed} 份续期，${contractsExpired} 份到期`,
-    );
+    try {
+      const { decremented: contractsRenewed, expired: contractsExpired } =
+        await this.contractService.advanceAllContracts();
+      this.logger.log(
+        `合同推进：${contractsRenewed} 份续期，${contractsExpired} 份到期`,
+      );
+    } catch (e) {
+      this.logger.warn(
+        `合同推进失败（不影响赛季交接）：${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
 
     // M3: 青训学院产出新秀
-    const { teamsProcessed, totalRookies } = await this.academyService.produceAllRookies(
-      newSeason.year,
-    );
-    this.logger.log(
-      `青训产出：${teamsProcessed} 支球队，共 ${totalRookies} 名新秀加入各队`,
-    );
+    try {
+      const { teamsProcessed, totalRookies } = await this.academyService.produceAllRookies(
+        newSeason.year,
+      );
+      this.logger.log(
+        `青训产出：${teamsProcessed} 支球队，共 ${totalRookies} 名新秀加入各队`,
+      );
+    } catch (e) {
+      this.logger.warn(
+        `青训产出失败（不影响赛季交接）：${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
 
     // M3: 为每个有球队的世界初始化新赛季选秀大会（乐透抽签 + 生成选秀池）
     // 注意：不能仅依赖 worlds（来自联赛），否则无联赛的世界会漏掉选秀
