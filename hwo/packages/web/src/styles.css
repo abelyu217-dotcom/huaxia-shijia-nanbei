@@ -8087,4 +8087,83 @@ button {
   }
 }
 
+/* ── 世界大厅 (WorldSelectPage) ── */
+.world-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+  margin: 16px 0;
+}
+.world-card {
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 10px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: var(--card-bg, #fff);
+}
+.world-card:hover {
+  border-color: var(--accent, #4f8cff);
+  transform: translateY(-2px);
+}
+.world-card.selected {
+  border-color: var(--accent, #4f8cff);
+  box-shadow: 0 0 0 2px rgba(79, 140, 255, 0.2);
+}
+.world-card h3 { margin: 0 0 6px; font-size: 16px; }
+.world-stats {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+  font-size: 13px;
+}
+.world-stats .ok { color: #2e7d32; }
+.world-stats .warn { color: #c62828; }
+
+.team-select {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border, #e0e0e0);
+}
+.team-select h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+.team-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 8px;
+  background: var(--card-bg, #fff);
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.15s;
+}
+.team-chip:hover:not(:disabled) {
+  border-color: var(--accent, #4f8cff);
+  background: rgba(79, 140, 255, 0.06);
+}
+.team-chip.taken {
+  opacity: 0.5;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+.team-chip:disabled { cursor: not-allowed; }
+.team-chip .tag {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #eee;
+  color: #666;
+}
+
 

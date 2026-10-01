@@ -7,8 +7,8 @@
  * - POST /api/career/advance            管理员：推进赛季成长（赛季结束时自动调用）
  */
 
-import { Controller, Get, Param, Post } from "@nestjs/common";
-import { CareerService } from "./career.service.js";
+import { Body, Controller, Get, Param, Post } from "@nestjs/common";
+import { CareerService, type DrillType } from "./career.service.js";
 
 @Controller("api/career")
 export class CareerController {
@@ -20,13 +20,16 @@ export class CareerController {
   }
 
   @Get("team/:teamId")
-  async getTeamCareers(@Param("teamId") teamId: string) {
+  async getTeamCareer(@Param("teamId") teamId: string) {
     return this.careerService.getTeamPlayerCareers(teamId);
   }
 
   @Post("train/:playerId")
-  async trainPlayer(@Param("playerId") playerId: string) {
-    return this.careerService.trainPlayer(playerId);
+  async trainPlayer(
+    @Param("playerId") playerId: string,
+    @Body() body: { drillType?: DrillType } = {},
+  ) {
+    return this.careerService.trainPlayer(playerId, body.drillType);
   }
 
   @Post("advance")

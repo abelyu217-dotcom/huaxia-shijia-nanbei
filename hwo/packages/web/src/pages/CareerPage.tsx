@@ -35,9 +35,19 @@ const STAGE_COLORS: Record<CareerStage, string> = {
   retired: "badge-retire",
 };
 
-// ── Drill 库（前端 mock 常量）：6 种训练项目 ──
+// ── Drill 库（前端展示用，实际训练效果由后端 drill 类型决定）──
 type DrillId = "shooting" | "ballHandling" | "passing" | "defense" | "conditioning" | "allAround";
 type DrillGrade = "A" | "B" | "C" | "D";
+
+/** 前端 DrillId → 后端 DrillType 映射 */
+const DRILL_TO_BACKEND: Record<DrillId, string> = {
+  shooting: "shooting",
+  ballHandling: "ball_handling",
+  passing: "iq",
+  defense: "defense",
+  conditioning: "athletic",
+  allAround: "athletic",
+};
 
 interface Drill {
   id: DrillId;
@@ -132,6 +142,17 @@ function gradeClass(g: DrillGrade): string {
   return `drill-grade-${g.toLowerCase()}`;
 }
 
+/** 属性 key → 中文标签 */
+const ABILITY_LABELS: Record<string, string> = {
+  three: "三分", midrange: "中投", inside: "内线", drive: "突破",
+  postup: "低位", passing: "传球", ballHandle: "控球",
+  perimeterD: "外线防守", interiorD: "内线防守", steal: "抢断", block: "盖帽",
+  speed: "速度", strength: "力量", jumping: "弹跳", stamina: "体能", iq: "球商",
+};
+function abilityLabel(key: string): string {
+  return ABILITY_LABELS[key] ?? key;
+}
+
 /** 可训练阶段：新秀 / 上升 / 巅峰 */
 function isTrainableStage(stage: CareerStage): boolean {
   return stage === "rookie" || stage === "rising" || stage === "prime";
@@ -171,13 +192,18 @@ export function CareerPage({ teamId }: Props) {
     setBusyId(playerId);
     setTrainMsg(null);
     try {
-      const r = await postTrainPlayer(playerId);
+      const backendDrill = DRILL_TO_BACKEND[drill.id];
+      const r = await postTrainPlayer(playerId, backendDrill);
       const mult = GRADE_MULTIPLIER[grade];
       if (!r) {
         setTrainMsg(`${name} · ${drill.name} [${grade}]：无法训练`);
       } else if (r.improved) {
+        // 展示具体属性变化
+        const changes = r.attributeChanges
+          .map((c) => `${abilityLabel(c.ability)} +${c.delta}`)
+          .join("、");
         setTrainMsg(
-          `${name} · ${drill.name} [${grade}·${mult}x]：OVR ${r.ovrBefore} → ${r.ovrAfter} ✓`,
+          `${name} · ${r.drillLabel} [${grade}·${mult}x]：OVR ${r.ovrBefore} → ${r.ovrAfter} ✓ | ${changes}`,
         );
       } else {
         setTrainMsg(`${name} · ${drill.name} [${grade}]：已到成长上限（OVR ${r.ovrAfter}）`);

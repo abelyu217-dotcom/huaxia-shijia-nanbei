@@ -6,15 +6,24 @@
  * - seasonTransition: 常规赛结束 → 季后赛 → 休赛期 → 新赛季
  */
 
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { SimService } from "../sim/sim.service.js";
 import { SeasonService } from "./season.service.js";
 import { AiManagerService } from "../ai/ai-manager.service.js";
 
+/**
+ * 每日结算时刻（北京时间，小时 0-23）。
+ * 设计：10:00 结算当日比赛并推进至下一日。
+ */
+const SETTLEMENT_HOUR = 10;
+
 @Injectable()
-export class ScheduleService {
+export class ScheduleService implements OnModuleInit {
   private readonly logger = new Logger(ScheduleService.name);
+
+  /** 上一次结算日期（YYYY-MM-DD），防止同一日重复结算 */
+  private lastSettlementDate: string | null = null;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -22,6 +31,35 @@ export class ScheduleService {
     private readonly seasonService: SeasonService,
     private readonly aiManager: AiManagerService,
   ) {}
+
+  /**
+   * 模块启动时开启定时结算时钟。
+   * 每分钟检查一次是否到达结算时刻；到达则推进一日。
+   */
+  onModuleInit() {
+    // 每 60 秒检查一次
+    setInterval(() => this.checkSettlement(), 60_000);
+    this.logger.log(`赛季结算时钟已启动（每日 ${SETTLEMENT_HOUR}:00 自动推进）`);
+  }
+
+  private async checkSettlement() {
+    try {
+      const now = new Date();
+      const today = now.toISOString().slice(0, 10);
+      // 到达结算小时且今日尚未结算
+      if (now.getUTCHours() >= SETTLEMENT_HOUR && this.lastSettlementDate !== today) {
+        this.lastSettlementDate = today;
+        const season = await this.seasonService.getCurrentSeason();
+        if (!season) return;
+        this.logger.log(`[定时结算] 到达 ${SETTLEMENT_HOUR}:00，开始推进赛季`);
+        await this.advanceDay(season.id);
+      }
+    } catch (e) {
+      this.logger.error(
+        `[定时结算] 失败：${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  }
 
   /** 为赛季中的所有球队生成单循环赛程 */
   async generateSchedule(seasonId: string, leagueId: string): Promise<number> {

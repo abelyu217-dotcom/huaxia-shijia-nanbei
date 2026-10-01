@@ -282,6 +282,18 @@ export function createWorld(
   return postJson<WorldInfo>("/api/worlds", { name, seed, region });
 }
 
+/** POST /api/worlds/:id/join — 加入世界（认领球队，需 JWT） */
+export function joinWorld(
+  worldId: string,
+  userId: string,
+  teamId: string,
+): Promise<{ teamId: string }> {
+  return postJson<{ teamId: string }>(`/api/worlds/${encodeURIComponent(worldId)}/join`, {
+    userId,
+    teamId,
+  });
+}
+
 /** PUT /api/teams/:id — 修改球队资料（需 JWT） */
 export function updateTeam(
   teamId: string,
@@ -472,11 +484,14 @@ export function fetchTeamCareers(teamId: string): Promise<PlayerCareer[]> {
 }
 
 /** POST /api/career/train/:playerId — 手动训练球员 */
-export function postTrainPlayer(playerId: string): Promise<TrainResult | null> {
+export function postTrainPlayer(
+  playerId: string,
+  drillType?: string,
+): Promise<TrainResult | null> {
   return sendJson<TrainResult | null>(
     "POST",
     `/api/career/train/${encodeURIComponent(playerId)}`,
-    {},
+    drillType ? { drillType } : {},
   );
 }
 

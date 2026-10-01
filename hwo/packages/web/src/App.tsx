@@ -43,6 +43,7 @@ import { CorePlayersPage } from "./pages/CorePlayersPage";
 import { BoardOfDirectorsPage } from "./pages/BoardOfDirectorsPage";
 import { GuidePage } from "./pages/GuidePage";
 import { DailyReward } from "./components/DailyReward";
+import WorldSelectPage from "./pages/WorldSelectPage";
 import { fetchWorlds, fetchCurrentSeason } from "./api";
 import type { SeasonInfo } from "./types";
 
@@ -187,7 +188,7 @@ function seasonLabel(status: string): string {
 }
 
 function AppInner() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, refreshUser } = useAuth();
   const [view, setView] = useState<View>({ kind: "home" });
   const [myWorldId, setMyWorldId] = useState<string | undefined>(undefined);
   const [season, setSeason] = useState<SeasonInfo | null>(null);
@@ -224,6 +225,15 @@ function AppInner() {
 
   if (!user) {
     return <AuthPage />;
+  }
+
+  // P1-3b：用户已登录但尚未认领球队 → 进入世界大厅选服
+  if (!user.teamId) {
+    return (
+      <div className="app-shell">
+        <WorldSelectPage onJoined={refreshUser} />
+      </div>
+    );
   }
 
   const myTeamId = user.teamId;

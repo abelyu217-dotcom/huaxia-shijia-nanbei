@@ -45,33 +45,23 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // 找一支未被绑定的球队
-    const freeTeam = await this.prisma.team.findFirst({
-      where: { userId: null },
-      orderBy: { id: "asc" },
-    });
-
+    // P1-3b：注册时不自动分配球队，用户登录后在世界大厅选择世界 + 球队
     const user = await this.prisma.user.create({
-      data: {
-        email,
-        passwordHash,
-        nickname,
-        ...(freeTeam ? { teams: { connect: { id: freeTeam.id } } } : {}),
-      },
+      data: { email, passwordHash, nickname },
       include: { teams: { select: { id: true } } },
     });
 
-    this.logger.log(`User registered: ${email} → team ${freeTeam?.id ?? "none"}`);
+    this.logger.log(`User registered: ${email}（待选择世界与球队）`);
 
     // M5 §6.3 埋点：注册 + 当日活跃
     await this.analytics.track({
       userId: user.id,
       event: "register",
       category: "auth",
-      properties: { email, teamId: freeTeam?.id ?? null },
+      properties: { email, teamId: null },
     });
 
-    return this.issueToken(user.id, user.email, user.nickname, user.teams[0]?.id ?? null);
+    return this.issueToken(user.id, user.email, user.nickname, null);
   }
 
   async login(email: string, password: string): Promise<AuthResult> {

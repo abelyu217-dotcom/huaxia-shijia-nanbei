@@ -18,6 +18,7 @@ import type {
   SimOutput,
   PbpEvent,
   PlayerDetail,
+  TeamStat,
 } from "../types";
 import { eventIcon, vividDesc } from "../lib";
 type PlayState = "idle" | "loading" | "playing" | "paused" | "finished";
@@ -42,6 +43,8 @@ const SPEEDS = [1, 2, 4, 8, 16] as const;
 interface LivePlayerStat {
   pts: number;
   reb: number;
+  offReb: number;   // 进攻篮板
+  defReb: number;   // 防守篮板
   ast: number;
   stl: number;   // 抢断
   blk: number;   // 盖帽
@@ -52,15 +55,21 @@ interface LivePlayerStat {
   tpa: number;   // 三分出手
   ftm: number;   // 罚球命中
   fta: number;   // 罚球出手
+  minutes: number;   // 上场时间（来自 boxScore）
+  plusMinus: number; // 正负值（来自 boxScore）
 }
 
 /** 从 PBP 事件聚合球员实时统计 */
 function computeLiveStats(events: PbpEvent[]): Map<string, LivePlayerStat> {
   const players = new Map<string, LivePlayerStat>();
+  const empty = (): LivePlayerStat => ({
+    pts: 0, reb: 0, offReb: 0, defReb: 0, ast: 0, stl: 0, blk: 0, to: 0,
+    fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, minutes: 0, plusMinus: 0,
+  });
   const get = (id: string): LivePlayerStat => {
     let s = players.get(id);
     if (!s) {
-      s = { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0 };
+      s = empty();
       players.set(id, s);
     }
     return s;
@@ -83,7 +92,10 @@ function computeLiveStats(events: PbpEvent[]): Map<string, LivePlayerStat> {
         if (ev.made) { s.pts += 1; s.ftm += 1; }
         break;
       case "rebound":
-        s.reb += 1; break;
+        s.reb += 1;
+        if (ev.reboundType === "off") s.offReb += 1;
+        else s.defReb += 1;
+        break;
       case "steal":
         s.stl += 1; break;
       case "block":
@@ -137,7 +149,7 @@ function OnCourtColumn({
       </div>
       <div className="oncourt-list">
         {players.map((p) => {
-          const s = stats.get(p.id) ?? { pts: 0, reb: 0, ast: 0 };
+          const s = stats.get(p.id) ?? { pts: 0, reb: 0, offReb: 0, defReb: 0, ast: 0, stl: 0, blk: 0, to: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, minutes: 0, plusMinus: 0 };
           return (
             <div key={p.id} className="oncourt-player">
               <span className="oc-pos">{p.position}</span>
@@ -160,18 +172,32 @@ function StatsTable({
   homeName,
   awayName,
   stats,
+  boxScore,
 }: {
   homeTeam: TeamDetail | null;
   awayTeam: TeamDetail | null;
   homeName: string;
   awayName: string;
   stats: Map<string, LivePlayerStat>;
+  boxScore?: { home: TeamStat; away: TeamStat } | null;
 }) {
   const pct = (m: number, a: number) => (a > 0 ? Math.round((m / a) * 100) : 0);
+  const empty = (): LivePlayerStat => ({
+    pts: 0, reb: 0, offReb: 0, defReb: 0, ast: 0, stl: 0, blk: 0, to: 0,
+    fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, minutes: 0, plusMinus: 0,
+  });
+
+  // 从 boxScore 构建 playerId → { minutes, plusMinus } 查找表
+  const boxMap = new Map<string, { minutes: number; plusMinus: number }>();
+  if (boxScore) {
+    for (const ps of [...boxScore.home.players, ...boxScore.away.players]) {
+      boxMap.set(ps.playerId, { minutes: ps.minutes, plusMinus: ps.plusMinus });
+    }
+  }
 
   const renderTeam = (team: TeamDetail | null, teamName: string, side: "home" | "away") => {
     const players = team?.players ?? [];
-    let totals: LivePlayerStat = { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0 };
+    const totals = empty();
     players.forEach((p) => {
       const s = stats.get(p.id);
       if (s) {
@@ -189,12 +215,16 @@ function StatsTable({
             <thead>
               <tr>
                 <th>球员</th>
+                <th>时间</th>
                 <th>得分</th>
                 <th>篮板</th>
+                <th>进攻</th>
+                <th>防守</th>
                 <th>助攻</th>
                 <th>抢断</th>
                 <th>盖帽</th>
                 <th>失误</th>
+                <th>+/−</th>
                 <th>两分</th>
                 <th>三分</th>
                 <th>罚球</th>
@@ -202,7 +232,10 @@ function StatsTable({
             </thead>
             <tbody>
               {players.map((p, i) => {
-                const s = stats.get(p.id) ?? { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0 };
+                const s = stats.get(p.id) ?? empty();
+                const box = boxMap.get(p.id);
+                const minutes = box?.minutes ?? s.minutes;
+                const plusMinus = box?.plusMinus ?? s.plusMinus;
                 const isStarter = i < 5;
                 return (
                   <tr key={p.id} className={isStarter ? "is-starter" : ""}>
@@ -210,12 +243,16 @@ function StatsTable({
                       <span className="st-pos">{p.position}</span>
                       {p.name}
                     </td>
+                    <td className="st-num">{minutes.toFixed(1)}</td>
                     <td className="st-num">{s.pts}</td>
                     <td className="st-num">{s.reb}</td>
+                    <td className="st-num">{s.offReb}</td>
+                    <td className="st-num">{s.defReb}</td>
                     <td className="st-num">{s.ast}</td>
                     <td className="st-num">{s.stl}</td>
                     <td className="st-num">{s.blk}</td>
                     <td className="st-num">{s.to}</td>
+                    <td className={`st-num ${plusMinus > 0 ? "pm-pos" : plusMinus < 0 ? "pm-neg" : ""}`}>{plusMinus > 0 ? "+" : ""}{plusMinus}</td>
                     <td className="st-num">{s.fgm}-{s.fga} ({pct(s.fgm, s.fga)}%)</td>
                     <td className="st-num">{s.tpm}-{s.tpa} ({pct(s.tpm, s.tpa)}%)</td>
                     <td className="st-num">{s.ftm}-{s.fta} ({pct(s.ftm, s.fta)}%)</td>
@@ -224,12 +261,16 @@ function StatsTable({
               })}
               <tr className="st-total">
                 <td className="st-name">球队总计</td>
+                <td className="st-num">—</td>
                 <td className="st-num">{totals.pts}</td>
                 <td className="st-num">{totals.reb}</td>
+                <td className="st-num">{totals.offReb}</td>
+                <td className="st-num">{totals.defReb}</td>
                 <td className="st-num">{totals.ast}</td>
                 <td className="st-num">{totals.stl}</td>
                 <td className="st-num">{totals.blk}</td>
                 <td className="st-num">{totals.to}</td>
+                <td className="st-num">—</td>
                 <td className="st-num">{totals.fgm}-{totals.fga} ({pct(totals.fgm, totals.fga)}%)</td>
                 <td className="st-num">{totals.tpm}-{totals.tpa} ({pct(totals.tpm, totals.tpa)}%)</td>
                 <td className="st-num">{totals.ftm}-{totals.fta} ({pct(totals.ftm, totals.fta)}%)</td>
@@ -730,6 +771,7 @@ export function LiveMatch({
                 homeName={homeName}
                 awayName={awayName}
                 stats={liveStats}
+                boxScore={simResult?.boxScore}
               />
             )}
 

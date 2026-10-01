@@ -443,9 +443,12 @@ export interface PlayerCareer {
 
 export interface TrainResult {
   playerId: string;
+  drillType: string;
+  drillLabel: string;
   ovrBefore: number;
   ovrAfter: number;
   improved: boolean;
+  attributeChanges: { ability: string; before: number; after: number; delta: number }[];
 }
 
 // ── M3: 青训学院 ──
@@ -563,7 +566,7 @@ export interface WorldInfo {
   seasonName: string;
   seasonStatus: string;
   teamCount: number;
-  teams: Array<{ id: string; name: string }>;
+  teams: Array<{ id: string; name: string; userId: string | null }>;
   leagues: Array<{ id: string; name: string; level: number; type: string }>;
 }
 

@@ -262,7 +262,7 @@ export class WorldService {
     const worlds = await this.prisma.world.findMany({
       include: {
         season: { select: { id: true, name: true, status: true } },
-        teams: { select: { id: true, name: true }, orderBy: { name: "asc" } },
+        teams: { select: { id: true, name: true, userId: true }, orderBy: { name: "asc" } },
         leagues: { select: { id: true, name: true, level: true, type: true } },
       },
       orderBy: { createdAt: "desc" },
