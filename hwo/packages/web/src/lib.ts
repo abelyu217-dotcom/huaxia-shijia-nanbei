@@ -24,19 +24,20 @@ export function ovrTier(ovr: number): OvrTier {
 }
 
 /** The Fog：从能力值（可能为 number 或 FogValue）中提取数值 */
-export function abilityVal(v: number | FogValue | undefined): number {
-  if (v === undefined) return 0;
+export function abilityVal(v: number | FogValue | null | undefined): number {
+  if (v == null) return 0;
   if (typeof v === "number") return v;
   return v.est;
 }
 
 /** The Fog：判断能力值是否为带雾估值 */
-export function isFoggedAbility(v: number | FogValue | undefined): v is FogValue {
+export function isFoggedAbility(v: number | FogValue | null | undefined): v is FogValue {
   return typeof v === "object" && v !== null;
 }
 
 /** The Fog：从 OVR（可能为 number 或 FogValue）中提取数值 */
-export function ovrVal(ovr: number | FogValue): number {
+export function ovrVal(ovr: number | FogValue | null | undefined): number {
+  if (ovr == null) return 0;
   return typeof ovr === "number" ? ovr : ovr.est;
 }
 

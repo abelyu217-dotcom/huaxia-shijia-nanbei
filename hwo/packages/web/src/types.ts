@@ -33,7 +33,7 @@ export type {
 export type { ScoutReport } from "@hwo/shared";
 
 /** 判断 ovr 是否为带雾估值 */
-export function isFoggedOvr(ovr: number | FogValue): ovr is FogValue {
+export function isFoggedOvr(ovr: number | FogValue | null | undefined): ovr is FogValue {
   return typeof ovr === "object" && ovr !== null;
 }
 
