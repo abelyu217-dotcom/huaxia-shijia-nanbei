@@ -8457,4 +8457,316 @@ button {
   font-size: 13px;
 }
 
+/* ───────────────── P3: 三身份 / 王朝 / 关系网 页面通用样式 ───────────────── */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.page-header h2 {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.page-sub {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.page .card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+}
+
+.page .card-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.page .card-title h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.page .card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.page .badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.page .badge.green { background: rgba(34, 197, 94, 0.15); color: #4ade80; border-color: rgba(34, 197, 94, 0.3); }
+.page .badge.blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-color: rgba(59, 130, 246, 0.3); }
+.page .badge.gold { background: rgba(245, 197, 66, 0.15); color: #fbbf24; border-color: rgba(245, 197, 66, 0.3); }
+.page .badge.red { background: rgba(239, 68, 68, 0.15); color: #ef4444; border-color: rgba(239, 68, 68, 0.3); }
+.page .badge.purple { background: rgba(168, 85, 247, 0.15); color: #a78bfa; border-color: rgba(168, 85, 247, 0.3); }
+.page .badge.pink { background: rgba(244, 114, 182, 0.15); color: #f472b6; border-color: rgba(244, 114, 182, 0.3); }
+.page .badge.cyan { background: rgba(34, 211, 238, 0.15); color: #22d3ee; border-color: rgba(34, 211, 238, 0.3); }
+
+.page .alert {
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+
+.page .alert-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+.page .form-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.page .form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  align-items: center;
+}
+
+.page .form-row input,
+.page .form-row select,
+.page .form-grid input,
+.page .form-grid select {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.page .info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px 20px;
+}
+
+.page .info-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.page .info-grid .muted {
+  font-size: 12px;
+}
+
+.page .subsection {
+  border-top: 1px solid var(--border-soft);
+  padding-top: 14px;
+  margin-top: 6px;
+}
+
+.page .subsection h4 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.page .subsection h5 {
+  margin: 12px 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* 三身份：职业选择网格 */
+.profession-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.profession-line h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.profession-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.profession-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.profession-card:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--panel-3);
+}
+
+.profession-card:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 王朝：活跃王朝卡片 */
+.dynasty-active {
+  border: 2px solid;
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--panel-2);
+}
+
+.dynasty-active-tier {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.dynasty-active-stats {
+  display: flex;
+  gap: 24px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.dynasty-active-stats b {
+  color: var(--text);
+  font-size: 16px;
+  margin-left: 4px;
+}
+
+.dynasty-summary {
+  display: flex;
+  gap: 24px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.dynasty-summary b {
+  color: var(--text);
+}
+
+/* 名人堂 */
+.hof-tier {
+  margin-bottom: 18px;
+}
+
+.hof-tier h4 {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+
+/* 关系网：化学反应环 */
+.chemistry-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.chemistry-ring {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.chemistry-ring::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: var(--panel);
+}
+
+.chemistry-ring span {
+  position: relative;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+/* 士气 */
+.morale-box {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.morale-score {
+  font-size: 15px;
+}
+
+.morale-score b {
+  font-size: 20px;
+}
+
+.morale-factors {
+  font-size: 12px;
+}
+
+/* 关系分组 */
+.relationship-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rel-group h5 {
+  margin: 0 0 8px;
+}
+
+.member-list {
+  margin: 8px 0;
+  padding-left: 20px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.member-list b {
+  color: var(--text);
+}
+
+
 

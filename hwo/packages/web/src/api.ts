@@ -877,3 +877,112 @@ export function postUpgradeFacility(
     { type },
   );
 }
+
+// ── P3-1: 三身份系统 ──
+
+import type {
+  IdentityView,
+  ProfessionDef,
+  AvatarCreateParams,
+  TeamDynastyView,
+  HallOfFameView,
+  PlayerLegacyView,
+  EraTagView,
+  PlayerNetworkView,
+  TeamChemistryView,
+  PlayerMoraleView,
+  RelationshipType,
+  FamilyMember,
+} from "./types";
+
+/** GET /api/identity — 获取用户三身份总览（需 JWT） */
+export function fetchIdentity(): Promise<IdentityView> {
+  return getJson<IdentityView>("/api/identity");
+}
+
+/** GET /api/identity/professions — 获取全部职业列表 */
+export function fetchProfessions(): Promise<ProfessionDef[]> {
+  return getJson<ProfessionDef[]>("/api/identity/professions");
+}
+
+/** POST /api/identity/avatar — 创建球员化身（需 JWT） */
+export function postCreateAvatar(params: AvatarCreateParams): Promise<{ avatarId: string; playerId: string }> {
+  return sendJson("POST", "/api/identity/avatar", params);
+}
+
+/** POST /api/identity/profession — 选择职业人职业（需 JWT） */
+export function postChooseProfession(job: string): Promise<{ professionalId: string; job: string; line: string }> {
+  return sendJson("POST", "/api/identity/profession", { job });
+}
+
+/** POST /api/identity/profession/switch — 转职（需 JWT） */
+export function postSwitchProfession(job: string): Promise<{ job: string; level: number; experience: number }> {
+  return sendJson("POST", "/api/identity/profession/switch", { job });
+}
+
+/** POST /api/identity/profession/skill — 分配技能点（需 JWT） */
+export function postAddSkillPoint(branch: string, points: number): Promise<{ skillPoints: Record<string, number> }> {
+  return sendJson("POST", "/api/identity/profession/skill", { branch, points });
+}
+
+// ── P3-3: 王朝与传承系统 ──
+
+/** GET /api/dynasty/team/:teamId — 球队王朝记录 */
+export function fetchTeamDynasty(teamId: string): Promise<TeamDynastyView> {
+  return getJson<TeamDynastyView>(`/api/dynasty/team/${encodeURIComponent(teamId)}`);
+}
+
+/** GET /api/dynasty/hall-of-fame — 名人堂名单 */
+export function fetchHallOfFame(): Promise<HallOfFameView> {
+  return getJson<HallOfFameView>("/api/dynasty/hall-of-fame");
+}
+
+/** GET /api/dynasty/player/:playerId — 球员时代标签 + 传承遗产 */
+export function fetchPlayerLegacy(playerId: string): Promise<PlayerLegacyView> {
+  return getJson<PlayerLegacyView>(`/api/dynasty/player/${encodeURIComponent(playerId)}`);
+}
+
+/** GET /api/dynasty/team/:teamId/tags — 球队时代标签 */
+export function fetchTeamEraTags(teamId: string): Promise<EraTagView[]> {
+  return getJson<EraTagView[]>(`/api/dynasty/team/${encodeURIComponent(teamId)}/tags`);
+}
+
+// ── P3-4: 球员家庭与人际关系系统 ──
+
+/** GET /api/relationship/player/:playerId — 球员关系网 */
+export function fetchPlayerNetwork(playerId: string): Promise<PlayerNetworkView> {
+  return getJson<PlayerNetworkView>(`/api/relationship/player/${encodeURIComponent(playerId)}`);
+}
+
+/** PUT /api/relationship/player/:playerId/family — 设置家庭背景 */
+export function putPlayerFamily(
+  playerId: string,
+  background: string,
+  members?: FamilyMember[],
+): Promise<PlayerNetworkView["family"]> {
+  return sendJson("PUT", `/api/relationship/player/${encodeURIComponent(playerId)}/family`, {
+    background,
+    members,
+  });
+}
+
+/** POST /api/relationship — 创建人际关系 */
+export function postCreateRelationship(payload: {
+  sourceId: string;
+  targetId: string;
+  type: RelationshipType;
+  bond?: number;
+  note?: string;
+}): Promise<{ id: string; type: string; typeLabel: string; bond: number }> {
+  return sendJson("POST", "/api/relationship", payload);
+}
+
+/** GET /api/relationship/team/:teamId/chemistry — 球队化学反应 */
+export function fetchTeamChemistry(teamId: string): Promise<TeamChemistryView> {
+  return getJson<TeamChemistryView>(`/api/relationship/team/${encodeURIComponent(teamId)}/chemistry`);
+}
+
+/** GET /api/relationship/player/:playerId/morale — 球员士气 */
+export function fetchPlayerMorale(playerId: string): Promise<PlayerMoraleView> {
+  return getJson<PlayerMoraleView>(`/api/relationship/player/${encodeURIComponent(playerId)}/morale`);
+}

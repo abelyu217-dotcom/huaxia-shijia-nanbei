@@ -37,6 +37,10 @@ model User {
   // M5 §6.3: 行为埋点 + 日活快照
   analyticsEvents    AnalyticsEvent[]
   dailyActiveSnapshots DailyActiveSnapshot[]
+
+  // P3-1: 三身份
+  avatar       Avatar?
+  professional Professional?
 }
 
 // ─── 世界 ───
@@ -138,6 +142,9 @@ model Team {
   // P2-3: 球馆设施（训练馆 + 主场馆）
   facility    Facility?
 
+  // P3-3: 王朝记录
+  dynastyRecords DynastyRecord[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -179,6 +186,18 @@ model Player {
   // M3: 关系
   contract  Contract?
   draftPick DraftPick?
+
+  // P3-1: 化身关联
+  avatarOf  Avatar?
+
+  // P3-3: 王朝与传承
+  hallOfFameEntry HallOfFameEntry?
+  legaciesAsFrom  Legacy[] @relation("LegacyFrom")
+
+  // P3-4: 人际关系
+  relationshipsAsSource PlayerRelationship[] @relation("RelSource")
+  relationshipsAsTarget PlayerRelationship[] @relation("RelTarget")
+  family                PlayerFamily?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -482,6 +501,161 @@ model DailyActiveSnapshot {
 
   @@unique([userId, date])
   @@index([date])
+}
+
+// ─── P3-1: 三身份系统 ───
+// 经理身份：Team.userId 已隐式表示（每个 User 拥有一支球队）
+// 球员化身 Avatar：玩家自创的一名球员，进入世界球员池
+// 职业人 Professional：玩家选择的 11 职之一，可被雇佣
+
+model Avatar {
+  id        String  @id @default(cuid())
+  userId    String  @unique
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  playerId  String  @unique
+  player    Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  /** 化身状态：home_team | floated | on_other_team | retired */
+  status    String  @default("home_team")
+  /** 控制模式：owner_controlled | ai_controlled */
+  controlMode String @default("owner_controlled")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Professional {
+  id        String  @id @default(cuid())
+  userId    String  @unique
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /** 职业线：tech | biz | media | gov */
+  line      String
+  /** 当前职业：scout | asst_coach | head_coach | trainer | agent | merchant | arena_ops | reporter | caster | arbiter | union_rep */
+  job       String
+  /** 职业等级 1-10 */
+  level     Int     @default(1)
+  /** 职业声望 */
+  proReputation Int @default(0)
+  /** 经验值 */
+  experience Int @default(0)
+  /** 技能点（Json: { branch1: n, branch2: n, branch3: n }） */
+  skillPoints Json @default("{}")
+  /** 雇佣状态：unemployed | hired_by_manager | preset_npc */
+  employmentStatus String @default("unemployed")
+  /** 雇主球队 ID（hired_by_manager 时） */
+  employerTeamId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([job])
+}
+
+// ─── P3-3: 王朝与传承系统 ───
+
+model DynastyRecord {
+  id        String  @id @default(cuid())
+  teamId    String
+  team      Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  /** 王朝等级：legendary | golden | silver | rising */
+  tier      String
+  startSeason Int
+  endSeason Int?
+  titles    Int     @default(0)
+  runnerUps Int     @default(0)
+  /** 标志性时代标签（Json: string[]） */
+  signatureTags Json @default("[]")
+  legacyScore Float  @default(0)
+  active    Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([teamId])
+  @@index([tier])
+}
+
+model HallOfFameEntry {
+  id        String  @id @default(cuid())
+  playerId  String  @unique
+  player    Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  /** 层级：legendary | hall | honor */
+  tier      String
+  legacyScore Float
+  titles    Int
+  inductedSeason Int
+  /** 入选时叙事文本 */
+  narrative String?
+  createdAt DateTime @default(now())
+
+  @@index([tier])
+  @@index([legacyScore])
+}
+
+model EraTag {
+  id        String  @id @default(cuid())
+  /** 标签类型：player | team | season */
+  type      String
+  /** 引用 ID（playerId / teamId / seasonId） */
+  refId     String
+  label     String
+  season    Int
+  weight    Float
+  narrative String?
+  createdAt DateTime @default(now())
+
+  @@index([type, refId])
+  @@index([season])
+}
+
+model Legacy {
+  id        String  @id @default(cuid())
+  fromPlayerId String
+  fromPlayer   Player @relation("LegacyFrom", fields: [fromPlayerId], references: [id], onDelete: Cascade)
+  /** 传承类型：bloodline | mentorship | spirit | record */
+  type      String
+  /** 传承目标 ID（球员/球队） */
+  toRefId   String
+  /** 传承效果（Json: { mentalFortitude?: number, peakBonus?: number, traitAwakenBonus?: {} }） */
+  effects   Json @default("{}")
+  season    Int
+  createdAt DateTime @default(now())
+
+  @@index([fromPlayerId])
+  @@index([toRefId])
+}
+
+// ─── P3-4: 球员家庭与人际关系系统 ───
+
+model PlayerRelationship {
+  id        String  @id @default(cuid())
+  sourceId  String
+  source    Player  @relation("RelSource", fields: [sourceId], references: [id], onDelete: Cascade)
+  targetId  String
+  target    Player  @relation("RelTarget", fields: [targetId], references: [id], onDelete: Cascade)
+  /** 关系类型：family | teammate | mentor | rival | friend | external */
+  type      String
+  /** 羁绊值 0-100 */
+  bond      Int     @default(50)
+  /** 关系描述/备注 */
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sourceId, targetId, type])
+  @@index([sourceId])
+  @@index([targetId])
+}
+
+model PlayerFamily {
+  id        String  @id @default(cuid())
+  playerId  String  @unique
+  player    Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  /** 家庭背景：sports_family | normal | single_parent | overseas | sports_school */
+  background String @default("normal")
+  /** 家庭成员（Json: [{ name, relation, age }]） */
+  members   Json @default("[]")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ─── The Fog：球探报告（信息迷雾系统） ───

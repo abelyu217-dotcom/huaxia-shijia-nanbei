@@ -45,6 +45,9 @@ import { GuidePage } from "./pages/GuidePage";
 import { DailyReward } from "./components/DailyReward";
 import WorldSelectPage from "./pages/WorldSelectPage";
 import AdminPage from "./pages/AdminPage";
+import { IdentityPage } from "./pages/IdentityPage";
+import { DynastyPage } from "./pages/DynastyPage";
+import { RelationshipPage } from "./pages/RelationshipPage";
 import { fetchWorlds, fetchCurrentSeason } from "./api";
 import type { SeasonInfo } from "./types";
 
@@ -71,7 +74,10 @@ type View =
   | { kind: "corePlayers" }
   | { kind: "bod" }
   | { kind: "guide" }
-  | { kind: "admin" };
+  | { kind: "admin" }
+  | { kind: "identity" }
+  | { kind: "dynasty" }
+  | { kind: "relationship" };
 
 type NavKind =
   | "home"
@@ -96,7 +102,10 @@ type NavKind =
   | "corePlayers"
   | "bod"
   | "guide"
-  | "admin";
+  | "admin"
+  | "identity"
+  | "dynasty"
+  | "relationship";
 
 /** 侧边栏分组导航 —— 参考 Rim Attack / BasketPulse 的分组菜单 */
 const NAV_GROUPS: { group: string; items: { id: NavKind; label: string }[] }[] = [
@@ -142,6 +151,14 @@ const NAV_GROUPS: { group: string; items: { id: NavKind; label: string }[] }[] =
     ],
   },
   {
+    group: "进阶玩法",
+    items: [
+      { id: "identity", label: "三身份" },
+      { id: "dynasty", label: "王朝传承" },
+      { id: "relationship", label: "球员关系" },
+    ],
+  },
+  {
     group: "商城",
     items: [
       { id: "shop", label: "商店" },
@@ -173,6 +190,9 @@ function navToView(kind: NavKind, teamId?: string): View {
   if (kind === "bod") return { kind: "bod" };
   if (kind === "guide") return { kind: "guide" };
   if (kind === "admin") return { kind: "admin" };
+  if (kind === "identity") return { kind: "identity" };
+  if (kind === "dynasty") return { kind: "dynasty" };
+  if (kind === "relationship") return { kind: "relationship" };
   return { kind: "sim" };
 }
 
@@ -380,6 +400,9 @@ function AppInner() {
           )}
           {view.kind === "guide" && <GuidePage />}
           {view.kind === "admin" && <AdminPage />}
+          {view.kind === "identity" && <IdentityPage />}
+          {view.kind === "dynasty" && myTeamId && <DynastyPage teamId={myTeamId} />}
+          {view.kind === "relationship" && myTeamId && <RelationshipPage teamId={myTeamId} />}
         </main>
       </div>
     </div>

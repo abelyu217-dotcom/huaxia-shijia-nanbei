@@ -26,6 +26,9 @@ import { AuditModule } from "./audit/audit.module.js";
 import { AnalyticsModule } from "./analytics/analytics.module.js";
 import { ScoutModule } from "./scout/scout.module.js";
 import { FacilityModule } from "./facility/facility.module.js";
+import { IdentityModule } from "./identity/identity.module.js";
+import { DynastyModule } from "./dynasty/dynasty.module.js";
+import { RelationshipModule } from "./relationship/relationship.module.js";
 
 @Module({
   imports: [
@@ -52,6 +55,9 @@ import { FacilityModule } from "./facility/facility.module.js";
     AnalyticsModule,
     ScoutModule,
     FacilityModule,
+    IdentityModule,
+    DynastyModule,
+    RelationshipModule,
   ],
 })
 export class AppModule {}

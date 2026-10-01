@@ -707,3 +707,184 @@ export interface SimConfigVersion {
   note: string;
   createdAt: string;
 }
+
+// ── P3-1: 三身份系统 ──
+
+export interface IdentityView {
+  manager: { teamId: string | null; teamName: string | null };
+  avatar: {
+    exists: boolean;
+    playerId?: string;
+    playerName?: string;
+    position?: string;
+    status?: string;
+    controlMode?: string;
+  };
+  professional: {
+    exists: boolean;
+    job?: string;
+    jobName?: string;
+    line?: string;
+    level?: number;
+    proReputation?: number;
+    experience?: number;
+    nextLevelExp?: number | null;
+    employmentStatus?: string;
+  };
+}
+
+export interface ProfessionDef {
+  job: string;
+  line: string;
+  name: string;
+  desc: string;
+}
+
+export interface AvatarCreateParams {
+  name: string;
+  position: string;
+  playStyle?: string;
+  familyBackground?: string;
+}
+
+// ── P3-3: 王朝与传承系统 ──
+
+export type DynastyTier = "legendary" | "golden" | "silver" | "rising";
+export type HofTier = "legendary" | "hall" | "honor";
+export type EraTagType = "player" | "team" | "season";
+
+export interface DynastyRecordView {
+  id: string;
+  tier: string;
+  tierLabel: string;
+  startSeason: number;
+  endSeason: number | null;
+  titles: number;
+  runnerUps: number;
+  signatureTags: string[];
+  legacyScore: number;
+  active: boolean;
+}
+
+export interface TeamDynastyView {
+  teamId: string;
+  teamName: string;
+  records: DynastyRecordView[];
+  activeDynasty: {
+    tier: string;
+    tierLabel: string;
+    titles: number;
+    legacyScore: number;
+  } | null;
+  totalLegacyScore: number;
+}
+
+export interface HofEntryView {
+  id: string;
+  playerId: string;
+  playerName: string;
+  position: string;
+  tier: string;
+  tierLabel: string;
+  legacyScore: number;
+  titles: number;
+  inductedSeason: number;
+  narrative: string | null;
+}
+
+export interface HallOfFameView {
+  legendary: HofEntryView[];
+  hall: HofEntryView[];
+  honor: HofEntryView[];
+}
+
+export interface EraTagView {
+  id: string;
+  label: string;
+  season: number;
+  weight: number;
+  narrative: string | null;
+}
+
+export interface LegacyView {
+  id: string;
+  type: string;
+  toRefId: string;
+  effects: Record<string, unknown>;
+  season: number;
+}
+
+export interface PlayerLegacyView {
+  playerId: string;
+  hallOfFame: {
+    tier: string;
+    tierLabel: string;
+    legacyScore: number;
+    titles: number;
+    inductedSeason: number;
+    narrative: string | null;
+  } | null;
+  legacies: LegacyView[];
+}
+
+// ── P3-4: 球员家庭与人际关系系统 ──
+
+export type RelationshipType =
+  | "family"
+  | "teammate"
+  | "mentor"
+  | "rival"
+  | "friend"
+  | "external";
+
+export interface FamilyMember {
+  name: string;
+  relation: string;
+  age: number;
+}
+
+export interface PlayerFamilyView {
+  background: string;
+  backgroundLabel: string;
+  members: FamilyMember[];
+}
+
+export interface RelationshipEdge {
+  id: string;
+  otherPlayerId: string;
+  otherPlayerName: string;
+  otherPosition: string;
+  bond: number;
+  note: string | null;
+  direction: "out" | "in";
+}
+
+export interface PlayerNetworkView {
+  playerId: string;
+  playerName: string;
+  position: string;
+  family: PlayerFamilyView | null;
+  relationships: Record<string, RelationshipEdge[]>;
+}
+
+export interface TeamChemistryDetail {
+  playerId: string;
+  playerName: string;
+  avgBond: number;
+}
+
+export interface TeamChemistryView {
+  teamId: string;
+  chemistry: number;
+  details: TeamChemistryDetail[];
+}
+
+export interface PlayerMoraleView {
+  playerId: string;
+  morale: number;
+  factors: {
+    family: string | null;
+    relationshipCount: number;
+    rivalCount: number;
+  };
+}
