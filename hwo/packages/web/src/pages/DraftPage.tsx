@@ -17,6 +17,7 @@ import {
   postMakeDraftPick,
   postAutoDraft,
 } from "../api";
+import { ovrVal } from "../lib";
 import type { DraftBoard, DraftInitResult, SeasonInfo } from "../types";
 
 interface Props {
@@ -265,7 +266,7 @@ export function DraftPage({ worldId, myTeamId }: Props) {
                     <td>{p.position}</td>
                     <td>{p.age}</td>
                     <td>{p.potential ?? "—"}</td>
-                    <td><strong>{p.ovr}</strong></td>
+                    <td><strong>{ovrVal(p.ovr)}</strong></td>
                     <td>
                       {selectedPickId && (
                         <button

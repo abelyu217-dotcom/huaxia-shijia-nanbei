@@ -12,6 +12,7 @@
  */
 
 import type { LineupPlayer, PlaybookAction, TacticModSet } from "../types";
+import { ovrVal } from "../lib";
 
 interface Props {
   modSet: TacticModSet;
@@ -276,10 +277,10 @@ export function TacticBoard({ modSet, width = 300, lineup }: Props) {
                   x={p.x} y={p.y + 22}
                   textAnchor="middle"
                   fontSize={8}
-                  fill={ovrColor(player.ovr)}
+                  fill={ovrColor(ovrVal(player.ovr))}
                   fontWeight={700}
                 >
-                  {player.ovr}
+                  {ovrVal(player.ovr)}
                 </text>
               )}
               {/* 显示位置缩写（在球员下方，OVR 上方） */}

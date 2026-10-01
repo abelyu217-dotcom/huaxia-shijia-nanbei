@@ -12,6 +12,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchFreeAgents, fetchWorlds, fetchScoutBudget, fetchScoutReports } from "../api";
+import { ovrVal } from "../lib";
 import type { FreeAgent, ScoutReport } from "../types";
 import { useAuth } from "../auth/AuthContext";
 
@@ -506,7 +507,7 @@ function ProspectCard({ prospect, inWatchlist, onWatch }: ProspectCardProps) {
         </div>
         <div className="stat-row">
           <span>当前 OVR</span>
-          <span className="stat-val">{prospect.ovr}</span>
+          <span className="stat-val">{ovrVal(prospect.ovr)}</span>
         </div>
       </div>
       <div className="potential-bar">

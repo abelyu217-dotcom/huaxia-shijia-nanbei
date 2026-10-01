@@ -15,6 +15,7 @@ import {
   postProduceRookies,
 } from "../api";
 import type { Academy } from "../types";
+import { ovrVal } from "../lib";
 
 interface Props {
   teamId: string;
@@ -275,7 +276,7 @@ export function AcademyPage({ teamId }: Props) {
                     <div className="scout-stats">
                       <div className="stat-row">
                         <span>当前 OVR</span>
-                        <span className="stat-val">{p.ovr}</span>
+                        <span className="stat-val">{ovrVal(p.ovr)}</span>
                       </div>
                       <div className="stat-row">
                         <span>潜力上限</span>

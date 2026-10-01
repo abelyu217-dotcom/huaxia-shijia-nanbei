@@ -12,6 +12,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { fetchTeamCareers, postTrainPlayer } from "../api";
+import { ovrVal } from "../lib";
 import type { PlayerCareer, CareerStage, Position } from "../types";
 
 interface Props {
@@ -271,7 +272,7 @@ export function CareerPage({ teamId }: Props) {
                   <span className="muted">{p.age} 岁 · 退役</span>
                 </div>
                 <div className="retired-stats">
-                  <div><span>巅峰 OVR</span><strong>{p.ovr}</strong></div>
+                  <div><span>巅峰 OVR</span><strong>{ovrVal(p.ovr)}</strong></div>
                   <div><span>潜力</span><strong>{p.potential}</strong></div>
                   <div><span>训练经验</span><strong>{p.trainExp}</strong></div>
                 </div>
@@ -320,7 +321,7 @@ export function CareerPage({ teamId }: Props) {
                         <td>{p.name}</td>
                         <td>{p.position}</td>
                         <td>{p.age}</td>
-                        <td><strong>{p.ovr}</strong></td>
+                        <td><strong>{ovrVal(p.ovr)}</strong></td>
                         <td>{p.potential}</td>
                         <td>
                           {p.growthRoom > 0 ? (

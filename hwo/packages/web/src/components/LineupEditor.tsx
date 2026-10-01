@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchLineup, putLineup } from "../api";
 import type { LineupPlayer, LineupView, Position } from "../types";
-import { POSITION_LABEL } from "../lib";
+import { POSITION_LABEL, ovrVal } from "../lib";
 
 const POS_ORDER: Position[] = ["PG", "SG", "SF", "PF", "C"];
 
@@ -247,7 +247,7 @@ export function LineupEditor({ teamId, editable, onSaved }: Props) {
                       <span className="lineup-name">{p.name}</span>
                     </label>
                     <div className="lineup-meta">
-                      <span className="lineup-ovr" style={{ color: ovrColor(p.ovr) }}>{p.ovr}</span>
+                      <span className="lineup-ovr" style={{ color: ovrColor(ovrVal(p.ovr)) }}>{ovrVal(p.ovr)}</span>
                       <span className="depth-tier">{tier}</span>
                     </div>
                     <div className="lineup-min">
