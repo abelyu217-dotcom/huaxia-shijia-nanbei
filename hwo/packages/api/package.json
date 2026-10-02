@@ -10,8 +10,6 @@
     "start": "node dist/main.js"
   },
   "dependencies": {
-    "@cloudbase/js-sdk": "^3.10.1",
-    "@cloudbase/signature-nodejs": "^2.0.0",
     "@hwo/shared": "workspace:*",
     "@nestjs/common": "^10.4.0",
     "@nestjs/core": "^10.4.0",
@@ -26,8 +24,7 @@
     "passport-jwt": "4.0.1",
     "pg": "^8.23.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1",
-    "tencentcloud-sdk-nodejs": "^4.1.322"
+    "rxjs": "^7.8.1"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.4.0",

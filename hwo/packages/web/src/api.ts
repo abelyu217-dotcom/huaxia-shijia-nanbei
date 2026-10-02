@@ -464,7 +464,7 @@ export function subscribeMatchStream(
 ): EventSource {
   const url = new URL(
     `/api/matches/${encodeURIComponent(matchId)}/stream`,
-    window.location.origin,
+    API_BASE || window.location.origin,
   );
   if (speed != null) url.searchParams.set("speed", String(speed));
   const es = new EventSource(url.toString());
