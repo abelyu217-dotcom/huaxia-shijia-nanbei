@@ -79,6 +79,9 @@ export function setAccessToken(token: string | null): void {
 
 // ── 通用 fetch 封装 ──
 
+/** API 基础地址；可通过 VITE_API_BASE_URL 环境变量覆盖（生产部署指向 Cloud Run） */
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
+
 /** GET 请求；可选是否携带鉴权 header（默认遵循 token 是否存在） */
 async function getJson<T>(url: string, opts: { auth?: boolean } = {}): Promise<T> {
   const headers: Record<string, string> = {};
@@ -86,7 +89,7 @@ async function getJson<T>(url: string, opts: { auth?: boolean } = {}): Promise<T
     const token = getAccessToken();
     if (token) headers.Authorization = `Bearer ${token}`;
   }
-  const res = await fetch(url, { headers });
+  const res = await fetch(`${API_BASE}${url}`, { headers });
   if (!res.ok) throw await httpError(url, res);
   return (await res.json()) as T;
 }
@@ -103,7 +106,7 @@ async function sendJson<T>(
     const token = getAccessToken();
     if (token) headers.Authorization = `Bearer ${token}`;
   }
-  const res = await fetch(url, {
+  const res = await fetch(`${API_BASE}${url}`, {
     method,
     headers,
     body: JSON.stringify(body),
