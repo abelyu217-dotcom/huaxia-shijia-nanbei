@@ -105,17 +105,43 @@
   <tr><td>球员池</td><td>按世界隔离</td><td>全球统一自由球员池 + 选秀</td></tr>
 </table>
 
-<h3>2.2 国家体系</h3>
-<p>首批开放 5 个国家，后续可扩展：</p>
+<h3>2.2 国家体系（真实国家联赛）</h3>
+<p>首批开放 5 个国家/地区，每国拥有独立的国内联赛体系、青训生态与经济规则。后续可扩展更多国家。</p>
+
 <table>
-  <tr><th>国家</th><th>代码</th><th>国内 L1 球队</th><th>国内 L2 球队</th><th>风格</th></tr>
-  <tr><td>中国</td><td>CN</td><td>12</td><td>12</td><td>团队篮球、青训体系</td></tr>
-  <tr><td>美国</td><td>US</td><td>12</td><td>12</td><td>天赋优先、商业发达</td></tr>
-  <tr><td>欧洲</td><td>EU</td><td>12</td><td>12</td><td>战术严谨、青训扎实</td></tr>
-  <tr><td>日本</td><td>JP</td><td>12</td><td>12</td><td>纪律严明、三分精准</td></tr>
-  <tr><td>拉美</td><td>LA</td><td>12</td><td>12</td><td>激情奔放、身体对抗</td></tr>
+  <tr><th>国家</th><th>代码</th><th>国内 L1</th><th>国内 L2</th><th>联赛风格</th><th>青训系数</th><th>经济系数</th></tr>
+  <tr><td>中国</td><td>CN</td><td>12 队</td><td>12 队</td><td>团队篮球、青训体系完善、外援限制</td><td>1.0</td><td>1.0</td></tr>
+  <tr><td>美国</td><td>US</td><td>12 队</td><td>12 队</td><td>天赋优先、商业发达、对抗激烈</td><td>1.2</td><td>1.5</td></tr>
+  <tr><td>欧洲</td><td>EU</td><td>12 队</td><td>12 队</td><td>战术严谨、青训扎实、攻防均衡</td><td>1.15</td><td>1.2</td></tr>
+  <tr><td>日本</td><td>JP</td><td>12 队</td><td>12 队</td><td>纪律严明、三分精准、快节奏</td><td>1.05</td><td>1.1</td></tr>
+  <tr><td>拉美</td><td>LA</td><td>12 队</td><td>12 队</td><td>激情奔放、身体对抗、街头风格</td><td>0.95</td><td>0.8</td></tr>
 </table>
+
 <blockquote>每国 L1 12 队 + L2 12 队 = 24 队。5 国 × 24 = 120 支球队。国际冠军杯 32 队。</blockquote>
+
+<h4>各国联赛特色规则</h4>
+<table>
+  <tr><th>国家</th><th>外援政策</th><th>工资帽</th><th>青训规则</th><th>升降级附加</th></tr>
+  <tr><td>中国</td><td>L1 最多 2 外援同时在场</td><td>软工资帽 + 奢侈税</td><td>每队至少 3 名本土青训球员</td><td>L2 季军与 L1 倒数第 3 附加赛</td></tr>
+  <tr><td>美国</td><td>无外援限制</td><td>硬工资帽</td><td>选秀制 + 发展联盟</td><td>直接升降级</td></tr>
+  <tr><td>欧洲</td><td>无外援限制（欧盟内）</td><td>财政公平法案</td><td>青训营 + 球探网络</td><td>L2 季后赛冠军升级</td></tr>
+  <tr><td>日本</td><td>L1 最多 1 外援</td><td>软工资帽</td><td>校园篮球 + 企业队</td><td>直接升降级</td></tr>
+  <tr><td>拉美</td><td>无外援限制</td><td>无工资帽</td><td>街头篮球 + 俱乐部青训</td><td>直接升降级</td></tr>
+</table>
+
+<h4>国家数据模型</h4>
+<pre>
+Country {
+  code          String   PK   // CN, US, EU, JP, LA
+  name          String        // 中国, 美国...
+  flag          String?       // 国旗 emoji 或 URL
+  youthFactor   Float         // 青训系数（影响新秀质量）
+  economicFactor Float         // 经济系数（影响薪资/赞助）
+  style         String        // 联赛风格标签
+  foreignLimit  Int           // 外援上限
+  salaryCapType String        // hard|soft|none
+}
+</pre>
 
 <h3>2.3 核心实体关系</h3>
 <pre>
@@ -143,30 +169,54 @@ Country (国家)
 
 <h3>3.2 赛程规则</h3>
 <ul>
-  <li><strong>赛季周期</strong>：现实时间 1 天 = 游戏内 1 轮（可配置）。</li>
-  <li><strong>国内联赛</strong>：每周二、四、六进行（L1 与 L2 同日不同时）。</li>
-  <li><strong>国内杯赛</strong>：穿插在联赛周中（周三）。</li>
-  <li><strong>国际冠军杯</strong>：国内联赛休赛期进行（赛季末 4 周）。</li>
-  <li><strong>双线作战</strong>：同一球队在国内+国际赛事时，自动排程避免同日冲突。</li>
+  <li><strong>赛季周期</strong>：现实时间 1 天 = 游戏内 1 轮（可配置）。一个完整赛季约 36~40 轮。</li>
+  <li><strong>国内联赛常规赛</strong>：12 队双循环主客场 = 22 轮。每周二、四、六进行（L1 与 L2 同日不同时段）。</li>
+  <li><strong>季后赛</strong>：常规赛前 8 进入季后赛，单败淘汰三局两胜制，共 3 轮（八强→四强→决赛），约 3 周。</li>
+  <li><strong>国内杯赛</strong>：24 队（L1+L2）单败淘汰，穿插在联赛周中（周三），共 5 轮。</li>
+  <li><strong>国际冠军杯</strong>：国内联赛休赛期进行（赛季末 4 周），不与国内赛事冲突。</li>
+  <li><strong>双线作战排程</strong>：同一球队同时参加国内+国际赛事时，系统自动排程避免同日冲突，必要时安排背靠背。</li>
 </ul>
 
-<h3>3.3 升降级规则</h3>
+<h3>3.3 升降级规则（完整）</h3>
+<h4>升级规则</h4>
 <ol>
-  <li>L1 常规赛排名后 2 名 → 降入 L2。</li>
-  <li>L2 季后赛冠军 + 亚军 → 升入 L1。</li>
-  <li>升级/降级在下赛季开赛前完成，球队保留球员但联赛身份变更。</li>
-  <li>降级触发职员士气下降、球迷不满、预算削减等连锁效果。</li>
+  <li>L2 常规赛前 2 名直接升级到 L1。</li>
+  <li>L2 季后赛冠军（若不是常规赛前 2）获得升级附加赛资格。</li>
+  <li>升级附加赛：L2 季后赛冠军 vs L1 常规赛倒数第 3，三局两胜，胜者留/升 L1。</li>
 </ol>
+<h4>降级规则</h4>
+<ol>
+  <li>L1 常规赛排名最后 2 名直接降入 L2。</li>
+  <li>L1 常规赛倒数第 3 名参加降级附加赛（见上）。</li>
+  <li>升级/降级在下赛季开赛前完成，球队保留球员与职员，但联赛身份、预算、声望相应调整。</li>
+</ol>
+<h4>降级连锁效果</h4>
+<ul>
+  <li>球队声望 -15，球迷满意度 -20。</li>
+  <li>下赛季预算削减 30%，赞助收入下降。</li>
+  <li>职员士气下降，核心球员可能触发离队条款。</li>
+  <li>升级则相反：声望 +10，预算提升 25%。</li>
+</ul>
 
 <h3>3.4 国际冠军杯资格分配（32 队）</h3>
 <pre>
-5 国 × L1 冠军  = 5 队
-5 国 × L1 亚军  = 5 队
-5 国 × 杯赛冠军 = 5 队
-外卡（按欧战积分排名） = 17 队
-─────────────────────────
-合计            = 32 队
+5 国 × L1 冠军    = 5 队（种子队，分入不同小组）
+5 国 × L1 亚军    = 5 队
+5 国 × 杯赛冠军   = 5 队
+外卡（按国际积分排名） = 17 队
+─────────────────────────────
+合计              = 32 队
 </pre>
+<p><strong>赛制</strong>：32 队分 8 组（每组 4 队），小组双循环（6 轮），前 2 出线。16 强淘汰赛单败淘汰（中立场），直至决出冠军。</p>
+
+<h3>3.5 联赛积分与排名</h3>
+<table>
+  <tr><th>结果</th><th>积分</th><th>说明</th></tr>
+  <tr><td>胜</td><td>2 分</td><td>常规时间获胜</td></tr>
+  <tr><td>负</td><td>1 分</td><td>（若引入加时赛，加时负得 1 分）</td></tr>
+  <tr><td>负</td><td>0 分</td><td>常规时间失利</td></tr>
+</table>
+<p>排名优先级：积分 → 净胜分 → 相互战绩 → 总得分。</p>
 
 <!-- ===================== 4. 球队职员系统 ===================== -->
 <h2 id="staff">4. 球队职员系统</h2>
@@ -361,30 +411,87 @@ AvatarCreateParams {
 <!-- ===================== 9. 家庭背景随机生成 ===================== -->
 <h2 id="family">9. 普通球员家庭背景随机生成</h2>
 
-<h3>9.1 生成逻辑</h3>
-<p>在 <code>world.service.ts</code> 生成球队时，为每名普通球员创建 <code>PlayerFamily</code> 记录：</p>
+<h3>9.1 背景类型与概率分布</h3>
+<p>在 <code>world.service.ts</code> 生成球队时，为每名普通球员创建 <code>PlayerFamily</code> 记录。背景完全由系统随机生成，玩家不可干预。</p>
+<table>
+  <tr><th>背景类型</th><th>代码</th><th>概率</th><th>初始属性加成</th><th>性格倾向</th><th>成长影响</th></tr>
+  <tr><td>体育世家</td><td>athlete_family</td><td>12%</td><td>全属性 +3，潜力 +5</td><td>勤奋/领袖</td><td>成长速度 +12%</td></tr>
+  <tr><td>普通家庭</td><td>regular</td><td>45%</td><td>无</td><td>随机</td><td>正常</td></tr>
+  <tr><td>单亲家庭</td><td>single_parent</td><td>13%</td><td>力量 +2，韧性 +3</td><td>硬汉/沉默</td><td>敬业度 +5</td></tr>
+  <tr><td>海外背景</td><td>overseas</td><td>10%</td><td>适应力 +5</td><td>张扬/沉默</td><td>换队适应性 +15%</td></tr>
+  <tr><td>体校出身</td><td>sports_school</td><td>10%</td><td>体能 +3，纪律 +5</td><td>勤奋/沉默</td><td>训练效果 +8%</td></tr>
+  <tr><td>街头出身</td><td>streetball</td><td>5%</td><td>控球 +4，突破 +3</td><td>张扬/硬汉</td><td> creativity +10%</td></tr>
+  <tr><td>富裕家庭</td><td>wealthy</td><td>5%</td><td>球商 +3，人气 +10</td><td>领袖/张扬</td><td>媒体曝光 +20%</td></tr>
+</table>
+
+<h3>9.2 家庭成员生成算法</h3>
 <pre>
-背景分布（随机）：
-  体育世家 athlete_family    15%  →  初始能力 +5，成长 +10%
-  普通家庭 regular           50%  →  无加成
-  单亲家庭 single_parent     15%  →  性格倾向"硬汉/勤奋"
-  海外背景 overseas          10%  →  国籍随机，外语加成
-  体校出身 sports_school     10%  →  纪律 +5，基础扎实
+function generateFamily(player):
+  members = []
+  // 父母（90% 概率双亲，10% 单亲）
+  father = { name: randomMaleName(player.nationality), relation: "father",
+             age: player.age + 25~35, occupation: randomOccupation() }
+  mother = { name: randomFemaleName(player.nationality), relation: "mother",
+             age: player.age + 23~33, occupation: randomOccupation() }
+  if background == "single_parent":
+    members.push(random([father, mother]))  // 只保留一方
+  else:
+    members.push(father, mother)
+
+  // 兄弟姐妹（40% 概率有 1 个，15% 有 2 个）
+  siblingCount = weightedRandom([0:45%, 1:40%, 2:15%])
+  for i in 1..siblingCount:
+    sibling = { name: randomName(player.nationality), relation: "sibling",
+                age: player.age + (-5~+5), occupation: randomOccupation() }
+    members.push(sibling)
+
+  // 配偶（仅 28 岁以上球员，60% 概率已婚）
+  if player.age >= 28 and random() < 0.6:
+    spouse = { name: randomName(player.nationality), relation: "spouse",
+               age: player.age + (-3~+3), occupation: randomOccupation() }
+    members.push(spouse)
+
+  return members
 </pre>
 
-<h3>9.2 家庭成员生成</h3>
-<pre>
-PlayerFamily.members: [
-  { name, relation: father|mother|sibling|spouse|child, age, occupation? }
-]
-随机生成 2~4 名成员，姓名按国籍/地区匹配。
-</pre>
+<h3>9.3 姓名生成（按国籍匹配）</h3>
+<table>
+  <tr><th>国籍</th><th>男名池示例</th><th>女名池示例</th><th>姓氏池示例</th></tr>
+  <tr><td>CN 中国</td><td>伟、强、磊、军、洋、勇</td><td>芳、娜、敏、静、丽、娟</td><td>王、李、张、刘、陈、杨</td></tr>
+  <tr><td>US 美国</td><td>James, Michael, David, Chris</td><td>Mary, Sarah, Emily, Jessica</td><td>Smith, Johnson, Williams, Brown</td></tr>
+  <tr><td>EU 欧洲</td><td>Luca, Marco, Jan, Pierre</td><td>Anna, Maria, Sofia, Emma</td><td>Müller, Rossi, Dubois, Novak</td></tr>
+  <tr><td>JP 日本</td><td>翔太、悠真、大翔、莲</td><td>阳菜、凛、结衣、美咲</td><td>佐藤、铃木、高桥、田中</td></tr>
+  <tr><td>LA 拉美</td><td>Carlos, Juan, Miguel, Diego</td><td>Maria, Ana, Sofia, Lucia</td><td>García, Rodríguez, Martínez, López</td></tr>
+</table>
 
-<h3>9.3 与化身的区别</h3>
+<h3>9.4 职业池（家庭成员）</h3>
+<p>随机从以下职业中选取：教师、医生、工程师、工人、商人、农民、公务员、自由职业、退休、运动员、教练、家庭主妇。</p>
+
+<h3>9.5 家庭背景对球员的连锁影响</h3>
 <ul>
-  <li><strong>化身</strong>：玩家可手动选择家庭背景（不选则随机）。</li>
-  <li><strong>普通球员</strong>：完全由系统随机生成，玩家不可干预。</li>
+  <li><strong>属性初始化</strong>：按背景类型给予初始属性加成（见 9.1 表）。</li>
+  <li><strong>性格生成</strong>：背景类型影响性格概率分布，如体育世家更易出"勤奋/领袖"型。</li>
+  <li><strong>潜力值</strong>：体育世家 +5 潜力，富裕家庭 +3 人气。</li>
+  <li><strong>忠诚度</strong>：单亲家庭球员忠诚度基因 +10（更珍惜机会）。</li>
+  <li><strong>故事文本</strong>：生成时自动产生一段家庭背景简介，显示在球员档案页。</li>
 </ul>
+
+<h3>9.6 与化身的区别</h3>
+<ul>
+  <li><strong>化身</strong>：玩家可手动选择家庭背景（不选则随机），家庭成员也可自定义。</li>
+  <li><strong>普通球员</strong>：完全由系统随机生成，玩家不可干预，确保联盟生态多样性。</li>
+</ul>
+
+<h3>9.7 数据模型</h3>
+<pre>
+PlayerFamily {
+  id          String   PK
+  playerId    String   FK → Player
+  background  String   // athlete_family|regular|single_parent|overseas|sports_school|streetball|wealthy
+  members     Json     // [{ name, relation, age, occupation }]
+  story       String?  // 自动生成的家庭故事简介
+  createdAt   DateTime
+}
 
 <!-- ===================== 10. 球员信息页 ===================== -->
 <h2 id="profile">10. 球员个人信息页与完整属性</h2>
@@ -406,53 +513,119 @@ PlayerFamily.members: [
 └── 媒体动态（人气值、新闻）
 </pre>
 
-<h3>10.2 完整属性体系</h3>
+<h3>10.2 完整属性体系（共 27 项）</h3>
+
+<h4>身体属性（4 项）</h4>
 <table>
-  <tr><th>类别</th><th>属性</th><th>说明</th></tr>
-  <tr><td rowspan="4">身体</td><td>speed 速度</td><td>移动、快攻</td></tr>
-  <tr><td>strength 力量</td><td>对抗、卡位</td></tr>
-  <tr><td>jumping 弹跳</td><td>篮板、扣篮</td></tr>
-  <tr><td>stamina 体能</td><td>出场时间、疲劳抗性</td></tr>
-  <tr><td rowspan="7">进攻</td><td>close 近投</td><td>禁区内终结</td></tr>
-  <tr><td>midRange 中距离</td><td>中投</td></tr>
-  <tr><td>threePoint 三分</td><td>远投</td></tr>
-  <tr><td>drive 突破</td><td>持球攻筐</td></tr>
-  <tr><td>post 背身</td><td>低位单打</td></tr>
-  <tr><td>passing 传球</td><td>组织</td></tr>
-  <tr><td>handle 控球</td><td>运球、防抢断</td></tr>
-  <tr><td rowspan="4">防守</td><td>perimeterD 外线防守</td><td>防突破</td></tr>
-  <tr><td>interiorD 内线防守</td><td>护筐</td></tr>
-  <tr><td>steal 抢断</td><td>抄球</td></tr>
-  <tr><td>block 盖帽</td><td>封盖</td></tr>
-  <tr><td rowspan="5">精神</td><td>iq 球商</td><td>跑位、决策</td></tr>
-  <tr><td>clutch 关键球</td><td>关键时刻表现</td></tr>
-  <tr><td>loyalty 忠诚度</td><td>续约意愿</td></tr>
-  <tr><td>leadership 领导力</td><td>队友士气</td></tr>
-  <tr><td>workEthic 敬业度</td><td>训练效果</td></tr>
+  <tr><th>属性</th><th>英文名</th><th>影响</th><th>成长阶段</th></tr>
+  <tr><td>速度</td><td>speed</td><td>移动速度、快攻反击、横向滑步</td><td>18-25 岁巅峰，30 后下降</td></tr>
+  <tr><td>力量</td><td>strength</td><td>身体对抗、卡位、篮板争抢</td><td>20-28 岁巅峰</td></tr>
+  <tr><td>弹跳</td><td>jumping</td><td>篮板、扣篮、封盖高度</td><td>18-26 岁巅峰</td></tr>
+  <tr><td>体能</td><td>stamina</td><td>出场时间上限、疲劳抗性</td><td>22-30 岁巅峰</td></tr>
 </table>
 
-<h3>10.3 数据模型变更（Player 表扩展）</h3>
+<h4>进攻属性（7 项）</h4>
+<table>
+  <tr><th>属性</th><th>英文名</th><th>影响</th><th>关联位置</th></tr>
+  <tr><td>近投</td><td>close</td><td>禁区内终结命中率</td><td>C / PF</td></tr>
+  <tr><td>中距离</td><td>midRange</td><td>中投命中率</td><td>所有位置</td></tr>
+  <tr><td>三分</td><td>threePoint</td><td>远投命中率</td><td>SG / SF</td></tr>
+  <tr><td>突破</td><td>drive</td><td>持球攻筐成功率</td><td>PG / SG / SF</td></tr>
+  <tr><td>背身</td><td>post</td><td>低位单打命中率</td><td>PF / C</td></tr>
+  <tr><td>传球</td><td>passing</td><td>助攻成功率、失误控制</td><td>PG</td></tr>
+  <tr><td>控球</td><td>handle</td><td>运球稳定性、防抢断</td><td>PG / SG</td></tr>
+</table>
+
+<h4>防守属性（4 项）</h4>
+<table>
+  <tr><th>属性</th><th>英文名</th><th>影响</th></tr>
+  <tr><td>外线防守</td><td>perimeterD</td><td>防突破、干扰外线投篮</td></tr>
+  <tr><td>内线防守</td><td>interiorD</td><td>护筐、干扰内线投篮</td></tr>
+  <tr><td>抢断</td><td>steal</td><td>抄球成功率</td></tr>
+  <tr><td>盖帽</td><td>block</td><td>封盖成功率</td></tr>
+</table>
+
+<h4>精神属性（5 项）</h4>
+<table>
+  <tr><th>属性</th><th>英文名</th><th>影响</th><th>变化机制</th></tr>
+  <tr><td>球商</td><td>iq</td><td>跑位合理性、决策质量、失误控制</td><td>随比赛经验缓慢增长</td></tr>
+  <tr><td>关键球</td><td>clutch</td><td>关键时刻（最后 5 分钟分差≤5）命中率加成</td><td>性格 + 大场面经验</td></tr>
+  <tr><td>忠诚度</td><td>loyalty</td><td>续约意愿、降薪留队概率</td><td>受球队战绩/待遇影响</td></tr>
+  <tr><td>领导力</td><td>leadership</td><td>提升队友士气、更衣室稳定性</td><td>随年龄/资历增长</td></tr>
+  <tr><td>敬业度</td><td>workEthic</td><td>训练效果加成、恢复速度</td><td>性格决定，较稳定</td></tr>
+</table>
+
+<h4>状态属性（4 项，动态变化）</h4>
+<table>
+  <tr><th>属性</th><th>英文名</th><th>影响</th><th>恢复方式</th></tr>
+  <tr><td>疲劳度</td><td>fatigue</td><td>0-100，越高表现越差、伤病风险越高</td><td>休息、训练师恢复</td></tr>
+  <tr><td>健康度</td><td>health</td><td>0-100，受伤时下降</td><td>队医治疗、休息</td></tr>
+  <tr><td>士气</td><td>mood</td><td>0-100，影响场上发挥</td><td>出场时间、战绩、合同</td></tr>
+  <tr><td>手感</td><td>form</td><td>近期投篮命中率趋势</td><td>比赛表现浮动</td></tr>
+</table>
+
+<h4>隐藏属性（3 项，不直接显示，影响行为）</h4>
+<table>
+  <tr><th>属性</th><th>英文名</th><th>影响</th></tr>
+  <tr><td>受伤倾向</td><td>injuryTendency</td><td>0-100，越高越容易受伤（由体质+年龄决定）</td></tr>
+  <tr><td>成长潜力</td><td>potential</td><td>0-100，决定属性上限与成长速度</td></tr>
+  <tr><td>忠诚基因</td><td>loyaltyGene</td><td>0-100，决定换队频率（性格+家庭背景）</td></tr>
+</table>
+
+<h3>10.3 综合评分（OVR）计算公式</h3>
+<pre>
+OVR = Σ(属性权重 × 属性值) / Σ权重
+
+权重按位置差异化：
+  PG：passing(0.15) handle(0.15) speed(0.12) threePoint(0.10) drive(0.10) ...
+  C ：interiorD(0.15) close(0.15) strength(0.12) block(0.10) rebound...
+</pre>
+<p>OVR 范围 0-99，每 5 分一个颜色档位（红/橙/黄/绿/蓝）。</p>
+
+<h3>10.4 属性成长机制</h3>
+<ul>
+  <li><strong>年龄曲线</strong>：18-22 岁快速成长期，23-28 巅峰期，29+ 缓慢下降，33+ 加速下降。</li>
+  <li><strong>训练影响</strong>：敬业度越高、训练师效率越高，每周属性成长越快。</li>
+  <li><strong>比赛经验</strong>：出场时间越多，球商/关键球/精神属性增长越快。</li>
+  <li><strong>伤病影响</strong>：重大伤病可能导致属性永久下降 1-3 点。</li>
+  <li><strong>潜力上限</strong>：属性不能超过 <code>潜力值</code>，潜力由选秀/球探评估。</li>
+</ul>
+
+<h3>10.5 数据模型变更（Player 表扩展）</h3>
 <pre>
 Player {
   // 已有
-  id, name, number, position, age, abilities, ...
-  // 新增
-  height: Int           // cm
-  weight: Int           // kg
-  nationality: String   // 国家代码
-  hometown: String?
-  personality: String   // 性格类型
-  clutch: Int           // 关键球（已有 abilities.clutch，保留）
+  id, name, number, position, age, abilities(17项), ...
+  // 新增 —— 基本信息
+  height: Int            // cm
+  weight: Int            // kg
+  nationality: String    // 国家代码 CN/US/EU/JP/LA
+  hometown: String?      // 出生地
+  jerseyNumber: Int?
+  // 新增 —— 精神属性
+  iq: Int               // 0-100 球商
+  clutch: Int           // 0-100 关键球
   loyalty: Int          // 0-100 忠诚度
   leadership: Int       // 0-100 领导力
   workEthic: Int        // 0-100 敬业度
+  // 新增 —— 状态属性
   fatigue: Int          // 0-100 疲劳度
-  mediaPopularity: Int  // 0-100 人气
-  jerseyNumber: Int?
+  health: Int           // 0-100 健康度
+  mood: Int             // 0-100 士气
+  form: Float           // -1.0 ~ +1.0 手感趋势
+  // 新增 —— 隐藏属性
+  injuryTendency: Int   // 0-100 受伤倾向
+  potential: Int        // 0-100 潜力上限
+  loyaltyGene: Int      // 0-100 忠诚基因
+  // 新增 —— 性格
+  personality: String   // tough|silent|flamboyant|leader|hardworking
+  // 新增 —— 选秀
   draftYear: Int?
   draftPick: Int?
+  draftTeamId: String?
+  // 新增 —— 人气
+  mediaPopularity: Int  // 0-100 媒体人气
 }
-</pre>
 
 <!-- ===================== 11. 全局可点击 ===================== -->
 <h2 id="entitylink">11. 全局人名可点击</h2>
