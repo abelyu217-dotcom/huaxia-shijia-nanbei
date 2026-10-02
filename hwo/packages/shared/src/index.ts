@@ -8,3 +8,4 @@ export * from "./balance.js";
 export * from "./sim-config-store.js";
 export * from "./replay.js";
 export * from "./fog.js";
+export * from "./profile.js";

@@ -4,6 +4,7 @@
  */
 
 import { Abilities, Player, Position, Team, Lineup } from "./types.js";
+import { buildProfile, deriveAbilities } from "./profile.js";
 
 // 姓氏池
 const SURNAMES = ["王", "李", "张", "刘", "陈", "杨", "黄", "赵", "周", "吴",
@@ -32,62 +33,6 @@ function pick<T>(arr: readonly T[], rng: () => number): T {
 
 function randInt(min: number, max: number, rng: () => number): number {
   return Math.floor(rng() * (max - min + 1)) + min;
-}
-
-// 按位置生成能力值分布
-function generateAbilities(position: Position, tier: number, rng: () => number): Abilities {
-  // tier: 0=角色球员(60-72), 1=首发(68-80), 2=全明星(78-90), 3=超级巨星(85-95)
-  const ranges = [
-    [58, 72], [66, 80], [76, 90], [84, 95],
-  ];
-  const [lo, hi] = ranges[tier] ?? [60, 72];
-
-  const base = () => randInt(lo, hi, rng);
-  const weak = () => randInt(Math.max(40, lo - 15), lo + 5, rng);
-  const strong = () => randInt(hi - 5, Math.min(99, hi + 8), rng);
-
-  switch (position) {
-    case "PG":
-      return {
-        three: base(), midrange: base(), inside: weak(), drive: strong(),
-        postup: weak(), passing: strong(), ballHandle: strong(),
-        perimeterD: base(), interiorD: weak(), steal: strong(), block: weak(),
-        speed: strong(), strength: weak(), jumping: base(), stamina: base(),
-        iq: strong(), clutch: base(),
-      };
-    case "SG":
-      return {
-        three: strong(), midrange: strong(), inside: base(), drive: base(),
-        postup: weak(), passing: base(), ballHandle: base(),
-        perimeterD: base(), interiorD: weak(), steal: base(), block: weak(),
-        speed: strong(), strength: base(), jumping: base(), stamina: base(),
-        iq: base(), clutch: strong(),
-      };
-    case "SF":
-      return {
-        three: base(), midrange: base(), inside: base(), drive: base(),
-        postup: base(), passing: base(), ballHandle: base(),
-        perimeterD: base(), interiorD: base(), steal: base(), block: base(),
-        speed: base(), strength: base(), jumping: base(), stamina: strong(),
-        iq: base(), clutch: base(),
-      };
-    case "PF":
-      return {
-        three: weak(), midrange: base(), inside: strong(), drive: weak(),
-        postup: strong(), passing: weak(), ballHandle: weak(),
-        perimeterD: weak(), interiorD: strong(), steal: weak(), block: strong(),
-        speed: weak(), strength: strong(), jumping: strong(), stamina: base(),
-        iq: base(), clutch: base(),
-      };
-    case "C":
-      return {
-        three: weak(), midrange: weak(), inside: strong(), drive: weak(),
-        postup: strong(), passing: weak(), ballHandle: weak(),
-        perimeterD: weak(), interiorD: strong(), steal: weak(), block: strong(),
-        speed: weak(), strength: strong(), jumping: strong(), stamina: base(),
-        iq: base(), clutch: base(),
-      };
-  }
 }
 
 /** 特质 ID */
@@ -134,16 +79,25 @@ function generateTraits(position: Position, abilities: Abilities, rng: () => num
 
 const POSITIONS: Position[] = ["PG", "SG", "SF", "PF", "C"];
 
-function generatePlayer(id: string, position: Position, tier: number, seed: number): Player {
+function generatePlayer(
+  id: string,
+  position: Position,
+  tier: number,
+  seed: number,
+  age = 22,
+): Player {
   const rng = rngFromSeed(seed);
   const name = pick(SURNAMES, rng) + pick(GIVEN_NAMES, rng);
-  const abilities = generateAbilities(position, tier, rng);
+  // P0-① 属性双层结构：roll 38 项档案 → 推导 17 项引擎能力
+  const profile = buildProfile(position, tier, age, seed);
+  const abilities = deriveAbilities(profile);
   const traits = generateTraits(position, abilities, rng);
   return {
     id,
     name,
     position,
     abilities,
+    profile,
     condition: { fatigue: 0, foulTrouble: 0, hot: 0 },
     traits,
   };

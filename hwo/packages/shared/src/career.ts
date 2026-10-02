@@ -6,7 +6,8 @@
  * 每赛季根据年龄阶段 + 训练量 + 出场时间，能力值自然成长或衰退。
  */
 
-import type { Abilities, PlayerStatus } from "./types.js";
+import type { Abilities, PlayerProfile, PlayerStatus } from "./types.js";
+import { deriveAbilities } from "./profile.js";
 
 /** 生涯阶段 */
 export type CareerStage =
@@ -69,61 +70,144 @@ export function computeOVR(abilities: Abilities): number {
 }
 
 /**
+ * 38 项档案层赛季成长（P0-① 属性双层结构）
+ *
+ * 按方案分组年龄曲线结算：
+ * - 运动属性（athletic）：29 岁后衰退
+ * - 技术属性（skill）：33 岁后衰退
+ * - 心智属性（mental）：终身微涨，35 岁后持平
+ * - 静态体测（physical）：身高/臂展/站立摸高不变；体重 30 后微增；frame 不变
+ * - 隐藏属性（hidden）：injuryProne 随年龄上升；potential 不变
+ *
+ * @returns 新的 38 项 profile
+ */
+export function applyProfileGrowth(
+  profile: PlayerProfile,
+  age: number,
+  potential: number,
+  minutesPerGame: number,
+): PlayerProfile {
+  const p: PlayerProfile = JSON.parse(JSON.stringify(profile));
+
+  // 成长系数：出场时间越多成长越快（0.5 ~ 1.2）
+  const minutesFactor = 0.5 + Math.min(1, minutesPerGame / 40) * 0.7;
+
+  // ---- 运动属性：29 岁为衰退拐点 ----
+  const athleticRate = age < 29 ? 1.0 : age < 33 ? -0.4 : -0.8;
+  for (const key of Object.keys(p.athletic) as (keyof PlayerProfile["athletic"])[]) {
+    const cur = p.athletic[key];
+    if (athleticRate >= 0) {
+      const room = potential - cur;
+      const growth = room * 0.04 * Math.max(athleticRate, 0.1) * minutesFactor;
+      p.athletic[key] = Math.min(99, Math.max(0, Math.round(cur + growth)));
+    } else {
+      const decline = cur * 0.02 * Math.abs(athleticRate);
+      p.athletic[key] = Math.max(0, Math.round(cur - decline));
+    }
+  }
+
+  // ---- 技术属性：33 岁为衰退拐点 ----
+  const skillRate = age < 33 ? 1.0 : -0.5;
+  for (const key of Object.keys(p.skill) as (keyof PlayerProfile["skill"])[]) {
+    const cur = p.skill[key];
+    if (skillRate >= 0) {
+      const room = potential - cur;
+      const growth = room * 0.035 * Math.max(skillRate, 0.1) * minutesFactor;
+      p.skill[key] = Math.min(99, Math.max(0, Math.round(cur + growth)));
+    } else {
+      const decline = cur * 0.012 * Math.abs(skillRate);
+      p.skill[key] = Math.max(0, Math.round(cur - decline));
+    }
+  }
+
+  // ---- 心智属性：终身微涨，35 岁后持平（确定性：每 3 岁 +1）----
+  const mentalCeiling = 9; // 心智 1-10 上限
+  if (age <= 35) {
+    (["workEthic", "pressure", "teamwork", "leadership"] as const).forEach((k) => {
+      const cur = p.mental[k];
+      if (cur < mentalCeiling && age % 3 === 0) {
+        p.mental[k] = Math.min(mentalCeiling, cur + 1);
+      }
+    });
+    // iq 0-99，缓慢上涨
+    const iqRoom = potential - p.mental.iq;
+    p.mental.iq = Math.min(99, Math.max(0, Math.round(p.mental.iq + iqRoom * 0.01 * minutesFactor)));
+  }
+
+  // ---- 静态体测：身高/臂展/摸高不变；体重 30 后微增 ----
+  if (age >= 30) {
+    p.physical.weightKg = Math.min(p.physical.weightKg + 1, 140);
+  }
+
+  // ---- 隐藏属性：injuryProne 随年龄上升 ----
+  if (age >= 30 && age % 2 === 0) {
+    p.hidden.injuryProne = Math.min(10, p.hidden.injuryProne + 1);
+  }
+
+  return p;
+}
+
+/**
  * 赛季成长：根据年龄阶段 + 训练经验 + 出场时间，返回新的能力值
+ *
+ * 若传入 profile（38 项），则在档案层结算并推导 17 项；否则在 17 项能力层结算（兼容存量）。
  *
  * @param abilities 当前能力值
  * @param age 当前年龄
  * @param potential 潜力上限
- * @param trainExp 训练经验值
  * @param minutesPerGame 场均出场时间（0-48）
- * @returns { abilities, ovr, trainExpGained, shouldRetire }
+ * @param profile 可选 38 项档案（P0-①）
+ * @returns { abilities, profile?, ovr, trainExpGained, shouldRetire }
  */
 export function applySeasonGrowth(
   abilities: Abilities,
   age: number,
   potential: number,
   minutesPerGame: number,
+  profile?: PlayerProfile,
 ): {
   abilities: Abilities;
+  profile?: PlayerProfile;
   ovr: number;
   trainExpGained: number;
   shouldRetire: boolean;
 } {
-  const stage = getCareerStage(age);
-  const rate = STAGE_GROWTH_RATE[stage];
-
   // 训练经验增长：出场时间 + 基础训练
   const trainExpGained = Math.round(20 + minutesPerGame * 1.5);
 
-  // 每点训练经验带来的成长（受阶段倍率影响）
-  // const expGrowth = (totalExp / 100) * rate;  // 未来扩展用
+  let newAbilities: Abilities;
+  let newProfile: PlayerProfile | undefined;
 
-  // 新能力值
-  const newAbilities = { ...abilities };
-  const keys = Object.keys(newAbilities) as (keyof Abilities)[];
+  if (profile) {
+    // P0-①：38 项档案层成长 → 推导 17 项
+    newProfile = applyProfileGrowth(profile, age, potential, minutesPerGame);
+    newAbilities = deriveAbilities(newProfile);
+  } else {
+    // 兼容：17 项能力层成长
+    const stage = getCareerStage(age);
+    const rate = STAGE_GROWTH_RATE[stage];
+    newAbilities = { ...abilities };
+    const keys = Object.keys(newAbilities) as (keyof Abilities)[];
 
-  for (const key of keys) {
-    const current = newAbilities[key];
-    const ceiling = potential; // 潜力上限
+    for (const key of keys) {
+      const current = newAbilities[key];
+      const ceiling = potential;
 
-    if (rate >= 0) {
-      // 成长阶段：向潜力上限靠拢
-      const room = ceiling - current;
-      const growth = room * 0.04 * Math.max(rate, 0.1);
-      newAbilities[key] = Math.min(99, Math.max(0, Math.round(current + growth)));
-    } else {
-      // 衰退阶段：能力下降
-      const decline = current * 0.015 * Math.abs(rate);
-      newAbilities[key] = Math.max(0, Math.round(current - decline));
+      if (rate >= 0) {
+        const room = ceiling - current;
+        const growth = room * 0.04 * Math.max(rate, 0.1);
+        newAbilities[key] = Math.min(99, Math.max(0, Math.round(current + growth)));
+      } else {
+        const decline = current * 0.015 * Math.abs(rate);
+        newAbilities[key] = Math.max(0, Math.round(current - decline));
+      }
     }
   }
 
   const ovr = computeOVR(newAbilities);
-
-  // 退役判断：37+ 且 OVR 跌破阈值
   const shouldRetire = age >= 37 && ovr < RETIRE_OVR_THRESHOLD;
 
-  return { abilities: newAbilities, ovr, trainExpGained, shouldRetire };
+  return { abilities: newAbilities, profile: newProfile, ovr, trainExpGained, shouldRetire };
 }
 
 /**

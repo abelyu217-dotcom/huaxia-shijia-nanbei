@@ -66,6 +66,8 @@ export interface Player {
   isCaptain?: boolean;
   /** 是否新秀（#20）：年龄 ≤ 22 或当季选秀 */
   isRookie?: boolean;
+  /** 38 项球员档案（P0-① 属性双层结构）。若存在则为唯一数据源，abilities 由其推导 */
+  profile?: PlayerProfile;
 }
 
 /** 球员进攻原型（借鉴 JBL Po Archetype） */
@@ -483,4 +485,78 @@ export interface ScoutBudget {
   /** 赛季总预算 */  total: number;
   /** 已使用 */
   used: number;
+}
+
+// ─── 属性双层结构：38 项球员档案（数据源层） ───
+// 参见《HWO 属性体系 38→17 映射设计草案》
+// PlayerProfile 是唯一数据源；引擎 17 项 Abilities 由 deriveAbilities() 确定性推导。
+
+/** 静态体测 7 项（18 岁定型，不再变化） */
+export interface PhysicalMeasurements {
+  heightCm: number;        // 身高（cm）
+  armSpanCm: number;       // 臂展（cm）
+  standingReachCm: number; // 站立摸高（cm）
+  weightKg: number;        // 体重（kg）
+  frame: number;           // 骨架 1-10（宽窄）
+  handLength: number;      // 手长 1-10
+  achilles: number;        // 跟腱 1-10
+}
+
+/** 动态运动属性 8 项（0-99，29 岁起衰退） */
+export interface AthleticAttributes {
+  speed: number;       // 速度
+  vertical: number;    // 弹跳
+  strength: number;    // 力量
+  agility: number;     // 敏捷
+  stamina: number;     // 耐力
+  lateral: number;     // 横向移动
+  burst: number;       // 垂直爆发
+  flexibility: number; // 柔韧性
+}
+
+/** 技术属性 14 项（0-99，33 岁起衰退） */
+export interface SkillAttributes {
+  three: number;        // 三分
+  midrange: number;     // 中投
+  freeThrow: number;    // 罚球
+  layup: number;        // 上篮
+  dunk: number;         // 扣篮
+  passing: number;      // 传球
+  ballHandle: number;   // 控球
+  rebounding: number;   // 篮板
+  steal: number;        // 抢断
+  block: number;        // 盖帽
+  postUp: number;       // 低位
+  faceUp: number;       // 面框
+  pickRoll: number;     // 挡拆
+  backToBasket: number; // 背身
+}
+
+/** 心智属性 5 项（终身成长） */
+export interface MentalAttributes {
+  workEthic: number;  // 敬业度 1-10
+  pressure: number;   // 抗压 1-10
+  teamwork: number;   // 团队 1-10
+  leadership: number; // 领导力 1-10
+  iq: number;         // 篮球智商 0-99
+}
+
+/** 成长潜力等级 */
+export type PotentialTier = "A+" | "A" | "B" | "C" | "D";
+
+/** 隐藏属性 4 项 */
+export interface HiddenAttributes {
+  injuryProne: number;     // 伤病倾向 1-10（越高越易伤）
+  potential: PotentialTier; // 成长潜力等级
+  personality: string;     // 性格特质标签
+  loyalty: number;         // 忠诚度 1-10
+}
+
+/** 38 项球员档案（数据源层，落库存储） */
+export interface PlayerProfile {
+  physical: PhysicalMeasurements;
+  athletic: AthleticAttributes;
+  skill: SkillAttributes;
+  mental: MentalAttributes;
+  hidden: HiddenAttributes;
 }
