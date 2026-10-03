@@ -631,6 +631,8 @@ function ProspectCard({ prospect, inWatchlist, onWatch }: ProspectCardProps) {
   );
 }
 
+type SortField = "name" | "age" | "ovr" | "potential" | "salary";
+
 interface FreeMarketViewProps {
   prospects: Prospect[];
   loading: boolean;
@@ -671,6 +673,12 @@ function FreeMarketView({
   const [salaryMax, setSalaryMax] = useState<string>("");
   const [keyword, setKeyword] = useState<string>("");
 
+  // 排序与分页
+  const [sortField, setSortField] = useState<SortField>("potential");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   const filtered = useMemo(() => {
     return prospects
       .filter((p) => !signedIds.has(p.id))
@@ -687,6 +695,51 @@ function FreeMarketView({
         return true;
       });
   }, [prospects, signedIds, positionFilter, ageMin, ageMax, potMin, potMax, salaryMin, salaryMax, keyword]);
+
+  // 筛选条件变化时回到第 1 页
+  useEffect(() => {
+    setPage(1);
+  }, [positionFilter, ageMin, ageMax, potMin, potMax, salaryMin, salaryMax, keyword]);
+
+  const sorted = useMemo(() => {
+    const arr = [...filtered];
+    arr.sort((a, b) => {
+      let va: string | number, vb: string | number;
+      switch (sortField) {
+        case "name": va = a.name; vb = b.name; break;
+        case "age": va = a.age; vb = b.age; break;
+        case "ovr": va = a.ovr; vb = b.ovr; break;
+        case "potential": va = a.potential ?? a.potentialEstimate; vb = b.potential ?? b.potentialEstimate; break;
+        case "salary": va = a.salary; vb = b.salary; break;
+        default: va = 0; vb = 0;
+      }
+      if (va < vb) return sortDir === "asc" ? -1 : 1;
+      if (va > vb) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+    return arr;
+  }, [filtered, sortField, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paged = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return sorted.slice(start, start + pageSize);
+  }, [sorted, currentPage, pageSize]);
+
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("desc");
+    }
+  };
+
+  const sortArrow = (field: SortField) => {
+    if (sortField !== field) return <span className="sort-arrow muted">↕</span>;
+    return <span className="sort-arrow">{sortDir === "asc" ? "↑" : "↓"}</span>;
+  };
 
   const resetFilters = () => {
     setPositionFilter("all");
@@ -800,21 +853,32 @@ function FreeMarketView({
           {hasFilters ? "没有符合筛选条件的自由球员。" : "暂无可签约的自由球员。"}
         </div>
       ) : (
+        <>
         <div className="table-wrap">
           <table className="data-table market-table">
             <thead>
               <tr>
-                <th>姓名</th>
+                <th className="sortable" onClick={() => toggleSort("name")}>
+                  姓名 {sortArrow("name")}
+                </th>
                 <th>位置</th>
-                <th>年龄</th>
-                <th>OVR</th>
-                <th>潜力</th>
-                <th>薪资要求</th>
+                <th className="sortable" onClick={() => toggleSort("age")}>
+                  年龄 {sortArrow("age")}
+                </th>
+                <th className="sortable" onClick={() => toggleSort("ovr")}>
+                  OVR {sortArrow("ovr")}
+                </th>
+                <th className="sortable" onClick={() => toggleSort("potential")}>
+                  潜力 {sortArrow("potential")}
+                </th>
+                <th className="sortable" onClick={() => toggleSort("salary")}>
+                  薪资要求 {sortArrow("salary")}
+                </th>
                 <th>操作</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((p) => {
+              {paged.map((p) => {
                 const pos = POSITION_CN[p.position] ?? p.position;
                 const isSigning = signingId === p.id;
                 const { grade, color } = scoutGrade(p.potentialEstimate);
@@ -899,6 +963,60 @@ function FreeMarketView({
             </tbody>
           </table>
         </div>
+
+        {/* 分页控件 */}
+        <div className="pagination">
+          <span className="muted">
+            共 {sorted.length} 人，第 {currentPage}/{totalPages} 页
+          </span>
+          <div className="row gap">
+            <button
+              type="button"
+              className="btn btn-sm"
+              disabled={currentPage <= 1}
+              onClick={() => setPage(1)}
+            >
+              首页
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm"
+              disabled={currentPage <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              上一页
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm"
+              disabled={currentPage >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              下一页
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm"
+              disabled={currentPage >= totalPages}
+              onClick={() => setPage(totalPages)}
+            >
+              末页
+            </button>
+            <label className="muted">
+              每页
+              <select
+                value={pageSize}
+                onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+              >
+                {[5, 10, 20, 50].map((n) => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+              条
+            </label>
+          </div>
+        </div>
+        </>
       )}
     </section>
   );

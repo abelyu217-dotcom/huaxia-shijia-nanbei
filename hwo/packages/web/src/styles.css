@@ -6268,6 +6268,54 @@ button {
   min-width: 0;
 }
 
+/* 可排序表头 */
+.data-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.data-table th.sortable:hover {
+  background: var(--panel-2);
+}
+
+.sort-arrow {
+  font-size: 11px;
+  margin-left: 2px;
+  opacity: 0.6;
+}
+
+.sort-arrow.muted {
+  opacity: 0.3;
+}
+
+/* 分页控件 */
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 10px 4px;
+  font-size: 13px;
+}
+
+.pagination .row {
+  display: flex;
+  align-items: center;
+}
+
+.pagination select {
+  padding: 4px 6px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  color: var(--text);
+  margin: 0 4px;
+}
+
 .scout-reports-list {
   display: flex;
   flex-direction: column;
