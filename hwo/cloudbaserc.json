@@ -1,0 +1,7 @@
+{
+  "envId": "hwo-d3gj59xkz7d118c70",
+  "$schema": "https://static.cloudbase.net/cli/cloudbaserc.schema.json",
+  "cloudrun": {
+    "name": "hwo-api"
+  }
+}

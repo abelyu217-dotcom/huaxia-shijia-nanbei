@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>社交与对抗层设计 · Hoops World Online</title>
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#141b26; --panel2:#1b2433; --line:#26324a;
+    --ink:#e6edf6; --ink2:#9fb0c7; --ink3:#6b7c97;
+    --accent:#ff6b35; --accent2:#4ade80; --gold:#fbbf24; --red:#ef4444; --blue:#60a5fa; --purple:#a78bfa; --cyan:#22d3ee;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:linear-gradient(180deg,#070a10 0%,#0b0f17 100%);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.7;
+    -webkit-font-smoothing:antiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 22px 120px}
+  .hero{
+    position:relative;border:1px solid var(--line);border-radius:18px;padding:42px 34px 30px;
+    background:
+      radial-gradient(800px 280px at 20% -10%, rgba(167,139,250,.18), transparent 60%),
+      radial-gradient(700px 260px at 90% 0%, rgba(239,68,68,.12), transparent 60%),
+      linear-gradient(180deg,#151d2c,#0e1420);
+    overflow:hidden;margin-bottom:30px;
+  }
+  .hero .tag{display:inline-block;font-size:12px;letter-spacing:.16em;color:var(--purple);border:1px solid rgba(167,139,250,.45);padding:4px 10px;border-radius:999px;margin-bottom:18px;text-transform:uppercase}
+  .hero h1{margin:0 0 8px;font-size:32px;letter-spacing:.5px;font-weight:800}
+  .hero h1 .en{color:var(--ink2);font-weight:600;font-size:18px;margin-left:10px}
+  .hero .pitch{color:var(--ink2);font-size:15px;max-width:840px;margin:10px 0 22px}
+  .hero .meta{display:flex;flex-wrap:wrap;gap:10px}
+  .hero .chip{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--ink2)}
+  .hero .chip b{color:var(--ink);font-weight:600}
+  .hero .vs{position:absolute;right:34px;bottom:18px;font-size:68px;opacity:.08;pointer-events:none}
+
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 28px;margin-bottom:22px}
+  .toc h3{margin:0 0 14px;font-size:14px;color:var(--ink2);letter-spacing:.1em;text-transform:uppercase}
+  .toc ol{margin:0;padding-left:22px;columns:2;column-gap:32px}
+  .toc li{margin:5px 0;break-inside:avoid}
+  .toc a{color:var(--ink2)}
+  .toc a:hover{color:var(--purple)}
+  @media (max-width:640px){.toc ol{columns:1}}
+
+  section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin-bottom:22px}
+  section > h2{margin:0 0 16px;font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
+  section > h2 .num{font-size:12px;color:#0b0f17;background:var(--purple);width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;font-weight:800;flex-shrink:0}
+  h3{font-size:16px;margin:22px 0 10px;color:var(--ink)}
+  h4{font-size:14px;margin:18px 0 8px;color:var(--purple);letter-spacing:.04em}
+  p{margin:8px 0}
+  ul,ol{margin:8px 0 8px 4px;padding-left:22px}
+  li{margin:4px 0}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{background:#0d131d;border:1px solid var(--line);padding:2px 6px;border-radius:5px;font-size:13px;color:var(--gold);font-family:"SF Mono","Fira Code",Consolas,monospace}
+  strong{color:#fff}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px}
+  th,td{padding:9px 11px;text-align:left;border:1px solid var(--line);vertical-align:top}
+  th{background:var(--panel2);color:var(--ink);font-weight:600}
+  tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+
+  .note{border-left:3px solid var(--accent);background:rgba(255,107,53,.06);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;color:var(--ink2)}
+  .note b{color:var(--accent)}
+  .note.green{border-left-color:var(--accent2);background:rgba(74,222,128,.06)}
+  .note.green b{color:var(--accent2)}
+  .note.blue{border-left-color:var(--blue);background:rgba(96,165,250,.06)}
+  .note.blue b{color:var(--blue)}
+  .note.red{border-left-color:var(--red);background:rgba(239,68,68,.06)}
+  .note.red b{color:var(--red)}
+  .note.gold{border-left-color:var(--gold);background:rgba(251,191,36,.06)}
+  .note.gold b{color:var(--gold)}
+  .note.purple{border-left-color:var(--purple);background:rgba(167,139,250,.06)}
+  .note.purple b{color:var(--purple)}
+
+  .formula{background:#0d131d;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;font-family:"SF Mono","Fira Code",Consolas,monospace;font-size:13px;overflow-x:auto;line-height:1.9;white-space:pre}
+  .formula .var{color:var(--blue)}
+  .formula .op{color:var(--accent)}
+  .formula .fn{color:var(--purple)}
+  .formula .num{color:var(--gold)}
+  .formula .comment{color:var(--ink3);font-style:italic}
+  .formula .str{color:var(--accent2)}
+  .formula .kw{color:var(--accent2);font-weight:bold}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:14px 0}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .card .t{font-weight:700;color:var(--ink);font-size:14px;margin-bottom:6px}
+  .card .d{font-size:13px;color:var(--ink2)}
+  .badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:999px;font-weight:700;letter-spacing:.04em;vertical-align:middle}
+  .badge.green{background:rgba(74,222,128,.15);color:var(--accent2)}
+  .badge.gold{background:rgba(251,191,36,.15);color:var(--gold)}
+  .badge.red{background:rgba(239,68,68,.15);color:var(--red)}
+  .badge.blue{background:rgba(96,165,250,.15);color:var(--blue)}
+  .badge.purple{background:rgba(167,139,250,.15);color:var(--purple)}
+
+  .flow{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:14px 0;font-size:13px}
+  .flow .step{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 14px;color:var(--ink)}
+  .flow .arrow{color:var(--purple);font-weight:bold}
+
+  .rival-tiers{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:16px 0}
+  .rival-card{border-radius:10px;padding:16px 14px;text-align:center;border:1px solid var(--line);background:var(--panel2)}
+  .rival-card .ico{font-size:28px;margin-bottom:6px}
+  .rival-card .name{font-weight:800;font-size:14px;margin-bottom:4px}
+  .rival-card .desc{font-size:11.5px;color:var(--ink2);line-height:1.5}
+  .rival-1{background:linear-gradient(180deg,rgba(239,68,68,.12),rgba(239,68,68,.03));border-color:rgba(239,68,68,.3)}
+  .rival-1 .name{color:var(--red)}
+  .rival-2{background:linear-gradient(180deg,rgba(251,191,36,.1),rgba(251,191,36,.02));border-color:rgba(251,191,36,.25)}
+  .rival-2 .name{color:var(--gold)}
+  .rival-3{background:linear-gradient(180deg,rgba(96,165,250,.08),transparent);border-color:var(--line)}
+  .rival-3 .name{color:var(--blue)}
+  .rival-4{background:var(--panel2);border-color:var(--line)}
+  .rival-4 .name{color:var(--ink2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ==================== HERO ==================== -->
+<div class="hero">
+  <span class="tag">System Design · Social & Rivalry</span>
+  <h1>社交与对抗层 <span class="en">Social & Rivalry Layer</span></h1>
+  <p class="pitch">多人在线的核心张力来自人与人。深化策划方案 §16 的框架——补全经理档案与江湖地位、宿敌系统的完整机制（自然生成/等级/叙事/数值效果）、交易谈判的社交维度（历史公开/社区评价/声誉影响）、联盟内社交（聊天/垃圾话/颁奖/社区票选）、世界排名与跨联赛声望模型、经理人脉网络、观赛互动、反骚扰与反作弊。核心原则：让对抗与社交自然涌现，而非强塞社交功能。</p>
+  <div class="meta">
+    <span class="chip"><b>优先级</b> P2</span>
+    <span class="chip"><b>基础文档</b> 策划方案 §16</span>
+    <span class="chip"><b>依赖</b> 世界结构·签约转会·王朝系统·Sim Engine</span>
+    <span class="chip"><b>版本</b> v1.0</span>
+  </div>
+  <span class="vs">⚔️</span>
+</div>
+
+<!-- ==================== TOC ==================== -->
+<div class="toc">
+  <h3>目录 · Table of Contents</h3>
+  <ol>
+    <li><a href="#s1">设计原则</a></li>
+    <li><a href="#s2">系统总览</a></li>
+    <li><a href="#s3">经理档案与江湖地位</a></li>
+    <li><a href="#s4">宿敌系统</a></li>
+    <li><a href="#s5">交易谈判的社交维度</a></li>
+    <li><a href="#s6">联盟内社交</a></li>
+    <li><a href="#s7">世界排名与跨联赛声望</a></li>
+    <li><a href="#s8">经理人脉网络</a></li>
+    <li><a href="#s9">观赛与互动</a></li>
+    <li><a href="#s10">赛季颁奖与社区票选</a></li>
+    <li><a href="#s11">对抗叙事自动生成</a></li>
+    <li><a href="#s12">反骚扰与社区治理</a></li>
+    <li><a href="#s13">与各系统联动</a></li>
+    <li><a href="#s14">AI 社交行为</a></li>
+    <li><a href="#s15">异常处理与边界规则</a></li>
+    <li><a href="#s16">数值附录</a></li>
+  </ol>
+</div>
+
+<!-- ==================== §1 设计原则 ==================== -->
+<section id="s1">
+  <h2><span class="num">1</span>设计原则</h2>
+
+  <div class="note purple"><b>核心原则</b>：让对抗与社交自然涌现，而非强塞社交功能。HWO 不是社交游戏——它是篮球经理游戏。社交与对抗是"多人在线"自然产生的副产品：你和同一组的人反复比赛就产生宿敌，你反复交易就建立人脉，你反复夺冠就积累声望。系统只负责"识别并记录"这些自然涌现的关系，不强制玩家社交。</div>
+
+  <div class="grid">
+    <div class="card"><div class="t">① 涌现而非强塞 <span class="badge purple">自然</span></div><div class="d">宿敌、人脉、声望都从游戏行为中自然涌现——反复对阵、反复交易、反复夺冠。系统不要求玩家"加好友""建公会"。</div></div>
+    <div class="card"><div class="t">② 对抗优先于社交 <span class="badge red">张力</span></div><div class="d">HWO 的核心张力是竞争而非合作。宿敌比好友重要；交易博弈比互助重要。社交是对抗的副产品。</div></div>
+    <div class="card"><div class="t">③ 留痕可追溯 <span class="badge blue">档案</span></div><div class="d">所有对抗历史（交易/对阵/宿敌）永久留痕。经理档案是"江湖地位"的体现，影响他人对你的判断。</div></div>
+    <div class="card"><div class="t">④ 可选可关闭 <span class="badge green">友好</span></div><div class="d">聊天/垃圾话/颁奖都是可选的。玩家可关闭社交功能，纯玩经营。社交不强制、不惩罚不参与者。</div></div>
+  </div>
+</section>
+
+<!-- ==================== §2 系统总览 ==================== -->
+<section id="s2">
+  <h2><span class="num">2</span>系统总览</h2>
+
+  <h3>2.1 社交与对抗的涌现路径</h3>
+  <table>
+    <thead><tr><th>游戏行为</th><th>自然涌现</th><th>系统记录</th></tr></thead>
+    <tbody>
+      <tr><td>反复对阵</td><td>宿敌关系</td><td>§4 宿敌系统</td></tr>
+      <tr><td>反复交易</td><td>经理人脉/交易声誉</td><td>§5 交易社交 + §8 人脉网络</td></tr>
+      <tr><td>反复夺冠</td><td>江湖地位/声望</td><td>§3 经理档案 + §7 世界排名</td></tr>
+      <tr><td>同组联赛</td><td>联盟内社区</td><td>§6 联盟内社交</td></tr>
+      <tr><td>观赛</td><td>观赛互动</td><td>§9 观赛与互动</td></tr>
+      <tr><td>赛季结束</td><td>社区票选/颁奖</td><td>§10 赛季颁奖</td></tr>
+    </tbody>
+  </table>
+
+  <h3>2.2 与球员关系系统的区分</h3>
+  <div class="note blue"><b>重要区分</b>：关系系统（球员家庭与人际关系）是<b>球员层面</b>的社交——球员与球员之间的关系（家庭/师徒/队友/宿敌）。本系统是<b>经理层面</b>的社交——经理与经理之间的关系（宿敌/人脉/交易伙伴）。两者独立但可交叉（如两队经理是宿敌，且各自核心球员也是宿敌——双重对抗叙事）。</div>
+</section>
+
+<!-- ==================== §3 经理档案与江湖地位 ==================== -->
+<section id="s3">
+  <h2><span class="num">3</span>经理档案与江湖地位</h2>
+  <p>深化策划方案 §16.1。每经理有公开档案，是"江湖地位"的体现。</p>
+
+  <h3>3.1 经理档案结构</h3>
+  <div class="formula">
+<span class="var">ManagerProfile</span> <span class="op">=</span> {
+  accountId:   <span class="var">u64</span>,
+  displayName: <span class="var">string</span>,
+  avatar:      <span class="var">AvatarRef</span>,           <span class="comment">// 经理头像（可外观定制）</span>
+  worldId:     <span class="var">u16</span>,
+  teamId:      <span class="var">TeamId</span>?,
+  createdAt:   <span class="var">Timestamp</span>,
+
+  <span class="comment">// 执教履历</span>
+  career: {
+    seasonsManaged:   <span class="var">u8</span>,
+    titles:           <span class="var">u8</span>,          <span class="comment">冠军数</span>
+    runnerUps:        <span class="var">u8</span>,
+    playoffAppearances: <span class="var">u8</span>,
+    promotions:       <span class="var">u8</span>,          <span class="comment">升级次数</span>
+    relegations:      <span class="var">u8</span>,          <span class="comment">降级次数</span>
+    dynastiesBuilt:   <span class="var">u8</span>,          <span class="comment">打造的王朝数（王朝系统 §4）</span>
+    hofPlayersTrained:<span class="var">u8</span>,          <span class="comment">培养的名人堂数</span>
+  },
+
+  <span class="comment">// 江湖地位</span>
+  standing: {
+    reputation:       <span class="var">i32</span>,         <span class="comment">声望积分（§7）</span>
+    worldRank:        <span class="var">u16</span>?,        <span class="comment">世界排名</span>
+    rivalCount:       <span class="var">u8</span>,          <span class="comment">宿敌数（§4）</span>
+    tradeReputation:  <span class="var">f32</span>,         <span class="comment">交易声誉（§5）</span>
+    dynastyTier:      <span class="var">string</span>?,     <span class="comment">王朝等级（王朝系统 §4）</span>
+    legendTier:       <span class="var">string</span>?,     <span class="comment">传奇等级（王朝系统 §11）</span>
+  },
+
+  <span class="comment">// 标签（社区/系统生成）</span>
+  tags: [<span class="var">ManagerTag</span>],              <span class="comment">// 如"冠军教头""交易大师""青训名帅""摆烂王"</span>
+
+  <span class="comment">// 履历时间线</span>
+  timeline: [<span class="var">CareerEvent</span>],          <span class="comment">// 按赛季记录的重大事件</span>
+}
+  </div>
+
+  <h3>3.2 江湖地位的数值化</h3>
+  <p>江湖地位不是抽象概念——它有数值表达，影响游戏内交互：</p>
+  <table>
+    <thead><tr><th>地位维度</th><th>数值</th><th>影响</th></tr></thead>
+    <tbody>
+      <tr><td>声望积分</td><td>reputation（§7）</td><td>世界排名；交易谈判中 AI 评估权重</td></tr>
+      <tr><td>交易声誉</td><td>tradeReputation（-1.0~1.0）</td><td>影响他人是否愿与你交易；"坑人"标签降低交易邀请</td></tr>
+      <tr><td>王朝等级</td><td>dynastyTier</td><td>叙事标签；球迷热情加成</td></tr>
+      <tr><td>传奇等级</td><td>legendTier</td><td>新世界起始声望加成（王朝系统 §11）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.3 经理标签系统</h3>
+  <p>标签从游戏行为中自动生成，是"江湖称号"：</p>
+  <table>
+    <thead><tr><th>标签</th><th>触发</th><th>性质</th></tr></thead>
+    <tbody>
+      <tr><td>冠军教头</td><td>≥1 冠</td><td>正面</td></tr>
+      <tr><td>王朝缔造者</td><td>打造传奇王朝</td><td>正面</td></tr>
+      <tr><td>交易大师</td><td>交易声誉 ≥0.5 且 ≥20 笔交易</td><td>正面</td></tr>
+      <tr><td>青训名帅</td><td>培养 ≥3 名名人堂球员</td><td>正面</td></tr>
+      <tr><td>升降机</td><td>≥3 次升降级</td><td>中性</td></tr>
+      <tr><td>摆烂王</td><td>连续 ≥3 季垫底</td><td>负面</td></tr>
+      <tr><td>坑人贩子</td><td>交易声誉 ≤-0.5</td><td>负面</td></tr>
+      <tr><td>一人一队</td><td>生涯全部执教同一球队 ≥10 季</td><td>正面</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.4 档案查询</h3>
+  <ul>
+    <li>任何玩家可查看任何经理的公开档案。</li>
+    <li>档案展示：基本信息、执教履历、江湖地位、标签、履历时间线。</li>
+    <li><b>不展示</b>：当前阵容/战术/薪资/球探报告（竞技信息保密）。</li>
+    <li><b>交易历史公开</b>：过往交易记录可查（§5.3）。</li>
+  </ul>
+</section>
+
+<!-- ==================== §4 宿敌系统 ==================== -->
+<section id="s4">
+  <h2><span class="num">4</span>宿敌系统</h2>
+  <p>深化策划方案 §16.2。宿敌是自然涌现的对抗关系——反复对阵且比分接近的两队，系统标记为宿敌。</p>
+
+  <h3>4.1 宿敌生成算法</h3>
+  <div class="formula">
+<span class="comment">── 宿敌点数累积 ──</span>
+
+<span class="keyword">function</span> <span class="fn">updateRivalry</span>(teamA, teamB, matchResult):
+  <span class="var">rivalryPoints</span> <span class="op">=</span> <span class="num">0</span>
+
+  <span class="comment">// 分差越小，点数越高</span>
+  <span class="var">margin</span> <span class="op">=</span> <span class="fn">abs</span>(<span class="var">matchResult</span>.scoreA <span class="op">-</span> <span class="var">matchResult</span>.scoreB)
+  <span class="kw">if</span> (<span class="var">margin</span> <span class="op">&lt;=</span> <span class="num">3</span>):  <span class="var">rivalryPoints</span> <span class="op">+=</span> <span class="num">3</span>      <span class="comment">// 绝杀级</span>
+  <span class="kw">elif</span> (<span class="var">margin</span> <span class="op">&lt;=</span> <span class="num">8</span>):  <span class="var">rivalryPoints</span> <span class="op">+=</span> <span class="num">2</span>    <span class="comment">// 接近</span>
+  <span class="kw">elif</span> (<span class="var">margin</span> <span class="op">&lt;=</span> <span class="num">15</span>): <span class="var">rivalryPoints</span> <span class="op">+=</span> <span class="num">1</span>    <span class="comment">// 正常</span>
+  <span class="kw">else</span>: <span class="var">rivalryPoints</span> <span class="op">+=</span> <span class="num">0</span>            <span class="comment">// 碾压不计</span>
+
+  <span class="comment">// 季后赛对阵加倍</span>
+  <span class="kw">if</span> (<span class="var">matchResult</span>.isPlayoff): <span class="var">rivalryPoints</span> <span class="op">*=</span> <span class="num">2</span>
+
+  <span class="comment">// clutch 时刻加分</span>
+  <span class="kw">if</span> (<span class="var">matchResult</span>.hadClutchMoment): <span class="var">rivalryPoints</span> <span class="op">+=</span> <span class="num">2</span>
+
+  <span class="comment">// 更新双向宿敌点数</span>
+  <span class="var">rivalry</span>[<span class="var">teamA</span>][<span class="var">teamB</span>] <span class="op">+=</span> <span class="var">rivalryPoints</span>
+  <span class="var">rivalry</span>[<span class="var">teamB</span>][<span class="var">teamA</span>] <span class="op">+=</span> <span class="var">rivalryPoints</span>
+
+  <span class="comment">// 自然衰减（每季 -10%）</span>
+  <span class="var">rivalry</span>[<span class="var">teamA</span>][<span class="var">teamB</span>] <span class="op">*=</span> <span class="num">0.9</span> <span class="kw">at season end</span>
+  </div>
+
+  <h3>4.2 宿敌等级</h3>
+  <div class="rival-tiers">
+    <div class="rival-card rival-1"><div class="ico">🔥</div><div class="name">死敌 (≥80)</div><div class="desc">长期激烈对抗<br>每次对阵全联盟高亮<br>clutch +5 双方</div></div>
+    <div class="rival-card rival-2"><div class="ico">⚡</div><div class="name">宿敌 (40-79)</div><div class="desc">反复接近对阵<br>赛事快报高亮<br>clutch +3 双方</div></div>
+    <div class="rival-card rival-3"><div class="ico">👀</div><div class="name">关注 (15-39)</div><div class="desc">初现对抗苗头<br>正常显示</div></div>
+    <div class="rival-card rival-4"><div class="ico">🤝</div><div class="name">普通 (&lt;15)</div><div class="desc">无特殊关系<br>正常对阵</div></div>
+  </div>
+
+  <h3>4.3 宿敌的数值效果</h3>
+  <p>宿敌不只是叙事标签——它有轻微数值效果，模拟"德比战更拼命"：</p>
+  <table>
+    <thead><tr><th>等级</th><th>clutch 加成</th><th>球迷热情</th><th>叙事</th></tr></thead>
+    <tbody>
+      <tr><td>死敌</td><td>+5 双方</td><td>对阵日 +10</td><td>"宿敌对决"头条；历史战绩回溯</td></tr>
+      <tr><td>宿敌</td><td>+3 双方</td><td>对阵日 +5</td><td>赛事快报高亮</td></tr>
+      <tr><td>关注</td><td>+1 双方</td><td>—</td><td>正常</td></tr>
+      <tr><td>普通</td><td>—</td><td>—</td><td>正常</td></tr>
+    </tbody>
+  </table>
+  <div class="note red"><b>设计约束</b>：宿敌加成是双向对称的——双方都获得相同 clutch 加成。这不是"谁更强"，而是"双方都更拼命"。加成幅度小（+1~5），不改变实力对比，只让比赛更激烈。</div>
+
+  <h3>4.4 德比与生死战</h3>
+  <ul>
+    <li><b>德比</b>：同城/同区球队自动德比标记——宿敌点数起点 +20（天生对手）。</li>
+    <li><b>升降级生死战</b>：决定升降级的关键对阵——单场宿敌点数 ×3；胜负直接改变两队命运。</li>
+    <li><b>季后赛宿敌</b>：季后赛对阵的宿敌点数 ×2——季后赛是宿敌的最高温时刻。</li>
+  </ul>
+
+  <h3>4.5 宿敌的兴衰</h3>
+  <ul>
+    <li>宿敌点数每季自然衰减 10%——不持续对抗就会淡化。</li>
+    <li>一方降级/迁移 → 宿敌"暂停"（点数冻结但不增长）。</li>
+    <li>双方再次同联赛 → 宿敌"恢复"。</li>
+    <li>长期不再对阵（≥5 季）→ 宿敌"终结"，记入历史："曾经的宿敌"。</li>
+  </ul>
+</section>
+
+<!-- ==================== §5 交易谈判的社交维度 ==================== -->
+<section id="s5">
+  <h2><span class="num">5</span>交易谈判的社交维度</h2>
+  <p>深化策划方案 §16.3。签约转会 §7 已定义交易谈判的操作机制（三轮还价/心理战）。本节补全其社交维度——谈判历史公开、社区评价、交易声誉。</p>
+
+  <h3>5.1 交易历史公开</h3>
+  <ul>
+    <li><b>所有完成的交易</b>记录在双方经理的公开档案中。</li>
+    <li>交易记录展示：日期、筹码、当时 fog 信息、事后表现。</li>
+    <li><b>"这笔交易谁亏了"</b>：交易完成 N 季后，系统按球员实际表现回溯评估——"赚了/亏了/双赢/双输"。</li>
+    <li>这是社区谈资的核心素材——"XX 经理又坑人了""这笔交易其实是双赢"。</li>
+  </ul>
+
+  <h3>5.2 交易声誉系统</h3>
+  <div class="formula">
+<span class="comment">── 交易声誉计算 ──</span>
+
+<span class="var">tradeReputation</span> <span class="op">=</span> <span class="fn">clamp</span>(
+  <span class="fn">sum</span>(<span class="var">trade</span>.eval <span class="kw">for</span> <span class="var">trade</span> <span class="kw">in</span> <span class="var">history</span>) <span class="op">/</span> <span class="fn">count</span>(<span class="var">history</span>),
+  <span class="num">-1.0</span>, <span class="num">1.0</span>
+)
+
+<span class="comment">// 单笔交易评估（事后回溯）</span>
+<span class="var">trade</span>.eval <span class="op">=</span> <span class="fn">evaluateTrade</span>(<span class="var">trade</span>, <span class="var">seasonsAfter</span><span class="op">=</span><span class="num">2</span>)
+<span class="comment">// +1 = 明显赚了（换来的球员远超预期）</span>
+<span class="comment">//  0 = 公平/无法判断</span>
+<span class="comment">// -1 = 明显亏了（换来的球员水了/送走的球员爆了）</span>
+  </div>
+
+  <h3>5.3 交易声誉的影响</h3>
+  <table>
+    <thead><tr><th>声誉区间</th><th>标签</th><th>影响</th></tr></thead>
+    <tbody>
+      <tr><td>≥0.5</td><td>交易大师</td><td>AI 更愿接受你的报价；交易邀请增多</td></tr>
+      <tr><td>0.2~0.5</td><td>可靠伙伴</td><td>正常交易环境</td></tr>
+      <tr><td>-0.2~0.2</td><td>—</td><td>正常</td></tr>
+      <tr><td>-0.5~-0.2</td><td>精明商人</td><td>AI 报价更保守；谨慎交易</td></tr>
+      <tr><td>≤-0.5</td><td>坑人贩子</td><td>AI 拒绝部分报价；交易邀请减少；社区负面评价</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.4 fog 不对称的社交后果</h3>
+  <div class="note gold"><b>核心博弈</b>：球探系统的 fog 不对称让交易天然带"信息差"——你知道你球员的 fog 比对手窄。用 fog 优势"坑"对手会降低交易声誉。但有时"坑"只是因为对手 fog 太宽（自己探查不够），并非恶意。系统无法区分"恶意坑"与"信息差"——因此交易声誉是客观事后评估，不区分动机。这迫使玩家在"利用信息差最大化收益"与"维护交易声誉长期合作"间权衡。</div>
+</section>
+
+<!-- ==================== §6 联盟内社交 ==================== -->
+<section id="s6">
+  <h2><span class="num">6</span>联盟内社交</h2>
+  <p>深化策划方案 §16.4。联盟内社交是可选功能——同组联赛的经理可交流。</p>
+
+  <h3>6.1 组内聊天频道</h3>
+  <ul>
+    <li><b>范围</b>：同组联赛（16 队）的经理可加入组内聊天频道。</li>
+    <li><b>可选</b>：默认关闭；玩家可主动开启。</li>
+    <li><b>可关闭</b>：任何玩家可随时关闭聊天——纯玩经营不受影响。</li>
+    <li><b>内容</b>：赛前垃圾话/赛后讨论/交易试探/闲聊。</li>
+  </ul>
+
+  <h3>6.2 垃圾话机制</h3>
+  <ul>
+    <li><b>赛前垃圾话</b>：赛前可向对手发送预设垃圾话（不可自定义文本，防骚扰）。</li>
+    <li><b>效果</b>：接收方可选择"无视"（无效果）或"回击"（双方 clutch +2——"被激怒更拼命"）。</li>
+    <li><b>赛后</b>：胜方可发"赛后感言"（预设）；负方可"认输"或"下次等着"。</li>
+    <li><b>预设文本</b>：所有垃圾话/感言均为系统预设选项，不可自定义——防滥用。</li>
+  </ul>
+
+  <h3>6.3 交易试探频道</h3>
+  <ul>
+    <li>组内设"交易试探"频道——经理可发布"我在找 XX 类型球员""我有 XX 可出"。</li>
+    <li>这是非正式交易意向发布，不构成报价——正式交易走签约转会 §7 流程。</li>
+    <li>降低交易匹配成本——不用逐个私聊试探。</li>
+  </ul>
+
+  <h3>6.4 联盟公告板</h3>
+  <ul>
+    <li>组内设公告板——展示本组重要事件（升降级/重大交易/宿敌对决）。</li>
+    <li>系统自动生成，不需玩家维护。</li>
+    <li>让不聊天的玩家也能感知联盟动态。</li>
+  </ul>
+</section>
+
+<!-- ==================== §7 世界排名与跨联赛声望 ==================== -->
+<section id="s7">
+  <h2><span class="num">7</span>世界排名与跨联赛声望</h2>
+  <p>深化策划方案 §16.5。世界排名是跨联赛的经理声望榜——激励玩家冲击顶级联赛与多代王朝。</p>
+
+  <h3>7.1 声望积分公式</h3>
+  <div class="formula">
+<span class="comment">── 经理声望积分 ──</span>
+
+<span class="var">reputation</span> <span class="op">=</span> <span class="var">titles</span> <span class="op">*</span> <span class="var">leagueTierBonus</span> <span class="op">*</span> <span class="num">100</span>
+            <span class="op">+</span> <span class="var">runnerUps</span> <span class="op">*</span> <span class="var">leagueTierBonus</span> <span class="op">*</span> <span class="num">40</span>
+            <span class="op">+</span> <span class="var">playoffAppearances</span> <span class="op">*</span> <span class="var">leagueTierBonus</span> <span class="op">*</span> <span class="num">15</span>
+            <span class="op">+</span> <span class="var">dynastiesBuilt</span> <span class="op">*</span> <span class="num">200</span>
+            <span class="op">+</span> <span class="var">hofPlayersTrained</span> <span class="op">*</span> <span class="num">80</span>
+            <span class="op">+</span> <span class="var">seasonsManaged</span> <span class="op">*</span> <span class="num">5</span>
+            <span class="op">-</span> <span class="var">relegations</span> <span class="op">*</span> <span class="num">20</span>
+
+<span class="comment">// 联赛层级加成：T1=2.0, T2=1.5, T3=1.2, T4=1.0</span>
+<span class="comment">// T1 冠军 = 200 分；T4 冠军 = 100 分——顶级联赛成就更值钱</span>
+  </div>
+
+  <h3>7.2 世界排名榜</h3>
+  <ul>
+    <li>按 reputation 降序排列的世界经理排名。</li>
+    <li><b>分层展示</b>：TOP 100 / TOP 500 / 全榜。</li>
+    <li><b>赛季更新</b>：每赛季末更新排名。</li>
+    <li><b>赛季进步奖</b>：声望进步最快的经理获"进步奖"标签。</li>
+  </ul>
+
+  <h3>7.3 声望的用途</h3>
+  <table>
+    <thead><tr><th>用途</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>世界排名</td><td>跨联赛声望榜</td></tr>
+      <tr><td>交易谈判</td><td>高声望经理的报价更受 AI 信任（tradeReputation 联动）</td></tr>
+      <tr><td>经理标签</td><td>声望阈值触发标签（"冠军教头"等）</td></tr>
+      <tr><td>新世界起始</td><td>传奇经理在新世界获起始声望加成（王朝系统 §11.3）</td></tr>
+      <tr><td>叙事引用</td><td>"声望 XX 的名帅"作为叙事素材</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== §8 经理人脉网络 ==================== -->
+<section id="s8">
+  <h2><span class="num">8</span>经理人脉网络</h2>
+  <p>关系系统是球员层面的关系网络。本节定义经理层面的人脉——从反复交易/对阵中自然涌现。</p>
+
+  <h3>8.1 人脉类型</h3>
+  <table>
+    <thead><tr><th>类型</th><th>涌现方式</th><th>效果</th></tr></thead>
+    <tbody>
+      <tr><td><b>交易伙伴</b></td><td>完成 ≥3 笔公平交易</td><td>后续交易 AI 更愿接受；交易试探优先匹配</td></tr>
+      <tr><td><b>宿敌</b></td><td>§4 宿敌系统</td><td>对阵 clutch 加成；叙事高亮</td></tr>
+      <tr><td><b>师徒</b></td><td>资深经理与新手同组 ≥2 季</td><td>新手可"请教"获得小幅运营建议（非数值）</td></tr>
+      <tr><td><b>同盟</b></td><td>≥2 经理互相标记"友好"（双向确认）</td><td>交易试探优先；信息分享（可选）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8.2 人脉网络可视化</h3>
+  <ul>
+    <li>类似关系系统的力导向图——节点为经理，连线为人脉类型。</li>
+    <li>经理可查看自己的人脉网络。</li>
+    <li><b>不展示他人人脉</b>：只看自己的——保护隐私。</li>
+  </ul>
+
+  <h3>8.3 人脉的边界</h3>
+  <div class="note red"><b>关键约束</b>：人脉不产生数值优势——交易伙伴只是"更愿交易"不是"打折交易"；同盟只是"优先试探"不是"内幕交易"。人脉是社交便利，不是竞技优势。防止人脉网络演变为"小圈子垄断交易"。</div>
+</section>
+
+<!-- ==================== §9 观赛与互动 ==================== -->
+<section id="s9">
+  <h2><span class="num">9</span>观赛与互动</h2>
+  <p>策划方案 §19 提及实时观战（WebSocket/SSE 推送 PBP）。本节补全观赛的社交互动。</p>
+
+  <h3>9.1 观赛模式</h3>
+  <ul>
+    <li><b>实时观赛</b>：sim 运行时逐回合推送 PBP，可实时观看。</li>
+    <li><b>回放观赛</b>：赛后可看完整回放（VIP 额外存档）。</li>
+    <li><b>关键球回放</b>：自动生成 clutch 时刻集锦。</li>
+  </ul>
+
+  <h3>9.2 观赛互动</h3>
+  <table>
+    <thead><tr><th>互动</th><th>说明</th><th>影响强度</th></tr></thead>
+    <tbody>
+      <tr><td><b>预设反应</b></td><td>观赛时发预设表情/反应（👏🔥😢等）</td><td><span class="badge green">否</span> 纯社交</td></tr>
+      <tr><td><b>关键球标记</b></td><td>观众标记"这一球太关键了"</td><td><span class="badge green">否</span> 纯社交</td></tr>
+      <tr><td><b>赛后点赞</b></td><td>赛后给对手/精彩球员点赞</td><td><span class="badge green">否</span> 纯社交</td></tr>
+      <tr><td><b>垃圾话</b></td><td>赛前预设垃圾话（§6.2）</td><td><span class="badge gold">微</span> clutch +2 双方</td></tr>
+    </tbody>
+  </table>
+
+  <h3>9.3 观赛不影响比赛</h3>
+  <div class="note blue"><b>关键设计</b>：观赛互动是纯社交——反应/标记/点赞不影响 sim 结果。sim 在服务端权威执行（策划方案 §19），观赛只是"看"，不是"参与"。唯一有微弱影响的是赛前垃圾话（clutch +2 双方），且是双向对称的——不改变实力对比。</div>
+</section>
+
+<!-- ==================== §10 赛季颁奖与社区票选 ==================== -->
+<section id="s10">
+  <h2><span class="num">10</span>赛季颁奖与社区票选</h2>
+  <p>深化策划方案 §16.4 的"颁奖"。赛季末社区票选是联盟内社交的高潮。</p>
+
+  <h3>10.1 官方奖项（系统评选）</h3>
+  <table>
+    <thead><tr><th>奖项</th><th>评选标准</th></tr></thead>
+    <tbody>
+      <tr><td>常规赛 MVP</td><td>系统按综合表现评选</td></tr>
+      <tr><td>总决赛 MVP</td><td>总决赛最佳球员</td></tr>
+      <tr><td>最佳防守球员</td><td>防守效率联盟第1</td></tr>
+      <tr><td>最佳新秀</td><td>新秀赛季表现最佳</td></tr>
+      <tr><td>进步最快球员</td><td>赛季进步幅度最大</td></tr>
+      <tr><td>最佳教练</td><td>系统按战绩超预期评选</td></tr>
+    </tbody>
+  </table>
+
+  <h3>10.2 社区票选奖项（玩家投票）</h3>
+  <table>
+    <thead><tr><th>奖项</th><th>票选内容</th></tr></thead>
+    <tbody>
+      <tr><td>最佳交易</td><td>赛季最赚的交易</td></tr>
+      <tr><td>最坑合同</td><td>赛季最离谱的签约</td></tr>
+      <tr><td>最佳绝杀</td><td>赛季最精彩的 clutch 时刻</td></tr>
+      <tr><td>最大黑马</td><td>赛季最意外的崛起</td></tr>
+      <tr><td>最大失望</td><td>赛季最令人失望的球队</td></tr>
+      <tr><td>最佳垃圾话</td><td>赛季最有趣的赛前垃圾话</td></tr>
+    </tbody>
+  </table>
+
+  <h3>10.3 票选规则</h3>
+  <ul>
+    <li><b>资格</b>：同世界经理可投票（不可投自己/自己球队）。</li>
+    <li><b>时间</b>：赛季末 DAY 178-180 投票；新赛季 DAY 1 颁奖。</li>
+    <li><b>权重</b>：每票等权；不按声望加权（防大佬垄断）。</li>
+    <li><b>奖励</b>：获奖者获标签+限定外观（商业化系统 §5——社区奖项限定皮肤）。</li>
+    <li><b>叙事</b>：获奖事件记入经理档案与年代史。</li>
+  </ul>
+</section>
+
+<!-- ==================== §11 对抗叙事自动生成 ==================== -->
+<section id="s11">
+  <h2><span class="num">11</span>对抗叙事自动生成</h2>
+  <p>王朝系统 §13 定义了"大时间尺度"的叙事弧线。本节定义"对抗尺度"的叙事——宿敌对决、交易博弈、赛季黑马。</p>
+
+  <h3>11.1 对抗叙事类型</h3>
+  <table>
+    <thead><tr><th>叙事</th><th>触发</th><th>叙事节点</th></tr></thead>
+    <tbody>
+      <tr><td><b>宿敌对决弧</b></td><td>死敌对阵</td><td>历史战绩回溯→本赛季恩怨→对决→胜负→"又添一笔"</td></tr>
+      <tr><td><b>交易博弈弧</b></td><td>重大交易事后评估</td><td>交易达成→事后表现→"谁赚谁亏"→社区评价</td></tr>
+      <tr><td><b>黑马弧</b></td><td>T3/T4 球队进季后赛</td><td>低谷→重建→崛起→"本赛季最大惊喜"</td></tr>
+      <tr><td><b>复仇弧</b></td><td>上赛季被淘汰队本赛季淘汰对手</td><td>去年败北→今年复仇→"一雪前耻"</td></tr>
+      <tr><td><b>王朝对决弧</b></td><td>两支王朝球队相遇</td><td>王朝A vs 王朝B→"世纪对决"→历史定位</td></tr>
+    </tbody>
+  </table>
+
+  <h3>11.2 叙事引用前史</h3>
+  <ul>
+    <li>对抗叙事可引用历史——"上一次这两队相遇是 S5 季后赛..."</li>
+    <li>引用王朝系统年代史——"XX 王朝曾统治联赛..."</li>
+    <li>引用经理档案——"这位冠军教头上次在这里执教是..."</li>
+  </ul>
+</section>
+
+<!-- ==================== §12 反骚扰与社区治理 ==================== -->
+<section id="s12">
+  <h2><span class="num">12</span>反骚扰与社区治理</h2>
+
+  <h3>12.1 防骚扰设计</h3>
+  <div class="grid">
+    <div class="card"><div class="t">预设文本 <span class="badge green">防滥用</span></div><div class="d">所有垃圾话/感言均为系统预设选项，不可自定义文本——防止言语骚扰。</div></div>
+    <div class="card"><div class="t">可选可关闭 <span class="badge blue">自主</span></div><div class="d">聊天/垃圾话/反应均可关闭。关闭后不受任何社交干扰。</div></div>
+    <div class="card"><div class="t">屏蔽名单 <span class="badge red">隔离</span></div><div class="d">可屏蔽特定经理——屏蔽后不收其聊天/垃圾话/交易邀请。</div></div>
+    <div class="card"><div class="t">举报机制 <span class="badge purple">治理</span></div><div class="d">可举报违规行为（如利用交易试探频道发不当内容）。</div></div>
+  </div>
+
+  <h3>12.2 交易公平治理</h3>
+  <ul>
+    <li><b>失衡交易复核</b>（签约转会 §12）：系统自动检测失衡交易，触发仲裁审查。</li>
+    <li><b>联盟仲裁人</b>（三身份 §5.8）：职业人可担任仲裁人，裁决交易申诉。</li>
+    <li><b>恶意交易惩罚</b>：反复恶意失衡交易的经理，交易声誉降至"坑人贩子"，AI 拒绝交易。</li>
+  </ul>
+
+  <h3>12.3 反作弊</h3>
+  <ul>
+    <li><b>sim 服务端权威</b>（策划方案 §19）：比赛结果不可篡改。</li>
+    <li><b>多账号检测</b>：检测同一玩家多账号同世界——禁止（防自我交易套利）。</li>
+    <li><b>交易模式检测</b>：检测"反复单向交易"模式（A 反复给 B 好球员）——触发审查。</li>
+  </ul>
+</section>
+
+<!-- ==================== §13 与各系统联动 ==================== -->
+<section id="s13">
+  <h2><span class="num">13</span>与各系统联动</h2>
+
+  <table>
+    <thead><tr><th>系统</th><th>社交联动</th></tr></thead>
+    <tbody>
+      <tr><td>世界结构</td><td>同组联赛=社交圈；升降级改变社交圈</td></tr>
+      <tr><td>签约转会</td><td>交易历史公开；交易声誉；失衡交易仲裁</td></tr>
+      <tr><td>球探系统</td><td>fog 不对称是交易博弈的核心</td></tr>
+      <tr><td>Sim Engine</td><td>比赛结果驱动宿敌生成；clutch 时刻驱动叙事</td></tr>
+      <tr><td>王朝系统</td><td>王朝对决叙事；经理档案联动传奇档案</td></tr>
+      <tr><td>关系系统（球员）</td><td>双重对抗（经理宿敌+球员宿敌）</td></tr>
+      <tr><td>三身份</td><td>联盟仲裁人裁决交易申诉</td></tr>
+      <tr><td>商业化</td><td>社区奖项限定外观</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== §14 AI 社交行为 ==================== -->
+<section id="s14">
+  <h2><span class="num">14</span>AI 社交行为</h2>
+
+  <h3>14.1 AI 经理的社交模拟</h3>
+  <ul>
+    <li><b>AI 宿敌</b>：AI 球队也参与宿敌系统——与玩家或与其他 AI 形成宿敌。</li>
+    <li><b>AI 交易声誉</b>：AI 经理有交易声誉值；按声誉调整对玩家报价的接受度。</li>
+    <li><b>AI 垃圾话</b>：AI 经理偶尔发预设垃圾话（按"性格"——有的 AI 爱喷，有的沉默）。</li>
+    <li><b>AI 投票</b>：AI 经理参与社区票选（按"偏好"投票——如偏好进攻型球队）。</li>
+  </ul>
+
+  <h3>14.2 AI 性格分化</h3>
+  <table>
+    <thead><tr><th>AI 性格</th><th>社交行为</th></tr></thead>
+    <tbody>
+      <tr><td>沉默型</td><td>不发垃圾话；不聊天；只交易</td></tr>
+      <tr><td>友善型</td><td>偶尔发友好感言；愿公平交易</td></tr>
+      <tr><td>好斗型</td><td>常发垃圾话；交易更激进</td></tr>
+      <tr><td>精明型</td><td>不发垃圾话；交易极度精明；声誉偏负</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== §15 异常处理与边界规则 ==================== -->
+<section id="s15">
+  <h2><span class="num">15</span>异常处理与边界规则</h2>
+
+  <h3>15.1 社交异常</h3>
+  <table>
+    <thead><tr><th>异常</th><th>处理</th></tr></thead>
+    <tbody>
+      <tr><td>经理退游</td><td>档案存入年代史（王朝系统 §11）；宿敌"暂停"；AI 接手球队</td></tr>
+      <tr><td>经理迁移世界</td><td>原世界宿敌"终结"；人脉标记"远"；新世界重新积累</td></tr>
+      <tr><td>同组人数不足（AI 填充）</td><td>AI 经理填充（世界结构 §8）；社交功能正常（AI 模拟社交）</td></tr>
+      <tr><td>屏蔽后同组</td><td>屏蔽有效；不收对方任何社交内容；交易邀请也屏蔽</td></tr>
+      <tr><td>票选投票率不足</td><td>AI 补票（按 AI 偏好）；确保奖项产生</td></tr>
+    </tbody>
+  </table>
+
+  <h3>15.2 跨世界隔离</h3>
+  <ul>
+    <li>社交世界内封闭——A 世界的宿敌/人脉在 B 世界无效。</li>
+    <li>世界迁移后社交重置——新世界重新积累。</li>
+    <li>经理档案跨世界可查（公开档案），但社交关系不跨世界。</li>
+  </ul>
+</section>
+
+<!-- ==================== §16 数值附录 ==================== -->
+<section id="s16">
+  <h2><span class="num">16</span>数值附录</h2>
+
+  <h3>16.1 宿敌点数</h3>
+  <table>
+    <thead><tr><th>因素</th><th>点数</th></tr></thead>
+    <tbody>
+      <tr><td>分差 ≤3（绝杀级）</td><td>+3</td></tr>
+      <tr><td>分差 4-8（接近）</td><td>+2</td></tr>
+      <tr><td>分差 9-15（正常）</td><td>+1</td></tr>
+      <tr><td>分差 >15（碾压）</td><td>0</td></tr>
+      <tr><td>季后赛对阵</td><td>×2</td></tr>
+      <tr><td>clutch 时刻</td><td>+2</td></tr>
+      <tr><td>德比起点</td><td>+20</td></tr>
+      <tr><td>升降级生死战</td><td>×3</td></tr>
+      <tr><td>每季自然衰减</td><td>-10%</td></tr>
+    </tbody>
+  </table>
+
+  <h3>16.2 宿敌等级与效果</h3>
+  <table>
+    <thead><tr><th>等级</th><th>点数</th><th>clutch</th><th>球迷热情</th></tr></thead>
+    <tbody>
+      <tr><td>死敌</td><td>≥80</td><td>+5 双方</td><td>+10 对阵日</td></tr>
+      <tr><td>宿敌</td><td>40-79</td><td>+3 双方</td><td>+5 对阵日</td></tr>
+      <tr><td>关注</td><td>15-39</td><td>+1 双方</td><td>—</td></tr>
+      <tr><td>普通</td><td>&lt;15</td><td>—</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  <h3>16.3 交易声誉</h3>
+  <table>
+    <thead><tr><th>区间</th><th>标签</th></tr></thead>
+    <tbody>
+      <tr><td>≥0.5</td><td>交易大师</td></tr>
+      <tr><td>0.2~0.5</td><td>可靠伙伴</td></tr>
+      <tr><td>-0.2~0.2</td><td>正常</td></tr>
+      <tr><td>-0.5~-0.2</td><td>精明商人</td></tr>
+      <tr><td>≤-0.5</td><td>坑人贩子</td></tr>
+    </tbody>
+  </table>
+
+  <h3>16.4 声望积分</h3>
+  <table>
+    <thead><tr><th>项目</th><th>分值</th><th>联赛加成</th></tr></thead>
+    <tbody>
+      <tr><td>冠军</td><td>×100</td><td>T1×2.0 / T2×1.5 / T3×1.2 / T4×1.0</td></tr>
+      <tr><td>亚军</td><td>×40</td><td>同上</td></tr>
+      <tr><td>季后赛</td><td>×15</td><td>同上</td></tr>
+      <tr><td>打造王朝</td><td>×200</td><td>—</td></tr>
+      <tr><td>培养名人堂</td><td>×80</td><td>—</td></tr>
+      <tr><td>执教年限</td><td>×5/季</td><td>—</td></tr>
+      <tr><td>降级</td><td>-20</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  <h3>16.5 垃圾话效果</h3>
+  <table>
+    <thead><tr><th>操作</th><th>效果</th></tr></thead>
+    <tbody>
+      <tr><td>赛前垃圾话→回击</td><td>双方 clutch +2</td></tr>
+      <tr><td>赛前垃圾话→无视</td><td>无效果</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note purple"><b>系统总结</b>：社交与对抗层让 HWO 的"多人在线"有温度——宿敌让反复对阵有恩怨，交易声誉让博弈有后果，经理档案让江湖有地位，社区票选让赛季有仪式感。核心原则是"涌现而非强塞"——所有社交关系从游戏行为中自然产生，系统只负责识别并记录。社交是可选的（可关闭），对抗是核心的（宿敌有微弱 clutch 加成但双向对称）。所有数值在 EA 阶段通过灰度参数热更新调优。</div>
+</section>
+
+<footer style="text-align:center;color:var(--ink3);font-size:12px;padding:20px 0 40px;border-top:1px solid var(--line);margin-top:20px">
+  社交与对抗层设计 v1.0 · Hoops World Online · 2026-09-28<br>
+  策划方案 §16 深化文档 · 涌现而非强塞 · 对抗优先于社交
+</footer>
+
+</div>
+</body>
+</html>

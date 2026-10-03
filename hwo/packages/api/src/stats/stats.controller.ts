@@ -1,0 +1,29 @@
+/**
+ * StatsController——球员赛季累计统计端点
+ *
+ * - GET /api/stats/team/:teamId          球队所有球员本赛季累计技术统计
+ *   （聚合已结算比赛的 MatchResult.boxScore）
+ * - GET /api/stats/team/:teamId/summary  球员列表 + 本队合计 + 对手合计（合計行对比）
+ *
+ * 参见：basketpulse.com/hk/Players/statistics 数据统计风格
+ */
+
+import { Controller, Get, Param } from "@nestjs/common";
+import { StatsService } from "./stats.service.js";
+
+@Controller("api/stats")
+export class StatsController {
+  constructor(private readonly statsService: StatsService) {}
+
+  /** 球队球员赛季累计统计 */
+  @Get("team/:teamId")
+  async getTeamPlayerStats(@Param("teamId") teamId: string) {
+    return this.statsService.getTeamPlayerSeasonStats(teamId);
+  }
+
+  /** 球员列表 + 本队合计 + 对手合计（用于合計行对比） */
+  @Get("team/:teamId/summary")
+  async getTeamStatsSummary(@Param("teamId") teamId: string) {
+    return this.statsService.getTeamStatsSummary(teamId);
+  }
+}

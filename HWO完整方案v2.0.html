@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>HWO 篮球经理游戏 — 完整方案 v2.0（竞品对标版）</title>
+<style>
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; max-width: 1000px; margin: 0 auto; padding: 40px 24px; color: #1a1a1a; line-height: 1.75; }
+  h1 { font-size: 28px; border-bottom: 3px solid #c8102e; padding-bottom: 12px; }
+  h2 { font-size: 22px; margin-top: 48px; border-left: 5px solid #c8102e; padding-left: 12px; }
+  h3 { font-size: 18px; margin-top: 32px; color: #2c3e50; }
+  h4 { font-size: 15px; margin-top: 20px; color: #34495e; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 13px; }
+  th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: #f5f5f5; font-weight: 600; white-space: nowrap; }
+  code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+  pre { background: #282c34; color: #abb2bf; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 12px; line-height: 1.5; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .tag-red { background: #ffe5e5; color: #c8102e; }
+  .tag-green { background: #e5f5e5; color: #27ae60; }
+  .tag-blue { background: #e5efff; color: #2980b9; }
+  .tag-orange { background: #fff3e0; color: #e67e22; }
+  .tag-gray { background: #f0f0f0; color: #666; }
+  .done { color: #27ae60; font-weight: 600; }
+  .partial { color: #e67e22; font-weight: 600; }
+  .missing { color: #c8102e; font-weight: 600; }
+  blockquote { border-left: 4px solid #c8102e; margin: 16px 0; padding: 8px 16px; background: #fff5f5; color: #333; }
+  .toc { background: #f8f9fa; padding: 20px 28px; border-radius: 8px; margin: 24px 0; }
+  .toc li { margin: 4px 0; }
+  .roadmap-step { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px 20px; margin: 12px 0; }
+  .roadmap-step .phase { font-weight: 700; font-size: 16px; }
+  .roadmap-step .priority { float: right; }
+  hr { border: none; border-top: 1px solid #eee; margin: 32px 0; }
+  .alert { background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 12px 16px; margin: 16px 0; }
+  .alert-red { background: #f8d7da; border-color: #dc3545; }
+  .alert-green { background: #d4edda; border-color: #28a745; }
+</style>
+</head>
+<body>
+
+<h1>🏀 HWO 篮球经理游戏 — 完整方案 v2.0</h1>
+<div style="color:#666; font-size:14px; margin-top:8px;">
+版本：v2.0（竞品对标版） ｜ 日期：2026-10-02 ｜ 状态：待评审
+</div>
+
+<blockquote>
+本方案融合四份输入文件——BasketPulse 测评报告（18 年现役竞品）、RimAttack 测评报告（封测期竞品）、HWO 策划建议书（三款对标版）、BasketPulse 新手攻略（机制细节）——并结合 HWO 当前代码库实际开发进度，给出完整的修订方案。
+</blockquote>
+
+<div class="toc">
+<strong>目录</strong>
+<ol>
+  <li><a href="#strategy">战略定位与竞品对标</a></li>
+  <li><a href="#inventory">已有系统能力盘点</a></li>
+  <li><a href="#gap">差距分析：三款横向对比</a></li>
+  <li><a href="#country">国家化联赛体系（去多世界）</a></li>
+  <li><a href="#calendar">赛季日历（63 天制）</a></li>
+  <li><a href="#postseason">双季后赛机制</a></li>
+  <li><a href="#fog">信息迷雾系统（已有，需深化）</a></li>
+  <li><a href="#attrs">球员属性体系（27 项）</a></li>
+  <li><a href="#family">家庭背景随机生成</a></li>
+  <li><a href="#staff">球队职员系统</a></li>
+  <li><a href="#agent">经纪人系统</a></li>
+  <li><a href="#avatar">球员化身 + 传承机制</a></li>
+  <li><a href="#draft">选秀系统（已有，需完善）</a></li>
+  <li><a href="#trade">交易系统（已有，需配 AI 兜底）</a></li>
+  <li><a href="#finance">财政系统（已有，需补数据模型）</a></li>
+  <li><a href="#fame">Fame / 名人堂 / 传承叙事</a></li>
+  <li><a href="#daily">每日登录奖励 + 注册即得化身</a></li>
+  <li><a href="#governance">联邦治理 + 民选国家队（UGC 路线）</a></li>
+  <li><a href="#profile">球员档案页 + 全局可点击</a></li>
+  <li><a href="#commerce">商业化红线</a></li>
+  <li><a href="#fairplay">公平规则</a></li>
+  <li><a href="#coldstart">冷启动策略</a></li>
+  <li><a href="#roadmap">修订路线图</a></li>
+  <li><a href="#metrics">验证指标</a></li>
+</ol>
+</div>
+
+<!-- ===================== 1. 战略定位 ===================== -->
+<h2 id="strategy">1. 战略定位与竞品对标</h2>
+
+<h3>1.1 一句话结论</h3>
+<blockquote>
+HWO v1.1 的主干（27 项属性 + 核心球员 + 分级联赛）与 RimAttack 撞车。必须靠 <strong>Avatar 化身</strong>（玩家即球员）与 <strong>三身份职业</strong>（收缩至 5 个）拉开身位，同时把 BasketPulse 的 <strong>63 天赛季节奏</strong>与 <strong>社区治理</strong>抄过来。HWO 已有 fog 系统和交易/选秀框架——比策划建议书预估的要好，但缺国家化、职员、传承、财政数据模型和赛季日历。
+</blockquote>
+
+<h3>1.2 三条战略判断</h3>
+<table>
+  <tr><th>#</th><th>判断</th><th>依据</th><th>行动</th></tr>
+  <tr><td>1</td><td><strong>撞车警告</strong></td><td>RimAttack 同样 27 项属性、同样「核心球员 = 人」、同样分级联赛</td><td>靠 Avatar 自创 + 三身份职业 + 中文原生社区差异化</td></tr>
+  <tr><td>2</td><td><strong>最大机制空白 = 信息层</strong></td><td>RimAttack 用 fog 把数值游戏变成信息决策；HWO <span class="done">已有 fog.ts</span> 但未全链路接入</td><td>把 fog 从「球探模块」提升为「全局信息层」</td></tr>
+  <tr><td>3</td><td><strong>最大规模风险 = 容量写死</strong></td><td>BP 美国一国 401 队/15 级；HWO 一国仅 24 队</td><td>引入 L3 动态分组，按活跃玩家数自动开/并组</td></tr>
+</table>
+
+<h3>1.3 HWO 必须守住的三条护城河</h3>
+<table>
+  <tr><th>护城河</th><th>RimAttack</th><th>BasketPulse</th><th>HWO</th></tr>
+  <tr><td>Avatar 化身</td><td>Core Player 是系统给的</td><td>只给命名权</td><td><span class="done">玩家自创（身高/体重/国籍/性格 + 能力点分配），注册首屏即得</span></td></tr>
+  <tr><td>三身份职业</td><td>无</td><td>无</td><td><span class="partial">收缩至 5 个有 Staff 承接的职业 + 6 个转 UGC 联邦治理</span></td></tr>
+  <tr><td>中文原生社区</td><td>繁中/台湾市场</td><td>社区翻译、不保证质量</td><td><span class="done">简中 + 中国本土联赛语境，竞品短期内追不上</span></td></tr>
+</table>
+
+<h3>1.4 从竞品各偷三招</h3>
+<table>
+  <tr><th>来源</th><th>招数</th><th>HWO 状态</th><th>落地成本</th></tr>
+  <tr><td>BasketPulse</td><td>每日登录随机奖励（每日惊喜）</td><td><span class="missing">未实现</span></td><td>极低：1 张配置表 + 1 个弹窗</td></tr>
+  <tr><td>BasketPulse</td><td>双轨联赛 + 等级解锁功能</td><td><span class="partial">有 L1/L2 + 国际冠军杯雏形</span></td><td>低：补等级解锁配置</td></tr>
+  <tr><td>BasketPulse</td><td>联邦 + 民选国家队教练</td><td><span class="missing">未实现</span></td><td>低：UGC 路线，开发成本近零</td></tr>
+  <tr><td>RimAttack</td><td>fog 信息层</td><td><span class="done">已有 fog.ts</span></td><td>中：需全链路接入前端展示</td></tr>
+  <tr><td>RimAttack</td><td>Core Player 传承（Succession）</td><td><span class="missing">未实现</span></td><td>中：数据沉淀 + 候选比较页面</td></tr>
+  <tr><td>RimAttack</td><td>双季后赛（top16/bottom16）</td><td><span class="missing">未实现</span></td><td>低：改赛季末排程逻辑</td></tr>
+</table>
+
+<!-- ===================== 2. 已有系统能力盘点 ===================== -->
+<h2 id="inventory">2. 已有系统能力盘点</h2>
+
+<div class="alert alert-green">
+<strong>关键发现：</strong>HWO 代码库已有 fog 系统、交易系统、选秀系统、财务页面——比策划建议书预估的要完善。以下系统不需要从零开发，而是需要深化和完善。
+</div>
+
+<h3>2.1 已实现（可深化）</h3>
+<table>
+  <tr><th>系统</th><th>代码位置</th><th>状态</th><th>需要做的</th></tr>
+  <tr><td>信息迷雾 fog</td><td><code>packages/shared/src/fog.ts</code></td><td><span class="done">✅ applyFog / performPlayerScout / narrowFogValue</span></td><td>前端全链路展示属性区间；非本队球员默认带雾</td></tr>
+  <tr><td>交易系统</td><td><code>packages/api/src/trade/trade.controller.ts</code></td><td><span class="done">✅ 创建/查询/接受/拒绝/还价/AI决策</span></td><td>补 AI 兜底交易方 + 公平规则校验</td></tr>
+  <tr><td>选秀系统</td><td><code>packages/api/src/draft/draft.controller.ts</code></td><td><span class="done">✅ 初始化/看板/手动选人/AI自动选秀</span></td><td>补选秀点累积规则 + 试训 + 流言中心</td></tr>
+  <tr><td>财务页面</td><td><code>packages/web/src/pages/FinancePage.tsx</code></td><td><span class="done">✅ 前端页面存在</span></td><td>补财政数据模型（收入/支出/工资帽结算引擎）</td></tr>
+  <tr><td>球探系统</td><td><code>packages/api/src/scout/scout.service.ts</code></td><td><span class="done">✅ scoutPlayer / performPlayerScout</span></td><td>接入 fog 全链路 + 每日一次限制</td></tr>
+  <tr><td>赛季/赛程</td><td><code>packages/api/src/season/season.service.ts</code></td><td><span class="done">✅ 赛季推进 + 升降级逻辑</span></td><td>改为 63 天日历 + 双季后赛 + 国家化</td></tr>
+  <tr><td>合同系统</td><td><code>packages/api/src/contract/contract.controller.ts</code></td><td><span class="done">✅ 签约/自由球员/续约/裁员</span></td><td>接入经纪人要价 + 市场特质</td></tr>
+  <tr><td>三身份 API</td><td><code>packages/api/src/identity/identity.controller.ts</code></td><td><span class="done">✅ 创建化身/选职业/转职/技能点</span></td><td>补 5 职业玩法闭环 + Staff 岗位打通</td></tr>
+  <tr><td>王朝记录</td><td><code>DynastyRecord</code> model + 页面</td><td><span class="done">✅ P3 已完成</span></td><td>与 Fame/名人堂融合</td></tr>
+  <tr><td>关系网</td><td><code>Relationship</code> model + 页面</td><td><span class="done">✅ P3 已完成</span></td><td>接入球员档案页</td></tr>
+</table>
+
+<h3>2.2 未实现（需新建）</h3>
+<table>
+  <tr><th>系统</th><th>严重性</th><th>说明</th></tr>
+  <tr><td>国家化（Country 表）</td><td><span class="tag tag-red">P0</span></td><td>World 模型仍在，需迁移为 Country</td></tr>
+  <tr><td>63 天赛季日历</td><td><span class="tag tag-red">P0</span></td><td>当前赛季轮次口径矛盾（36~40 轮），需统一</td></tr>
+  <tr><td>双季后赛</td><td><span class="tag tag-red">P0</span></td><td>前 8 争冠 + 后 4 保级，消除中游死区</td></tr>
+  <tr><td>球员属性扩展</td><td><span class="tag tag-red">P0</span></td><td>身高/体重/国籍/性格/精神属性/隐藏属性</td></tr>
+  <tr><td>家庭背景随机生成</td><td><span class="tag tag-orange">P1</span></td><td>PlayerFamily 表已存在，但世界生成时未填充</td></tr>
+  <tr><td>球队职员系统</td><td><span class="tag tag-orange">P1</span></td><td>Staff 表不存在</td></tr>
+  <tr><td>经纪人系统</td><td><span class="tag tag-orange">P1</span></td><td>Agent/AgentContract 表不存在</td></tr>
+  <tr><td>传承机制（Succession）</td><td><span class="tag tag-orange">P1</span></td><td>化身退役后的候选比较 + 名人堂</td></tr>
+  <tr><td>Fame / 队史 / 名人堂</td><td><span class="tag tag-orange">P1</span></td><td>纯数据沉淀 + 页面，低成本高留存</td></tr>
+  <tr><td>每日登录奖励</td><td><span class="tag tag-blue">P2</span></td><td>1 张配置表 + 1 个弹窗，DAU 最便宜的钩子</td></tr>
+  <tr><td>联邦治理（UGC）</td><td><span class="tag tag-blue">P2</span></td><td>国家联邦 + 民选国家队教练</td></tr>
+  <tr><td>球员档案页</td><td><span class="tag tag-orange">P1</span></td><td>PlayerProfilePage 不存在</td></tr>
+  <tr><td>全局可点击</td><td><span class="tag tag-orange">P1</span></td><td>EntityLink 组件不存在</td></tr>
+  <tr><td>财政数据模型</td><td><span class="tag tag-red">P0</span></td><td>前端有页面，后端缺收入/支出/工资帽结算引擎</td></tr>
+  <tr><td>商业化边界</td><td><span class="tag tag-red">P0</span></td><td>文档完全无商业化章节</td></tr>
+  <tr><td>公平规则</td><td><span class="tag tag-blue">P2</span></td><td>一人一队 + 禁 VPN + 关联队禁止往来</td></tr>
+  <tr><td>动态联赛规模</td><td><span class="tag tag-red">P0</span></td><td>L3 动态分组，按活跃玩家数自动开/并组</td></tr>
+</table>
+
+<!-- ===================== 3. 差距分析 ===================== -->
+<h2 id="gap">3. 差距分析：三款横向对比</h2>
+
+<table>
+  <tr><th>对标轴</th><th>BasketPulse（现役 18 年）</th><th>RimAttack（封测）</th><th>HWO 现状</th><th>HWO 需补</th></tr>
+  <tr><td>规模</td><td>美国一国 401 队 / 15 级</td><td>封测期，规模未公开</td><td>5 国 × 24 队 = 120 队（写死）</td><td>L3 动态分组，上限 6 组/国</td></tr>
+  <tr><td>赛季节奏</td><td>63 天 / 每日 1 场</td><td>每日批处理（10:00 UTC 结算）</td><td>口径矛盾（36~40 轮）</td><td>统一 63 天，每日 1 场</td></tr>
+  <tr><td>球员属性</td><td>潜力 1-10 档（极简）</td><td>27 项 / 5 组 + fog</td><td>27 项（已有 fog.ts）</td><td>全链路接入 fog 展示</td></tr>
+  <tr><td>信息机制</td><td>球探每日一次，投入换信息</td><td>fog：属性带误差，逐步收敛</td><td><span class="done">fog.ts 已存在</span></td><td>前端展示区间 + 球探收敛</td></tr>
+  <tr><td>核心球员</td><td>注册送 16 岁潜力 10 可命名</td><td>Core Player + 传承 + 名人堂</td><td>Avatar 化身（玩家自创）</td><td>补传承 + 名人堂 + 退役号码</td></tr>
+  <tr><td>球员获取</td><td>4 条：市场/交换/球探/选秀</td><td>市场 offer + 选秀</td><td><span class="done">已有交易 + 选秀</span></td><td>补 AI 兜底 + 选秀点累积 + 试训</td></tr>
+  <tr><td>财政</td><td>不能卖球员；门票+赞助</td><td>payroll + arena + health</td><td><span class="partial">前端有 FinancePage</span></td><td>补后端财政数据模型 + 工资帽引擎</td></tr>
+  <tr><td>长线叙事</td><td>联邦 + 民选国家队 + 4 年龄组</td><td>Fame + 队史 + 名人堂 + 退役号码</td><td><span class="missing">完全空白</span></td><td>补 Fame + 名人堂 + 联邦治理</td></tr>
+  <tr><td>商业化</td><td>credits，不影响上限</td><td>Credits + VIP（卖信息，有争议）</td><td><span class="missing">无章节</span></td><td>定边界：只卖效率与外观</td></tr>
+  <tr><td>公平规则</td><td>一人一队 + 禁 VPN + 关联队禁往来</td><td>未公开</td><td><span class="missing">未涉及</span></td><td>开放交易前必须上线</td></tr>
+  <tr><td>中文</td><td>社区翻译、不保证质量</td><td>繁中 / 台湾市场</td><td><span class="done">简中原生</span></td><td>天然主场，保持</td></tr>
+</table>
+
+<!-- ===================== 4. 国家化联赛体系 ===================== -->
+<h2 id="country">4. 国家化联赛体系（去多世界）</h2>
+
+<h3>4.1 架构变更</h3>
+<table>
+  <tr><th>维度</th><th>当前（多世界）</th><th>重构后（国家化）</th></tr>
+  <tr><td>世界</td><td>多个 World，每世界 16 队，互相隔离</td><td>单一全球生态</td></tr>
+  <tr><td>组织单元</td><td>World → Team</td><td>Country → League → Team</td></tr>
+  <tr><td>跨国交易</td><td>禁止</td><td>允许（受国籍/联赛规则限制）</td></tr>
+  <tr><td>球员池</td><td>按世界隔离</td><td>全球统一自由球员池 + 选秀</td></tr>
+</table>
+
+<h3>4.2 国家体系（5 国首批）</h3>
+<table>
+  <tr><th>国家</th><th>代码</th><th>L1</th><th>L2</th><th>L3（动态）</th><th>青训系数</th><th>经济系数</th><th>外援限制</th></tr>
+  <tr><td>中国</td><td>CN</td><td>12 队</td><td>12 队</td><td>1~6 组 × 12 队</td><td>1.0</td><td>1.0</td><td>L1 最多 2 外援同时在场</td></tr>
+  <tr><td>美国</td><td>US</td><td>12 队</td><td>12 队</td><td>1~6 组 × 12 队</td><td>1.2</td><td>1.5</td><td>无限制</td></tr>
+  <tr><td>欧洲</td><td>EU</td><td>12 队</td><td>12 队</td><td>1~6 组 × 12 队</td><td>1.15</td><td>1.2</td><td>无限制（欧盟内）</td></tr>
+  <tr><td>日本</td><td>JP</td><td>12 队</td><td>12 队</td><td>1~6 组 × 12 队</td><td>1.05</td><td>1.1</td><td>L1 最多 1 外援</td></tr>
+  <tr><td>拉美</td><td>LA</td><td>12 队</td><td>12 队</td><td>1~6 组 × 12 队</td><td>0.95</td><td>0.8</td><td>无限制</td></tr>
+</table>
+
+<div class="alert">
+<strong>动态联赛规模：</strong>冷启动每国先开 L1 + L2 + L3×1 组（共 36 个坑位）。随玩家增长自动开新 L3 组（上限 6 组 = 72 队 + L1/L2 = 96 队/国）。L3 组之间按活跃度合并或拆分。
+</div>
+
+<h3>4.3 数据模型变更</h3>
+<pre>
+// 新增
+Country {
+  code          String   PK   // CN, US, EU, JP, LA
+  name          String
+  flag          String?
+  youthFactor   Float
+  economicFactor Float
+  foreignLimit  Int
+  salaryCapType String   // hard|soft|fairplay|none
+}
+
+// 修改
+Team {
+  // 删除 worldId
+  countryId     String   FK → Country  // 新增
+}
+
+League {
+  countryId     String?  FK → Country  // 新增（国际联赛为 null）
+  tier          Int      // 1=L1, 2=L2, 3=L3
+  type          String   // domestic|cup|international
+}
+
+// 废弃
+World  // 迁移后删除
+</pre>
+
+<h3>4.4 迁移策略</h3>
+<ol>
+  <li>新建 Country 表，插入 5 个初始国家。</li>
+  <li>Team 增加 countryId，按现有 worldId 映射到国家。</li>
+  <li>验证数据完整性后删除 World 表。</li>
+  <li>L3 动态分组逻辑接入赛季初始化。</li>
+</ol>
+
+<!-- ===================== 5. 赛季日历 ===================== -->
+<h2 id="calendar">5. 赛季日历（63 天制）</h2>
+
+<blockquote>
+对齐 BasketPulse 验证过 18 年的赛季长度：63 天 / 每日 1 场。这是长线留存的教科书节奏。
+</blockquote>
+
+<h3>5.1 赛季结构</h3>
+<table>
+  <tr><th>阶段</th><th>天数</th><th>内容</th></tr>
+  <tr><td>常规赛</td><td>22 天</td><td>12 队双循环主客场 = 22 轮，每日 1 场</td></tr>
+  <tr><td>国内杯赛</td><td>穿插 5 天</td><td>单败淘汰，占用非联赛日（每周三）</td></tr>
+  <tr><td>季后赛</td><td>9 天</td><td>争冠组（前 8）BO3 三轮 + 保级组（后 4）BO3 两轮，并行</td></tr>
+  <tr><td>国际赛事</td><td>10 天</td><td>跨国 World League：小组 6 轮 + 淘汰 4 轮</td></tr>
+  <tr><td>休赛期</td><td>12 天</td><td>选秀、自由市场、训练营、合同到期、升降级结算</td></tr>
+  <tr><td>缓冲</td><td>5 天</td><td>异常处理与版本维护</td></tr>
+  <tr><td><strong>合计</strong></td><td><strong>63 天</strong></td><td>对齐 BasketPulse 验证过的赛季长度</td></tr>
+</table>
+
+<h3>5.2 每日结算时点</h3>
+<pre>
+每日固定结算（北京时间）：
+  12:00 — 比赛结算（模拟全场次比赛）
+  12:15 — 状态/体能/伤病更新
+  12:30 — 财政日结（薪资/门票/赞助）
+  13:00 — 市场报价处理 + 自动球探
+  20:00 — 训练执行（每日）
+  每周一 20:00 — 周任务：老化 / Fame / 破产检查
+  赛季末 — 换季：合同到期 / 新秀毕业 / 升降级 / 名单补齐
+</pre>
+
+<h3>5.3 赛季时间轴（63 天）</h3>
+<table>
+  <tr><th>第 X 天</th><th>事件</th></tr>
+  <tr><td>1</td><td>赛季开始；自由市场开放；交易开放</td></tr>
+  <tr><td>3</td><td>老旧/低技能球员决定是否退役</td></tr>
+  <tr><td>10, 40</td><td>青少年球员身高可能增长</td></tr>
+  <tr><td>22</td><td>常规赛结束</td></tr>
+  <tr><td>23-31</td><td>季后赛（争冠组 + 保级组并行）</td></tr>
+  <tr><td>32-41</td><td>国际赛事（World League）</td></tr>
+  <tr><td>35</td><td>自由市场关闭；解雇/交易截止日</td></tr>
+  <tr><td>36</td><td>季末市场开放</td></tr>
+  <tr><td>42-53</td><td>休赛期：选秀、自由市场、训练营、合同到期、升降级</td></tr>
+  <tr><td>54-58</td><td>缓冲期</td></tr>
+  <tr><td>63</td><td>赛季结束；球员转移；季末市场签约正式加盟</td></tr>
+</table>
+
+<!-- ===================== 6. 双季后赛 ===================== -->
+<h2 id="postseason">6. 双季后赛机制</h2>
+
+<blockquote>
+学 RimAttack：常规赛后分 top 8 / bottom 4 两组，上游争冠、下游既保级又争更好选秀顺位。直接解决 HWO L1「只有前 8 进季后赛、后 4 无所求」的死区。
+</blockquote>
+
+<h3>6.1 争冠组（前 8）</h3>
+<ul>
+  <li>八强 → 四强 → 决赛，BO3（三局两胜）</li>
+  <li>冠军：获国际 World League 资格 + 奖金 + 声望</li>
+  <li>亚军：获国际 World League 资格</li>
+</ul>
+
+<h3>6.2 保级组（后 4）</h3>
+<ul>
+  <li>半决赛 → 决赛，BO3</li>
+  <li>保级组最后 2 名：直接降入 L2</li>
+  <li>保级组倒数第 3：参加降级附加赛（vs L2 季后赛冠军）</li>
+  <li><strong>保级组冠军：获得更好选秀顺位</strong>（倒数第 1 → 选秀第 1 顺位，以此类推）</li>
+</ul>
+
+<h3>6.3 升降级规则</h3>
+<table>
+  <tr><th>动作</th><th>规则</th></tr>
+  <tr><td>L2 → L1 直接升级</td><td>L2 常规赛前 2 名</td></tr>
+  <tr><td>升级附加赛</td><td>L2 季后赛冠军 vs L1 保级组倒数第 3，BO3</td></tr>
+  <tr><td>L1 → L2 直接降级</td><td>L1 保级组最后 2 名</td></tr>
+  <tr><td>降级连锁</td><td>声望 -15、预算 -30%、职员士气降</td></tr>
+  <tr><td>升级连锁</td><td>声望 +10、预算 +25%</td></tr>
+</table>
+
+<!-- ===================== 7. 信息迷雾系统 ===================== -->
+<h2 id="fog">7. 信息迷雾系统（已有，需深化）</h2>
+
+<div class="alert alert-green">
+<strong>HWO 已有 fog.ts</strong>，包含 applyFog / performPlayerScout / performPotentialScout / narrowFogValue / computeFogNarrow。这是 HWO 相对 BasketPulse 的优势——BP 没有信息迷雾，属性全透明。需要做的是：
+</div>
+
+<h3>7.1 当前 fog 系统能力</h3>
+<table>
+  <tr><th>函数</th><th>位置</th><th>功能</th></tr>
+  <tr><td><code>applyFog</code></td><td>fog.ts:114</td><td>根据是否本队球员、球探报告生成带雾视图</td></tr>
+  <tr><td><code>performPlayerScout</code></td><td>fog.ts:218</td><td>球探探查球员能力，收窄 fog 误差</td></tr>
+  <tr><td><code>performPotentialScout</code></td><td>fog.ts:240</td><td>球探探查球员潜力</td></tr>
+  <tr><td><code>narrowFogValue</code></td><td>fog.ts:84</td><td>更新单个 FogValue，保留最小误差范围</td></tr>
+  <tr><td><code>computeFogNarrow</code></td><td>fog.ts:54</td><td>计算球探探查的 fog 收窄值（含年龄/等级/递减）</td></tr>
+</table>
+
+<h3>7.2 需要深化的部分</h3>
+<ol>
+  <li><strong>前端全链路展示</strong>：非本队球员的属性显示为区间（如 <code>75~85</code>）而非精确值，所有页面统一接入。</li>
+  <li><strong>球探每日一次限制</strong>：学 BasketPulse，每天只能派出一名球探。</li>
+  <li><strong>球探资金保底</strong>：投入越多越容易找到好人才，有保底机制。</li>
+  <li><strong>选秀 fog</strong>：选秀新秀默认带雾，试训可部分收窄。</li>
+  <li><strong>对位收敛</strong>：亲自与目标球员对位比赛后，fog 进一步收窄。</li>
+</ol>
+
+<h3>7.3 fog 数据结构（已有）</h3>
+<pre>
+FogValue {
+  est: number       // 估计值
+  range: number     // 误差范围（±range）
+}
+// 属性 75±5 → 显示为 "70~80"
+// 球探探查后 range 逐步缩小
+// 本队球员 range=0（全透明）
+</pre>
+
+<!-- ===================== 8. 球员属性体系 ===================== -->
+<h2 id="attrs">8. 球员属性体系（27 项）</h2>
+
+<h3>8.1 属性分组（修正：状态与隐藏不与固定属性并列）</h3>
+<blockquote>
+策划建议书指出：HWO v1.1 把状态 4 项与隐藏 3 项与固定属性并列是不合理的。RimAttack 的 27 项全是固定属性，状态是独立维度。修正：27 项固定属性 + 状态/隐藏作为独立维度。
+</blockquote>
+
+<table>
+  <tr><th>类别</th><th>项数</th><th>属性</th></tr>
+  <tr><td>身体</td><td>4</td><td>speed / strength / jumping / stamina</td></tr>
+  <tr><td>进攻</td><td>7</td><td>close / midRange / threePoint / drive / post / passing / handle</td></tr>
+  <tr><td>防守</td><td>4</td><td>perimeterD / interiorD / steal / block</td></tr>
+  <tr><td>精神</td><td>5</td><td>iq / clutch / loyalty / leadership / workEthic</td></tr>
+  <tr><td>篮板</td><td>2</td><td>offRebound / defRebound</td></tr>
+  <tr><td>运动</td><td>5</td><td>vertical / agility / endurance / wingspan / standingReach</td></tr>
+  <tr><td colspan="2"><strong>固定属性合计</strong></td><td><strong>27 项</strong>（对齐 RimAttack 的 27 项，但分组不同）</td></tr>
+</table>
+
+<table>
+  <tr><th>独立维度</th><th>项数</th><th>说明</th></tr>
+  <tr><td>状态属性</td><td>4</td><td>fatigue / health / mood / form — 动态变化，不纳入 OVR</td></tr>
+  <tr><td>隐藏属性</td><td>3</td><td>injuryTendency / potential / loyaltyGene — 不直接显示</td></tr>
+</table>
+
+<h3>8.2 OVR 计算</h3>
+<pre>
+OVR = Σ(属性权重 × 属性值) / Σ权重
+权重按位置差异化（PG 重传球控球，C 重内线防守篮板）
+OVR 0-99，每 20 分一档（0-39 红 / 40-59 橙 / 60-79 黄 / 80-99 蓝）
+</pre>
+
+<h3>8.3 成长机制</h3>
+<ul>
+  <li><strong>年龄曲线</strong>：身体 18-25 巅峰、30+ 下降；技术 23-28 巅峰；精神只增不减。</li>
+  <li><strong>训练</strong>：敬业度 + 训练师效率影响每周成长。训练按周设重点（学 RimAttack）。</li>
+  <li><strong>比赛经验</strong>：出场时间越多，球商/关键球增长越快。</li>
+  <li><strong>潜力上限</strong>：属性不能超过 potential，potential 由选秀/球探评估（带 fog）。</li>
+</ul>
+
+<h3>8.4 Player 表扩展</h3>
+<pre>
+Player {
+  // 已有：id, name, number, position, age, abilities, salary, ...
+  // 新增
+  height: Int            // cm
+  weight: Int            // kg
+  nationality: String    // CN/US/EU/JP/LA
+  hometown: String?
+  personality: String    // tough|silent|flamboyant|leader|hardworking
+  // 精神属性（从 abilities 中独立或保持在内）
+  // 隐藏
+  injuryTendency: Int
+  potential: Int
+  loyaltyGene: Int
+  // 状态（动态）
+  fatigue: Int
+  health: Int
+  mood: Int
+  form: Float
+  // 选秀
+  draftYear: Int?
+  draftPick: Int?
+  draftTeamId: String?
+  // 人气
+  mediaPopularity: Int
+}
+</pre>
+
+<!-- ===================== 9. 家庭背景 ===================== -->
+<h2 id="family">9. 家庭背景随机生成</h2>
+
+<h3>9.1 背景类型与概率</h3>
+<table>
+  <tr><th>背景</th><th>代码</th><th>概率</th><th>属性加成</th><th>性格倾向</th><th>成长影响</th></tr>
+  <tr><td>体育世家</td><td>athlete_family</td><td>12%</td><td>全属性 +3，潜力 +5</td><td>勤奋/领袖</td><td>成长 +12%</td></tr>
+  <tr><td>普通家庭</td><td>regular</td><td>45%</td><td>无</td><td>随机</td><td>正常</td></tr>
+  <tr><td>单亲家庭</td><td>single_parent</td><td>13%</td><td>力量 +2，韧性 +3</td><td>硬汉/沉默</td><td>敬业度 +5</td></tr>
+  <tr><td>海外背景</td><td>overseas</td><td>10%</td><td>适应力 +5</td><td>张扬/沉默</td><td>换队适应 +15%</td></tr>
+  <tr><td>体校出身</td><td>sports_school</td><td>10%</td><td>体能 +3，纪律 +5</td><td>勤奋/沉默</td><td>训练 +8%</td></tr>
+  <tr><td>街头出身</td><td>streetball</td><td>5%</td><td>控球 +4，突破 +3</td><td>张扬/硬汉</td><td>creativity +10%</td></tr>
+  <tr><td>富裕家庭</td><td>wealthy</td><td>5%</td><td>球商 +3，人气 +10</td><td>领袖/张扬</td><td>媒体曝光 +20%</td></tr>
+</table>
+
+<h3>9.2 家庭成员生成算法</h3>
+<pre>
+function generateFamily(player):
+  members = []
+  // 父母（90% 双亲，10% 单亲）
+  father = { name: randomMaleName(nationality), relation: "father", age: +25~35 }
+  mother = { name: randomFemaleName(nationality), relation: "mother", age: +23~33 }
+  if background == "single_parent":
+    members.push(random([father, mother]))
+  else:
+    members.push(father, mother)
+  // 兄弟姐妹（40% 有 1 个，15% 有 2 个）
+  siblingCount = weightedRandom([0:45%, 1:40%, 2:15%])
+  // 配偶（28 岁+，60% 已婚）
+  if age >= 28 and random() < 0.6:
+    members.push(spouse)
+</pre>
+
+<h3>9.3 姓名池（按国籍匹配）</h3>
+<table>
+  <tr><th>国籍</th><th>男名池</th><th>女名池</th><th>姓氏池</th></tr>
+  <tr><td>CN</td><td>伟、强、磊、军、洋</td><td>芳、娜、敏、静、丽</td><td>王、李、张、刘、陈</td></tr>
+  <tr><td>US</td><td>James, Michael, David</td><td>Mary, Sarah, Emily</td><td>Smith, Johnson, Williams</td></tr>
+  <tr><td>EU</td><td>Luca, Marco, Jan</td><td>Anna, Maria, Sofia</td><td>Müller, Rossi, Dubois</td></tr>
+  <tr><td>JP</td><td>翔太、悠真、大翔</td><td>阳菜、凛、结衣</td><td>佐藤、铃木、高桥</td></tr>
+  <tr><td>LA</td><td>Carlos, Juan, Miguel</td><td>Maria, Ana, Sofia</td><td>García, Rodríguez, Martínez</td></tr>
+</table>
+
+<h3>9.4 PlayerFamily 数据模型（表已存在，需填充）</h3>
+<pre>
+PlayerFamily {
+  id          String   PK
+  playerId    String   FK → Player
+  background  String   // 7 种背景类型
+  members     Json     // [{ name, relation, age, occupation }]
+  story       String?  // 自动生成的家庭故事简介
+}
+// 世界生成时为每名普通球员创建记录
+// 化身：玩家可选（不选则随机）
+</pre>
+
+<!-- ===================== 10. 球队职员系统 ===================== -->
+<h2 id="staff">10. 球队职员系统</h2>
+
+<h3>10.1 岗位定义</h3>
+<table>
+  <tr><th>岗位</th><th>职责</th><th>对球队的影响</th><th>对应玩家职业</th></tr>
+  <tr><td>主教练</td><td>战术、轮换、临场</td><td>战术执行加成、士气</td><td>head_coach</td></tr>
+  <tr><td>助理教练</td><td>专项训练</td><td>属性成长 +10~20%</td><td>asst_coach</td></tr>
+  <tr><td>训练师</td><td>体能恢复</td><td>伤病恢复 +20~40%</td><td>trainer</td></tr>
+  <tr><td>队医</td><td>伤病诊治</td><td>伤病率 -15~30%</td><td>—</td></tr>
+  <tr><td>球探</td><td>探查球员</td><td>fog 收窄效率</td><td>scout</td></tr>
+  <tr><td>经纪人</td><td>合同谈判</td><td>谈判成功率</td><td>agent</td></tr>
+  <tr><td>数据分析师</td><td>对手研究</td><td>赛前情报加成</td><td>—</td></tr>
+</table>
+
+<h3>10.2 Staff 表</h3>
+<pre>
+Staff {
+  id              String   PK
+  teamId          String?  FK → Team
+  role            String   // head_coach|asst_coach|trainer|doctor|scout|agent|analyst
+  name            String
+  age             Int
+  nationality     String
+  reputation      Int      // 0-100
+  salary          Float
+  contractYears   Int
+  specialties     Json     // { offense: 80, defense: 70 }
+  efficiency      Int      // 0-100
+  mood            Int      // 0-100
+  isUserControlled Boolean
+  professionalId  String?  // FK → Professional（玩家担任时）
+}
+</pre>
+
+<h3>10.3 玩法闭环</h3>
+<ol>
+  <li>经理雇佣教练组（市场 hiring）</li>
+  <li>教练设定战术偏好 → 比赛模拟加成</li>
+  <li>训练师/队医后台持续影响球员状态（每轮结算）</li>
+  <li>球探派往目标球员 → fog 收窄</li>
+  <li>玩家 Professional 身份可应聘球队岗位 → 领薪资 + 积累声望</li>
+</ol>
+
+<!-- ===================== 11. 经纪人系统 ===================== -->
+<h2 id="agent">11. 经纪人系统</h2>
+
+<h3>11.1 数据模型</h3>
+<pre>
+Agent {
+  id              String   PK
+  name            String
+  reputation      Int      // 0-100
+  commissionRate  Float    // 0.02~0.10
+  specialty       String?  // 新秀/巨星/国际球员
+  isUserControlled Boolean
+  professionalId  String?
+}
+
+AgentContract {
+  id          String PK
+  agentId     String FK → Agent
+  playerId    String FK → Player
+  startYear   Int
+  endYear     Int
+  commissionRate Float
+  status      String  // active|expired|terminated
+}
+</pre>
+
+<h3>11.2 玩法</h3>
+<ul>
+  <li>球员生成时 AI 经纪人按声望自动分配</li>
+  <li>经理签约球员时，有经纪人的球员需与经纪人谈判（加价）</li>
+  <li>玩家 Professional(agent) 可招揽球员客户，谈判成功抽佣金</li>
+  <li>市场特质（学 BasketPulse）：故乡忠诚/追求稳定/爱国者/唯物主义者</li>
+</ul>
+
+<!-- ===================== 12. 化身 + 传承 ===================== -->
+<h2 id="avatar">12. 球员化身 + 传承机制</h2>
+
+<h3>12.1 注册即得化身</h3>
+<blockquote>
+学 BasketPulse：把「你自己的名字会印在这个世界的某个球员身上」做成注册转化点。HWO 的化身系统更强（可定制身高/体重/国籍/性格 + 能力点分配），应当放到<strong>注册流程的第一步</strong>，而不是二级功能页。
+</blockquote>
+
+<h3>12.2 化身创建参数</h3>
+<pre>
+AvatarCreateParams {
+  name, position, playStyle,
+  height: Int       // cm（范围按位置校验）
+  weight: Int       // kg
+  nationality: String
+  personality: String
+  familyBackground: String?  // 不选则随机
+  abilityPoints: {          // 17 项固定属性，基础各 30（锁死）
+    close: Int, midRange: Int, ...  // + 300 点可自由分配，单项上限 99
+  }
+}
+// 状态 4 项与隐藏 3 项：禁止玩家分配或查看
+</pre>
+
+<h3>12.3 传承机制（Succession，学 RimAttack）</h3>
+<table>
+  <tr><th>阶段</th><th>触发条件</th><th>系统行为</th></tr>
+  <tr><td>生涯进行中</td><td>化身在役</td><td>围绕化身建队，Fame 持续积累</td></tr>
+  <tr><td>生涯终结</td><td>化身退役（年龄/伤病/玩家选择）</td><td>系统给出 2~3 名传承候选</td></tr>
+  <tr><td>传承选择</td><td>玩家决策</td><td>比较候选的位置/能力/潜力/特质，选择延续风格或转型</td></tr>
+  <tr><td>退役纪念</td><td>传承完成</td><td>入名人堂、最有分量者留退役号码</td></tr>
+</table>
+
+<h3>12.4 Fame / 队史 / 名人堂</h3>
+<ul>
+  <li><strong>Fame</strong>：记录化身/俱乐部在联盟的可见度与生涯形状（不是强度评分）。</li>
+  <li><strong>俱乐部历史页</strong>：保存历年赛季、荣誉、名次。</li>
+  <li><strong>名人堂</strong>：退役化身进入，展示生涯数据与荣誉。</li>
+  <li><strong>退役号码</strong>：最有分量的化身退役号码悬挂在球馆。</li>
+</ul>
+<div class="alert alert-green">
+这套东西成本极低：几乎不写文本，全靠数据沉淀 + 页面叙事，却把「经营」变成了「传承」。这是 HWO 相对 BasketPulse 唯一能做的情感闭环。
+</div>
+
+<!-- ===================== 13. 选秀系统 ===================== -->
+<h2 id="draft">13. 选秀系统（已有，需完善）</h2>
+
+<div class="alert alert-green">
+HWO 已有 <code>DraftPick</code> model + <code>draft.controller.ts</code>（初始化/看板/手动选人/AI自动选秀）。需要完善的是：
+</div>
+
+<h3>13.1 需要补充的部分</h3>
+<ul>
+  <li><strong>选秀点累积规则</strong>：不签约累积选秀点（学 BasketPulse），战绩越差选秀顺位越高。</li>
+  <li><strong>试训</strong>：选秀前可试训新秀（收窄 fog），消耗球探资源。</li>
+  <li><strong>流言中心</strong>：新秀情报博弈页面（学 RimAttack），与其他经理博弈。</li>
+  <li><strong>选秀球员类型</strong>：即战力 / 学生（需篮球学校）/ 潜力股。</li>
+  <li><strong>合同</strong>：默认 2 年，前 2 年不可交易。</li>
+</ul>
+
+<!-- ===================== 14. 交易系统 ===================== -->
+<h2 id="trade">14. 交易系统（已有，需配 AI 兜底）</h2>
+
+<div class="alert alert-green">
+HWO 已有 <code>TradeOffer</code> model + <code>trade.controller.ts</code>（创建/查询/接受/拒绝/还价/AI决策）。需要完善的是：
+</div>
+
+<h3>14.1 需要补充的部分</h3>
+<ul>
+  <li><strong>AI 兜底交易方</strong>：学 BasketPulse 的教训——若新人无人脉，补强极难。HWO 必须配 NPC 球队接盘。</li>
+  <li><strong>公平规则校验</strong>：关联账号禁止往来、禁止放水交易。</li>
+  <li><strong>球员交换为主</strong>：不开放现金买卖（避免通胀），以球员交换 + 选秀权交易为主。</li>
+  <li><strong>交易截止日</strong>：赛季第 35 天后关闭交易。</li>
+</ul>
+
+<!-- ===================== 15. 财政系统 ===================== -->
+<h2 id="finance">15. 财政系统（已有前端，需补后端）</h2>
+
+<div class="alert alert-green">
+HWO 已有 <code>FinancePage.tsx</code> 前端页面。需要补的是后端财政数据模型和工资帽结算引擎。
+</div>
+
+<h3>15.1 财政数据模型</h3>
+<pre>
+Finance {
+  teamId      String   FK → Team
+  seasonId     String   FK → Season
+  // 收入
+  ticketRevenue    Float   // 门票（球场容量 × 上座率 × 票价）
+  sponsorRevenue   Float   // 赞助
+  broadcastRevenue Float   // 转播
+  prizeMoney       Float   // 联赛奖金
+  // 支出
+  playerSalary     Float   // 球员薪资
+  staffSalary      Float   // 职员薪资
+  facilityCost     Float   // 设施（球馆租金 + 篮球学校）
+  healthCost       Float   // 医疗投入
+  scoutCost        Float   // 球探费用
+  // 工资帽
+  salaryCap        Float   // 工资帽上限（按联赛级别）
+  luxuryTax        Float   // 奢侈税（超出部分）
+  // 结算
+  balance          Float   // 当季结余
+}
+</pre>
+
+<h3>15.2 工资帽规则（按国家）</h3>
+<table>
+  <tr><th>国家</th><th>工资帽类型</th><th>说明</th></tr>
+  <tr><td>CN 中国</td><td>软工资帽 + 奢侈税</td><td>超帽需缴税，税金分配给低薪球队</td></tr>
+  <tr><td>US 美国</td><td>硬工资帽</td><td>不可超帽</td></tr>
+  <tr><td>EU 欧洲</td><td>财政公平法案</td><td>亏损上限</td></tr>
+  <tr><td>JP 日本</td><td>软工资帽</td><td>超帽罚款</td></tr>
+  <tr><td>LA 拉美</td><td>无工资帽</td><td>自由竞争</td></tr>
+</table>
+
+<h3>15.3 等级解锁功能（学 BasketPulse）</h3>
+<table>
+  <tr><th>跨国等级</th><th>解锁功能</th></tr>
+  <tr><td>L1（顶级）</td><td>全部功能开放</td></tr>
+  <tr><td>L2</td><td>解锁：赞助额度提升、交易等级提升、青训队</td></tr>
+  <tr><td>L3</td><td>基础功能：比赛、训练、自由市场</td></tr>
+</table>
+<div class="alert">
+<strong>冷启动调整：</strong>学 BP 的教训——别把关键功能全锁在高等级。HWO 必须前 2 个赛季给满核心操作项，否则冷启动期直接流失。
+</div>
+
+<!-- ===================== 16. Fame/名人堂 ===================== -->
+<h2 id="fame">16. Fame / 名人堂 / 传承叙事</h2>
+
+<blockquote>
+成本极低、留存极高的设计：纯数据沉淀 + 页面叙事，几乎不写文本，全靠数据积累讲家族史。
+</blockquote>
+
+<h3>16.1 Fame 系统</h3>
+<pre>
+Fame {
+  playerId    String   FK → Player
+  teamId      String   FK → Team
+  fameScore   Int      // 综合影响力（不是强度评分）
+  milestones  Json     // [{ season, event, description }]
+  careerArc   Json     // 生涯形状（选秀→巅峰→退役）
+}
+</pre>
+
+<h3>16.2 名人堂</h3>
+<ul>
+  <li>退役化身自动入选名人堂</li>
+  <li>展示生涯数据、荣誉、赛季回顾</li>
+  <li>最有分量者留退役号码（悬挂球馆）</li>
+</ul>
+
+<h3>16.3 俱乐部历史页</h3>
+<ul>
+  <li>保存历年赛季名次、荣誉、阵容</li>
+  <li>赛季回顾动态（"AROUND THE LEAGUE"式每周更新）</li>
+</ul>
+
+<!-- ===================== 17. 每日登录奖励 ===================== -->
+<h2 id="daily">17. 每日登录奖励 + 注册即得化身</h2>
+
+<h3>17.1 每日惊喜（学 BasketPulse）</h3>
+<table>
+  <tr><th>奖励类型</th><th>概率</th><th>说明</th></tr>
+  <tr><td>训练点</td><td>30%</td><td>额外训练加成</td></tr>
+  <tr><td>球探报告</td><td>20%</td><td>免费球员分析</td></tr>
+  <tr><td>赞助谈判次数</td><td>15%</td><td>额外谈判机会</td></tr>
+  <tr><td>化身经验</td><td>15%</td><td>化身成长加速</td></tr>
+  <tr><td>游戏资金</td><td>10%</td><td>小额资金奖励</td></tr>
+  <tr><td>选秀点数</td><td>5%</td><td>选秀顺位提升</td></tr>
+  <tr><td>球探折扣</td><td>5%</td><td>下次球探费用减半</td></tr>
+</table>
+<div class="alert alert-green">
+开发成本 ≈ 1 张配置表 + 1 个弹窗。是 DAU 最便宜的钩子。
+</div>
+
+<h3>17.2 注册即得化身</h3>
+<ul>
+  <li>注册流程第一步：创建化身（身高/体重/国籍/性格 + 能力点分配）</li>
+  <li>化身加入玩家球队，16 岁、潜力带雾</li>
+  <li>化身是玩家在游戏世界中的"人"</li>
+  <li>比 BasketPulse 的"命名权"更强，是注册转化点</li>
+</ul>
+
+<!-- ===================== 18. 联邦治理 ===================== -->
+<h2 id="governance">18. 联邦治理 + 民选国家队（UGC 路线）</h2>
+
+<blockquote>
+学 BasketPulse：国家联邦由玩家自治，国家队由社区选出的玩家执教。开发成本接近零，社区粘性极高——比 HWO 计划用系统模拟的 11 种职业划算得多。
+</blockquote>
+
+<h3>18.1 11 职业收缩方案</h3>
+<table>
+  <tr><th>保留（有 Staff 承接）</th><th>转 UGC（联邦治理）</th></tr>
+  <tr>
+    <td>
+      <ul>
+        <li>球探 scout</li>
+        <li>助教 asst_coach</li>
+        <li>主帅 head_coach</li>
+        <li>训练师 trainer</li>
+        <li>经纪人 agent</li>
+      </ul>
+    </td>
+    <td>
+      <ul>
+        <li>记者 → 社区新闻撰写</li>
+        <li>解说员 → 社区直播解说</li>
+        <li>商人 → 联邦赞助商管理</li>
+        <li>球馆运营 → 联邦活动策划</li>
+        <li>仲裁人 → 联邦纠纷裁决</li>
+        <li>工会代表 → 联邦劳资谈判</li>
+      </ul>
+    </td>
+  </tr>
+</table>
+
+<h3>18.2 联邦结构</h3>
+<pre>
+Federation {
+  countryId    String   FK → Country
+  members      Json     // 联邦成员（玩家 ID 列表）
+  president    String?  // 联邦主席（玩家选举）
+  nationalCoach String?  // 国家队教练（玩家选举）
+  ageGroups    Json     // [Men, U21, U18, U16]
+  history      Json     // 历届荣誉
+}
+</pre>
+<ul>
+  <li>每国一个联邦，玩家参与联邦活动可为国家社区贡献</li>
+  <li>国家队 4 个年龄组，由社区选出的玩家执教</li>
+  <li>争夺世界冠军（每赛季一次国际赛）</li>
+  <li>赛后有新闻发布会（社区产出）</li>
+</ul>
+
+<!-- ===================== 19. 球员档案页 ===================== -->
+<h2 id="profile">19. 球员档案页 + 全局可点击</h2>
+
+<h3>19.1 PlayerProfilePage 结构</h3>
+<pre>
+/player/:id
+├── 头部：姓名、号码、位置、身高、体重、年龄、国籍、合同
+├── 属性面板（fog：非本队球员显示区间）
+│   ├── 27 项固定属性（雷达图）
+│   ├── 状态属性（疲劳/健康/士气/手感）
+│   └── OVR 分档
+├── 性格标签 + 简介
+├── 家庭背景（来源、成员）
+├── 人际关系（好友、对手、导师）
+├── 生涯数据（历年常规赛/季后赛）
+├── 荣誉墙
+├── 合同历史
+└── Fame / 媒体动态
+</pre>
+
+<h3>19.2 EntityLink 全局可点击</h3>
+<pre>
+&lt;EntityLink type="player|team|staff|agent|country" id={id}&gt;
+  {displayName}
+&lt;/EntityLink&gt;
+</pre>
+<ul>
+  <li>所有页面中的队名/球员名/职员名替换为 EntityLink</li>
+  <li>桌面端：新页面或模态框；移动端：抽屉式弹出</li>
+  <li>右键/长按预览卡片（悬浮显示摘要）</li>
+</ul>
+
+<!-- ===================== 20. 商业化红线 ===================== -->
+<h2 id="commerce">20. 商业化红线</h2>
+
+<div class="alert alert-red">
+<strong>判断标准一句话：只卖效率与外观，不卖结果与信息优势。</strong>
+</div>
+
+<h3>20.1 允许卖</h3>
+<table>
+  <tr><th>类别</th><th>具体</th></tr>
+  <tr><td>外观</td><td>球衣 / 队徽 / 球馆皮肤</td></tr>
+  <tr><td>效率</td><td>并行球探槽位、批量操作、数据导出</td></tr>
+  <tr><td>信息展示</td><td>赛程历史、进阶数据面板（不卖去雾）</td></tr>
+  <tr><td>第二支管理球队席位</td><td>多队管理</td></tr>
+</table>
+
+<h3>20.2 绝对不卖（三条红线）</h3>
+<table>
+  <tr><th>红线</th><th>说明</th></tr>
+  <tr><td>1</td><td>任何影响球员数值、成长速度、伤病概率的道具</td></tr>
+  <tr><td>2</td><td>禁止出售任何「去雾 / 精确属性」类道具——RimAttack 的 VIP 正好踩在这条线上</td></tr>
+  <tr><td>3</td><td>不影响匹配与赛程公平的加速道具（不能买「多打一场」）</td></tr>
+</table>
+
+<!-- ===================== 21. 公平规则 ===================== -->
+<h2 id="fairplay">21. 公平规则</h2>
+
+<blockquote>
+学 BasketPulse：公平靠规则不靠系统。一人一队、禁 VPN、关联 IP 球队禁止任何往来。HWO 一旦开放交易，这套规则必须同步上线。
+</blockquote>
+
+<table>
+  <tr><th>规则</th><th>说明</th></tr>
+  <tr><td>一人一队</td><td>每个真实玩家只能管理一支球队</td></tr>
+  <tr><td>禁 VPN</td><td>禁止使用 VPN 创建多账号</td></tr>
+  <tr><td>关联队禁止往来</td><td>同 IP / 关联账号的球队禁止交易、租借、故意输球</td></tr>
+  <tr><td>帮助他人仅限</td><td>转账游戏内货币 + 提供咨询</td></tr>
+  <tr><td>违规处罚</td><td>警告 → 交易冻结 → 封号</td></tr>
+</table>
+
+<!-- ===================== 22. 冷启动策略 ===================== -->
+<h2 id="coldstart">22. 冷启动策略</h2>
+
+<h3>22.1 三条风险对冲</h3>
+<table>
+  <tr><th>风险</th><th>对冲措施</th></tr>
+  <tr><td>玩家密度不足 → 每日一战变空赛</td><td>AI 填充队不少于总席位 60%；联赛规模随活跃玩家数自动收缩</td></tr>
+  <tr><td>前期空洞</td><td>不学 BP 把赞助/薪资/青训锁在高等级；前 2 赛季给满核心操作项</td></tr>
+  <tr><td>工期</td><td>P0 与 P1 是生死线，其余可迭代</td></tr>
+</table>
+
+<h3>22.2 AI 填充策略</h3>
+<ul>
+  <li>冷启动每国 L1 + L2 + L3 各开 1 组（36 队/国）</li>
+  <li>真实玩家不足 40% 的组，AI 填充至 12 队</li>
+  <li>AI 球队有合理战术、轮换、交易行为</li>
+  <li>随真实玩家增长，AI 球队逐步被替换</li>
+  <li>AI 比例 > 70% 持续 3 赛季 → 自动合并组</li>
+</ul>
+
+<!-- ===================== 23. 修订路线图 ===================== -->
+<h2 id="roadmap">23. 修订路线图</h2>
+
+<div class="roadmap-step">
+  <span class="phase">P0a — 国家化迁移</span>
+  <span class="priority tag tag-red">最高</span>
+  <ul>
+    <li>Country 表 + Team.countryId</li>
+    <li>World 表迁移：每个 world → 一个 country</li>
+    <li>动态联赛规模（L3 动态分组）</li>
+    <li>玩家资产归属规则</li>
+  </ul>
+</div>
+
+<div class="roadmap-step">
+  <span class="phase">P0b — 联赛与赛程</span>
+  <span class="priority tag tag-red">最高</span>
+  <ul>
+    <li>63 天赛季日历（统一口径）</li>
+    <li>双季后赛（争冠组 + 保级组）</li>
+    <li>升降级参数化（默认规则 + 各国覆盖）</li>
+    <li>每日结算时点固定并公开</li>
+  </ul>
+</div>
+
+<div class="roadmap-step">
+  <span class="phase">P0c — 球员与财政</span>
+  <span class="priority tag tag-red">最高</span>
+  <ul>
+    <li>Player 表扩展属性（身高/体重/国籍/性格/精神/隐藏/状态）</li>
+    <li>家庭背景随机生成（世界生成时填充 PlayerFamily）</li>
+    <li>财政数据模型（收入/支出/工资帽结算引擎）</li>
+    <li>商业化边界写入文档</li>
+  </ul>
+</div>
+
+<div class="roadmap-step">
+  <span class="phase">P1 — 人物信息体系 + 留存钩子</span>
+  <span class="priority tag tag-orange">高</span>
+  <ul>
+    <li>PlayerProfilePage 球员档案详情页</li>
+    <li>EntityLink 全局可点击组件 + 全页面替换</li>
+    <li>CorePlayersPage 改为化身列表</li>
+    <li><strong>fog 全链路接入前端</strong>（非本队球员显示区间）</li>
+    <li>Fame / 队史 / 名人堂 / 退役号码</li>
+    <li>每日登录奖励（1 张配置表 + 1 个弹窗）</li>
+    <li>注册即得化身（创建流程第一步）</li>
+  </ul>
+</div>
+
+<div class="roadmap-step">
+  <span class="phase">P2 — 职员 + 选秀完善 + 交易完善</span>
+  <span class="priority tag tag-orange">高</span>
+  <ul>
+    <li>Staff 表 + CRUD + 雇佣/解雇</li>
+    <li>教练/训练师/队医效果接入训练与比赛模拟</li>
+    <li>选秀补：选秀点累积 + 试训 + 流言中心</li>
+    <li>交易补：AI 兜底交易方 + 公平规则校验</li>
+    <li>传承机制（Succession）：化身退役 → 候选比较 → 名人堂</li>
+  </ul>
+</div>
+
+<div class="roadmap-step">
+  <span class="phase">P3 — 经纪人系统</span>
+  <span class="priority tag tag-blue">中</span>
+  <ul>
+    <li>Agent + AgentContract 表</li>
+    <li>球员自动分配经纪人</li>
+    <li>合同谈判接入经纪人要价 + 市场特质</li>
+    <li>玩家 agent 职业招揽客户</li>
+  </ul>
+</div>
+
+<div class="roadmap-step">
+  <span class="phase">P4 — 第三身份（收缩至 5 + UGC）</span>
+  <span class="priority tag tag-blue">中</span>
+  <ul>
+    <li>5 个有 Staff 承接的职业玩法闭环（球探/助教/主帅/训练师/经纪人）</li>
+    <li>身份 → Staff 岗位雇佣打通</li>
+    <li>6 个 UGC 职业 → 联邦治理 + 民选国家队教练</li>
+  </ul>
+</div>
+
+<div class="roadmap-step">
+  <span class="phase">P5 — 化身创建扩充</span>
+  <span class="priority tag tag-blue">中</span>
+  <ul>
+    <li>创建页：身高/体重/国籍/性格</li>
+    <li>能力点分配（17 项基础 30 锁死 + 300 点自由分配）</li>
+    <li>性格 → 属性倾向生效</li>
+  </ul>
+</div>
+
+<div class="roadmap-step">
+  <span class="phase">P6 — 跨国 World League</span>
+  <span class="priority tag tag-gray">低</span>
+  <ul>
+    <li>金字塔分组替代一次性 32 队杯赛</li>
+    <li>每档 16 队 × N 组，与国内联赛并行</li>
+    <li>长期承载量远高于一次性杯赛</li>
+  </ul>
+</div>
+
+<!-- ===================== 24. 验证指标 ===================== -->
+<h2 id="metrics">24. 验证指标</h2>
+
+<h3>24.1 上线后盯的四个数</h3>
+<table>
+  <tr><th>指标</th><th>目标</th><th>说明</th></tr>
+  <tr><td>次日留存</td><td>—</td><td>基准留存指标</td></tr>
+  <tr><td>7 日留存</td><td>—</td><td>周留存</td></tr>
+  <tr><td>30 日留存</td><td>—</td><td>月留存</td></tr>
+  <tr><td>每日登录率</td><td>> 50%</td><td>DAU/MAU</td></tr>
+  <tr><td>赛季完成率</td><td>> 60%</td><td>开赛到赛季末的留存</td></tr>
+  <tr><td>每队日均决策次数</td><td>≥ 3 次</td><td>战术/训练/交易/球探</td></tr>
+</table>
+
+<h3>24.2 生态健康度先行指标</h3>
+<table>
+  <tr><th>指标</th><th>健康</th><th>不健康</th></tr>
+  <tr><td>市场成交率</td><td>> 20%</td><td>< 20% → 玩家密度不够</td></tr>
+  <tr><td>AI 填充比例</td><td>< 70%</td><td>> 70% → 真实生态没起来</td></tr>
+</table>
+
+<hr>
+<div style="text-align:center; color:#999; font-size:13px; margin-top:40px;">
+  HWO 篮球经理游戏 · 完整方案 v2.0（竞品对标版） · 2026-10-02<br>
+  融合输入：BasketPulse 测评报告 ｜ RimAttack 测评报告 ｜ HWO 策划建议书（三款对标版） ｜ BasketPulse 新手攻略
+</div>
+
+</body>
+</html>
