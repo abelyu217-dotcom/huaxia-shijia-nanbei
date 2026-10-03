@@ -1,13 +1,13 @@
 /**
  * 页面 1：球队阵容（Roster）
  * - 展示全部 6 支球队，点击分配为主队 / 客队
- * - 选中球队后展示球员卡片（位置、名字、OVR 等级配色、关键能力值）
+ * - 选中球队后展示球员技能表（basketpulse 风格：姓名/位置/OVR/各项能力值，颜色编码）
  */
 
 import { useState } from "react";
 import type { TeamRoster, TeamDetail } from "../types";
 import { avgOvr, ovrVal } from "../lib";
-import { PlayerCard } from "./PlayerCard";
+import { PlayerSkillsTable } from "./PlayerSkillsTable";
 
 interface RosterProps {
   teams: TeamRoster[] | null;
@@ -165,11 +165,7 @@ function RosterPanel({ side, name, team }: RosterPanelProps) {
         </span>
       </div>
       <div className="roster-panel-body">
-        <div className="player-grid">
-          {team.players.map((p) => (
-            <PlayerCard key={p.id} player={p} />
-          ))}
-        </div>
+        <PlayerSkillsTable players={team.players} side={side} />
       </div>
     </div>
   );

@@ -782,6 +782,291 @@ button {
   padding: 24px !important;
 }
 
+/* ───────────────── basketpulse 风格技能表 ───────────────── */
+
+.skills-table-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skills-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.skills-search {
+  flex: 1 1 180px;
+  min-width: 160px;
+  max-width: 240px;
+  padding: 7px 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.skills-search:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.skills-search::placeholder {
+  color: var(--text-dim);
+}
+
+.skills-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* basketpulse 风格技能表：表头按列对齐，能力单元格数字+颜色编码 */
+.skills-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  table-layout: fixed;
+}
+
+.skills-table th {
+  text-align: center;
+  padding: 9px 8px;
+  background: var(--panel-2);
+  color: var(--text-muted);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+
+.skills-table th.sortable {
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.skills-table th.sortable:hover,
+.skills-table th.sortable.is-active {
+  color: var(--accent);
+  background: rgba(255, 107, 53, 0.08);
+}
+
+.skills-table th:first-child,
+.skills-table td:first-child {
+  text-align: left;
+  width: 22%;
+}
+
+.skills-table th:nth-child(2),
+.skills-table td:nth-child(2) {
+  width: 8%;
+}
+
+.skills-table th:nth-child(3),
+.skills-table td:nth-child(3) {
+  width: 8%;
+}
+
+.skills-table th.skill-col,
+.skills-table td.cell-skill {
+  width: auto;
+  text-align: center;
+}
+
+.skills-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text);
+  text-align: center;
+  vertical-align: middle;
+}
+
+.skills-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.skills-table .cell-name {
+  text-align: left;
+  font-weight: 600;
+  padding-left: 10px;
+}
+
+.skills-table .player-tags {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.skills-table .player-name {
+  color: var(--text);
+}
+
+.skills-table .pos-label {
+  margin-left: 6px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.skills-table .cell-ovr {
+  text-align: center;
+}
+
+.skills-table .ovr-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 5px;
+  font-weight: 800;
+  font-size: 13px;
+  color: #1a0d05;
+  background: var(--gray-tier);
+}
+
+.skills-table .tier-row.tier-gold .ovr-pill { background: var(--gold); }
+.skills-table .tier-row.tier-purple .ovr-pill { background: var(--purple); color: #fff; }
+.skills-table .tier-row.tier-blue .ovr-pill { background: var(--blue-tier); color: #fff; }
+
+.skills-table .fog-range {
+  margin-left: 4px;
+  font-size: 10px;
+  color: var(--warn);
+  font-weight: 700;
+}
+
+.skills-table .fog-badge {
+  margin-left: 4px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(245, 158, 11, 0.18);
+  color: var(--warn);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* 能力值单元格颜色编码（参考 basketpulse 的红黄绿渐变） */
+.skill-cell {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.skill-cell .skill-fog {
+  font-size: 9px;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.skill-cell.tier-s {
+  background: rgba(34, 197, 94, 0.28);
+  color: #4ade80;
+  box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.5);
+}
+.skill-cell.tier-a {
+  background: rgba(74, 222, 128, 0.18);
+  color: #86efac;
+  box-shadow: inset 0 0 0 1px rgba(74, 222, 128, 0.35);
+}
+.skill-cell.tier-b {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fcd34d;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.35);
+}
+.skill-cell.tier-c {
+  background: rgba(251, 113, 50, 0.18);
+  color: #fb923c;
+  box-shadow: inset 0 0 0 1px rgba(251, 113, 50, 0.32);
+}
+.skill-cell.tier-d {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+  box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.32);
+}
+
+.skill-cell.is-fogged {
+  opacity: 0.9;
+}
+
+/* 分页控件 */
+.skills-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding-top: 6px;
+}
+
+.skills-pagination .page-btn {
+  padding: 6px 14px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.skills-pagination .page-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.skills-pagination .page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.skills-pagination .page-info {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.skills-side-hint {
+  display: none;
+}
+
+/* 单面板时表格更宽 */
+.roster-panels.single .roster-panel-body {
+  padding: 12px;
+}
+
+@media (max-width: 720px) {
+  .skills-table th,
+  .skills-table td {
+    padding: 6px 3px;
+    font-size: 11px;
+  }
+  .skill-cell {
+    min-width: 24px;
+    padding: 2px 4px;
+    font-size: 11px;
+  }
+  .skills-search {
+    max-width: none;
+  }
+}
+
 /* ───────────────── 球员卡片 ───────────────── */
 
 .player-card {
