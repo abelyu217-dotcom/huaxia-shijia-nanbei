@@ -52,6 +52,11 @@ import type {
   SimConfigVersion,
   Facility,
   FacilityType,
+  TrainingPlanView,
+  TrainingLogEntry,
+  DailyTrainingSummary,
+  StaffView,
+  StaffJob,
 } from "./types";
 
 // ── Token 管理 ──
@@ -733,6 +738,94 @@ export function fetchTeamPlayerStats(teamId: string): Promise<PlayerSeasonStats[
 export function fetchTeamStatsSummary(teamId: string): Promise<TeamStatsSummary> {
   return getJson<TeamStatsSummary>(
     `/api/stats/team/${encodeURIComponent(teamId)}/summary`,
+  );
+}
+
+// ── v0.6: 训练系统 ──
+
+/** GET /api/training/:teamId/plan */
+export function fetchTrainingPlan(teamId: string): Promise<TrainingPlanView> {
+  return getJson<TrainingPlanView>(
+    `/api/training/${encodeURIComponent(teamId)}/plan`,
+  );
+}
+
+/** PUT /api/training/:teamId/plan */
+export function putTrainingPlan(
+  teamId: string,
+  body: { focusByPosition?: Record<string, string>; teamFocus?: Record<string, number> },
+): Promise<TrainingPlanView> {
+  return putJson<TrainingPlanView>(
+    `/api/training/${encodeURIComponent(teamId)}/plan`,
+    body,
+  );
+}
+
+/** GET /api/training/:teamId/logs */
+export function fetchTrainingLogs(
+  teamId: string,
+  opts: { day?: number; from?: number; to?: number; playerId?: string; limit?: number } = {},
+): Promise<TrainingLogEntry[]> {
+  const params = new URLSearchParams();
+  if (opts.day !== undefined) params.set("day", String(opts.day));
+  if (opts.from !== undefined) params.set("from", String(opts.from));
+  if (opts.to !== undefined) params.set("to", String(opts.to));
+  if (opts.playerId) params.set("playerId", opts.playerId);
+  if (opts.limit !== undefined) params.set("limit", String(opts.limit));
+  const q = params.toString();
+  return getJson<TrainingLogEntry[]>(
+    `/api/training/${encodeURIComponent(teamId)}/logs${q ? `?${q}` : ""}`,
+  );
+}
+
+/** GET /api/training/:teamId/today */
+export function fetchTrainingToday(
+  teamId: string,
+  opts: { seasonId?: string; day?: number } = {},
+): Promise<DailyTrainingSummary> {
+  const params = new URLSearchParams();
+  if (opts.seasonId) params.set("seasonId", opts.seasonId);
+  if (opts.day !== undefined) params.set("day", String(opts.day));
+  const q = params.toString();
+  return getJson<DailyTrainingSummary>(
+    `/api/training/${encodeURIComponent(teamId)}/today${q ? `?${q}` : ""}`,
+  );
+}
+
+// ── v0.6: 职员（Staff） ──
+
+/** GET /api/staff/team/:teamId */
+export function fetchTeamStaff(teamId: string): Promise<StaffView[]> {
+  return getJson<StaffView[]>(`/api/staff/team/${encodeURIComponent(teamId)}`);
+}
+
+/** GET /api/staff/pool?job=...&limit=... */
+export function fetchStaffPool(
+  opts: { job?: StaffJob; limit?: number } = {},
+): Promise<StaffView[]> {
+  const params = new URLSearchParams();
+  if (opts.job) params.set("job", opts.job);
+  if (opts.limit !== undefined) params.set("limit", String(opts.limit));
+  const q = params.toString();
+  return getJson<StaffView[]>(`/api/staff/pool${q ? `?${q}` : ""}`);
+}
+
+/** POST /api/staff/hire */
+export function postStaffHire(
+  professionalId: string,
+  teamId: string,
+): Promise<StaffView> {
+  return postJson<StaffView>("/api/staff/hire", { professionalId, teamId });
+}
+
+/** POST /api/staff/:id/fire */
+export function postStaffFire(
+  professionalId: string,
+  teamId: string,
+): Promise<{ ok: true }> {
+  return postJson<{ ok: true }>(
+    `/api/staff/${encodeURIComponent(professionalId)}/fire`,
+    { teamId },
   );
 }
 

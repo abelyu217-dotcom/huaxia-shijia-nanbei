@@ -12,6 +12,7 @@ import { SimService } from "../sim/sim.service.js";
 import { SeasonService } from "./season.service.js";
 import { AiManagerService } from "../ai/ai-manager.service.js";
 import { FinanceService } from "../finance/finance.service.js";
+import { TrainingService } from "../training/training.service.js";
 
 /**
  * 每日结算时刻（北京时间，小时 0-23）。
@@ -51,6 +52,8 @@ export class ScheduleService implements OnModuleInit {
     private readonly aiManager: AiManagerService,
     @Inject(forwardRef(() => FinanceService))
     private readonly finance: FinanceService,
+    @Inject(forwardRef(() => TrainingService))
+    private readonly training: TrainingService,
   ) {}
 
   /**
@@ -271,6 +274,15 @@ export class ScheduleService implements OnModuleInit {
     } catch (e) {
       this.logger.warn(
         `财务结算失败（不影响比赛）：${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+
+    // 5. v0.6 训练结算：每支球队所有未退役球员按计划小幅成长，写入 TrainingLog
+    try {
+      await this.training.runDailyAllTeams(seasonId, currentDay);
+    } catch (e) {
+      this.logger.warn(
+        `训练结算失败（不影响比赛）：${e instanceof Error ? e.message : String(e)}`,
       );
     }
 

@@ -650,6 +650,72 @@ export interface TeamStatsSummary {
   opponentTotals: TeamTotals;
 }
 
+// ── v0.6: 训练计划 + 训练日志 ──
+
+export interface TrainingPlanView {
+  teamId: string;
+  focusByPosition: Record<string, string>;
+  teamFocus: Record<string, number>;
+  updatedAt: string;
+}
+
+export interface TrainingLogEntry {
+  id: string;
+  playerId: string;
+  playerName: string;
+  position: string;
+  abilityKey: string;
+  beforeVal: number;
+  afterVal: number;
+  gain: number;
+  source: string;
+  day: number;
+  seasonId: string;
+}
+
+export interface DailyTrainingSummary {
+  day: number;
+  seasonId: string;
+  totalGains: number;
+  playersTrained: number;
+  topGains: Array<{
+    playerId: string;
+    playerName: string;
+    ability: string;
+    gain: number;
+  }>;
+  facilityMultiplier: number;
+  staffBonus: number;
+}
+
+// ── v0.6: 职员（Staff） ──
+
+export type StaffJob =
+  | "head_coach"
+  | "asst_coach"
+  | "trainer"
+  | "scout"
+  | "agent";
+
+export interface StaffView {
+  id: string;
+  userId: string | null;
+  line: string;
+  job: StaffJob;
+  jobLabel: string;
+  level: number;
+  proReputation: number;
+  experience: number;
+  employmentStatus: string;
+  employerTeamId: string | null;
+  signOnCost: number;
+  salaryPerDay: number;
+  trainingBonus: number;
+  scoutBonus: number;
+  isPlayer: boolean;
+  nickname?: string;
+}
+
 export interface SalaryStatus {
   teamId: string;
   totalSalary: number;

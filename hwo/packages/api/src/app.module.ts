@@ -31,6 +31,8 @@ import { DynastyModule } from "./dynasty/dynasty.module.js";
 import { RelationshipModule } from "./relationship/relationship.module.js";
 import { StatsModule } from "./stats/stats.module.js";
 import { FinanceModule } from "./finance/finance.module.js";
+import { StaffModule } from "./staff/staff.module.js";
+import { TrainingModule } from "./training/training.module.js";
 
 @Module({
   imports: [
@@ -62,6 +64,8 @@ import { FinanceModule } from "./finance/finance.module.js";
     RelationshipModule,
     StatsModule,
     FinanceModule,
+    StaffModule,
+    TrainingModule,
   ],
 })
 export class AppModule {}

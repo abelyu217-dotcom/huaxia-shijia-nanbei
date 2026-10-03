@@ -25,6 +25,8 @@ import { SchedulePage } from "./pages/SchedulePage";
 import { TeamPage } from "./pages/TeamPage";
 import { TradePage } from "./pages/TradePage";
 import { CareerPage } from "./pages/CareerPage";
+import { TrainingPage } from "./pages/TrainingPage";
+import { StaffPage } from "./pages/StaffPage";
 import { AcademyPage } from "./pages/AcademyPage";
 import { DraftPage } from "./pages/DraftPage";
 import { MatchSimView } from "./views/MatchSimView";
@@ -58,6 +60,8 @@ type View =
   | { kind: "team"; teamId: string }
   | { kind: "trade" }
   | { kind: "career" }
+  | { kind: "training" }
+  | { kind: "staff" }
   | { kind: "academy" }
   | { kind: "draft" }
   | { kind: "sim" }
@@ -90,6 +94,8 @@ type NavKind =
   | "team"
   | "trade"
   | "career"
+  | "training"
+  | "staff"
   | "academy"
   | "draft"
   | "sim"
@@ -139,7 +145,9 @@ const NAV_GROUPS: { group: string; items: { id: NavKind; label: string }[] }[] =
     items: [
       { id: "team", label: "球员名单" },
       { id: "corePlayers", label: "核心球员" },
-      { id: "career", label: "训练中心" },
+      { id: "career", label: "球员生涯" },
+      { id: "training", label: "训练中心" },
+      { id: "staff", label: "职员中心" },
       { id: "scout", label: "人才中心" },
       { id: "trade", label: "交易" },
       { id: "academy", label: "发展中心" },
@@ -173,6 +181,8 @@ function navToView(kind: NavKind, teamId?: string): View {
   if (kind === "team") return { kind: "team", teamId: teamId ?? "" };
   if (kind === "trade") return { kind: "trade" };
   if (kind === "career") return { kind: "career" };
+  if (kind === "training") return { kind: "training" };
+  if (kind === "staff") return { kind: "staff" };
   if (kind === "academy") return { kind: "academy" };
   if (kind === "draft") return { kind: "draft" };
   if (kind === "shop") return { kind: "shop" };
@@ -360,6 +370,12 @@ function AppInner() {
           )}
           {view.kind === "career" && myTeamId && (
             <CareerPage teamId={myTeamId} />
+          )}
+          {view.kind === "training" && myTeamId && (
+            <TrainingPage teamId={myTeamId} />
+          )}
+          {view.kind === "staff" && myTeamId && (
+            <StaffPage teamId={myTeamId} />
           )}
           {view.kind === "academy" && myTeamId && (
             <AcademyPage teamId={myTeamId} />
