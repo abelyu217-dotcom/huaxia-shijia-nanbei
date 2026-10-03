@@ -8,7 +8,7 @@
  */
 
 import { Body, Controller, ForbiddenException, Get, NotFoundException, Param, Put, Request, UseGuards } from "@nestjs/common";
-import { overallRating, type Player, type Team, type Abilities, type FogValue } from "@hwo/shared";
+import { overallRating, type Player, type Team, type Abilities, type FogValue, type PlayerProfile } from "@hwo/shared";
 import { TeamService } from "./team.service.js";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard.js";
 import { PrismaService } from "../prisma/prisma.service.js";
@@ -49,6 +49,8 @@ interface PlayerDetail {
   peak?: FogValue | number | null;
   /** 是否已被本队球探探查过 */
   scouted: boolean;
+  /** 38 项详细档案（仅本队球员可见） */
+  profile?: PlayerProfile;
 }
 
 /** 详情视图：完整 Team，但 players 带 ovr */
@@ -145,6 +147,7 @@ export class TeamController {
           isRookie: p.isRookie,
           peak: null,
           scouted: true,
+          profile: p.profile,
         });
       } else {
         // 对手球员：应用 fog

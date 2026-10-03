@@ -50,6 +50,35 @@ const STATUS_STYLE: Record<string, { color: string; bg: string; label: string }>
 
 const POS_FILTERS: ("ALL" | Position)[] = ["ALL", "PG", "SG", "SF", "PF", "C"];
 
+// 38 项档案分组（与 shared/types.ts PlayerProfile 字段一致）
+const PROFILE_GROUPS: { key: string; label: string; fields: { key: string; label: string; unit?: string }[] }[] = [
+  { key: "physical", label: "静态体测", fields: [
+    { key: "heightCm", label: "身高", unit: "cm" }, { key: "armSpanCm", label: "臂展", unit: "cm" },
+    { key: "standingReachCm", label: "摸高", unit: "cm" }, { key: "weightKg", label: "体重", unit: "kg" },
+    { key: "frame", label: "骨架" }, { key: "handLength", label: "手长" }, { key: "achilles", label: "跟腱" },
+  ]},
+  { key: "athletic", label: "运动属性", fields: [
+    { key: "speed", label: "速度" }, { key: "vertical", label: "弹跳" }, { key: "strength", label: "力量" },
+    { key: "agility", label: "敏捷" }, { key: "stamina", label: "耐力" }, { key: "lateral", label: "横移" },
+    { key: "burst", label: "爆发" }, { key: "flexibility", label: "柔韧" },
+  ]},
+  { key: "skill", label: "技术属性", fields: [
+    { key: "three", label: "三分" }, { key: "midrange", label: "中投" }, { key: "freeThrow", label: "罚球" },
+    { key: "layup", label: "上篮" }, { key: "dunk", label: "扣篮" }, { key: "passing", label: "传球" },
+    { key: "ballHandle", label: "控球" }, { key: "rebounding", label: "篮板" }, { key: "steal", label: "抢断" },
+    { key: "block", label: "盖帽" }, { key: "postUp", label: "低位" }, { key: "faceUp", label: "面框" },
+    { key: "pickRoll", label: "挡拆" }, { key: "backToBasket", label: "背身" },
+  ]},
+  { key: "mental", label: "心智属性", fields: [
+    { key: "workEthic", label: "敬业" }, { key: "pressure", label: "抗压" }, { key: "teamwork", label: "团队" },
+    { key: "leadership", label: "领导力" }, { key: "iq", label: "球商" },
+  ]},
+  { key: "hidden", label: "隐藏属性", fields: [
+    { key: "injuryProne", label: "伤病倾向" }, { key: "potential", label: "潜力" },
+    { key: "personality", label: "性格" }, { key: "loyalty", label: "忠诚" },
+  ]},
+];
+
 type SortKey = "name" | "position" | "ovr" | "salary" | "three" | "inside" | "perimeterD" | "speed";
 
 interface Props {
@@ -79,6 +108,9 @@ export function TeamPage({ teamId }: Props) {
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [playerNameDraft, setPlayerNameDraft] = useState("");
   const [playerEditError, setPlayerEditError] = useState<string | null>(null);
+
+  // 38 项详细档案展开
+  const [expandedProfileId, setExpandedProfileId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -479,8 +511,58 @@ export function TeamPage({ teamId }: Props) {
                           </button>
                         </td>
                       )}
+                      {isMine && p.profile && (
+                        <td>
+                          <button
+                            type="button"
+                            className="btn btn-sm"
+                            onClick={() =>
+                              setExpandedProfileId(expandedProfileId === p.id ? null : p.id)
+                            }
+                          >
+                            {expandedProfileId === p.id ? "收起 ▲" : "档案 ▼"}
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
+                  {isMine && expandedProfileId && (() => {
+                    const p = team?.players.find((x) => x.id === expandedProfileId);
+                    if (!p?.profile) return null;
+                    const prof = p.profile as unknown as Record<string, Record<string, number | string>>;
+                    return (
+                      <tr key={`profile-${expandedProfileId}`} className="profile-expand-row">
+                        <td colSpan={10} className="profile-expand-cell">
+                          <div className="profile-groups">
+                            {PROFILE_GROUPS.map((g) => (
+                              <div className="profile-group" key={g.key}>
+                                <div className="profile-group-label">{g.label}</div>
+                                <div className="profile-field-grid">
+                                  {g.fields.map((f) => {
+                                    const v = prof[g.key]?.[f.key];
+                                    const display =
+                                      typeof v === "number"
+                                        ? g.key === "physical"
+                                          ? `${v}${f.unit ? " " + f.unit : ""}`
+                                          : String(Math.round(v))
+                                        : typeof v === "string"
+                                        ? v
+                                        : "—";
+                                    return (
+                                      <div className="profile-field" key={f.key} title={f.label}>
+                                        <span className="pf-label">{f.label}</span>
+                                        <span className="pf-val">{display}</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })()}
                   {visiblePlayers.length === 0 && (
                     <tr><td colSpan={9} className="empty-row">该位置暂无球员</td></tr>
                   )}

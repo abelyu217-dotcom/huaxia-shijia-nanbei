@@ -18,7 +18,7 @@
  *   POST /api/season/generate      → { generated: number }（需 JWT）
  */
 
-import type { Position, Abilities, MatchResult, FogValue } from "@hwo/shared";
+import type { Position, Abilities, MatchResult, FogValue, PlayerProfile } from "@hwo/shared";
 
 /** 统一从 ./types 导出 shared 中与 API 契约一致的类型，便于组件单一来源导入。 */
 export type {
@@ -27,6 +27,7 @@ export type {
   BoxScore,
   MatchResult,
   FogValue,
+  PlayerProfile,
 } from "@hwo/shared";
 
 /** ScoutReport 直接从 shared 导出（球探报告） */
@@ -142,6 +143,8 @@ export interface PlayerDetail {
   scouted: boolean;
   /** 特质：本队可见全部，对手仅可见已探查的 traitHints */
   traits?: string[];
+  /** P0-①：38 项档案层（仅本队球员可见，存量球员可能为 undefined） */
+  profile?: PlayerProfile;
 }
 
 export interface TeamDetail {

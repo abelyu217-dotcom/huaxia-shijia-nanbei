@@ -24,4 +24,8 @@ async function bootstrap(): Promise<void> {
   console.log("[@hwo/api] DATABASE_URL set:", !!process.env.DATABASE_URL);
 }
 
-void bootstrap();
+void bootstrap().catch((e) => {
+  console.error("[BOOTSTRAP ERROR]", JSON.stringify(e, Object.getOwnPropertyNames(e ?? {}), 2));
+  console.error(e);
+  process.exit(1);
+});

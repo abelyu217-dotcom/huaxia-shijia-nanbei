@@ -13,6 +13,7 @@ import {
   type Abilities,
   type Lineup,
   type Player,
+  type PlayerProfile,
   type TacticModSet,
   type Team,
   getPlayerStatus,
@@ -68,7 +69,7 @@ export class TeamService {
       chemistry: number;
       captainId?: string | null;
       userId?: string | null;
-      players: { id: string; name: string; position: string; abilities: unknown; traits: unknown; salary?: number | null; fatigue?: number; age?: number }[];
+      players: { id: string; name: string; position: string; abilities: unknown; traits: unknown; salary?: number | null; fatigue?: number; age?: number; profile?: unknown }[];
       lineup: { starters: unknown; minutes: unknown } | null;
       tactic: { modSet: unknown } | null;
     },
@@ -90,6 +91,8 @@ export class TeamService {
         isCaptain: p.id === captainId,
         // 新秀标记（#20）：年龄 ≤ 22 视为新秀
         isRookie: (p.age ?? 25) <= 22,
+        // P0-①：38 项档案层（可能为 null，存量球员回填后才有值）
+        profile: (p.profile as PlayerProfile | null) ?? undefined,
       };
     });
 

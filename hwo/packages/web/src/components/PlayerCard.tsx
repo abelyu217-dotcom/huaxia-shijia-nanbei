@@ -3,8 +3,85 @@
  * 支持 The Fog 迷雾系统：对手球员的能力显示为估值 ± 范围。
  */
 
-import type { PlayerDetail, FogValue, Abilities } from "../types";
+import { useState } from "react";
+import type { PlayerDetail, FogValue, Abilities, PlayerProfile } from "../types";
 import { KEY_ABILITIES, POSITION_LABEL, ovrTier } from "../lib";
+
+// 38 项档案分组展示配置（字段名须与 shared/types.ts 的 PlayerProfile 一致）
+const PROFILE_GROUPS: {
+  key: keyof PlayerProfile;
+  label: string;
+  fields: { key: string; label: string; unit?: string }[];
+}[] = [
+  {
+    key: "physical",
+    label: "静态体测",
+    fields: [
+      { key: "heightCm", label: "身高", unit: "cm" },
+      { key: "armSpanCm", label: "臂展", unit: "cm" },
+      { key: "standingReachCm", label: "站立摸高", unit: "cm" },
+      { key: "weightKg", label: "体重", unit: "kg" },
+      { key: "frame", label: "骨架" },
+      { key: "handLength", label: "手长" },
+      { key: "achilles", label: "跟腱" },
+    ],
+  },
+  {
+    key: "athletic",
+    label: "运动属性",
+    fields: [
+      { key: "speed", label: "速度" },
+      { key: "vertical", label: "弹跳" },
+      { key: "strength", label: "力量" },
+      { key: "agility", label: "敏捷" },
+      { key: "stamina", label: "耐力" },
+      { key: "lateral", label: "横移" },
+      { key: "burst", label: "爆发" },
+      { key: "flexibility", label: "柔韧" },
+    ],
+  },
+  {
+    key: "skill",
+    label: "技术属性",
+    fields: [
+      { key: "three", label: "三分" },
+      { key: "midrange", label: "中投" },
+      { key: "freeThrow", label: "罚球" },
+      { key: "layup", label: "上篮" },
+      { key: "dunk", label: "扣篮" },
+      { key: "passing", label: "传球" },
+      { key: "ballHandle", label: "控球" },
+      { key: "rebounding", label: "篮板" },
+      { key: "steal", label: "抢断" },
+      { key: "block", label: "盖帽" },
+      { key: "postUp", label: "低位" },
+      { key: "faceUp", label: "面框" },
+      { key: "pickRoll", label: "挡拆" },
+      { key: "backToBasket", label: "背身" },
+    ],
+  },
+  {
+    key: "mental",
+    label: "心智属性",
+    fields: [
+      { key: "workEthic", label: "敬业" },
+      { key: "pressure", label: "抗压" },
+      { key: "teamwork", label: "团队" },
+      { key: "leadership", label: "领导力" },
+      { key: "iq", label: "球商" },
+    ],
+  },
+  {
+    key: "hidden",
+    label: "隐藏属性",
+    fields: [
+      { key: "injuryProne", label: "伤病倾向" },
+      { key: "potential", label: "潜力" },
+      { key: "personality", label: "性格" },
+      { key: "loyalty", label: "忠诚" },
+    ],
+  },
+];
 
 interface PlayerCardProps {
   player: PlayerDetail;
@@ -20,12 +97,14 @@ function isFogged(val: number | FogValue | undefined): val is FogValue {
 }
 
 export function PlayerCard({ player, onScout, scouted }: PlayerCardProps) {
+  const [showProfile, setShowProfile] = useState(false);
   // OVR 可能为带雾估值
   const ovrFogged = typeof player.ovr === "object" && player.ovr !== null;
   const foggedOvr = ovrFogged ? (player.ovr as FogValue) : null;
   const ovrVal = foggedOvr ? foggedOvr.est : (player.ovr as number);
   const ovrRange = foggedOvr ? foggedOvr.range : 0;
   const tier = ovrTier(ovrVal);
+  const hasProfile = !!player.profile;
 
   return (
     <article className={`player-card tier-${tier}${ovrFogged ? " is-fogged" : ""}`}>
@@ -91,6 +170,53 @@ export function PlayerCard({ player, onScout, scouted }: PlayerCardProps) {
           );
         })}
       </div>
+
+      {hasProfile && (
+        <button
+          type="button"
+          className="pc-profile-toggle"
+          onClick={() => setShowProfile((v) => !v)}
+          aria-expanded={showProfile}
+        >
+          {showProfile ? "收起详细档案 ▲" : "展开详细档案 ▼"}
+        </button>
+      )}
+
+      {hasProfile && showProfile && (
+        <div className="pc-profile">
+          {PROFILE_GROUPS.map((group) => {
+            const groupData = (player.profile as unknown as Record<string, Record<string, number>>)[group.key] ?? {};
+            return (
+              <div className="pc-profile-group" key={group.key}>
+                <div className="pc-profile-group-label">{group.label}</div>
+                <div className="pc-profile-fields">
+                  {group.fields.map((f) => {
+                    const val = groupData[f.key];
+                    let display: string;
+                    if (typeof val === "number") {
+                      // 静态体测保留原始数值（cm/kg），其他 0-99 取整
+                      display = group.key === "physical" ? String(val) : String(Math.round(val));
+                    } else if (typeof val === "string") {
+                      display = val; // potential 等级 / personality 标签
+                    } else {
+                      display = "—";
+                    }
+                    return (
+                      <div className="pc-profile-field" key={f.key} title={f.label}>
+                        <span className="pc-pf-label">{f.label}</span>
+                        <span className="pc-pf-val">
+                          {display}
+                          {f.unit && typeof val === "number" ? ` ${f.unit}` : ""}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {onScout && (
         <div className="pc-actions">

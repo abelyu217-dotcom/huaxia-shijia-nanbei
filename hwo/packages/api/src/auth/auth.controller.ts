@@ -13,7 +13,7 @@ import {
   Post,
   UseGuards,
   Request,
-  InternalServerErrorException,
+  HttpException,
 } from "@nestjs/common";
 import { AuthService, type AuthResult } from "./auth.service.js";
 import { JwtAuthGuard } from "./jwt-auth.guard.js";
@@ -47,7 +47,9 @@ export class AuthController {
     try {
       return await this.authService.register(body.email, body.password, body.nickname);
     } catch (e: any) {
-      throw new InternalServerErrorException(e?.message ?? String(e));
+      // 保留 NestJS HttpException 的状态码与消息（如 ConflictException 409）
+      if (e instanceof HttpException) throw e;
+      throw e;
     }
   }
 
