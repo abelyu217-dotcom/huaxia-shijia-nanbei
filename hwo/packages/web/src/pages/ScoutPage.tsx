@@ -662,18 +662,143 @@ function FreeMarketView({
   onSalaryChange,
   onSubmit,
 }: FreeMarketViewProps) {
-  const available = prospects.filter((p) => !signedIds.has(p.id));
+  const [positionFilter, setPositionFilter] = useState<string>("all");
+  const [ageMin, setAgeMin] = useState<string>("");
+  const [ageMax, setAgeMax] = useState<string>("");
+  const [potMin, setPotMin] = useState<string>("");
+  const [potMax, setPotMax] = useState<string>("");
+  const [salaryMin, setSalaryMin] = useState<string>("");
+  const [salaryMax, setSalaryMax] = useState<string>("");
+  const [keyword, setKeyword] = useState<string>("");
+
+  const filtered = useMemo(() => {
+    return prospects
+      .filter((p) => !signedIds.has(p.id))
+      .filter((p) => {
+        if (positionFilter !== "all" && p.position !== positionFilter) return false;
+        if (ageMin && p.age < Number(ageMin)) return false;
+        if (ageMax && p.age > Number(ageMax)) return false;
+        const pot = p.potential ?? p.potentialEstimate;
+        if (potMin && pot < Number(potMin)) return false;
+        if (potMax && pot > Number(potMax)) return false;
+        if (salaryMin && p.salary < Number(salaryMin)) return false;
+        if (salaryMax && p.salary > Number(salaryMax)) return false;
+        if (keyword && !p.name.toLowerCase().includes(keyword.toLowerCase())) return false;
+        return true;
+      });
+  }, [prospects, signedIds, positionFilter, ageMin, ageMax, potMin, potMax, salaryMin, salaryMax, keyword]);
+
+  const resetFilters = () => {
+    setPositionFilter("all");
+    setAgeMin(""); setAgeMax("");
+    setPotMin(""); setPotMax("");
+    setSalaryMin(""); setSalaryMax("");
+    setKeyword("");
+  };
+
+  const hasFilters =
+    positionFilter !== "all" || ageMin || ageMax || potMin || potMax ||
+    salaryMin || salaryMax || keyword;
 
   return (
     <section className="card">
-      <h3>自由球员（{available.length}）</h3>
+      <h3>自由球员（{filtered.length}）</h3>
       <p className="muted">
         以下为当前可签约的自由球员。点击「报价」提交合同，签约成功后该球员将加入你的球队。
       </p>
+
+      {/* 筛选栏 */}
+      <div className="filter-bar">
+        <div className="filter-row">
+          <label className="muted">
+            位置
+            <select
+              value={positionFilter}
+              onChange={(e) => setPositionFilter(e.target.value)}
+            >
+              <option value="all">全部</option>
+              {Object.entries(POSITION_CN).map(([code, cn]) => (
+                <option key={code} value={code}>{cn}</option>
+              ))}
+            </select>
+          </label>
+          <label className="muted">
+            姓名
+            <input
+              type="text"
+              placeholder="搜索姓名"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+            />
+          </label>
+          <label className="muted">
+            年龄
+            <div className="range-inputs">
+              <input
+                type="number"
+                placeholder="最小"
+                value={ageMin}
+                onChange={(e) => setAgeMin(e.target.value)}
+              />
+              <span className="muted">—</span>
+              <input
+                type="number"
+                placeholder="最大"
+                value={ageMax}
+                onChange={(e) => setAgeMax(e.target.value)}
+              />
+            </div>
+          </label>
+          <label className="muted">
+            潜力
+            <div className="range-inputs">
+              <input
+                type="number"
+                placeholder="最小"
+                value={potMin}
+                onChange={(e) => setPotMin(e.target.value)}
+              />
+              <span className="muted">—</span>
+              <input
+                type="number"
+                placeholder="最大"
+                value={potMax}
+                onChange={(e) => setPotMax(e.target.value)}
+              />
+            </div>
+          </label>
+          <label className="muted">
+            薪资
+            <div className="range-inputs">
+              <input
+                type="number"
+                placeholder="最小"
+                value={salaryMin}
+                onChange={(e) => setSalaryMin(e.target.value)}
+              />
+              <span className="muted">—</span>
+              <input
+                type="number"
+                placeholder="最大"
+                value={salaryMax}
+                onChange={(e) => setSalaryMax(e.target.value)}
+              />
+            </div>
+          </label>
+          {hasFilters && (
+            <button type="button" className="btn btn-ghost btn-sm" onClick={resetFilters}>
+              重置
+            </button>
+          )}
+        </div>
+      </div>
+
       {loading ? (
         <div className="state"><span className="spinner" /> 加载自由球员…</div>
-      ) : available.length === 0 ? (
-        <div className="muted">暂无可签约的自由球员。</div>
+      ) : filtered.length === 0 ? (
+        <div className="muted">
+          {hasFilters ? "没有符合筛选条件的自由球员。" : "暂无可签约的自由球员。"}
+        </div>
       ) : (
         <div className="table-wrap">
           <table className="data-table market-table">
@@ -689,7 +814,7 @@ function FreeMarketView({
               </tr>
             </thead>
             <tbody>
-              {available.map((p) => {
+              {filtered.map((p) => {
                 const pos = POSITION_CN[p.position] ?? p.position;
                 const isSigning = signingId === p.id;
                 const { grade, color } = scoutGrade(p.potentialEstimate);
