@@ -162,6 +162,7 @@ model Team {
   trainingPlan    TrainingPlan?
   trainingLogs    TrainingLog[]
   teamNews        TeamNews[]
+  pendingSignings PendingSigning[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -948,6 +949,24 @@ model TransferMarketPhase {
   restrictedStartDay Int?
   restrictedEndDay   Int?
   updatedAt DateTime @updatedAt
+}
+
+// ─── 人才市场：受限市场期间"待加入"签约（赛季末统一入队） ───
+model PendingSigning {
+  id          String   @id @default(cuid())
+  teamId      String
+  team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  seasonId    String
+  day         Int
+  targetType  String   // player | head_coach | asst_coach | trainer | scout | agent | ...
+  targetRef   String   // Player.id 或 Professional.id
+  targetName  String
+  cost        Int
+  status      String   @default("pending") // pending | joined | cancelled
+  createdAt   DateTime @default(now())
+
+  @@index([teamId, status])
+  @@index([seasonId, status])
 }
 
 // ─── 概览：球队资讯流 ───

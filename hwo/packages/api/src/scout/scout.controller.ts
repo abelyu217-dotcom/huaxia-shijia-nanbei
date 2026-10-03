@@ -7,10 +7,16 @@
  * - POST /api/scout/players/:playerId           球员探查（收窄能力 fog）
  * - POST /api/scout/players/:playerId/potential 潜力探查（收窄 Peak fog）
  *
+ * v0.6 §批次6 ScoutMission（派向各类职员）：
+ * - GET  /api/scout/missions             列出本队 ScoutMission（可选 status）
+ * - POST /api/scout/missions             创建 ScoutMission（派球探）
+ * - POST /api/scout/missions/:id/complete 手动完成任务
+ * - POST /api/scout/missions/:id/cancel   撤回任务
+ *
  * 所有写操作需 JWT，且只能操作本队的球探资源。
  */
 
-import { Controller, Get, Param, Post, Request, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Query, Request, UseGuards } from "@nestjs/common";
 import { ScoutService } from "./scout.service.js";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard.js";
 
@@ -60,5 +66,52 @@ export class ScoutController {
   ) {
     if (!req.user.teamId) return { error: "no team" };
     return this.scoutService.scoutPotential(req.user.teamId, playerId);
+  }
+
+  // ── ScoutMission ──
+
+  @UseGuards(JwtAuthGuard)
+  @Get("missions")
+  async listMissions(
+    @Request() req: { user: { teamId: string | null } },
+    @Query("status") status?: string,
+  ) {
+    if (!req.user.teamId) return [];
+    return this.scoutService.listMissions(req.user.teamId, {
+      status: (status as "pending" | "completed" | "expired" | undefined) ?? undefined,
+    });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post("missions")
+  async createMission(
+    @Body() body: { scoutId: string; targetType: string; targetRef?: string | null; region?: string | null },
+    @Request() req: { user: { teamId: string | null } },
+  ) {
+    if (!req.user.teamId) return { error: "no team" };
+    return this.scoutService.createMission({
+      teamId: req.user.teamId,
+      scoutId: body.scoutId,
+      targetType: body.targetType,
+      targetRef: body.targetRef ?? null,
+      region: body.region ?? null,
+    });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post("missions/:id/complete")
+  async completeMission(@Param("id") id: string) {
+    return this.scoutService.completeMission(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post("missions/:id/cancel")
+  async cancelMission(
+    @Param("id") id: string,
+    @Request() req: { user: { teamId: string | null } },
+  ) {
+    if (!req.user.teamId) return { error: "no team" };
+    await this.scoutService.cancelMission(id, req.user.teamId);
+    return { ok: true };
   }
 }

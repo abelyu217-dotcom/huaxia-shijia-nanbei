@@ -69,6 +69,14 @@ import type {
   FanCenterView,
   FanEventView,
   OperationsOverviewView,
+  MarketOverviewView,
+  TransferMarketPhaseView,
+  FreeAgentPlayerView,
+  FreeAgentStaffView,
+  MarketSignResult,
+  ScoutMissionView,
+  TeamSearchResult,
+  TeamSearchParams,
 } from "./types";
 
 // ── Token 管理 ──
@@ -1413,4 +1421,83 @@ export function fetchTeamChemistry(teamId: string): Promise<TeamChemistryView> {
 /** GET /api/relationship/player/:playerId/morale — 球员士气 */
 export function fetchPlayerMorale(playerId: string): Promise<PlayerMoraleView> {
   return getJson<PlayerMoraleView>(`/api/relationship/player/${encodeURIComponent(playerId)}/morale`);
+}
+
+// ── v0.6 §批次6: 人才市场 ──
+
+/** GET /api/market/overview — 市场总览 */
+export function fetchMarketOverview(): Promise<MarketOverviewView> {
+  return getJson<MarketOverviewView>("/api/market/overview");
+}
+
+/** GET /api/market/phase — 当前阶段 */
+export function fetchMarketPhase(): Promise<TransferMarketPhaseView> {
+  return getJson<TransferMarketPhaseView>("/api/market/phase");
+}
+
+/** GET /api/market/free-players — 自由球员列表 */
+export function fetchFreeAgentPlayers(): Promise<FreeAgentPlayerView[]> {
+  return getJson<FreeAgentPlayerView[]>("/api/market/free-players");
+}
+
+/** GET /api/market/free-staff?job=xxx — 自由职员列表 */
+export function fetchFreeAgentStaff(job?: string): Promise<FreeAgentStaffView[]> {
+  const q = job ? `?job=${encodeURIComponent(job)}` : "";
+  return getJson<FreeAgentStaffView[]>(`/api/market/free-staff${q}`);
+}
+
+/** POST /api/market/sign/player/:playerId — 签约自由球员 */
+export function postSignFreeAgentPlayer(playerId: string): Promise<MarketSignResult> {
+  return postJson<MarketSignResult>(`/api/market/sign/player/${encodeURIComponent(playerId)}`, {});
+}
+
+/** POST /api/market/sign/staff/:proId — 签约自由职员 */
+export function postSignFreeAgentStaff(proId: string): Promise<MarketSignResult> {
+  return postJson<MarketSignResult>(`/api/market/sign/staff/${encodeURIComponent(proId)}`, {});
+}
+
+/** POST /api/market/pending/:pendingId/cancel — 撤回受限市场签约 */
+export function postCancelPendingSigning(pendingId: string): Promise<{ ok: true }> {
+  return postJson(`/api/market/pending/${encodeURIComponent(pendingId)}/cancel`, {});
+}
+
+// ── v0.6 §批次6: ScoutMission ──
+
+/** GET /api/scout/missions?status=xxx — 列出本队 ScoutMission */
+export function fetchScoutMissions(status?: "pending" | "completed" | "expired"): Promise<ScoutMissionView[]> {
+  const q = status ? `?status=${status}` : "";
+  return getJson<ScoutMissionView[]>(`/api/scout/missions${q}`);
+}
+
+/** POST /api/scout/missions — 创建 ScoutMission */
+export function postCreateScoutMission(payload: {
+  scoutId: string;
+  targetType: string;
+  targetRef?: string | null;
+  region?: string | null;
+}): Promise<ScoutMissionView> {
+  return postJson<ScoutMissionView>("/api/scout/missions", payload);
+}
+
+/** POST /api/scout/missions/:id/complete — 手动完成任务 */
+export function postCompleteScoutMission(missionId: string): Promise<ScoutMissionView> {
+  return postJson<ScoutMissionView>(`/api/scout/missions/${encodeURIComponent(missionId)}/complete`, {});
+}
+
+/** POST /api/scout/missions/:id/cancel — 撤回任务 */
+export function postCancelScoutMission(missionId: string): Promise<{ ok: true }> {
+  return postJson(`/api/scout/missions/${encodeURIComponent(missionId)}/cancel`, {});
+}
+
+// ── v0.6 §批次6: 球队模糊搜索 ──
+
+/** GET /api/teams/search?q=xxx&leagueId=xxx&worldId=xxx&limit=30 */
+export function searchTeams(params: TeamSearchParams = {}): Promise<TeamSearchResult[]> {
+  const usp = new URLSearchParams();
+  if (params.q) usp.set("q", params.q);
+  if (params.leagueId) usp.set("leagueId", params.leagueId);
+  if (params.worldId) usp.set("worldId", params.worldId);
+  if (params.limit) usp.set("limit", String(params.limit));
+  const q = usp.toString();
+  return getJson<TeamSearchResult[]>(`/api/teams/search${q ? `?${q}` : ""}`);
 }

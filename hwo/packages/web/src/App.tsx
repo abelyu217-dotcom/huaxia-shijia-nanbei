@@ -45,6 +45,7 @@ import { CorePlayersPage } from "./pages/CorePlayersPage";
 import { BoardOfDirectorsPage } from "./pages/BoardOfDirectorsPage";
 import { PublicRelationsPage } from "./pages/PublicRelationsPage";
 import { OperationsCenterPage } from "./pages/OperationsCenterPage";
+import { MarketPage } from "./pages/MarketPage";
 import { GuidePage } from "./pages/GuidePage";
 import { DailyReward } from "./components/DailyReward";
 import WorldSelectPage from "./pages/WorldSelectPage";
@@ -80,6 +81,7 @@ type View =
   | { kind: "arena" }
   | { kind: "operations" }
   | { kind: "corePlayers" }
+  | { kind: "market" }
   | { kind: "bod" }
   | { kind: "guide" }
   | { kind: "admin" }
@@ -115,6 +117,7 @@ type NavKind =
   | "arena"
   | "operations"
   | "corePlayers"
+  | "market"
   | "bod"
   | "guide"
   | "admin"
@@ -153,6 +156,7 @@ const NAV_GROUPS: { group: string; items: { id: NavKind; label: string }[] }[] =
       { id: "training", label: "训练中心" },
       { id: "staff", label: "职员中心" },
       { id: "scout", label: "人才中心" },
+      { id: "market", label: "人才市场" },
       { id: "trade", label: "交易" },
       { id: "academy", label: "发展中心" },
       { id: "draft", label: "选秀" },
@@ -203,6 +207,7 @@ function navToView(kind: NavKind, teamId?: string): View {
   if (kind === "arena") return { kind: "arena" };
   if (kind === "operations") return { kind: "operations" };
   if (kind === "corePlayers") return { kind: "corePlayers" };
+  if (kind === "market") return { kind: "market" };
   if (kind === "bod") return { kind: "bod" };
   if (kind === "guide") return { kind: "guide" };
   if (kind === "admin") return { kind: "admin" };
@@ -425,6 +430,9 @@ function AppInner() {
           )}
           {view.kind === "corePlayers" && (
             <CorePlayersPage teamId={myTeamId ?? undefined} />
+          )}
+          {view.kind === "market" && (
+            <MarketPage teamId={myTeamId ?? undefined} />
           )}
           {view.kind === "bod" && (
             <BoardOfDirectorsPage teamId={myTeamId ?? undefined} />

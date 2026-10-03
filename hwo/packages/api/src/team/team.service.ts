@@ -168,4 +168,73 @@ export class TeamService {
     }
     await this.redis.del("teams:all").catch(() => {});
   }
+
+  /**
+   * v0.6 §批次6：球队模糊搜索（名称/城市/ID 包含关键字）
+   * - 支持按 leagueId / worldId 过滤
+   * - 仅返回概要（id / name / city / leagueId / worldId / worldName / captainName），不嵌套完整 players
+   * - limit 默认 30
+   */
+  async search(opts: {
+    q?: string;
+    leagueId?: string;
+    worldId?: string;
+    limit?: number;
+  }): Promise<Array<{
+    id: string;
+    name: string;
+    city: string | null;
+    leagueId: string | null;
+    worldId: string | null;
+    worldName: string | null;
+    playerCount: number;
+    captainName: string | null;
+  }>> {
+    const where: {
+      OR?: Array<Record<string, unknown>>;
+      leagueId?: string;
+      worldId?: string;
+    } = {};
+
+    if (opts.q && opts.q.trim()) {
+      const kw = opts.q.trim();
+      where.OR = [
+        { name: { contains: kw, mode: "insensitive" } },
+        { city: { contains: kw, mode: "insensitive" } },
+        { id: { contains: kw, mode: "insensitive" } },
+      ];
+    }
+    if (opts.leagueId) where.leagueId = opts.leagueId;
+    if (opts.worldId) where.worldId = opts.worldId;
+
+    const rows = await this.prisma.team.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        city: true,
+        leagueId: true,
+        worldId: true,
+        world: { select: { name: true } },
+        captainId: true,
+        players: { select: { id: true, name: true } },
+      },
+      orderBy: { name: "asc" },
+      take: opts.limit ?? 30,
+    });
+
+    return rows.map((r) => {
+      const captain = r.captainId ? r.players.find((p) => p.id === r.captainId) : null;
+      return {
+        id: r.id,
+        name: r.name,
+        city: r.city,
+        leagueId: r.leagueId,
+        worldId: r.worldId,
+        worldName: r.world?.name ?? null,
+        playerCount: r.players.length,
+        captainName: captain?.name ?? null,
+      };
+    });
+  }
 }

@@ -4,10 +4,14 @@
  * - GET /api/teams      全部球队列表（含球员概要 + ovr）
  * - GET /api/teams/:id  单支球队完整信息（每个 player 附加 ovr）
  *
+ * v0.6 §批次6：
+ * - GET /api/teams/search?q=xxx&leagueId=xxx&worldId=xxx&limit=30
+ *   球队模糊搜索（名称/城市/ID 包含关键字），返回概要而非完整球员
+ *
  * ovr 由 overallRating(abilities) 计算。
  */
 
-import { Body, Controller, ForbiddenException, Get, NotFoundException, Param, Put, Request, UseGuards } from "@nestjs/common";
+import { Body, Controller, ForbiddenException, Get, NotFoundException, Param, Put, Query, Request, UseGuards } from "@nestjs/common";
 import { overallRating, type Player, type Team, type Abilities, type FogValue, type PlayerProfile } from "@hwo/shared";
 import { TeamService } from "./team.service.js";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard.js";
@@ -63,6 +67,23 @@ export class TeamController {
     private readonly prisma: PrismaService,
     private readonly scoutService: ScoutService,
   ) {}
+
+  /** v0.6 §批次6：球队模糊搜索（必须在 :id 路由之前注册） */
+  @Get("search")
+  @UseGuards(JwtAuthGuard)
+  async search(
+    @Query("q") q?: string,
+    @Query("leagueId") leagueId?: string,
+    @Query("worldId") worldId?: string,
+    @Query("limit") limit?: string,
+  ) {
+    return this.teamService.search({
+      q: q ?? undefined,
+      leagueId: leagueId ?? undefined,
+      worldId: worldId ?? undefined,
+      limit: limit ? Number(limit) : 30,
+    });
+  }
 
   @Get()
   @UseGuards(JwtAuthGuard)

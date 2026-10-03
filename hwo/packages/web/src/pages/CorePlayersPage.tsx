@@ -18,6 +18,9 @@ import {
   fetchTeam,
   fetchTeamContracts,
   fetchTeamCareers,
+  fetchTeamDynasty,
+  fetchPlayerNetwork,
+  fetchPlayerMorale,
   postExtendContract,
 } from "../api";
 import { POSITION_LABEL, ovrVal, abilityVal } from "../lib";
@@ -28,7 +31,11 @@ import type {
   FogValue,
   PlayerCareer,
   PlayerDetail,
+  PlayerProfile,
   TeamDetail,
+  TeamDynastyView,
+  PlayerNetworkView,
+  PlayerMoraleView,
 } from "../types";
 
 interface Props {
@@ -136,9 +143,17 @@ export function CorePlayersPage({ teamId: propTeamId }: Props) {
   const [team, setTeam] = useState<TeamDetail | null>(null);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [careers, setCareers] = useState<PlayerCareer[]>([]);
+  // v0.6 §批次6: 王朝 + 关系网
+  const [dynasty, setDynasty] = useState<TeamDynastyView | null>(null);
+  const [networks, setNetworks] = useState<Record<string, PlayerNetworkView>>({});
+  const [morales, setMorales] = useState<Record<string, PlayerMoraleView>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // 卡内视图切换：能力 / 档案
+  const [cardView, setCardView] = useState<Record<string, "ability" | "profile">>({});
+  // 展开关系网（按球员 id 跟踪）
+  const [relExpandedId, setRelExpandedId] = useState<string | null>(null);
 
   // 续约弹窗状态
   const [extendTarget, setExtendTarget] = useState<ExtendTarget | null>(null);
@@ -160,11 +175,13 @@ export function CorePlayersPage({ teamId: propTeamId }: Props) {
       fetchTeam(teamId),
       fetchTeamContracts(teamId),
       fetchTeamCareers(teamId),
+      fetchTeamDynasty(teamId).catch(() => null),
     ])
-      .then(([t, c, cr]) => {
+      .then(([t, c, cr, d]) => {
         setTeam(t);
         setContracts(c);
         setCareers(cr);
+        setDynasty(d);
       })
       .catch((e: unknown) =>
         setError(e instanceof Error ? e.message : String(e)),
@@ -176,6 +193,17 @@ export function CorePlayersPage({ teamId: propTeamId }: Props) {
     load();
   }, [load]);
 
+  // 拉取核心球员的关系网与士气（按需加载，失败静默）
+  const loadPlayerRel = useCallback((playerId: string) => {
+    Promise.all([
+      fetchPlayerNetwork(playerId).catch(() => null),
+      fetchPlayerMorale(playerId).catch(() => null),
+    ]).then(([n, m]) => {
+      setNetworks((prev) => (n ? { ...prev, [playerId]: n } : prev));
+      setMorales((prev) => (m ? { ...prev, [playerId]: m } : prev));
+    });
+  }, []);
+
   // 核心球员：OVR >= 75；不足则取 Top 5
   const corePlayers = useMemo(() => {
     if (!team) return [];
@@ -183,6 +211,17 @@ export function CorePlayersPage({ teamId: propTeamId }: Props) {
     const ge75 = sorted.filter((p) => ovrVal(p.ovr) >= 75);
     return ge75.length > 0 ? ge75 : sorted.slice(0, 5);
   }, [team]);
+
+  // 核心球员变化后预拉取关系网摘要
+  useEffect(() => {
+    if (corePlayers.length === 0) return;
+    corePlayers.forEach((p) => {
+      if (!networks[p.id] && relExpandedId !== p.id) {
+        void loadPlayerRel(p.id);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [corePlayers.map((p) => p.id).join(",")]);
 
   const contractByPlayer = useMemo(() => {
     const map = new Map<string, Contract>();
@@ -274,12 +313,17 @@ export function CorePlayersPage({ teamId: propTeamId }: Props) {
           核心球员 · {team.name}
         </h2>
         <p className="muted">
-          OVR ≥ 75 的球员为球队核心（不足则取 Top 5）。展示五维能力、合同与生涯阶段，支持续约与交易操作。
+          OVR ≥ 75 的球员为球队核心（不足则取 Top 5）。展示五维能力、38 项档案、王朝标签、关系网与合同信息，支持续约与交易操作。
         </p>
       </header>
 
       {error && <div className="state error">{error}</div>}
       {notice && <div className="state success">{notice}</div>}
+
+      {/* 王朝标签横幅（v0.6 §批次6） */}
+      {dynasty && (dynasty.activeDynasty || dynasty.records.length > 0) && (
+        <DynastyBanner dynasty={dynasty} />
+      )}
 
       {corePlayers.length === 0 ? (
         <div className="card">
@@ -295,6 +339,9 @@ export function CorePlayersPage({ teamId: propTeamId }: Props) {
             const isRookie =
               p.isRookie || (career?.age != null && career.age <= 21);
             const pOvr = ovrVal(p.ovr);
+            const view = cardView[p.id] ?? "ability";
+            const net = networks[p.id];
+            const morale = morales[p.id];
             return (
               <article
                 key={p.id}
@@ -348,28 +395,79 @@ export function CorePlayersPage({ teamId: propTeamId }: Props) {
                           {CAREER_STAGE_LABEL[career.stage]}
                         </span>
                       )}
+                      {/* 关系网摘要 chip */}
+                      {net && (
+                        <span
+                          className="cpc-rel-chip"
+                          title="关系网摘要（点击下方展开）"
+                        >
+                          关系 {relSummaryCount(net)}
+                        </span>
+                      )}
+                      {morale && (
+                        <span
+                          className="cpc-morale-chip"
+                          style={{ color: moraleColor(morale.morale) }}
+                          title="球员士气"
+                        >
+                          士气 {morale.morale}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                {/* 能力五维条形图（替代雷达图） */}
-                <div className="ability-bars">
-                  {abilities.map((ab) => (
-                    <div className="ab-row" key={ab.key}>
-                      <span className="ab-label">{ab.label}</span>
-                      <div className="ab-track">
-                        <div
-                          className="ab-fill"
-                          style={{
-                            width: `${Math.max(0, Math.min(99, ab.val))}%`,
-                            background: ovrColor(ab.val),
-                          }}
-                        />
-                      </div>
-                      <span className="ab-val">{ab.val}</span>
-                    </div>
-                  ))}
+                {/* 卡内视图切换：能力 / 档案 */}
+                <div className="cpc-view-toggle">
+                  <button
+                    type="button"
+                    className={`cpc-toggle-btn${view === "ability" ? " is-active" : ""}`}
+                    onClick={() =>
+                      setCardView((prev) => ({ ...prev, [p.id]: "ability" }))
+                    }
+                  >
+                    五维能力
+                  </button>
+                  <button
+                    type="button"
+                    className={`cpc-toggle-btn${view === "profile" ? " is-active" : ""}`}
+                    onClick={() =>
+                      setCardView((prev) => ({ ...prev, [p.id]: "profile" }))
+                    }
+                    disabled={!p.profile}
+                    title={p.profile ? "查看 38 项档案" : "该球员暂无档案数据"}
+                  >
+                    38 项档案
+                  </button>
                 </div>
+
+                {/* 能力五维条形图 或 38 项档案 */}
+                {view === "profile" && p.profile ? (
+                  <PlayerProfilePanel profile={p.profile} />
+                ) : (
+                  <div className="ability-bars">
+                    {abilities.map((ab) => (
+                      <div className="ab-row" key={ab.key}>
+                        <span className="ab-label">{ab.label}</span>
+                        <div className="ab-track">
+                          <div
+                            className="ab-fill"
+                            style={{
+                              width: `${Math.max(0, Math.min(99, ab.val))}%`,
+                              background: ovrColor(ab.val),
+                            }}
+                          />
+                        </div>
+                        <span className="ab-val">{ab.val}</span>
+                      </div>
+                    ))}
+                    {!p.profile && (
+                      <div className="cpc-profile-empty muted">
+                        该球员暂无 38 项档案数据
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* 合同信息 */}
                 <div className="cpc-contract">
@@ -400,6 +498,19 @@ export function CorePlayersPage({ teamId: propTeamId }: Props) {
                       成长空间 {career.growthRoom > 0 ? `+${career.growthRoom}` : "—"}
                     </span>
                   </div>
+                )}
+
+                {/* 关系网（可展开） */}
+                {net && (
+                  <RelationshipSummary
+                    network={net}
+                    expanded={relExpandedId === p.id}
+                    onToggle={() =>
+                      setRelExpandedId((cur) =>
+                        cur === p.id ? null : p.id,
+                      )
+                    }
+                  />
                 )}
 
                 {/* 续约 / 交易操作 */}
@@ -487,6 +598,406 @@ export function CorePlayersPage({ teamId: propTeamId }: Props) {
               </button>
             </div>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── v0.6 §批次6: 王朝 / 关系网 / 38 项档案 辅助组件 ──
+
+/** 士气颜色：高绿、中黄、低红 */
+function moraleColor(v: number): string {
+  if (v > 70) return "#22c55e";
+  if (v >= 50) return "#f59e0b";
+  return "#ef4444";
+}
+
+/** 关系总数（不分类型） */
+function relSummaryCount(net: PlayerNetworkView): number {
+  return Object.values(net.relationships).reduce(
+    (sum, edges) => sum + edges.length,
+    0,
+  );
+}
+
+/** 王朝等级配色 */
+const DYNASTY_TIER_STYLE: Record<
+  string,
+  { color: string; bg: string; label: string }
+> = {
+  legendary: { color: "#fbbf24", bg: "rgba(251,191,36,0.15)", label: "传奇" },
+  golden: { color: "#f59e0b", bg: "rgba(245,158,11,0.15)", label: "黄金" },
+  silver: { color: "#94a3b8", bg: "rgba(148,163,184,0.15)", label: "白银" },
+  rising: { color: "#60a5fa", bg: "rgba(96,165,250,0.15)", label: "崛起" },
+};
+
+function dynastyTierStyle(tier: string): {
+  color: string;
+  bg: string;
+  label: string;
+} {
+  return DYNASTY_TIER_STYLE[tier] ?? {
+    color: "#94a3b8",
+    bg: "rgba(148,163,184,0.12)",
+    label: tier,
+  };
+}
+
+/** 王朝标签横幅 */
+function DynastyBanner({ dynasty }: { dynasty: TeamDynastyView }) {
+  const active = dynasty.activeDynasty;
+  const recent = dynasty.records.slice(0, 3);
+  return (
+    <section className="cpc-dynasty-banner">
+      <div className="cpc-dynasty-head">
+        <h3>王朝标签</h3>
+        <span className="cpc-dynasty-total muted">
+          累计传承分 {dynasty.totalLegacyScore.toLocaleString()}
+        </span>
+      </div>
+      {active && (
+        <div
+          className="cpc-dynasty-active"
+          style={{
+            color: dynastyTierStyle(active.tier).color,
+            background: dynastyTierStyle(active.tier).bg,
+          }}
+        >
+          <span className="cpc-dynasty-tier">
+            {dynastyTierStyle(active.tier).label}
+          </span>
+          <span className="cpc-dynasty-titles">
+            {active.titles} 冠 · {active.legacyScore.toLocaleString()} 分
+          </span>
+        </div>
+      )}
+      {recent.length > 0 && (
+        <div className="cpc-dynasty-list">
+          {recent.map((r) => {
+            const ds = dynastyTierStyle(r.tier);
+            return (
+              <div key={r.id} className="cpc-dynasty-item">
+                <span
+                  className="cpc-dynasty-tag"
+                  style={{ color: ds.color, background: ds.bg }}
+                >
+                  {ds.label}
+                </span>
+                <span className="cpc-dynasty-meta muted">
+                  第 {r.startSeason}
+                  {r.endSeason ? `–${r.endSeason}` : "–"} 赛季 · {r.titles} 冠 ·{" "}
+                  {r.runnerUps} 亚
+                </span>
+                {r.signatureTags.length > 0 && (
+                  <span className="cpc-dynasty-sig">
+                    {r.signatureTags.join(" · ")}
+                  </span>
+                )}
+                {r.active && <span className="cpc-dynasty-live">进行中</span>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ── 38 项档案面板 ──
+
+const ATHLETIC_LABELS: { key: string; label: string }[] = [
+  { key: "speed", label: "速度" },
+  { key: "vertical", label: "弹跳" },
+  { key: "strength", label: "力量" },
+  { key: "agility", label: "敏捷" },
+  { key: "stamina", label: "耐力" },
+  { key: "lateral", label: "横向移动" },
+  { key: "burst", label: "垂直爆发" },
+  { key: "flexibility", label: "柔韧性" },
+];
+
+const SKILL_LABELS: { key: string; label: string }[] = [
+  { key: "three", label: "三分" },
+  { key: "midrange", label: "中投" },
+  { key: "freeThrow", label: "罚球" },
+  { key: "layup", label: "上篮" },
+  { key: "dunk", label: "扣篮" },
+  { key: "passing", label: "传球" },
+  { key: "ballHandle", label: "控球" },
+  { key: "rebounding", label: "篮板" },
+  { key: "steal", label: "抢断" },
+  { key: "block", label: "盖帽" },
+  { key: "postUp", label: "低位" },
+  { key: "faceUp", label: "面框" },
+  { key: "pickRoll", label: "挡拆" },
+  { key: "backToBasket", label: "背身" },
+];
+
+const MENTAL_LABELS: { key: string; label: string; max: number }[] = [
+  { key: "workEthic", label: "敬业度", max: 10 },
+  { key: "pressure", label: "抗压", max: 10 },
+  { key: "teamwork", label: "团队", max: 10 },
+  { key: "leadership", label: "领导力", max: 10 },
+  { key: "iq", label: "篮球智商", max: 99 },
+];
+
+const RELATIONSHIP_LABEL: Record<string, string> = {
+  family: "家人",
+  teammate: "队友",
+  mentor: "师徒",
+  rival: "宿敌",
+  friend: "朋友",
+  external: "外部",
+};
+
+const RELATIONSHIP_COLOR: Record<string, string> = {
+  family: "#f472b6",
+  teammate: "#4ade80",
+  mentor: "#a78bfa",
+  rival: "#ef4444",
+  friend: "#60a5fa",
+  external: "#94a3b8",
+};
+
+function bondColor(bond: number): string {
+  if (bond >= 75) return "#4ade80";
+  if (bond >= 50) return "#fbbf24";
+  if (bond >= 25) return "#fb923c";
+  return "#ef4444";
+}
+
+/** 38 项档案面板（physical 7 + athletic 8 + skill 14 + mental 5 + hidden 4） */
+function PlayerProfilePanel({ profile }: { profile: PlayerProfile }) {
+  const { physical, athletic, skill, mental, hidden } = profile;
+  return (
+    <div className="cpc-profile">
+      {/* 静态体测 7 项 */}
+      <div className="cpc-profile-group">
+        <div className="cpc-profile-title">静态体测 (7)</div>
+        <div className="cpc-profile-rows">
+          <div className="cpc-profile-row">
+            <span className="cpc-profile-label">身高</span>
+            <span className="cpc-profile-val">{physical.heightCm} cm</span>
+          </div>
+          <div className="cpc-profile-row">
+            <span className="cpc-profile-label">臂展</span>
+            <span className="cpc-profile-val">{physical.armSpanCm} cm</span>
+          </div>
+          <div className="cpc-profile-row">
+            <span className="cpc-profile-label">站立摸高</span>
+            <span className="cpc-profile-val">
+              {physical.standingReachCm} cm
+            </span>
+          </div>
+          <div className="cpc-profile-row">
+            <span className="cpc-profile-label">体重</span>
+            <span className="cpc-profile-val">{physical.weightKg} kg</span>
+          </div>
+          <ProfileBar
+            label="骨架"
+            val={physical.frame}
+            max={10}
+          />
+          <ProfileBar
+            label="手长"
+            val={physical.handLength}
+            max={10}
+          />
+          <ProfileBar
+            label="跟腱"
+            val={physical.achilles}
+            max={10}
+          />
+        </div>
+      </div>
+
+      {/* 动态运动 8 项 */}
+      <div className="cpc-profile-group">
+        <div className="cpc-profile-title">运动属性 (8)</div>
+        <div className="cpc-profile-rows">
+          {ATHLETIC_LABELS.map((a) => (
+            <ProfileBar
+              key={a.key}
+              label={a.label}
+              val={(athletic as unknown as Record<string, number>)[a.key]}
+              max={99}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* 技术属性 14 项 */}
+      <div className="cpc-profile-group">
+        <div className="cpc-profile-title">技术属性 (14)</div>
+        <div className="cpc-profile-rows">
+          {SKILL_LABELS.map((a) => (
+            <ProfileBar
+              key={a.key}
+              label={a.label}
+              val={(skill as unknown as Record<string, number>)[a.key]}
+              max={99}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* 心智属性 5 项 */}
+      <div className="cpc-profile-group">
+        <div className="cpc-profile-title">心智属性 (5)</div>
+        <div className="cpc-profile-rows">
+          {MENTAL_LABELS.map((a) => (
+            <ProfileBar
+              key={a.key}
+              label={a.label}
+              val={(mental as unknown as Record<string, number>)[a.key]}
+              max={a.max}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* 隐藏属性 4 项 */}
+      <div className="cpc-profile-group">
+        <div className="cpc-profile-title">隐藏属性 (4)</div>
+        <div className="cpc-profile-rows">
+          <ProfileBar
+            label="伤病倾向"
+            val={hidden.injuryProne}
+            max={10}
+            inverse
+          />
+          <div className="cpc-profile-row">
+            <span className="cpc-profile-label">成长潜力</span>
+            <span className="cpc-profile-val cpc-profile-tier">
+              {hidden.potential}
+            </span>
+          </div>
+          <div className="cpc-profile-row">
+            <span className="cpc-profile-label">性格特质</span>
+            <span className="cpc-profile-val">{hidden.personality || "—"}</span>
+          </div>
+          <ProfileBar
+            label="忠诚度"
+            val={hidden.loyalty}
+            max={10}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProfileBar({
+  label,
+  val,
+  max,
+  inverse = false,
+}: {
+  label: string;
+  val?: number;
+  max: number;
+  inverse?: boolean;
+}) {
+  const v = typeof val === "number" ? val : 0;
+  const pct = Math.max(0, Math.min(100, (v / max) * 100));
+  // inverse：值越低越好（如伤病倾向）→ 反转颜色
+  const colorVal = inverse ? max - v : v;
+  const color =
+    colorVal >= max * 0.75
+      ? "#22c55e"
+      : colorVal >= max * 0.5
+        ? "#fbbf24"
+        : "#ef4444";
+  return (
+    <div className="cpc-profile-row">
+      <span className="cpc-profile-label">{label}</span>
+      <div className="cpc-profile-bar">
+        <div
+          className="cpc-profile-fill"
+          style={{ width: `${pct}%`, background: color }}
+        />
+      </div>
+      <span className="cpc-profile-num">{v}</span>
+    </div>
+  );
+}
+
+/** 关系网摘要（可展开为完整列表） */
+function RelationshipSummary({
+  network,
+  expanded,
+  onToggle,
+}: {
+  network: PlayerNetworkView;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const groups = Object.entries(network.relationships);
+  const total = groups.reduce((s, [, edges]) => s + edges.length, 0);
+  return (
+    <div className="cpc-rel">
+      <button
+        type="button"
+        className="cpc-rel-toggle"
+        onClick={onToggle}
+        aria-expanded={expanded}
+      >
+        <span className="cpc-rel-title">关系网</span>
+        <span className="cpc-rel-count">{total}</span>
+        <span className="cpc-rel-arrow">{expanded ? "▾" : "▸"}</span>
+      </button>
+      {expanded && (
+        <div className="cpc-rel-body">
+          {/* 家庭背景 */}
+          {network.family && (
+            <div className="cpc-rel-family">
+              <span className="cpc-rel-section-title">家庭</span>
+              <span className="muted">
+                {network.family.backgroundLabel}
+                {network.family.members.length > 0 &&
+                  ` · ${network.family.members.length} 名成员`}
+              </span>
+            </div>
+          )}
+          {/* 关系分组 */}
+          {groups.length === 0 ? (
+            <div className="cpc-rel-empty muted">暂无人际关系记录</div>
+          ) : (
+            groups.map(([type, edges]) => (
+              <div key={type} className="cpc-rel-group">
+                <div
+                  className="cpc-rel-group-title"
+                  style={{ color: RELATIONSHIP_COLOR[type] ?? "#94a3b8" }}
+                >
+                  {RELATIONSHIP_LABEL[type] ?? type}（{edges.length}）
+                </div>
+                <div className="cpc-rel-edges">
+                  {edges.slice(0, 5).map((e) => (
+                    <div key={e.id} className="cpc-rel-edge">
+                      <span className="cpc-rel-edge-name">
+                        {e.otherPlayerName}
+                      </span>
+                      <span
+                        className="cpc-rel-edge-bond"
+                        style={{ color: bondColor(e.bond) }}
+                      >
+                        {e.bond}
+                      </span>
+                      <span className="cpc-rel-edge-dir muted">
+                        {e.direction === "out" ? "→" : "←"}
+                      </span>
+                    </div>
+                  ))}
+                  {edges.length > 5 && (
+                    <span className="cpc-rel-more muted">
+                      +{edges.length - 5} 条
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       )}
     </div>

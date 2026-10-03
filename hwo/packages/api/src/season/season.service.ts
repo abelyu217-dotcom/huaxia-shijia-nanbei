@@ -14,6 +14,7 @@ import { AcademyService } from "../academy/academy.service.js";
 import { ContractService } from "../contract/contract.service.js";
 import { DraftService } from "../draft/draft.service.js";
 import { BoardService } from "../board/board.service.js";
+import { MarketService } from "../market/market.service.js";
 
 @Injectable()
 export class SeasonService {
@@ -30,6 +31,8 @@ export class SeasonService {
     private readonly draftService: DraftService,
     @Inject(forwardRef(() => BoardService))
     private readonly boardService: BoardService,
+    @Inject(forwardRef(() => MarketService))
+    private readonly marketService: MarketService,
   ) {}
 
   /** 获取当前激活的常规赛赛季，不存在则创建 */
@@ -364,6 +367,15 @@ export class SeasonService {
     } catch (e) {
       this.logger.warn(
         `董事会初始化失败（不影响赛季交接）：${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+
+    // v0.6 §批次6 人才市场：新赛季初始化阶段（free_agency）
+    try {
+      await this.marketService.initForNewSeason(newSeason.id);
+    } catch (e) {
+      this.logger.warn(
+        `市场阶段初始化失败（不影响赛季交接）：${e instanceof Error ? e.message : String(e)}`,
       );
     }
 

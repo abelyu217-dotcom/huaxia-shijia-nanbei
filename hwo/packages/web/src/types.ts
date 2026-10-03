@@ -1197,3 +1197,101 @@ export interface PlayerMoraleView {
     rivalCount: number;
   };
 }
+
+// ── v0.6 §批次6: 人才市场 ──
+
+export type MarketPhase = "closed" | "free_agency" | "restricted";
+
+export interface TransferMarketPhaseView {
+  seasonId: string;
+  phase: MarketPhase;
+  freeAgencyEndDay: number | null;
+  restrictedStartDay: number | null;
+  restrictedEndDay: number | null;
+  updatedAt: string;
+}
+
+export interface FreeAgentPlayerView {
+  id: string;
+  name: string;
+  position: string;
+  age: number;
+  ovr: number;
+  askingSalary: number;
+  status: "free" | "restricted" | "claimed";
+  scouted: boolean;
+}
+
+export interface FreeAgentStaffView {
+  id: string;
+  name: string;
+  job: string;
+  jobLabel: string;
+  level: number;
+  proReputation: number;
+  signOnCost: number;
+  salaryPerDay: number;
+  trainingBonus: number;
+  scoutBonus: number;
+  status: "free" | "restricted" | "claimed";
+}
+
+export interface PendingSigningView {
+  id: string;
+  teamId: string;
+  teamName: string;
+  targetType: string;
+  targetRef: string;
+  targetName: string;
+  cost: number;
+  day: number;
+  status: "pending" | "joined" | "cancelled";
+  createdAt: string;
+}
+
+export interface MarketOverviewView {
+  phase: TransferMarketPhaseView;
+  freeAgentPlayers: FreeAgentPlayerView[];
+  freeAgentStaff: FreeAgentStaffView[];
+  pendingSignings: PendingSigningView[];
+}
+
+export type MarketSignResult = { status: "joined" | "pending" };
+
+// ── v0.6 §批次6: ScoutMission ──
+
+export interface ScoutMissionView {
+  id: string;
+  teamId: string;
+  scoutId: string;
+  /** 目标类型：player | head_coach | asst_coach | trainer | agent | merchant | reporter | caster | arbiter | union_rep */
+  targetType: string;
+  targetRef: string | null;
+  region: string | null;
+  status: "pending" | "completed" | "expired";
+  report: Record<string, unknown> | null;
+  accuracy: number | null;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+// ── v0.6 §批次6: 球队模糊搜索 ──
+
+export interface TeamSearchResult {
+  id: string;
+  name: string;
+  city: string | null;
+  leagueId: string | null;
+  worldId: string | null;
+  worldName: string | null;
+  playerCount: number;
+  captainName: string | null;
+}
+
+export interface TeamSearchParams {
+  q?: string;
+  leagueId?: string;
+  worldId?: string;
+  limit?: number;
+}
+

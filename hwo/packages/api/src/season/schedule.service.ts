@@ -16,6 +16,8 @@ import { TrainingService } from "../training/training.service.js";
 import { BoardService } from "../board/board.service.js";
 import { PrService } from "../pr/pr.service.js";
 import { OperationsService } from "../operations/operations.service.js";
+import { MarketService } from "../market/market.service.js";
+import { ScoutService } from "../scout/scout.service.js";
 
 /**
  * 每日结算时刻（北京时间，小时 0-23）。
@@ -63,6 +65,10 @@ export class ScheduleService implements OnModuleInit {
     private readonly pr: PrService,
     @Inject(forwardRef(() => OperationsService))
     private readonly operations: OperationsService,
+    @Inject(forwardRef(() => MarketService))
+    private readonly market: MarketService,
+    @Inject(forwardRef(() => ScoutService))
+    private readonly scout: ScoutService,
   ) {}
 
   /**
@@ -319,6 +325,32 @@ export class ScheduleService implements OnModuleInit {
     } catch (e) {
       this.logger.warn(
         `运营中心结算失败（不影响比赛）：${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+
+    // 9. v0.6 §批次6 球探任务：每日自动完成 pending 任务
+    try {
+      const r = await this.scout.runDailyCompleteMissions();
+      if (r.completed > 0) {
+        this.logger.log(`球探任务自动完成：${r.completed} 条`);
+      }
+    } catch (e) {
+      this.logger.warn(
+        `球探任务结算失败（不影响比赛）：${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+
+    // 10. v0.6 §批次6 人才市场：每日检查阶段切换 + 受限市场结束时统一入队
+    try {
+      const phase = await this.market.checkPhaseSwitch(seasonId, currentDay);
+      if (phase) {
+        this.logger.log(
+          `市场阶段：${phase.phase}（自由市场截止第 ${phase.freeAgencyEndDay} 日，受限市场截止第 ${phase.restrictedEndDay} 日）`,
+        );
+      }
+    } catch (e) {
+      this.logger.warn(
+        `市场阶段切换失败（不影响比赛）：${e instanceof Error ? e.message : String(e)}`,
       );
     }
 
