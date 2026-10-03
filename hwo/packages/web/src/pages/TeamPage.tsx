@@ -12,8 +12,8 @@
 import { useEffect, useState } from "react";
 import {
   fetchTeam,
-  fetchTeamCareers,
   fetchTeamContracts,
+  fetchTeamPlayerStats,
   fetchTeamSalary,
   putTeamCaptain,
   postScoutPlayer,
@@ -24,10 +24,11 @@ import {
 } from "../api";
 import type {
   Contract,
-  PlayerCareer,
   PlayerDetail,
+  PlayerSeasonStats,
   SalaryStatus,
   TeamDetail,
+  WaiveResult,
 } from "../types";
 import { useAuth } from "../auth/AuthContext";
 import { PlayerSkillsTable } from "../components/PlayerSkillsTable";
@@ -41,6 +42,13 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "junior", label: "少年球员" },
   { id: "contracts", label: "合同管理" },
 ];
+
+/** 命中率配色分级 */
+function pctTier(p: number): "pct-good" | "pct-mid" | "pct-bad" {
+  if (p >= 0.5) return "pct-good";
+  if (p >= 0.35) return "pct-mid";
+  return "pct-bad";
+}
 
 /** 状态色 —— #13 状态色体系 */
 const STATUS_STYLE: Record<string, { color: string; bg: string; label: string }> = {
@@ -89,7 +97,7 @@ export function TeamPage({ teamId }: Props) {
 
   const [tab, setTab] = useState<Tab>("players");
   const [team, setTeam] = useState<TeamDetail | null>(null);
-  const [careers, setCareers] = useState<PlayerCareer[] | null>(null);
+  const [playerStats, setPlayerStats] = useState<PlayerSeasonStats[] | null>(null);
   const [contracts, setContracts] = useState<Contract[] | null>(null);
   const [salary, setSalary] = useState<SalaryStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -120,14 +128,14 @@ export function TeamPage({ teamId }: Props) {
     setLoading(true);
     Promise.all([
       fetchTeam(teamId),
-      isMine ? fetchTeamCareers(teamId) : Promise.resolve<PlayerCareer[]>([]),
+      fetchTeamPlayerStats(teamId).catch(() => [] as PlayerSeasonStats[]),
       isMine ? fetchTeamContracts(teamId) : Promise.resolve<Contract[]>([]),
       isMine ? fetchTeamSalary(teamId) : Promise.resolve<SalaryStatus | null>(null),
     ])
-      .then(([t, cs, cts, sal]) => {
+      .then(([t, ps, cts, sal]) => {
         if (cancelled) return;
         setTeam(t);
-        setCareers(cs);
+        setPlayerStats(ps);
         setContracts(cts);
         setSalary(sal);
       })
@@ -183,12 +191,23 @@ export function TeamPage({ teamId }: Props) {
   }
 
   /** 裁退球员 */
-  async function handleWaive(contractId: string, playerName: string) {
+  async function handleWaive(
+    contractId: string,
+    playerName: string,
+    waiveCost: number,
+    yearsRemain: number,
+    salaryPerYear: number,
+  ) {
     if (!team) return;
-    if (!window.confirm(`确认裁退「${playerName}」？此操作不可撤销。`)) return;
+    const costMsg =
+      waiveCost > 0
+        ? `\n\n裁员（买断）成本：${waiveCost.toLocaleString()} 万\n（剩余 ${yearsRemain} 年 × 年薪 ${salaryPerYear.toLocaleString()} 万 × 50%）\n此成本将占用薪资帽空间，操作不可撤销。`
+        : "\n\n此操作不可撤销。";
+    if (!window.confirm(`确认裁退「${playerName}」？${costMsg}`)) return;
     setContractOpError(null);
     try {
-      await postWaivePlayer(contractId);
+      const result: WaiveResult = await postWaivePlayer(contractId);
+      // 刷新合同/薪资/球队
       const [cts, sal, t] = await Promise.all([
         fetchTeamContracts(team.id),
         fetchTeamSalary(team.id),
@@ -197,6 +216,11 @@ export function TeamPage({ teamId }: Props) {
       setContracts(cts);
       setSalary(sal);
       setTeam(t);
+      if (result.waiveCost > 0) {
+        setContractOpError(
+          `已裁退「${playerName}」，买断成本 ${result.waiveCost.toLocaleString()} 万已计入薪资帽。`,
+        );
+      }
     } catch (e) {
       setContractOpError(e instanceof Error ? e.message : String(e));
     }
@@ -505,49 +529,14 @@ export function TeamPage({ teamId }: Props) {
         <section className="panel">
           <div className="panel-head">
             <h2>数据统计</h2>
-            <span className="hint">
-              {isMine
-                ? "球队薪资总览 + 球员生涯统计"
-                : "球员生涯统计（薪资数据仅本队可见）"}
-            </span>
+            <span className="hint">球员本赛季累计比赛数据（场均/命中率）</span>
           </div>
           <div className="panel-body">
-            {/* 薪资总览（仅本队） */}
-            {isMine && salary && (
-              <div className="kv-card">
-                <h3 className="kv-card-title">球队薪资总览</h3>
-                <div className="kv">
-                  <div>
-                    <dt>薪资帽</dt>
-                    <dd>{salary.salaryCap.toLocaleString()} 万</dd>
-                  </div>
-                  <div>
-                    <dt>总薪资</dt>
-                    <dd>{salary.totalSalary.toLocaleString()} 万</dd>
-                  </div>
-                  <div>
-                    <dt>占用</dt>
-                    <dd>{salary.capHit.toLocaleString()} 万</dd>
-                  </div>
-                  <div>
-                    <dt>剩余空间</dt>
-                    <dd className={salary.remaining < 0 ? "neg" : "pos"}>
-                      {salary.remaining.toLocaleString()} 万
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>合同数</dt>
-                    <dd>{salary.contractCount}</dd>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 球员生涯统计 */}
-            <h3 className="section-title" style={{ margin: "16px 0 8px" }}>
-              球员生涯统计
+            {/* 球员比赛累计统计 */}
+            <h3 className="section-title" style={{ margin: "0 0 8px" }}>
+              球员赛季统计
             </h3>
-            {careers && careers.length > 0 ? (
+            {playerStats && playerStats.length > 0 ? (
               <div className="roster-table-wrap">
                 <table className="stats-table">
                   <thead>
@@ -555,40 +544,76 @@ export function TeamPage({ teamId }: Props) {
                       <th>姓名</th>
                       <th>位置</th>
                       <th>年龄</th>
-                      <th>OVR</th>
-                      <th>潜力</th>
-                      <th>生涯阶段</th>
-                      <th>训练经验</th>
-                      <th>成长空间</th>
-                      <th>退役季</th>
-                      <th>年薪(万)</th>
+                      <th>GP</th>
+                      <th>分钟</th>
+                      <th>得分</th>
+                      <th>篮板</th>
+                      <th>助攻</th>
+                      <th>抢断</th>
+                      <th>盖帽</th>
+                      <th>失误</th>
+                      <th>投篮%</th>
+                      <th>三分%</th>
+                      <th>罚球%</th>
+                      <th>+/-</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {careers.map((c) => (
-                      <tr key={c.playerId}>
-                        <td>{c.name}</td>
-                        <td>{c.position}</td>
-                        <td>{c.age}</td>
-                        <td>{c.ovr}</td>
-                        <td>{c.potential}</td>
-                        <td>
-                          <span className={`stage-chip stage-${c.stage}`}>
-                            {c.stageLabel}
+                    {playerStats.map((s) => (
+                      <tr key={s.playerId}>
+                        <td>{s.name}</td>
+                        <td>{s.position}</td>
+                        <td>{s.age ?? "—"}</td>
+                        <td>{s.gp}</td>
+                        <td>{s.avgMinutes.toFixed(1)}</td>
+                        <td className="num-cell">
+                          <strong>{s.avgPoints.toFixed(1)}</strong>
+                          <span className="muted"> ({s.points})</span>
+                        </td>
+                        <td className="num-cell">
+                          {s.avgRebounds.toFixed(1)}
+                          <span className="muted"> ({s.rebounds})</span>
+                        </td>
+                        <td className="num-cell">
+                          {s.avgAssists.toFixed(1)}
+                          <span className="muted"> ({s.assists})</span>
+                        </td>
+                        <td>{s.avgSteals.toFixed(1)}</td>
+                        <td>{s.avgBlocks.toFixed(1)}</td>
+                        <td>{s.avgTurnovers.toFixed(1)}</td>
+                        <td className={`pct-cell ${pctTier(s.fgPct)}`}>
+                          {(s.fgPct * 100).toFixed(1)}%
+                          <span className="muted">
+                            {" "}{s.fgm}/{s.fga}
                           </span>
                         </td>
-                        <td>{c.trainExp}</td>
-                        <td>{c.growthRoom > 0 ? `+${c.growthRoom}` : "—"}</td>
-                        <td>{c.retireSeason ?? (c.retired ? "已退役" : "—")}</td>
-                        <td>{c.salary != null ? c.salary.toLocaleString() : "—"}</td>
+                        <td className={`pct-cell ${pctTier(s.tpPct)}`}>
+                          {(s.tpPct * 100).toFixed(1)}%
+                          <span className="muted">
+                            {" "}{s.tpm}/{s.tpa}
+                          </span>
+                        </td>
+                        <td className={`pct-cell ${pctTier(s.ftPct)}`}>
+                          {(s.ftPct * 100).toFixed(1)}%
+                          <span className="muted">
+                            {" "}{s.ftm}/{s.fta}
+                          </span>
+                        </td>
+                        <td className={s.plusMinus >= 0 ? "pos" : "neg"}>
+                          {s.plusMinus > 0 ? "+" : ""}
+                          {s.plusMinus}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             ) : (
-              <div className="state">暂无生涯统计数据</div>
+              <div className="state">暂无比赛数据（赛季尚未开始或无已结算比赛）</div>
             )}
+            <p className="muted" style={{ marginTop: 8, fontSize: 11 }}>
+              ⓘ 场均数据括号内为累计总数；命中率配色：≥50% 绿色 / 35-50% 黄色 / &lt;35% 红色
+            </p>
           </div>
         </section>
       )}
@@ -702,6 +727,7 @@ export function TeamPage({ teamId }: Props) {
                       <th>总年限</th>
                       <th>剩余</th>
                       <th>年薪(万)</th>
+                      <th>裁员成本(万)</th>
                       <th>状态</th>
                       <th>条款</th>
                       {isMine && <th>操作</th>}
@@ -718,6 +744,11 @@ export function TeamPage({ teamId }: Props) {
                           {ct.yearsRemain}
                         </td>
                         <td>{ct.salaryPerYear.toLocaleString()}</td>
+                        <td className={`waive-cost ${ct.status === "active" && (ct.waiveCost ?? 0) > 0 ? "has-cost" : ""}`}>
+                          {ct.status === "active" && ct.waiveCost != null
+                            ? ct.waiveCost.toLocaleString()
+                            : "—"}
+                        </td>
                         <td>
                           <span className={`status-chip contract-status-${ct.status}`}>
                             {ct.status === "active"
@@ -794,9 +825,22 @@ export function TeamPage({ teamId }: Props) {
                                     <button
                                       type="button"
                                       className="btn-link captain-btn waive-btn"
-                                      onClick={() => handleWaive(ct.id, ct.player?.name ?? "该球员")}
+                                      onClick={() =>
+                                        handleWaive(
+                                          ct.id,
+                                          ct.player?.name ?? "该球员",
+                                          ct.waiveCost ?? 0,
+                                          ct.yearsRemain,
+                                          ct.salaryPerYear,
+                                        )
+                                      }
                                     >
                                       裁退
+                                      {ct.waiveCost != null && ct.waiveCost > 0 && (
+                                        <span className="waive-cost-tag">
+                                          ({ct.waiveCost.toLocaleString()}万)
+                                        </span>
+                                      )}
                                     </button>
                                   </>
                                 )}

@@ -37,6 +37,8 @@ import type {
   Contract,
   ContractStatus,
   SalaryStatus,
+  WaiveResult,
+  PlayerSeasonStats,
   FreeAgent,
   WorldInfo,
   ScoutReport,
@@ -673,14 +675,21 @@ export function postExtendContract(
   );
 }
 
-/** POST /api/contract/:contractId/waive — 裁员 */
-export function postWaivePlayer(
-  contractId: string,
-): Promise<{ waived: true; playerId: string }> {
-  return sendJson(
+/** POST /api/contract/:contractId/waive — 裁员（返回含买断成本） */
+export function postWaivePlayer(contractId: string): Promise<WaiveResult> {
+  return sendJson<WaiveResult>(
     "POST",
     `/api/contract/${encodeURIComponent(contractId)}/waive`,
     {},
+  );
+}
+
+// ── M4: 球员赛季累计统计 ──
+
+/** GET /api/stats/team/:teamId — 球队球员赛季累计技术统计 */
+export function fetchTeamPlayerStats(teamId: string): Promise<PlayerSeasonStats[]> {
+  return getJson<PlayerSeasonStats[]>(
+    `/api/stats/team/${encodeURIComponent(teamId)}`,
   );
 }
 

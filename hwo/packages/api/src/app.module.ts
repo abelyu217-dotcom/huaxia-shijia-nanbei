@@ -29,6 +29,7 @@ import { FacilityModule } from "./facility/facility.module.js";
 import { IdentityModule } from "./identity/identity.module.js";
 import { DynastyModule } from "./dynasty/dynasty.module.js";
 import { RelationshipModule } from "./relationship/relationship.module.js";
+import { StatsModule } from "./stats/stats.module.js";
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { RelationshipModule } from "./relationship/relationship.module.js";
     IdentityModule,
     DynastyModule,
     RelationshipModule,
+    StatsModule,
   ],
 })
 export class AppModule {}

@@ -555,6 +555,8 @@ export interface Contract {
   teamOption: boolean;
   noTrade: boolean;
   status: ContractStatus;
+  /** 裁员（买断）成本预估：剩余年限 × 年薪 × 50%（仅 active 合同） */
+  waiveCost?: number;
   player?: {
     id: string;
     name: string;
@@ -563,6 +565,54 @@ export interface Contract {
     potential: number | null;
     retired: boolean;
   } | null;
+}
+
+/** 裁员返回值 */
+export interface WaiveResult {
+  waived: boolean;
+  playerId: string;
+  contractId: string;
+  /** 实际支付的买断费 */
+  waiveCost: number;
+  salaryPerYear: number;
+  yearsRemain: number;
+}
+
+// ── M4: 球员赛季累计统计（聚合已结算比赛） ──
+export interface PlayerSeasonStats {
+  playerId: string;
+  name: string;
+  position: string;
+  age?: number | null;
+  gp: number;
+  minutes: number;
+  points: number;
+  offReb: number;
+  defReb: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  turnovers: number;
+  fouls: number;
+  fgm: number;
+  fga: number;
+  tpm: number;
+  tpa: number;
+  ftm: number;
+  fta: number;
+  plusMinus: number;
+  // 派生指标
+  avgMinutes: number;
+  avgPoints: number;
+  avgRebounds: number;
+  avgAssists: number;
+  avgSteals: number;
+  avgBlocks: number;
+  avgTurnovers: number;
+  fgPct: number;
+  tpPct: number;
+  ftPct: number;
 }
 
 export interface SalaryStatus {

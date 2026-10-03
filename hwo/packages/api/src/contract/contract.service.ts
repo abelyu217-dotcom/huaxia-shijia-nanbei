@@ -27,6 +27,8 @@ const MIN_YEARS = 1;
 const MAX_YEARS = 5;
 /** 最低年薪（万） */
 const MIN_SALARY = 50;
+/** 裁员（买断）成本比例：剩余年限薪资的 50% */
+const WAIVE_COST_RATE = 0.5;
 
 export interface SignContractParams {
   playerId: string;
@@ -195,6 +197,8 @@ export class ContractService {
    * 裁员：终止合同
    * - 球员成为自由球员（teamId 置空需要可空，这里改为标记 waived）
    * - 合同标记为 waived
+   * - 计算并返回裁员（买断）成本：剩余年限 × 年薪 × 50%
+   *   （basketpulse 风格：球员被裁后仍按约定比例领取剩余薪资）
    */
   async waivePlayer(contractId: string) {
     const contract = await this.prisma.contract.findUnique({
@@ -208,6 +212,11 @@ export class ContractService {
       throw new BadRequestException("仅生效合同可裁员");
     }
 
+    // 裁员成本：剩余年限 × 年薪 × 50%
+    const waiveCost = Math.round(
+      contract.yearsRemain * contract.salaryPerYear * WAIVE_COST_RATE,
+    );
+
     await this.prisma.$transaction([
       this.prisma.contract.update({
         where: { id: contractId },
@@ -216,15 +225,22 @@ export class ContractService {
     ]);
 
     this.logger.log(
-      `裁员：${contract.player.name}（球队 ${contract.teamId}）`,
+      `裁员：${contract.player.name}（球队 ${contract.teamId}），买断成本 ${waiveCost} 万`,
     );
 
-    return { waived: true, playerId: contract.playerId };
+    return {
+      waived: true,
+      playerId: contract.playerId,
+      contractId,
+      waiveCost,
+      salaryPerYear: contract.salaryPerYear,
+      yearsRemain: contract.yearsRemain,
+    };
   }
 
-  /** 查询球队所有合同（含球员信息） */
+  /** 查询球队所有合同（含球员信息 + 裁员成本预估） */
   async getTeamContracts(teamId: string, status?: "active" | "expired" | "waived") {
-    return this.prisma.contract.findMany({
+    const contracts = await this.prisma.contract.findMany({
       where: { teamId, ...(status ? { status } : {}) },
       orderBy: [{ salaryPerYear: "desc" }],
       include: {
@@ -241,6 +257,14 @@ export class ContractService {
         },
       },
     });
+    // 注入裁员成本预估（仅 active 合同）
+    return contracts.map((c) => ({
+      ...c,
+      waiveCost:
+        c.status === "active"
+          ? Math.round(c.yearsRemain * c.salaryPerYear * WAIVE_COST_RATE)
+          : 0,
+    }));
   }
 
   /**

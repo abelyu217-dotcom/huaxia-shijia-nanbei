@@ -9541,5 +9541,32 @@ button {
 .waive-btn { color: #ef4444; }
 .waive-btn:hover { background: rgba(239, 68, 68, 0.12); }
 
+/* 裁员成本列 */
+.waive-cost {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted, var(--text-muted));
+}
+.waive-cost.has-cost {
+  color: #f59e0b;
+  font-weight: 700;
+}
+.waive-cost-tag {
+  font-size: 10px;
+  opacity: 0.75;
+  margin-left: 2px;
+}
+
+/* 命中率配色 */
+.pct-cell {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.pct-cell.pct-good { color: #22c55e; }
+.pct-cell.pct-mid  { color: #f59e0b; }
+.pct-cell.pct-bad  { color: #ef4444; }
+
+.num-cell strong { color: var(--text); }
+.num-cell .muted { color: var(--muted, var(--text-muted)); font-weight: 400; }
+
 
 
