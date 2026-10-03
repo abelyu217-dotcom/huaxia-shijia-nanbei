@@ -64,6 +64,40 @@ export class SeasonController {
     return this.scheduleService.advanceDay(season.id);
   }
 
+  /** v0.6 世界时钟状态查询 */
+  @Get("world-clock")
+  async worldClock() {
+    const season = await this.seasonService.getCurrentSeason();
+    return {
+      seasonId: season.id,
+      currentDay: season.currentDay,
+      seasonName: season.name,
+      seasonYear: season.year,
+      seasonStatus: season.status,
+      ...this.scheduleService.getRapidStatus(),
+    };
+  }
+
+  /** v0.6 世界时钟控制：暂停/恢复 */
+  @UseGuards(JwtAuthGuard)
+  @Post("world-clock/pause")
+  async pauseClock(@Query("paused") paused: string) {
+    this.scheduleService.setRapidPaused(paused === "true");
+    return this.scheduleService.getRapidStatus();
+  }
+
+  /** v0.6 世界时钟控制：加速倍率 */
+  @UseGuards(JwtAuthGuard)
+  @Post("world-clock/speed")
+  async setSpeed(@Query("speed") speed: string) {
+    const s = Number(speed);
+    if (s !== 1 && s !== 2 && s !== 4) {
+      return { error: "speed must be 1, 2 or 4" };
+    }
+    this.scheduleService.setRapidSpeed(s as 1 | 2 | 4);
+    return this.scheduleService.getRapidStatus();
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post("generate")
   async generate() {

@@ -15,8 +15,20 @@ import { AiManagerService } from "../ai/ai-manager.service.js";
 /**
  * 每日结算时刻（北京时间，小时 0-23）。
  * 设计：10:00 结算当日比赛并推进至下一日。
+ * v0.6 调整：改为按可配速率自动推进（WorldClockScheduler），1 秒 = 1 赛季分钟（默认）。
+ *             旧版每日 10:00 结算逻辑保留作为兜底（仅当 rapid 模式未启动时生效）。
  */
 const SETTLEMENT_HOUR = 10;
+
+/**
+ * v0.6 自动走时间配置。
+ * - rapidEnabled: 是否启用快速推进（true 时按 RAPID_INTERVAL_MS 间隔推进 day）
+ * - rapidIntervalMs: 推进间隔，默认 60000ms（即 1 分钟现实时间推进 1 个赛季日）
+ * - 1 秒:1 赛季分钟 ≈ 1 分钟现实时间推进 1 个赛季日（60 秒/小时 × 24 = 1440 分钟现实 = 1 赛季日）
+ *   但为可玩性，默认压缩为 1 分钟现实推进 1 个赛季日（即 1 现实秒 ≈ 1440 赛季分钟）
+ *   用户可设置环境变量 WORLD_CLOCK_INTERVAL_MS 覆盖
+ */
+const RAPID_INTERVAL_MS = Number(process.env.WORLD_CLOCK_INTERVAL_MS ?? 60_000);
 
 @Injectable()
 export class ScheduleService implements OnModuleInit {
@@ -24,6 +36,12 @@ export class ScheduleService implements OnModuleInit {
 
   /** 上一次结算日期（YYYY-MM-DD），防止同一日重复结算 */
   private lastSettlementDate: string | null = null;
+
+  /** v0.6 快速推进：是否暂停（前端可调） */
+  private rapidPaused = false;
+
+  /** v0.6 加速倍率（1/2/4） */
+  private rapidSpeed: 1 | 2 | 4 = 1;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -34,12 +52,53 @@ export class ScheduleService implements OnModuleInit {
 
   /**
    * 模块启动时开启定时结算时钟。
-   * 每分钟检查一次是否到达结算时刻；到达则推进一日。
+   * v0.6：启用快速推进（每 RAPID_INTERVAL_MS 推进 1 个赛季日），同时保留每日 10:00 兜底。
    */
   onModuleInit() {
-    // 每 60 秒检查一次
+    // 每 60 秒检查一次兜底
     setInterval(() => this.checkSettlement(), 60_000);
-    this.logger.log(`赛季结算时钟已启动（每日 ${SETTLEMENT_HOUR}:00 自动推进）`);
+    // v0.6 快速推进：按配置间隔推进
+    setInterval(() => this.rapidTick(), RAPID_INTERVAL_MS);
+    this.logger.log(
+      `[WorldClock] 自动走时间已启动：每 ${RAPID_INTERVAL_MS}ms 推进 1 个赛季日（每日 ${SETTLEMENT_HOUR}:00 兜底）`,
+    );
+  }
+
+  /** v0.6 快速推进 tick：按 speed 倍率在 1 个 interval 内推进 N 个 day */
+  private async rapidTick() {
+    if (this.rapidPaused) return;
+    try {
+      const season = await this.seasonService.getCurrentSeason();
+      if (!season) return;
+      for (let i = 0; i < this.rapidSpeed; i++) {
+        await this.advanceDay(season.id);
+      }
+    } catch (e) {
+      this.logger.error(
+        `[WorldClock] 推进失败：${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  }
+
+  /** v0.6 控制接口：暂停/恢复快速推进 */
+  setRapidPaused(paused: boolean) {
+    this.rapidPaused = paused;
+    this.logger.log(`[WorldClock] ${paused ? "已暂停" : "已恢复"}`);
+  }
+
+  /** v0.6 控制接口：设置加速倍率 */
+  setRapidSpeed(speed: 1 | 2 | 4) {
+    this.rapidSpeed = speed;
+    this.logger.log(`[WorldClock] 加速倍率：${speed}x`);
+  }
+
+  /** v0.6 状态查询 */
+  getRapidStatus() {
+    return {
+      paused: this.rapidPaused,
+      speed: this.rapidSpeed,
+      intervalMs: RAPID_INTERVAL_MS,
+    };
   }
 
   private async checkSettlement() {

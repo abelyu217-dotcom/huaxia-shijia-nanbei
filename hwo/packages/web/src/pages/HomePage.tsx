@@ -1,17 +1,11 @@
 /**
  * HomePage — 仪表盘式主页
  *
- * 参考 BasketPulse 主页 5 模块卡片设计，整页布局为：
- *   - 顶部：赛季横幅（生成赛程 / 推进一日）
- *   - AI 经理控制条
- *   - 5 张仪表盘卡片（CSS grid，3/2/1 列响应式）：
- *       1. 战绩卡：球队战绩、胜率、连胜、今日对阵、当家球星
- *       2. 财务摘要卡：薪资总额 / 薪资帽 / 剩余空间 / 合同数 + 钱包（Coins/Credits）
- *       3. 训练概览卡：队伍平均 OVR / 最近训练提升数 / 青训学院等级
- *       4. 排名卡（精简版）：Top 8，高亮我的球队
- *       5. 赛程卡：今日比赛列表
- *
- * 所有数据在 loadAll 中并行加载；任一接口失败时显示 "—" 而非崩溃。
+ * v0.6 调整：
+ *   - 顶部：世界时钟横幅（自动走时间，可暂停/调速，去除"推进一日"按钮）
+ *   - 去除 AI 经理模块（后端 day 切换时自动触发）
+ *   - "今日赛程"卡 → "球队资讯"卡（占位，事件源后续批次填充）
+ *   - 5 张仪表盘卡片：战绩 / 财务摘要 / 训练概览 / 排名 / 球队资讯
  */
 
 import {
@@ -31,14 +25,14 @@ import {
   fetchTeamSalary,
   fetchTeams,
   fetchWallet,
-  postAdvanceDay,
-  postAiRefresh,
-  postAiTrain,
+  fetchWorldClock,
   postGenerateSchedule,
+  postWorldClockPause,
+  postWorldClockSpeed,
+  type WorldClockStatus,
 } from "../api";
 import type {
   Academy,
-  AiDifficulty,
   PlayerCareer,
   SalaryStatus,
   ScheduleDay,
@@ -75,11 +69,9 @@ export function HomePage({ onOpenTeam, onOpenSchedule }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [advancing, setAdvancing] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [aiRefreshing, setAiRefreshing] = useState(false);
-  const [aiTraining, setAiTraining] = useState(false);
-  const [aiDifficulty, setAiDifficulty] = useState<AiDifficulty>("normal");
+  const [clock, setClock] = useState<WorldClockStatus | null>(null);
+  const [clockBusy, setClockBusy] = useState(false);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
@@ -87,16 +79,18 @@ export function HomePage({ onOpenTeam, onOpenSchedule }: Props) {
     setError(null);
     try {
       // 公共数据并行加载
-      const [s, st, sch, ts] = await Promise.all([
+      const [s, st, sch, ts, wc] = await Promise.all([
         fetchCurrentSeason(),
         fetchStandings(),
         fetchSchedule(),
         fetchTeams(),
+        fetchWorldClock(),
       ]);
       setSeason(s);
       setStandings(st);
       setSchedule(sch);
       setTeams(ts);
+      setClock(wc);
 
       // 用户绑定球队相关数据并行加载；任一失败不阻塞其他
       const teamId = user?.teamId;
@@ -129,6 +123,32 @@ export function HomePage({ onOpenTeam, onOpenSchedule }: Props) {
       setLoading(false);
     }
   }, [user?.teamId]);
+
+  // v0.6 世界时钟轮询：每 5 秒刷新一次时钟状态
+  useEffect(() => {
+    let alive = true;
+    const tick = async () => {
+      try {
+        const wc = await fetchWorldClock();
+        if (alive) {
+          setClock(wc);
+          // 时钟推进后同步刷新赛季信息
+          setSeason((prev) =>
+            prev && prev.currentDay !== wc.currentDay
+              ? { ...prev, currentDay: wc.currentDay }
+              : prev,
+          );
+        }
+      } catch {
+        // 时钟轮询失败忽略
+      }
+    };
+    const id = setInterval(tick, 5000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, []);
 
   useEffect(() => {
     void loadAll();
@@ -193,49 +213,31 @@ export function HomePage({ onOpenTeam, onOpenSchedule }: Props) {
     }
   }
 
-  async function handleAdvance() {
-    setAdvancing(true);
-    setActionMsg(null);
+  // v0.6 世界时钟控制
+  async function handleTogglePause() {
+    if (!clock) return;
+    setClockBusy(true);
     try {
-      const r = await postAdvanceDay();
-      setActionMsg(
-        `已结算 ${r.settled} 场，进入第 ${r.nextDay} 日${
-          r.seasonEnded ? "（赛季已结束并交接）" : ""
-        }`,
-      );
-      await loadAll();
+      const next = await postWorldClockPause(!clock.paused);
+      setClock(next);
+      setActionMsg(next.paused ? "世界时钟已暂停" : "世界时钟已恢复");
     } catch (e) {
       setActionMsg(e instanceof Error ? e.message : String(e));
     } finally {
-      setAdvancing(false);
+      setClockBusy(false);
     }
   }
 
-  async function handleAiRefresh() {
-    setAiRefreshing(true);
-    setActionMsg(null);
+  async function handleSpeed(speed: 1 | 2 | 4) {
+    setClockBusy(true);
     try {
-      const r = await postAiRefresh(aiDifficulty);
-      setActionMsg(`AI 经理已刷新 ${r.updated} 支球队阵容与战术（${aiDifficulty}）`);
-      await loadAll();
+      const next = await postWorldClockSpeed(speed);
+      setClock(next);
+      setActionMsg(`世界时钟加速 ${speed}x`);
     } catch (e) {
       setActionMsg(e instanceof Error ? e.message : String(e));
     } finally {
-      setAiRefreshing(false);
-    }
-  }
-
-  async function handleAiTrain() {
-    setAiTraining(true);
-    setActionMsg(null);
-    try {
-      const r = await postAiTrain();
-      setActionMsg(`AI 球队训练完成，共 ${r.playersTrained} 名球员能力提升`);
-      await loadAll();
-    } catch (e) {
-      setActionMsg(e instanceof Error ? e.message : String(e));
-    } finally {
-      setAiTraining(false);
+      setClockBusy(false);
     }
   }
 
@@ -255,15 +257,20 @@ export function HomePage({ onOpenTeam, onOpenSchedule }: Props) {
 
   return (
     <div className="home-page">
-      {/* 赛季横幅 */}
+      {/* v0.6 世界时钟横幅（自动走时间，可暂停/调速） */}
       <div className="season-banner">
         <div className="season-banner-main">
           <span className="season-status">
             {seasonStatusBadge(season?.status ?? "regular")}
           </span>
           <div className="season-name">
-            {season?.name ?? "未开赛"} · 第 {season?.currentDay ?? 0} 日
+            {season?.name ?? "未开赛"} · 第 {clock?.currentDay ?? season?.currentDay ?? 0} 日
           </div>
+          {clock && (
+            <span className={`clock-state ${clock.paused ? "paused" : "running"}`}>
+              {clock.paused ? "已暂停" : "运行中"}
+            </span>
+          )}
         </div>
         <div className="season-actions">
           {!hasSchedule && (
@@ -276,61 +283,37 @@ export function HomePage({ onOpenTeam, onOpenSchedule }: Props) {
               {generating ? "生成中…" : "生成赛程"}
             </button>
           )}
-          <button
-            type="button"
-            className="btn btn-primary"
-            disabled={advancing || !hasSchedule}
-            onClick={handleAdvance}
-          >
-            {advancing ? "结算中…" : "推进一日"}
-          </button>
+          {clock && (
+            <>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                disabled={clockBusy}
+                onClick={handleTogglePause}
+              >
+                {clock.paused ? "恢复" : "暂停"}
+              </button>
+              <div className="clock-speed-group" role="group" aria-label="加速倍率">
+                {([1, 2, 4] as const).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    className={`btn btn-ghost btn-sm ${clock.speed === s ? "active" : ""}`}
+                    disabled={clockBusy}
+                    onClick={() => handleSpeed(s)}
+                  >
+                    {s}x
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
       {actionMsg && <div className="home-action-msg">{actionMsg}</div>}
 
-      {/* AI 经理控制条 */}
-      <section className="panel home-ai-bar">
-        <div className="panel-head">
-          <h2>AI 经理</h2>
-          <span className="hint">
-            自动为 AI 球队刷新阵容/战术/训练（推进一日时会自动触发）
-          </span>
-        </div>
-        <div className="panel-body ai-bar-body">
-          <div className="ai-bar-left">
-            <label className="ai-diff-label">难度</label>
-            <select
-              className="ai-diff-select"
-              value={aiDifficulty}
-              onChange={(e) => setAiDifficulty(e.target.value as AiDifficulty)}
-              disabled={aiRefreshing}
-            >
-              <option value="easy">简单（随机决策）</option>
-              <option value="normal">普通（按 OVR 选阵）</option>
-              <option value="hard">困难（综合战术匹配）</option>
-            </select>
-          </div>
-          <div className="ai-bar-right">
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              disabled={aiRefreshing}
-              onClick={handleAiRefresh}
-            >
-              {aiRefreshing ? "刷新中…" : "刷新 AI 阵容"}
-            </button>
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              disabled={aiTraining}
-              onClick={handleAiTrain}
-            >
-              {aiTraining ? "训练中…" : "AI 训练"}
-            </button>
-          </div>
-        </div>
-      </section>
+      {/* v0.6 AI 经理模块已移除（后端 day 切换时自动触发） */}
 
       {/* 5 模块仪表盘卡片 */}
       <div className="dashboard-grid">
@@ -373,9 +356,9 @@ export function HomePage({ onOpenTeam, onOpenSchedule }: Props) {
           />
         </DashboardCard>
 
-        {/* 5. 赛程卡（跨 2 列） */}
+        {/* v0.6 球队资讯卡（替代今日赛程，事件源后续批次填充） */}
         <DashboardCard
-          title={`今日赛程 · 第 ${season?.currentDay ?? 0} 日`}
+          title={`球队资讯 · 第 ${clock?.currentDay ?? season?.currentDay ?? 0} 日`}
           wide
           action={
             <button
@@ -387,14 +370,9 @@ export function HomePage({ onOpenTeam, onOpenSchedule }: Props) {
             </button>
           }
         >
-          {todayMatches.length === 0 ? (
-            <div className="empty-block">今日休赛日，无比赛安排。</div>
-          ) : (
-            <TodayMatchList
-              matches={todayMatches}
-              myTeamId={user?.teamId ?? null}
-            />
-          )}
+          <div className="empty-block">
+            球队资讯流将在后续批次填充（含比赛结果 / 训练成果 / 转会动态 / 合同 / 财务 / 董事会 / 球迷 / 青训 / 设施等事件）。
+          </div>
         </DashboardCard>
       </div>
     </div>
@@ -722,61 +700,5 @@ function StandingsTable({
         })}
       </tbody>
     </table>
-  );
-}
-
-function TodayMatchList({
-  matches,
-  myTeamId,
-}: {
-  matches: ScheduleDay["matches"];
-  myTeamId: string | null;
-}) {
-  return (
-    <div className="today-list">
-      {matches.map((m) => {
-        const involvesMe =
-          myTeamId && (m.homeTeamId === myTeamId || m.awayTeamId === myTeamId);
-        const homeWin = m.status === "final" && m.winnerId === m.homeTeamId;
-        return (
-          <div
-            key={m.id}
-            className={`today-match${involvesMe ? " is-mine" : ""}`}
-          >
-            <div className="tm-side home">
-              <span className={`tm-name${homeWin ? " win" : ""}`}>
-                {m.homeTeamName}
-              </span>
-              {m.homeScore != null && (
-                <span className="tm-score">{m.homeScore}</span>
-              )}
-            </div>
-            <div className="tm-center">
-              {m.status === "scheduled" ? (
-                <span className="tm-status scheduled">未开始</span>
-              ) : m.status === "in_progress" ? (
-                <span className="tm-status live">进行中</span>
-              ) : (
-                <span className="tm-status final">FINAL</span>
-              )}
-            </div>
-            <div className="tm-side away">
-              {m.awayScore != null && (
-                <span className="tm-score">{m.awayScore}</span>
-              )}
-              <span
-                className={`tm-name${
-                  m.status === "final" && m.winnerId === m.awayTeamId
-                    ? " win"
-                    : ""
-                }`}
-              >
-                {m.awayTeamName}
-              </span>
-            </div>
-          </div>
-        );
-      })}
-    </div>
   );
 }

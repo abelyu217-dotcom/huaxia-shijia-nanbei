@@ -1,8 +1,8 @@
 /**
  * TeamPage — 球队管理页
  *
- * Tab 切换：球员详情 / 数据统计 / 青年球员 / 少年球员 / 合同管理
- * - 球员详情：PlayerSkillsTable 展示球队所有球员技能（basketpulse 风格）
+ * Tab 切换：球员列表 / 数据统计 / 青年球员 / 少年球员 / 合同管理
+ * - 球员列表：PlayerSkillsTable 展示球队所有球员技能（basketpulse 风格）
  * - 数据统计：球队薪资总览 + 球员生涯统计
  * - 青年球员：age ≤ 18 的球员
  * - 少年球员：age ≤ 12 的球员
@@ -36,7 +36,7 @@ import { PlayerSkillsTable } from "../components/PlayerSkillsTable";
 type Tab = "players" | "stats" | "youth" | "junior" | "contracts";
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: "players", label: "球员详情" },
+  { id: "players", label: "球员列表" },
   { id: "stats", label: "数据统计" },
   { id: "youth", label: "青年球员" },
   { id: "junior", label: "少年球员" },
@@ -369,7 +369,7 @@ export function TeamPage({ teamId }: Props) {
       {tab === "players" && (
         <section className="panel">
           <div className="panel-head">
-            <h2>球员详情</h2>
+            <h2>球员列表</h2>
             <span className="hint">basketpulse 风格技能表 · 点击表头排序 · 支持导出</span>
           </div>
           <div className="panel-body">

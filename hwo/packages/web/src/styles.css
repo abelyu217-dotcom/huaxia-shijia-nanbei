@@ -3550,6 +3550,7 @@ button {
 .season-actions {
   display: flex;
   gap: 10px;
+  align-items: center;
 }
 .home-action-msg {
   padding: 10px 16px;
@@ -3560,7 +3561,40 @@ button {
   font-size: 13px;
 }
 
-/* ── AI 经理控制条 ── */
+/* v0.6 世界时钟控件 */
+.clock-state {
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 12px;
+  margin-left: 8px;
+  font-weight: 600;
+}
+.clock-state.running {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+.clock-state.paused {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+.clock-speed-group {
+  display: inline-flex;
+  gap: 4px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.clock-speed-group .btn {
+  min-width: 38px;
+  padding: 4px 8px;
+}
+.clock-speed-group .btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* ── AI 经理控制条（v0.6 已移除，保留样式供回退） ── */
 .home-ai-bar {
   margin-bottom: 18px;
 }

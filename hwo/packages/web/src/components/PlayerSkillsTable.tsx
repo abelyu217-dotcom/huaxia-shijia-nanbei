@@ -188,6 +188,15 @@ export function PlayerSkillsTable({
     return sorted;
   }, [players, keyword, posFilter, sortKey, sortAsc]);
 
+  /** v0.6 操作列空时隐藏：当 renderRowActions 提供时，仍要检查是否所有球员都返回 null */
+  const hasAnyAction = useMemo(() => {
+    if (!renderRowActions) return false;
+    return filtered.some((p) => {
+      const r = renderRowActions(p);
+      return r !== null && r !== undefined && r !== false;
+    });
+  }, [filtered, renderRowActions]);
+
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const pageItems = disablePagination
@@ -281,7 +290,7 @@ export function PlayerSkillsTable({
                 </th>
               ))}
               {onScout && <th>球探</th>}
-              {renderRowActions && <th>操作</th>}
+              {hasAnyAction && <th>操作</th>}
             </tr>
           </thead>
           <tbody>
@@ -345,14 +354,16 @@ export function PlayerSkillsTable({
                       </button>
                     </td>
                   )}
-                  {renderRowActions && <td>{renderRowActions(p)}</td>}
+                  {hasAnyAction && (
+                    <td>{renderRowActions!(p) ?? <span className="hint">—</span>}</td>
+                  )}
                 </tr>
               );
             })}
             {pageItems.flatMap((p) => {
               const extra = renderExtraRow?.(p);
               if (!extra) return [];
-              const colCount = 3 + KEY_ABILITIES.length + (onScout ? 1 : 0) + (renderRowActions ? 1 : 0);
+              const colCount = 3 + KEY_ABILITIES.length + (onScout ? 1 : 0) + (hasAnyAction ? 1 : 0);
               return [
                 <tr key={`${p.id}-extra`} className="skills-extra-row">
                   <td colSpan={colCount}>{extra}</td>
@@ -361,7 +372,7 @@ export function PlayerSkillsTable({
             })}
             {pageItems.length === 0 && (
               <tr>
-                <td colSpan={3 + KEY_ABILITIES.length + (onScout ? 1 : 0) + (renderRowActions ? 1 : 0)} className="empty-row">
+                <td colSpan={3 + KEY_ABILITIES.length + (onScout ? 1 : 0) + (hasAnyAction ? 1 : 0)} className="empty-row">
                   没有匹配的球员
                 </td>
               </tr>

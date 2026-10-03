@@ -270,6 +270,41 @@ export function postAdvanceDay(): Promise<AdvanceResult> {
   return sendJson<AdvanceResult>("POST", "/api/season/advance", {});
 }
 
+/** v0.6 世界时钟状态 */
+export interface WorldClockStatus {
+  seasonId: string;
+  currentDay: number;
+  seasonName: string;
+  seasonYear: number;
+  seasonStatus: string;
+  paused: boolean;
+  speed: 1 | 2 | 4;
+  intervalMs: number;
+}
+
+/** GET /api/season/world-clock — 世界时钟状态 */
+export function fetchWorldClock(): Promise<WorldClockStatus> {
+  return getJson<WorldClockStatus>("/api/season/world-clock");
+}
+
+/** POST /api/season/world-clock/pause?paused=true|false — 暂停/恢复 */
+export function postWorldClockPause(paused: boolean): Promise<WorldClockStatus> {
+  return sendJson<WorldClockStatus>(
+    "POST",
+    `/api/season/world-clock/pause?paused=${paused ? "true" : "false"}`,
+    {},
+  );
+}
+
+/** POST /api/season/world-clock/speed?speed=1|2|4 — 加速倍率 */
+export function postWorldClockSpeed(speed: 1 | 2 | 4): Promise<WorldClockStatus> {
+  return sendJson<WorldClockStatus>(
+    "POST",
+    `/api/season/world-clock/speed?speed=${speed}`,
+    {},
+  );
+}
+
 /** POST /api/season/generate — 为当前赛季生成赛程（需 JWT） */
 export function postGenerateSchedule(): Promise<{ generated: number }> {
   return sendJson<{ generated: number }>("POST", "/api/season/generate", {});
