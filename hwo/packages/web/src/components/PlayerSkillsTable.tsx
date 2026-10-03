@@ -7,7 +7,7 @@
  * - 支持 The Fog 迷雾估值（带 ± 范围显示）
  */
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import type { PlayerDetail, Position, Abilities, FogValue } from "../types";
 import {
   KEY_ABILITIES,
@@ -31,6 +31,14 @@ interface Props {
   onScout?: (playerId: string) => void;
   /** 导出文件名前缀（如球队名），默认 "球员名单" */
   exportName?: string;
+  /** 在姓名列下方追加自定义内容（如改名/队长按钮、档案展开） */
+  renderNameExtra?: (p: PlayerDetail) => ReactNode;
+  /** 自定义每行末尾追加的单元格（如球探按钮、档案按钮） */
+  renderRowActions?: (p: PlayerDetail) => ReactNode;
+  /** 自定义行下方追加的整行内容（如档案展开行） */
+  renderExtraRow?: (p: PlayerDetail) => ReactNode;
+  /** 是否禁用分页（小名单可一页展示） */
+  disablePagination?: boolean;
 }
 
 /** 触发浏览器下载 */
@@ -137,7 +145,16 @@ function skillTier(val: number): "s" | "a" | "b" | "c" | "d" {
   return "d";
 }
 
-export function PlayerSkillsTable({ players, side, onScout, exportName = "球员名单" }: Props) {
+export function PlayerSkillsTable({
+  players,
+  side,
+  onScout,
+  exportName = "球员名单",
+  renderNameExtra,
+  renderRowActions,
+  renderExtraRow,
+  disablePagination = false,
+}: Props) {
   const [keyword, setKeyword] = useState("");
   const [posFilter, setPosFilter] = useState<"ALL" | Position>("ALL");
   const [sortKey, setSortKey] = useState<SortKey>("ovr");
@@ -173,7 +190,9 @@ export function PlayerSkillsTable({ players, side, onScout, exportName = "球员
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
-  const pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const pageItems = disablePagination
+    ? filtered
+    : filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortAsc(!sortAsc);
@@ -262,6 +281,7 @@ export function PlayerSkillsTable({ players, side, onScout, exportName = "球员
                 </th>
               ))}
               {onScout && <th>球探</th>}
+              {renderRowActions && <th>操作</th>}
             </tr>
           </thead>
           <tbody>
@@ -280,6 +300,7 @@ export function PlayerSkillsTable({ players, side, onScout, exportName = "球员
                         <span className="fog-badge" title="未探查">雾</span>
                       )}
                     </span>
+                    {renderNameExtra?.(p)}
                   </td>
                   <td>
                     <span className="pos-badge">{p.position}</span>
@@ -324,12 +345,23 @@ export function PlayerSkillsTable({ players, side, onScout, exportName = "球员
                       </button>
                     </td>
                   )}
+                  {renderRowActions && <td>{renderRowActions(p)}</td>}
                 </tr>
               );
             })}
+            {pageItems.flatMap((p) => {
+              const extra = renderExtraRow?.(p);
+              if (!extra) return [];
+              const colCount = 3 + KEY_ABILITIES.length + (onScout ? 1 : 0) + (renderRowActions ? 1 : 0);
+              return [
+                <tr key={`${p.id}-extra`} className="skills-extra-row">
+                  <td colSpan={colCount}>{extra}</td>
+                </tr>,
+              ];
+            })}
             {pageItems.length === 0 && (
               <tr>
-                <td colSpan={3 + KEY_ABILITIES.length + (onScout ? 1 : 0)} className="empty-row">
+                <td colSpan={3 + KEY_ABILITIES.length + (onScout ? 1 : 0) + (renderRowActions ? 1 : 0)} className="empty-row">
                   没有匹配的球员
                 </td>
               </tr>
@@ -338,7 +370,7 @@ export function PlayerSkillsTable({ players, side, onScout, exportName = "球员
         </table>
       </div>
 
-      {totalPages > 1 && (
+      {totalPages > 1 && !disablePagination && (
         <div className="skills-pagination">
           <button
             type="button"

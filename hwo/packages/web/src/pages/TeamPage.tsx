@@ -7,20 +7,18 @@
  * - 球员：PlayerGrid 展示球队所有球员卡片
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { fetchTactics, fetchTeam, putTeamCaptain, postScoutPlayer, updateTeam, updatePlayer } from "../api";
-import type { Position, PlayerDetail, TacticPreset, TeamDetail } from "../types";
+import type { PlayerDetail, TacticPreset, TeamDetail } from "../types";
 import { useAuth } from "../auth/AuthContext";
 import { LineupEditor } from "../components/LineupEditor";
 import { TacticEditor } from "../components/TacticEditor";
+import { PlayerSkillsTable } from "../components/PlayerSkillsTable";
 import {
   DEFENSE_LABEL,
   OFFENSE_LABEL,
   TACTIC_CATEGORY_LABEL,
   TEMPO_LABEL,
-  abilityVal,
-  ovrVal,
-  isFoggedAbility,
 } from "../lib";
 
 type Tab = "lineup" | "tactics" | "players";
@@ -31,15 +29,6 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "players", label: "球员详情" },
 ];
 
-/** OVR 等级色 —— 参考 RA 评级色 */
-function ovrColor(ovr: number): string {
-  if (ovr >= 80) return "var(--ok)"; // 金色
-  if (ovr >= 75) return "#a78bfa"; // 紫
-  if (ovr >= 70) return "#60a5fa"; // 蓝
-  if (ovr >= 65) return "#34d399"; // 绿
-  return "var(--text-muted)";
-}
-
 /** 状态色 —— #13 状态色体系 */
 const STATUS_STYLE: Record<string, { color: string; bg: string; label: string }> = {
   peak: { color: "#22c55e", bg: "rgba(34,197,94,0.12)", label: "巅峰" },
@@ -47,8 +36,6 @@ const STATUS_STYLE: Record<string, { color: string; bg: string; label: string }>
   tired: { color: "#f59e0b", bg: "rgba(245,158,11,0.12)", label: "疲劳" },
   exhausted: { color: "#ef4444", bg: "rgba(239,68,68,0.12)", label: "力竭" },
 };
-
-const POS_FILTERS: ("ALL" | Position)[] = ["ALL", "PG", "SG", "SF", "PF", "C"];
 
 // 38 项档案分组（与 shared/types.ts PlayerProfile 字段一致）
 const PROFILE_GROUPS: { key: string; label: string; fields: { key: string; label: string; unit?: string }[] }[] = [
@@ -79,8 +66,6 @@ const PROFILE_GROUPS: { key: string; label: string; fields: { key: string; label
   ]},
 ];
 
-type SortKey = "name" | "position" | "ovr" | "salary" | "three" | "inside" | "perimeterD" | "speed";
-
 interface Props {
   teamId: string;
 }
@@ -94,9 +79,6 @@ export function TeamPage({ teamId }: Props) {
   const [tactics, setTactics] = useState<TacticPreset[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [posFilter, setPosFilter] = useState<"ALL" | Position>("ALL");
-  const [sortKey, setSortKey] = useState<SortKey>("ovr");
-  const [sortAsc, setSortAsc] = useState(false);
 
   // 球队资料编辑
   const [editingTeam, setEditingTeam] = useState(false);
@@ -131,38 +113,6 @@ export function TeamPage({ teamId }: Props) {
       cancelled = true;
     };
   }, [teamId]);
-
-  // 阵容表格：位置筛选 + 排序（参考 Rim Attack Roster 表格视图）
-  const visiblePlayers = useMemo(() => {
-    if (!team) return [];
-    const list = posFilter === "ALL" ? team.players : team.players.filter((p) => p.position === posFilter);
-    const sorted = [...list];
-    const getVal = (p: PlayerDetail): number | string => {
-      const ab = p.abilities as Record<string, number | { est: number; range: number }>;
-      switch (sortKey) {
-        case "name": return p.name;
-        case "position": return p.position;
-        case "ovr": return ovrVal(p.ovr);
-        case "salary": return p.salary ?? 0;
-        case "three": return abilityVal(ab["three"]);
-        case "inside": return abilityVal(ab["inside"]);
-        case "perimeterD": return abilityVal(ab["perimeterD"]);
-        case "speed": return abilityVal(ab["speed"]);
-      }
-    };
-    sorted.sort((a, b) => {
-      const va = getVal(a);
-      const vb = getVal(b);
-      if (typeof va === "string" && typeof vb === "string") return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
-      return sortAsc ? (va as number) - (vb as number) : (vb as number) - (va as number);
-    });
-    return sorted;
-  }, [team, posFilter, sortKey, sortAsc]);
-
-  function toggleSort(key: SortKey) {
-    if (sortKey === key) setSortAsc(!sortAsc);
-    else { setSortKey(key); setSortAsc(false); }
-  }
 
   /** 设置/取消队长（#20） */
   async function handleSetCaptain(playerId: string | null) {
@@ -366,209 +316,157 @@ export function TeamPage({ teamId }: Props) {
         <section className="panel">
           <div className="panel-head">
             <h2>球员详情</h2>
-            <div className="roster-toolbar">
-              <div className="pos-filters">
-                {POS_FILTERS.map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    className={`pos-filter${posFilter === p ? " is-active" : ""}`}
-                    onClick={() => setPosFilter(p)}
-                  >
-                    {p === "ALL" ? "全部" : p}
-                  </button>
-                ))}
-              </div>
-              <span className="hint">{visiblePlayers.length} / {team.players.length} 名球员</span>
-            </div>
+            <span className="hint">basketpulse 风格技能表 · 点击表头排序 · 支持导出</span>
           </div>
           <div className="panel-body">
-            <div className="roster-table-wrap">
-              <table className="roster-table">
-                <thead>
-                  <tr>
-                    <th onClick={() => toggleSort("name")} className="sortable">姓名 {sortKey === "name" && (sortAsc ? "▲" : "▼")}</th>
-                    <th onClick={() => toggleSort("position")} className="sortable">位置 {sortKey === "position" && (sortAsc ? "▲" : "▼")}</th>
-                    <th onClick={() => toggleSort("ovr")} className="sortable">OVR {sortKey === "ovr" && (sortAsc ? "▲" : "▼")}</th>
-                    <th>状态</th>
-                    <th onClick={() => toggleSort("salary")} className="sortable">年薪(万) {sortKey === "salary" && (sortAsc ? "▲" : "▼")}</th>
-                    <th onClick={() => toggleSort("three")} className="sortable">三分 {sortKey === "three" && (sortAsc ? "▲" : "▼")}</th>
-                    <th onClick={() => toggleSort("inside")} className="sortable">内线 {sortKey === "inside" && (sortAsc ? "▲" : "▼")}</th>
-                    <th onClick={() => toggleSort("perimeterD")} className="sortable">外防 {sortKey === "perimeterD" && (sortAsc ? "▲" : "▼")}</th>
-                    <th onClick={() => toggleSort("speed")} className="sortable">速度 {sortKey === "speed" && (sortAsc ? "▲" : "▼")}</th>
-                    {!isMine && <th>球探</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {visiblePlayers.map((p) => (
-                    <tr key={p.id}>
-                      <td className="cell-name">
-                        <span className="player-tags">
-                          {p.isCaptain && <span className="tag tag-captain" title="队长">C</span>}
-                          {p.isRookie && <span className="tag tag-rookie" title="新秀">R</span>}
-                          {isMine && editingPlayerId === p.id ? (
-                            <input
-                              className="team-edit-input"
-                              style={{ width: 140 }}
-                              value={playerNameDraft}
-                              autoFocus
-                              onChange={(e) => setPlayerNameDraft(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") handleSavePlayer(p.id);
-                                if (e.key === "Escape") setEditingPlayerId(null);
-                              }}
-                            />
-                          ) : (
-                            <span>{p.name}</span>
-                          )}
-                        </span>
-                        {isMine && (
-                          <div style={{ display: "flex", gap: 6, marginTop: 2 }}>
-                            {editingPlayerId === p.id ? (
-                              <>
-                                <button
-                                  type="button"
-                                  className="btn-link captain-btn"
-                                  onClick={() => handleSavePlayer(p.id)}
-                                >
-                                  保存
-                                </button>
-                                <button
-                                  type="button"
-                                  className="btn-link captain-btn"
-                                  onClick={() => setEditingPlayerId(null)}
-                                >
-                                  取消
-                                </button>
-                              </>
-                            ) : (
-                              <button
-                                type="button"
-                                className="btn-link captain-btn"
-                                onClick={() => startEditPlayer(p)}
-                              >
-                                ✎ 改名
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              className="btn-link captain-btn"
-                              onClick={() => handleSetCaptain(p.isCaptain ? null : p.id)}
-                            >
-                              {p.isCaptain ? "取消队长" : "设为队长"}
-                            </button>
-                          </div>
-                        )}
-                        {isMine && editingPlayerId === p.id && playerEditError && (
-                          <span className="error-text" style={{ fontSize: 12 }}>{playerEditError}</span>
-                        )}
-                      </td>
-                      <td><span className="pos-badge">{p.position}</span></td>
-                      <td className="cell-ovr" style={{ color: ovrColor(ovrVal(p.ovr)) }}>
-                        {ovrVal(p.ovr)}
-                        {typeof p.ovr === "object" && p.ovr && (
-                          <span className="fog-range">±{Math.round(p.ovr.range)}</span>
-                        )}
-                      </td>
-                      <td>
-                        {(() => {
-                          const st = STATUS_STYLE[p.status ?? "good"];
-                          return (
-                            <span className="chip status-chip" style={{ color: st.color, background: st.bg, borderColor: st.bg }}>
-                              {st.label}
-                            </span>
-                          );
-                        })()}
-                      </td>
-                      <td>{p.salary ?? "—"}</td>
-                      {(["three", "inside", "perimeterD", "speed"] as const).map((k) => {
-                        const ab = p.abilities as Record<string, number | { est: number; range: number }>;
-                        const v = ab[k];
+            <PlayerSkillsTable
+              players={team.players}
+              exportName={`${team.name}-球员名单`}
+              disablePagination={team.players.length <= 12}
+              renderNameExtra={(p) => (
+                <>
+                  {/* 状态色 + 年薪 + 生涯阶段（仅本队可见） */}
+                  {isMine && (
+                    <div className="skills-row-meta">
+                      {(() => {
+                        const st = STATUS_STYLE[p.status ?? "good"];
                         return (
-                          <td key={k}>
-                            {abilityVal(v)}
-                            {isFoggedAbility(v) && (
-                              <span className="fog-range">±{Math.round(v.range)}</span>
-                            )}
-                          </td>
-                        );
-                      })}
-                      {!isMine && (
-                        <td>
-                          <button
-                            className="btn btn-sm btn-scout"
-                            onClick={async () => {
-                              try {
-                                await postScoutPlayer(p.id);
-                                const refreshed = await fetchTeam(team.id);
-                                setTeam(refreshed);
-                              } catch (e) {
-                                setError(e instanceof Error ? e.message : String(e));
-                              }
+                          <span
+                            className="chip status-chip"
+                            style={{
+                              color: st.color,
+                              background: st.bg,
+                              borderColor: st.bg,
                             }}
                           >
-                            🔍
-                          </button>
-                        </td>
+                            {st.label}
+                          </span>
+                        );
+                      })()}
+                      {p.salary != null && (
+                        <span className="skills-salary" title="年薪（万）">
+                          💰 {p.salary} 万
+                        </span>
                       )}
-                      {isMine && p.profile && (
-                        <td>
+                    </div>
+                  )}
+                  {/* 本队管理：改名 + 队长 */}
+                  {isMine && (
+                    <div className="skills-row-actions">
+                      {editingPlayerId === p.id ? (
+                        <>
+                          <input
+                            className="team-edit-input"
+                            style={{ width: 140 }}
+                            value={playerNameDraft}
+                            autoFocus
+                            onChange={(e) => setPlayerNameDraft(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleSavePlayer(p.id);
+                              if (e.key === "Escape") setEditingPlayerId(null);
+                            }}
+                          />
                           <button
                             type="button"
-                            className="btn btn-sm"
-                            onClick={() =>
-                              setExpandedProfileId(expandedProfileId === p.id ? null : p.id)
-                            }
+                            className="btn-link captain-btn"
+                            onClick={() => handleSavePlayer(p.id)}
                           >
-                            {expandedProfileId === p.id ? "收起 ▲" : "档案 ▼"}
+                            保存
                           </button>
-                        </td>
+                          <button
+                            type="button"
+                            className="btn-link captain-btn"
+                            onClick={() => setEditingPlayerId(null)}
+                          >
+                            取消
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn-link captain-btn"
+                          onClick={() => startEditPlayer(p)}
+                        >
+                          ✎ 改名
+                        </button>
                       )}
-                    </tr>
-                  ))}
-                  {isMine && expandedProfileId && (() => {
-                    const p = team?.players.find((x) => x.id === expandedProfileId);
-                    if (!p?.profile) return null;
-                    const prof = p.profile as unknown as Record<string, Record<string, number | string>>;
-                    return (
-                      <tr key={`profile-${expandedProfileId}`} className="profile-expand-row">
-                        <td colSpan={10} className="profile-expand-cell">
-                          <div className="profile-groups">
-                            {PROFILE_GROUPS.map((g) => (
-                              <div className="profile-group" key={g.key}>
-                                <div className="profile-group-label">{g.label}</div>
-                                <div className="profile-field-grid">
-                                  {g.fields.map((f) => {
-                                    const v = prof[g.key]?.[f.key];
-                                    const display =
-                                      typeof v === "number"
-                                        ? g.key === "physical"
-                                          ? `${v}${f.unit ? " " + f.unit : ""}`
-                                          : String(Math.round(v))
-                                        : typeof v === "string"
-                                        ? v
-                                        : "—";
-                                    return (
-                                      <div className="profile-field" key={f.key} title={f.label}>
-                                        <span className="pf-label">{f.label}</span>
-                                        <span className="pf-val">{display}</span>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })()}
-                  {visiblePlayers.length === 0 && (
-                    <tr><td colSpan={9} className="empty-row">该位置暂无球员</td></tr>
+                      <button
+                        type="button"
+                        className="btn-link captain-btn"
+                        onClick={() => handleSetCaptain(p.isCaptain ? null : p.id)}
+                      >
+                        {p.isCaptain ? "取消队长" : "设为队长"}
+                      </button>
+                      {editingPlayerId === p.id && playerEditError && (
+                        <span className="error-text" style={{ fontSize: 12 }}>
+                          {playerEditError}
+                        </span>
+                      )}
+                    </div>
                   )}
-                </tbody>
-              </table>
-            </div>
+                </>
+              )}
+              renderRowActions={(p) =>
+                isMine && p.profile ? (
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    onClick={() =>
+                      setExpandedProfileId(expandedProfileId === p.id ? null : p.id)
+                    }
+                  >
+                    {expandedProfileId === p.id ? "收起 ▲" : "档案 ▼"}
+                  </button>
+                ) : null
+              }
+              renderExtraRow={(p) => {
+                if (!isMine || expandedProfileId !== p.id || !p.profile) return null;
+                const prof = p.profile as unknown as Record<
+                  string,
+                  Record<string, number | string>
+                >;
+                return (
+                  <div className="profile-groups">
+                    {PROFILE_GROUPS.map((g) => (
+                      <div className="profile-group" key={g.key}>
+                        <div className="profile-group-label">{g.label}</div>
+                        <div className="profile-field-grid">
+                          {g.fields.map((f) => {
+                            const v = prof[g.key]?.[f.key];
+                            const display =
+                              typeof v === "number"
+                                ? g.key === "physical"
+                                  ? `${v}${f.unit ? " " + f.unit : ""}`
+                                  : String(Math.round(v))
+                                : typeof v === "string"
+                                ? v
+                                : "—";
+                            return (
+                              <div className="profile-field" key={f.key} title={f.label}>
+                                <span className="pf-label">{f.label}</span>
+                                <span className="pf-val">{display}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              }}
+              onScout={
+                !isMine
+                  ? (playerId) => {
+                      postScoutPlayer(playerId)
+                        .then(() => fetchTeam(team.id))
+                        .then((refreshed) => setTeam(refreshed))
+                        .catch((e) =>
+                          setError(e instanceof Error ? e.message : String(e)),
+                        );
+                    }
+                  : undefined
+              }
+            />
           </div>
         </section>
       )}

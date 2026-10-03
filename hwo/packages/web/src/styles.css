@@ -1073,6 +1073,48 @@ button {
   display: none;
 }
 
+/* TeamPage 球员详情 tab：行内扩展内容（状态/年薪/管理按钮） */
+.skills-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.skills-row-meta .status-chip {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid;
+}
+
+.skills-row-meta .skills-salary {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.skills-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.skills-table .skills-extra-row > td {
+  padding: 12px 14px;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.skills-table .skills-extra-row .profile-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
 /* 单面板时表格更宽 */
 .roster-panels.single .roster-panel-body {
   padding: 12px;
