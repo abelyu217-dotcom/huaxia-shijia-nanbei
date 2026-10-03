@@ -827,6 +827,33 @@ button {
   font-weight: 600;
 }
 
+.export-group {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.btn-export {
+  padding: 6px 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-export:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(255, 107, 53, 0.08);
+}
+
+.btn-export:active {
+  transform: translateY(1px);
+}
+
 /* basketpulse 风格技能表：表头按列对齐，能力单元格数字+颜色编码 */
 .skills-table {
   width: 100%;
@@ -1064,6 +1091,9 @@ button {
   }
   .skills-search {
     max-width: none;
+  }
+  .skills-count {
+    margin-left: 0;
   }
 }
 

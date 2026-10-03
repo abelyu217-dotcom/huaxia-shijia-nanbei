@@ -165,7 +165,7 @@ function RosterPanel({ side, name, team }: RosterPanelProps) {
         </span>
       </div>
       <div className="roster-panel-body">
-        <PlayerSkillsTable players={team.players} side={side} />
+        <PlayerSkillsTable players={team.players} side={side} exportName={`${name}-球员名单`} />
       </div>
     </div>
   );

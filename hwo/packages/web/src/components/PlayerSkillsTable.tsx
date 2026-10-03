@@ -29,6 +29,103 @@ interface Props {
   side?: "home" | "away";
   /** 是否显示球探按钮（对手球员） */
   onScout?: (playerId: string) => void;
+  /** 导出文件名前缀（如球队名），默认 "球员名单" */
+  exportName?: string;
+}
+
+/** 触发浏览器下载 */
+function downloadFile(content: string, filename: string, mime: string) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/** 字段值：值 + 是否带雾 */
+interface ExportCell {
+  val: number | string;
+  fogRange?: number;
+}
+
+/** 把球员展开为一行导出数据（保留 ± 误差信息） */
+function playerToRow(p: PlayerDetail): Record<string, ExportCell> {
+  const ab = p.abilities as Record<string, number | FogValue>;
+  const ovrFogged = typeof p.ovr === "object" && p.ovr !== null;
+  const row: Record<string, ExportCell> = {
+    姓名: { val: p.name },
+    位置: { val: p.position },
+    OVR: {
+      val: ovrFogged ? (p.ovr as FogValue).est : (p.ovr as number),
+      fogRange: ovrFogged ? Math.round((p.ovr as FogValue).range) : undefined,
+    },
+  };
+  for (const ab2 of KEY_ABILITIES) {
+    const v = ab[ab2.key as string];
+    const fogged = isFoggedAbility(v);
+    row[ab2.label] = {
+      val: abilityVal(v),
+      fogRange: fogged ? Math.round((v as FogValue).range) : undefined,
+    };
+  }
+  if (p.age != null) row["年龄"] = { val: p.age };
+  if (p.salary != null) row["年薪"] = { val: p.salary };
+  if (p.isCaptain) row["队长"] = { val: "是" };
+  if (p.isRookie) row["新秀"] = { val: "是" };
+  return row;
+}
+
+/** 格式化单元格为 CSV 字符串 */
+function csvCell(v: number | string, fog?: number): string {
+  let s = String(v);
+  if (fog != null) s += `±${fog}`;
+  if (/[",\n]/.test(s)) s = `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function pad2(n: number): string {
+  return n < 10 ? `0${n}` : String(n);
+}
+
+function buildTimestamp(): string {
+  const d = new Date();
+  return `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}`;
+}
+
+function exportCsv(players: PlayerDetail[], namePrefix: string) {
+  if (players.length === 0) return;
+  const rows = players.map(playerToRow);
+  const headers = Object.keys(rows[0]);
+  const lines = [headers.map(csvCell).join(",")];
+  for (const r of rows) {
+    lines.push(headers.map((h) => csvCell(r[h].val, r[h].fogRange)).join(","));
+  }
+  const bom = "\uFEFF";
+  downloadFile(
+    bom + lines.join("\n"),
+    `${namePrefix}_${buildTimestamp()}.csv`,
+    "text/csv;charset=utf-8",
+  );
+}
+
+function exportJson(players: PlayerDetail[], namePrefix: string) {
+  if (players.length === 0) return;
+  const data = players.map(playerToRow).map((r) => {
+    const out: Record<string, string> = {};
+    for (const [k, c] of Object.entries(r)) {
+      out[k] = c.fogRange != null ? `${c.val}±${c.fogRange}` : String(c.val);
+    }
+    return out;
+  });
+  downloadFile(
+    JSON.stringify({ exportedAt: new Date().toISOString(), players: data }, null, 2),
+    `${namePrefix}_${buildTimestamp()}.json`,
+    "application/json;charset=utf-8",
+  );
 }
 
 /** 按 basketpulse 风格为能力值分配颜色档位 */
@@ -40,7 +137,7 @@ function skillTier(val: number): "s" | "a" | "b" | "c" | "d" {
   return "d";
 }
 
-export function PlayerSkillsTable({ players, side, onScout }: Props) {
+export function PlayerSkillsTable({ players, side, onScout, exportName = "球员名单" }: Props) {
   const [keyword, setKeyword] = useState("");
   const [posFilter, setPosFilter] = useState<"ALL" | Position>("ALL");
   const [sortKey, setSortKey] = useState<SortKey>("ovr");
@@ -110,6 +207,26 @@ export function PlayerSkillsTable({ players, side, onScout }: Props) {
         <span className="skills-count">
           {filtered.length} / {players.length} 人
         </span>
+        {filtered.length > 0 && (
+          <div className="export-group" role="group" aria-label="导出球员名单">
+            <button
+              type="button"
+              className="btn btn-sm btn-export"
+              onClick={() => exportCsv(filtered, exportName)}
+              title="导出当前筛选结果为 CSV 文件"
+            >
+              ⬇ CSV
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm btn-export"
+              onClick={() => exportJson(filtered, exportName)}
+              title="导出当前筛选结果为 JSON 文件"
+            >
+              ⬇ JSON
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="roster-table-wrap">
