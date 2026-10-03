@@ -77,7 +77,10 @@ type View =
   | { kind: "admin" }
   | { kind: "identity" }
   | { kind: "dynasty" }
-  | { kind: "relationship" };
+  | { kind: "relationship" }
+  | { kind: "intlLeague" }
+  | { kind: "nationalTeam" }
+  | { kind: "family" };
 
 type NavKind =
   | "home"
@@ -105,64 +108,57 @@ type NavKind =
   | "admin"
   | "identity"
   | "dynasty"
-  | "relationship";
+  | "relationship"
+  | "intlLeague"
+  | "nationalTeam"
+  | "family";
 
-/** 侧边栏分组导航 —— 参考 Rim Attack / BasketPulse 的分组菜单 */
+/** 侧边栏分组导航 —— 参考 BasketPulse 的分组菜单 */
 const NAV_GROUPS: { group: string; items: { id: NavKind; label: string }[] }[] = [
   {
-    group: "球會",
+    group: "家族",
     items: [
-      { id: "home", label: "主页" },
-      { id: "league", label: "联赛资讯" },
-      { id: "board", label: "公布栏" },
-      { id: "worldInfo", label: "世界资讯" },
+      { id: "family", label: "家族 · 敬请期待" },
+    ],
+  },
+  {
+    group: "俱乐部",
+    items: [
+      { id: "home", label: "概览" },
+      { id: "finance", label: "财务" },
+      { id: "bod", label: "董事会" },
+      { id: "board", label: "公关部" },
+      { id: "arena", label: "运营中心" },
     ],
   },
   {
     group: "人事",
     items: [
-      { id: "team", label: "我的球队" },
+      { id: "team", label: "球员名单" },
       { id: "corePlayers", label: "核心球员" },
-      { id: "finance", label: "财务" },
-      { id: "contract", label: "合同" },
-      { id: "scout", label: "球探" },
-      { id: "watchlist", label: "观察名单" },
+      { id: "career", label: "训练中心" },
+      { id: "scout", label: "人才中心" },
       { id: "trade", label: "交易" },
-      { id: "career", label: "生涯" },
-      { id: "academy", label: "青训" },
+      { id: "academy", label: "发展中心" },
       { id: "draft", label: "选秀" },
     ],
   },
   {
-    group: "比赛",
+    group: "赛事",
     items: [
-      { id: "schedule", label: "赛程" },
-      { id: "matchTactic", label: "单场战术" },
-      { id: "playoff", label: "季后赛" },
-      { id: "arena", label: "竞技场" },
-      { id: "sim", label: "模拟" },
+      { id: "schedule", label: "比赛" },
+      { id: "matchTactic", label: "战术" },
+      { id: "league", label: "国内联赛" },
+      { id: "intlLeague", label: "国际联赛" },
+      { id: "nationalTeam", label: "国家队" },
     ],
   },
   {
-    group: "管理",
+    group: "HWO",
     items: [
-      { id: "bod", label: "董事会" },
-      { id: "admin", label: "管理后台" },
-    ],
-  },
-  {
-    group: "进阶玩法",
-    items: [
-      { id: "identity", label: "三身份" },
-      { id: "dynasty", label: "王朝传承" },
-      { id: "relationship", label: "球员关系" },
-    ],
-  },
-  {
-    group: "商城",
-    items: [
-      { id: "shop", label: "商店" },
+      { id: "worldInfo", label: "首页" },
       { id: "guide", label: "游戏说明" },
+      { id: "shop", label: "信用点" },
     ],
   },
 ];
@@ -193,6 +189,9 @@ function navToView(kind: NavKind, teamId?: string): View {
   if (kind === "identity") return { kind: "identity" };
   if (kind === "dynasty") return { kind: "dynasty" };
   if (kind === "relationship") return { kind: "relationship" };
+  if (kind === "intlLeague") return { kind: "intlLeague" };
+  if (kind === "nationalTeam") return { kind: "nationalTeam" };
+  if (kind === "family") return { kind: "family" };
   return { kind: "sim" };
 }
 
@@ -403,8 +402,21 @@ function AppInner() {
           {view.kind === "identity" && <IdentityPage />}
           {view.kind === "dynasty" && myTeamId && <DynastyPage teamId={myTeamId} />}
           {view.kind === "relationship" && myTeamId && <RelationshipPage teamId={myTeamId} />}
+          {view.kind === "intlLeague" && <PlaceholderPage title="国际联赛" desc="国际联赛功能开发中，敬请期待。" />}
+          {view.kind === "nationalTeam" && <PlaceholderPage title="国家队" desc="国家队功能开发中，敬请期待。" />}
+          {view.kind === "family" && <PlaceholderPage title="家族" desc="家族功能开发中，敬请期待。" />}
         </main>
       </div>
+    </div>
+  );
+}
+
+/** 占位页面：用于尚未上线的功能模块 */
+function PlaceholderPage({ title, desc }: { title: string; desc: string }) {
+  return (
+    <div className="page-placeholder" style={{ padding: 48, textAlign: "center" }}>
+      <h2 style={{ marginBottom: 12 }}>{title}</h2>
+      <p style={{ color: "var(--text-muted, #888)" }}>{desc}</p>
     </div>
   );
 }
