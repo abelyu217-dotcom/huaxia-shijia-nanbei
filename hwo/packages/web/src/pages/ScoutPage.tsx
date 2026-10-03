@@ -11,7 +11,13 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { fetchFreeAgents, fetchWorlds, fetchScoutBudget, fetchScoutReports } from "../api";
+import {
+  fetchFreeAgents,
+  fetchWorlds,
+  fetchScoutBudget,
+  fetchScoutReports,
+  postSignFreeAgent,
+} from "../api";
 import { ovrVal } from "../lib";
 import type { FreeAgent, ScoutReport } from "../types";
 import { useAuth } from "../auth/AuthContext";
@@ -241,6 +247,16 @@ export function ScoutPage({ teamId }: Props) {
     loadWatchlist(),
   );
 
+  // Tab 切换：球探 / 自由市场
+  const [tab, setTab] = useState<"scout" | "market">("scout");
+  // 自由市场签约状态
+  const [signingId, setSigningId] = useState<string | null>(null);
+  const [signYears, setSignYears] = useState(2);
+  const [signSalary, setSignSalary] = useState(0);
+  const [signing, setSigning] = useState(false);
+  const [signError, setSignError] = useState<string | null>(null);
+  const [signedIds, setSignedIds] = useState<Set<string>>(new Set());
+
   // 真实后端：球探预算与已探查报告
   const [budget, setBudget] = useState<{ remaining: number; total: number; used: number } | null>(null);
   const [reports, setReports] = useState<ScoutReport[]>([]);
@@ -333,6 +349,39 @@ export function ScoutPage({ teamId }: Props) {
     });
   }, []);
 
+  /** 打开签约表单：以球员要求薪资为默认值 */
+  const openSign = useCallback((p: Prospect) => {
+    setSigningId(p.id);
+    setSignYears(2);
+    setSignSalary(Math.max(100, p.salary || 1000));
+    setSignError(null);
+  }, []);
+
+  /** 提交签约自由球员 */
+  const handleSign = useCallback(async () => {
+    if (!signingId || !myTeamId) return;
+    setSigning(true);
+    setSignError(null);
+    try {
+      await postSignFreeAgent({
+        playerId: signingId,
+        teamId: myTeamId,
+        yearsTotal: signYears,
+        salaryPerYear: signSalary,
+      });
+      setSignedIds((prev) => {
+        const next = new Set(prev);
+        next.add(signingId);
+        return next;
+      });
+      setSigningId(null);
+    } catch (e) {
+      setSignError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSigning(false);
+    }
+  }, [signingId, myTeamId, signYears, signSalary]);
+
   const allProspects = useMemo(
     () => freeAgents.map(toProspect),
     [freeAgents],
@@ -346,14 +395,40 @@ export function ScoutPage({ teamId }: Props) {
   return (
     <div className="page scout-page">
       <header className="page-head">
-        <h2>球探面板</h2>
+        <h2>{tab === "scout" ? "球探面板" : "自由市场"}</h2>
         <p className="muted">
-          派遣球探发掘新秀。等级越高每周可探索次数越多，潜力评估更精准。
+          {tab === "scout"
+            ? "派遣球探发掘新秀。等级越高每周可探索次数越多，潜力评估更精准。"
+            : "浏览自由球员并提交报价签约。参考 BasketPulse 自由市场：筛选条件 + 报价签约。"}
         </p>
       </header>
 
+      {/* Tab 切换 */}
+      <div className="tabs" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "scout"}
+          className={`tab${tab === "scout" ? " is-active" : ""}`}
+          onClick={() => setTab("scout")}
+        >
+          球探
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "market"}
+          className={`tab${tab === "market" ? " is-active" : ""}`}
+          onClick={() => setTab("market")}
+        >
+          自由市场
+        </button>
+      </div>
+
       {error && <div className="state error">{error}</div>}
 
+      {tab === "scout" && (
+        <>
       {/* 球探面板 */}
       <section className="card scout-panel">
         <div className="scout-metrics">
@@ -467,6 +542,26 @@ export function ScoutPage({ teamId }: Props) {
           </div>
         )}
       </section>
+        </>
+      )}
+
+      {tab === "market" && (
+        <FreeMarketView
+          prospects={allProspects}
+          loading={loading}
+          signedIds={signedIds}
+          signingId={signingId}
+          signYears={signYears}
+          signSalary={signSalary}
+          signError={signError}
+          signing={signing}
+          onOpenSign={openSign}
+          onCancelSign={() => setSigningId(null)}
+          onYearsChange={setSignYears}
+          onSalaryChange={setSignSalary}
+          onSubmit={handleSign}
+        />
+      )}
     </div>
   );
 }
@@ -533,5 +628,153 @@ function ProspectCard({ prospect, inWatchlist, onWatch }: ProspectCardProps) {
         {inWatchlist ? "已加入观察名单" : "加入观察名单"}
       </button>
     </div>
+  );
+}
+
+interface FreeMarketViewProps {
+  prospects: Prospect[];
+  loading: boolean;
+  signedIds: Set<string>;
+  signingId: string | null;
+  signYears: number;
+  signSalary: number;
+  signError: string | null;
+  signing: boolean;
+  onOpenSign: (p: Prospect) => void;
+  onCancelSign: () => void;
+  onYearsChange: (n: number) => void;
+  onSalaryChange: (n: number) => void;
+  onSubmit: () => void;
+}
+
+function FreeMarketView({
+  prospects,
+  loading,
+  signedIds,
+  signingId,
+  signYears,
+  signSalary,
+  signError,
+  signing,
+  onOpenSign,
+  onCancelSign,
+  onYearsChange,
+  onSalaryChange,
+  onSubmit,
+}: FreeMarketViewProps) {
+  const available = prospects.filter((p) => !signedIds.has(p.id));
+
+  return (
+    <section className="card">
+      <h3>自由球员（{available.length}）</h3>
+      <p className="muted">
+        以下为当前可签约的自由球员。点击「报价」提交合同，签约成功后该球员将加入你的球队。
+      </p>
+      {loading ? (
+        <div className="state"><span className="spinner" /> 加载自由球员…</div>
+      ) : available.length === 0 ? (
+        <div className="muted">暂无可签约的自由球员。</div>
+      ) : (
+        <div className="table-wrap">
+          <table className="data-table market-table">
+            <thead>
+              <tr>
+                <th>姓名</th>
+                <th>位置</th>
+                <th>年龄</th>
+                <th>OVR</th>
+                <th>潜力</th>
+                <th>薪资要求</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {available.map((p) => {
+                const pos = POSITION_CN[p.position] ?? p.position;
+                const isSigning = signingId === p.id;
+                const { grade, color } = scoutGrade(p.potentialEstimate);
+                return (
+                  <tr key={p.id}>
+                    <td>
+                      <strong>{p.name}</strong>
+                      <div className="muted" style={{ fontSize: 12 }}>{grade}</div>
+                    </td>
+                    <td>{pos}</td>
+                    <td>{p.age}</td>
+                    <td>{ovrVal(p.ovr)}</td>
+                    <td style={{ color }}>
+                      {p.potential === null ? `${p.potentialEstimate}（估）` : p.potential}
+                    </td>
+                    <td>${p.salary.toLocaleString()}</td>
+                    <td>
+                      {isSigning ? (
+                        <div className="sign-form">
+                          {signError && (
+                            <div className="state error" style={{ marginBottom: 8 }}>
+                              {signError}
+                            </div>
+                          )}
+                          <div className="row gap" style={{ marginBottom: 8 }}>
+                            <label className="muted">
+                              年限
+                              <select
+                                value={signYears}
+                                onChange={(e) => onYearsChange(Number(e.target.value))}
+                                disabled={signing}
+                              >
+                                {[1, 2, 3, 4, 5].map((y) => (
+                                  <option key={y} value={y}>{y} 年</option>
+                                ))}
+                              </select>
+                            </label>
+                            <label className="muted">
+                              年薪
+                              <input
+                                type="number"
+                                value={signSalary}
+                                min={100}
+                                step={100}
+                                onChange={(e) => onSalaryChange(Number(e.target.value))}
+                                disabled={signing}
+                              />
+                            </label>
+                          </div>
+                          <div className="row gap">
+                            <button
+                              type="button"
+                              className="btn btn-primary btn-sm"
+                              disabled={signing}
+                              onClick={onSubmit}
+                            >
+                              {signing ? "签约中…" : "确认签约"}
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-ghost btn-sm"
+                              disabled={signing}
+                              onClick={onCancelSign}
+                            >
+                              取消
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn btn-sm"
+                          onClick={() => onOpenSign(p)}
+                        >
+                          报价
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   );
 }
