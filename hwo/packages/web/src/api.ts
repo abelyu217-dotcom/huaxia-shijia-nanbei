@@ -39,6 +39,7 @@ import type {
   SalaryStatus,
   WaiveResult,
   PlayerSeasonStats,
+  TeamStatsSummary,
   FreeAgent,
   WorldInfo,
   ScoutReport,
@@ -728,6 +729,13 @@ export function fetchTeamPlayerStats(teamId: string): Promise<PlayerSeasonStats[
   );
 }
 
+/** GET /api/stats/team/:teamId/summary — 球员列表 + 本队合计 + 对手合计 */
+export function fetchTeamStatsSummary(teamId: string): Promise<TeamStatsSummary> {
+  return getJson<TeamStatsSummary>(
+    `/api/stats/team/${encodeURIComponent(teamId)}/summary`,
+  );
+}
+
 import type {
   WalletInfo,
   VipStatus,
@@ -747,6 +755,115 @@ export function fetchWallet(): Promise<WalletInfo> {
 /** POST /api/wallet/spend-coins — 消费 Coins */
 export function postSpendCoins(amount: number, reason: string): Promise<WalletInfo & { spent: number }> {
   return sendJson("POST", "/api/wallet/spend-coins", { amount, reason });
+}
+
+// ── v0.6: 财务系统 ──
+
+export interface FinanceSummary {
+  initialized: boolean;
+  balance: number;
+  sponsorTier: string;
+  ticketPrice: number;
+  debt: number;
+  todayNet: number;
+  weekNet: number;
+  seasonNet: number;
+}
+
+export interface CategorySummary {
+  [category: string]: {
+    income: number;
+    expense: number;
+    items: Array<{ subType: string; amount: number }>;
+  };
+}
+
+export interface LedgerEntry {
+  id: string;
+  teamId: string;
+  seasonId: string;
+  day: number;
+  category: string;
+  subType: string;
+  amount: number;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface LedgerPage {
+  entries: LedgerEntry[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface SponsorInfo {
+  id: string;
+  teamId: string;
+  type: string;
+  name: string;
+  tier: string;
+  basePerSeason: number;
+  bonusPerWin: number;
+  titleBonus: number;
+  satisfaction: number;
+  expectedWinRate: number;
+  expectedPlayoff: boolean;
+  contractSeasons: number;
+  startSeason: number;
+  endSeason: number | null;
+}
+
+/** GET /api/finance/:teamId/summary — 余额 + 净额 */
+export function fetchFinanceSummary(teamId: string): Promise<FinanceSummary> {
+  return getJson<FinanceSummary>(`/api/finance/${encodeURIComponent(teamId)}/summary`);
+}
+
+/** GET /api/finance/:teamId/categories — 收支分类汇总 */
+export function fetchFinanceCategories(
+  teamId: string,
+  range?: { from?: number; to?: number },
+): Promise<CategorySummary> {
+  const q = new URLSearchParams();
+  if (range?.from != null) q.set("from", String(range.from));
+  if (range?.to != null) q.set("to", String(range.to));
+  const qs = q.toString();
+  return getJson<CategorySummary>(
+    `/api/finance/${encodeURIComponent(teamId)}/categories${qs ? `?${qs}` : ""}`,
+  );
+}
+
+/** GET /api/finance/:teamId/ledger — 流水明细（分页 + 筛选） */
+export function fetchFinanceLedger(
+  teamId: string,
+  options: {
+    day?: number;
+    from?: number;
+    to?: number;
+    category?: string;
+    incomeOnly?: boolean;
+    expenseOnly?: boolean;
+    limit?: number;
+    offset?: number;
+  } = {},
+): Promise<LedgerPage> {
+  const q = new URLSearchParams();
+  if (options.day != null) q.set("day", String(options.day));
+  if (options.from != null) q.set("from", String(options.from));
+  if (options.to != null) q.set("to", String(options.to));
+  if (options.category) q.set("category", options.category);
+  if (options.incomeOnly) q.set("incomeOnly", "true");
+  if (options.expenseOnly) q.set("expenseOnly", "true");
+  if (options.limit != null) q.set("limit", String(options.limit));
+  if (options.offset != null) q.set("offset", String(options.offset));
+  return getJson<LedgerPage>(
+    `/api/finance/${encodeURIComponent(teamId)}/ledger?${q.toString()}`,
+  );
+}
+
+/** GET /api/finance/:teamId/sponsors — 赞助商列表 */
+export function fetchFinanceSponsors(teamId: string): Promise<SponsorInfo[]> {
+  return getJson<SponsorInfo[]>(`/api/finance/${encodeURIComponent(teamId)}/sponsors`);
 }
 
 // ── M4: VIP ──

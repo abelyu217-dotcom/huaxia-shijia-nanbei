@@ -3166,6 +3166,59 @@ button {
   text-align: left !important;
   font-weight: 700;
 }
+
+/* ── basketpulse 风格数据统计表（合計行 + 分组表头） ── */
+.stats-table-bp {
+  font-size: 12px;
+}
+.stats-table-bp thead th {
+  font-size: 11px;
+  text-align: center;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border);
+}
+.stats-table-bp th.bp-group {
+  background: var(--panel-3);
+  color: var(--accent);
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  border-left: 1px solid var(--border-soft);
+  border-right: 1px solid var(--border-soft);
+}
+.stats-table-bp tr.bp-sub-row th {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--border);
+  padding: 4px 6px;
+}
+.stats-table-bp td.pct-cell,
+.stats-table-bp td.eff-cell {
+  font-weight: 700;
+}
+.stats-table-bp td.eff-cell {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.stats-table-bp tfoot tr.bp-total-row td {
+  border-top: 2px solid var(--border);
+  padding: 8px 6px;
+  font-weight: 700;
+  background: var(--panel-3);
+}
+.stats-table-bp tfoot tr.bp-total-row.bp-own td {
+  background: rgba(96, 165, 250, 0.08);
+  color: var(--home);
+}
+.stats-table-bp tfoot tr.bp-total-row.bp-opp td {
+  background: rgba(248, 113, 113, 0.08);
+  color: var(--away);
+}
+.stats-table-bp tfoot tr.bp-total-row td.st-name {
+  font-weight: 800;
+  font-size: 12px;
+}
 .st-pos {
   display: inline-block;
   width: 24px;
@@ -5868,6 +5921,366 @@ button {
 
 .finance-page .table tbody tr:hover {
   background: var(--panel-2);
+}
+
+/* ───────────────── v0.6 财务页（basketpulse 风格） ───────────────── */
+
+.finance-page.v06 {
+  gap: 16px;
+}
+
+/* 余额卡（深蓝大字，对齐 basketpulse） */
+.cash-balance-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 24px 32px;
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #1d4ed8 100%);
+  color: #fff;
+  border-radius: var(--radius);
+  box-shadow: 0 10px 30px rgba(30, 58, 138, 0.3);
+}
+
+.cash-balance-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cash-label {
+  font-size: 13px;
+  opacity: 0.8;
+  letter-spacing: 0.5px;
+}
+
+.cash-amount {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  line-height: 1.1;
+}
+
+.cash-debt {
+  font-size: 12px;
+  margin-top: 4px;
+  opacity: 0.7;
+  color: #fecaca;
+}
+
+.cash-balance-side {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 200px;
+}
+
+.cash-net-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.cash-net-label {
+  opacity: 0.85;
+}
+
+.cash-net-val {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 週选择器（basketpulse 风格） */
+.week-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.week-label {
+  font-weight: 700;
+  color: var(--text);
+  margin-right: 8px;
+}
+
+.week-range {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* 收支分类（绿/红双栏） */
+.finance-categories .categories-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.cat-col {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  background: var(--panel-2);
+}
+
+.cat-income {
+  border-left: 3px solid #22c55e;
+}
+
+.cat-expense {
+  border-left: 3px solid #ef4444;
+}
+
+.cat-col h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.cat-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cat-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  padding: 4px 0;
+  border-bottom: 1px dashed var(--border);
+}
+
+.cat-amount.pos {
+  color: #22c55e;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.cat-amount.neg {
+  color: #ef4444;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.cat-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 2px solid var(--border);
+  font-weight: 700;
+}
+
+.cat-total .pos {
+  color: #22c55e;
+}
+
+.cat-total .neg {
+  color: #ef4444;
+}
+
+.cat-net-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: var(--panel-2);
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  margin-top: 8px;
+}
+
+/* 流水表 */
+.ledger-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.ledger-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ledger-filter-select {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.ledger-type-group {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.ledger-type-group .btn.active,
+.ledger-type-group .btn.btn-active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.ledger-table .col-day {
+  width: 90px;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.ledger-table .col-amount {
+  width: 140px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.ledger-cat-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  margin-right: 8px;
+  font-size: 11px;
+  border-radius: 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.ledger-cat-badge[data-cat="sponsor"] { background: rgba(34,197,94,0.12); color: #22c55e; }
+.ledger-cat-badge[data-cat="ticket"] { background: rgba(34,197,94,0.12); color: #22c55e; }
+.ledger-cat-badge[data-cat="broadcast"] { background: rgba(34,197,94,0.12); color: #22c55e; }
+.ledger-cat-badge[data-cat="salary"] { background: rgba(239,68,68,0.12); color: #ef4444; }
+.ledger-cat-badge[data-cat="staff"] { background: rgba(239,68,68,0.12); color: #ef4444; }
+.ledger-cat-badge[data-cat="facility"] { background: rgba(239,68,68,0.12); color: #ef4444; }
+.ledger-cat-badge[data-cat="academy"] { background: rgba(239,68,68,0.12); color: #ef4444; }
+.ledger-cat-badge[data-cat="fine"] { background: rgba(239,68,68,0.12); color: #ef4444; }
+
+.ledger-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 8px;
+}
+
+.ledger-pagination .page-info {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* 赞助商面板 */
+.sponsors-table .tier-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-weight: 700;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.tier-badge.tier-S { background: rgba(249,115,22,0.18); color: #f97316; }
+.tier-badge.tier-A { background: rgba(239,68,68,0.18); color: #ef4444; }
+.tier-badge.tier-B { background: rgba(168,85,247,0.18); color: #a855f7; }
+.tier-badge.tier-C { background: rgba(59,130,246,0.18); color: #3b82f6; }
+.tier-badge.tier-D { background: rgba(100,116,139,0.18); color: #64748b; }
+
+.satisfaction-bar {
+  position: relative;
+  width: 100px;
+  height: 18px;
+  background: var(--panel-2);
+  border-radius: 9px;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+}
+
+.satisfaction-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 9px;
+  transition: width 0.3s;
+}
+
+.satisfaction-text {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+  text-shadow: 0 0 4px rgba(0,0,0,0.5);
+}
+
+/* 薪资摘要 */
+.finance-salary .kv {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.finance-salary .kv > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.finance-salary .kv dt {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.finance-salary .kv dd {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.finance-foot-note {
+  text-align: center;
+  font-size: 12px;
+  opacity: 0.7;
+  margin-top: 12px;
+}
+
+@media (max-width: 768px) {
+  .cash-balance-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 18px 20px;
+  }
+  .cash-amount { font-size: 28px; }
+  .finance-categories .categories-grid {
+    grid-template-columns: 1fr;
+  }
+  .finance-salary .kv {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 /* ───────────────── 单场战术设定页 ───────────────── */

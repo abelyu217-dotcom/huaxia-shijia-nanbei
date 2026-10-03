@@ -613,6 +613,41 @@ export interface PlayerSeasonStats {
   fgPct: number;
   tpPct: number;
   ftPct: number;
+  twoPct: number; // 2 分命中率（去除 3 分）
+  efficiency: number; // 效率值
+}
+
+/** 球队合计（用于合計行：本队 vs 对手对比） */
+export interface TeamTotals {
+  gp: number;
+  minutes: number;
+  points: number;
+  offReb: number;
+  defReb: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  turnovers: number;
+  fouls: number;
+  fgm: number;
+  fga: number;
+  tpm: number;
+  tpa: number;
+  ftm: number;
+  fta: number;
+  fgPct: number;
+  tpPct: number;
+  ftPct: number;
+  twoPct: number;
+  efficiency: number;
+}
+
+/** 球队赛季统计聚合：球员列表 + 本队合计 + 对手合计 */
+export interface TeamStatsSummary {
+  players: PlayerSeasonStats[];
+  totals: TeamTotals;
+  opponentTotals: TeamTotals;
 }
 
 export interface SalaryStatus {

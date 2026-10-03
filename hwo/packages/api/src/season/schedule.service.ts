@@ -6,11 +6,12 @@
  * - seasonTransition: 常规赛结束 → 季后赛 → 休赛期 → 新赛季
  */
 
-import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger, OnModuleInit, forwardRef, Inject } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { SimService } from "../sim/sim.service.js";
 import { SeasonService } from "./season.service.js";
 import { AiManagerService } from "../ai/ai-manager.service.js";
+import { FinanceService } from "../finance/finance.service.js";
 
 /**
  * 每日结算时刻（北京时间，小时 0-23）。
@@ -48,6 +49,8 @@ export class ScheduleService implements OnModuleInit {
     private readonly simService: SimService,
     private readonly seasonService: SeasonService,
     private readonly aiManager: AiManagerService,
+    @Inject(forwardRef(() => FinanceService))
+    private readonly finance: FinanceService,
   ) {}
 
   /**
@@ -259,6 +262,15 @@ export class ScheduleService implements OnModuleInit {
     } catch (e) {
       this.logger.warn(
         `AI 训练失败（不影响结算）：${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+
+    // 4. v0.6 财务结算：所有球队当日收支写入 CashLedger，更新 TeamCash.balance
+    try {
+      await this.finance.runDailyAllTeams(seasonId, currentDay);
+    } catch (e) {
+      this.logger.warn(
+        `财务结算失败（不影响比赛）：${e instanceof Error ? e.message : String(e)}`,
       );
     }
 

@@ -13,7 +13,7 @@ import { useEffect, useState } from "react";
 import {
   fetchTeam,
   fetchTeamContracts,
-  fetchTeamPlayerStats,
+  fetchTeamStatsSummary,
   fetchTeamSalary,
   putTeamCaptain,
   postScoutPlayer,
@@ -26,6 +26,8 @@ import type {
   Contract,
   PlayerDetail,
   PlayerSeasonStats,
+  TeamStatsSummary,
+  TeamTotals,
   SalaryStatus,
   TeamDetail,
   WaiveResult,
@@ -48,6 +50,39 @@ function pctTier(p: number): "pct-good" | "pct-mid" | "pct-bad" {
   if (p >= 0.5) return "pct-good";
   if (p >= 0.35) return "pct-mid";
   return "pct-bad";
+}
+
+/** 空合计对象（兜底） */
+function emptyTotals(): TeamTotals {
+  return {
+    gp: 0,
+    minutes: 0,
+    points: 0,
+    offReb: 0,
+    defReb: 0,
+    rebounds: 0,
+    assists: 0,
+    steals: 0,
+    blocks: 0,
+    turnovers: 0,
+    fouls: 0,
+    fgm: 0,
+    fga: 0,
+    tpm: 0,
+    tpa: 0,
+    ftm: 0,
+    fta: 0,
+    fgPct: 0,
+    tpPct: 0,
+    ftPct: 0,
+    twoPct: 0,
+    efficiency: 0,
+  };
+}
+
+/** 百分比格式化（保留 1 位小数） */
+function fmtPct(p: number): string {
+  return `${(p * 100).toFixed(1)}%`;
 }
 
 /** 状态色 —— #13 状态色体系 */
@@ -97,7 +132,7 @@ export function TeamPage({ teamId }: Props) {
 
   const [tab, setTab] = useState<Tab>("players");
   const [team, setTeam] = useState<TeamDetail | null>(null);
-  const [playerStats, setPlayerStats] = useState<PlayerSeasonStats[] | null>(null);
+  const [statsSummary, setStatsSummary] = useState<TeamStatsSummary | null>(null);
   const [contracts, setContracts] = useState<Contract[] | null>(null);
   const [salary, setSalary] = useState<SalaryStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -128,14 +163,21 @@ export function TeamPage({ teamId }: Props) {
     setLoading(true);
     Promise.all([
       fetchTeam(teamId),
-      fetchTeamPlayerStats(teamId).catch(() => [] as PlayerSeasonStats[]),
+      fetchTeamStatsSummary(teamId).catch(
+        () =>
+          ({
+            players: [] as PlayerSeasonStats[],
+            totals: emptyTotals(),
+            opponentTotals: emptyTotals(),
+          }) as TeamStatsSummary,
+      ),
       isMine ? fetchTeamContracts(teamId) : Promise.resolve<Contract[]>([]),
       isMine ? fetchTeamSalary(teamId) : Promise.resolve<SalaryStatus | null>(null),
     ])
-      .then(([t, ps, cts, sal]) => {
+      .then(([t, ss, cts, sal]) => {
         if (cancelled) return;
         setTeam(t);
-        setPlayerStats(ps);
+        setStatsSummary(ss);
         setContracts(cts);
         setSalary(sal);
       })
@@ -529,90 +571,186 @@ export function TeamPage({ teamId }: Props) {
         <section className="panel">
           <div className="panel-head">
             <h2>数据统计</h2>
-            <span className="hint">球员本赛季累计比赛数据（场均/命中率）</span>
+            <span className="hint">
+              basketpulse 风格 · 列对齐：姓名/分鐘/比賽/得分/2%/3%/1%/籃(攻/防/總/被)/助攻/搶截/犯規(被/犯)/失誤/封阻(封/被)/效率
+            </span>
           </div>
           <div className="panel-body">
-            {/* 球员比赛累计统计 */}
-            <h3 className="section-title" style={{ margin: "0 0 8px" }}>
-              球员赛季统计
-            </h3>
-            {playerStats && playerStats.length > 0 ? (
+            {statsSummary && statsSummary.players.length > 0 ? (
               <div className="roster-table-wrap">
-                <table className="stats-table">
+                <table className="stats-table stats-table-bp">
                   <thead>
-                    <tr>
-                      <th>姓名</th>
-                      <th>位置</th>
-                      <th>年龄</th>
-                      <th>GP</th>
-                      <th>分钟</th>
-                      <th>得分</th>
-                      <th>篮板</th>
-                      <th>助攻</th>
-                      <th>抢断</th>
-                      <th>盖帽</th>
-                      <th>失误</th>
-                      <th>投篮%</th>
-                      <th>三分%</th>
-                      <th>罚球%</th>
-                      <th>+/-</th>
+                    {/* 第 1 行：分组表头 */}
+                    <tr className="bp-group-row">
+                      <th rowSpan={2}>姓名</th>
+                      <th rowSpan={2}>位置</th>
+                      <th rowSpan={2}>分鐘</th>
+                      <th rowSpan={2}>比賽</th>
+                      <th rowSpan={2}>得分</th>
+                      <th colSpan={3} className="bp-group">命中率</th>
+                      <th colSpan={4} className="bp-group">籃板</th>
+                      <th rowSpan={2}>助攻</th>
+                      <th rowSpan={2}>搶截</th>
+                      <th colSpan={2} className="bp-group">犯規</th>
+                      <th rowSpan={2}>失誤</th>
+                      <th colSpan={2} className="bp-group">封阻</th>
+                      <th rowSpan={2}>效率</th>
+                    </tr>
+                    {/* 第 2 行：子列表头 */}
+                    <tr className="bp-sub-row">
+                      <th>2%</th>
+                      <th>3%</th>
+                      <th>1%</th>
+                      <th>攻</th>
+                      <th>防</th>
+                      <th>總</th>
+                      <th>被</th>
+                      <th>被</th>
+                      <th>犯</th>
+                      <th>封</th>
+                      <th>被</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {playerStats.map((s) => (
+                    {statsSummary.players.map((s) => (
                       <tr key={s.playerId}>
-                        <td>{s.name}</td>
-                        <td>{s.position}</td>
-                        <td>{s.age ?? "—"}</td>
+                        <td className="st-name">{s.name}</td>
+                        <td>
+                          <span className="st-pos">{s.position}</span>
+                        </td>
+                        <td className="st-num">{s.avgMinutes.toFixed(1)}</td>
                         <td>{s.gp}</td>
-                        <td>{s.avgMinutes.toFixed(1)}</td>
                         <td className="num-cell">
                           <strong>{s.avgPoints.toFixed(1)}</strong>
                           <span className="muted"> ({s.points})</span>
                         </td>
-                        <td className="num-cell">
-                          {s.avgRebounds.toFixed(1)}
-                          <span className="muted"> ({s.rebounds})</span>
-                        </td>
-                        <td className="num-cell">
-                          {s.avgAssists.toFixed(1)}
-                          <span className="muted"> ({s.assists})</span>
-                        </td>
-                        <td>{s.avgSteals.toFixed(1)}</td>
-                        <td>{s.avgBlocks.toFixed(1)}</td>
-                        <td>{s.avgTurnovers.toFixed(1)}</td>
-                        <td className={`pct-cell ${pctTier(s.fgPct)}`}>
-                          {(s.fgPct * 100).toFixed(1)}%
-                          <span className="muted">
-                            {" "}{s.fgm}/{s.fga}
-                          </span>
+                        <td className={`pct-cell ${pctTier(s.twoPct)}`}>
+                          {fmtPct(s.twoPct)}
                         </td>
                         <td className={`pct-cell ${pctTier(s.tpPct)}`}>
-                          {(s.tpPct * 100).toFixed(1)}%
-                          <span className="muted">
-                            {" "}{s.tpm}/{s.tpa}
-                          </span>
+                          {fmtPct(s.tpPct)}
                         </td>
                         <td className={`pct-cell ${pctTier(s.ftPct)}`}>
-                          {(s.ftPct * 100).toFixed(1)}%
-                          <span className="muted">
-                            {" "}{s.ftm}/{s.fta}
-                          </span>
+                          {fmtPct(s.ftPct)}
                         </td>
-                        <td className={s.plusMinus >= 0 ? "pos" : "neg"}>
-                          {s.plusMinus > 0 ? "+" : ""}
-                          {s.plusMinus}
+                        <td>{s.offReb}</td>
+                        <td>{s.defReb}</td>
+                        <td className="num-cell">
+                          <strong>{s.rebounds}</strong>
+                          <span className="muted"> ({s.avgRebounds.toFixed(1)})</span>
+                        </td>
+                        <td className="muted">—</td>
+                        <td className="num-cell">
+                          {s.assists}
+                          <span className="muted"> ({s.avgAssists.toFixed(1)})</span>
+                        </td>
+                        <td className="num-cell">
+                          {s.steals}
+                          <span className="muted"> ({s.avgSteals.toFixed(1)})</span>
+                        </td>
+                        <td className="muted">—</td>
+                        <td>{s.fouls}</td>
+                        <td>{s.turnovers}</td>
+                        <td>{s.blocks}</td>
+                        <td className="muted">—</td>
+                        <td className="eff-cell">
+                          {s.efficiency >= 0 ? "+" : ""}
+                          {s.efficiency}
                         </td>
                       </tr>
                     ))}
                   </tbody>
+                  <tfoot>
+                    {/* 本队合计 */}
+                    <tr className="bp-total-row bp-own">
+                      <td className="st-name">本隊合計</td>
+                      <td>—</td>
+                      <td className="st-num">
+                        {(statsSummary.totals.minutes / Math.max(statsSummary.totals.gp, 1)).toFixed(1)}
+                      </td>
+                      <td>{statsSummary.totals.gp}</td>
+                      <td className="num-cell">
+                        <strong>{statsSummary.totals.points}</strong>
+                        <span className="muted">
+                          {" "}({(statsSummary.totals.points / Math.max(statsSummary.totals.gp, 1)).toFixed(1)})
+                        </span>
+                      </td>
+                      <td className={`pct-cell ${pctTier(statsSummary.totals.twoPct)}`}>
+                        {fmtPct(statsSummary.totals.twoPct)}
+                      </td>
+                      <td className={`pct-cell ${pctTier(statsSummary.totals.tpPct)}`}>
+                        {fmtPct(statsSummary.totals.tpPct)}
+                      </td>
+                      <td className={`pct-cell ${pctTier(statsSummary.totals.ftPct)}`}>
+                        {fmtPct(statsSummary.totals.ftPct)}
+                      </td>
+                      <td>{statsSummary.totals.offReb}</td>
+                      <td>{statsSummary.totals.defReb}</td>
+                      <td className="num-cell">
+                        <strong>{statsSummary.totals.rebounds}</strong>
+                      </td>
+                      <td>{statsSummary.opponentTotals.rebounds}</td>
+                      <td className="num-cell">{statsSummary.totals.assists}</td>
+                      <td className="num-cell">{statsSummary.totals.steals}</td>
+                      <td>{statsSummary.opponentTotals.fouls}</td>
+                      <td>{statsSummary.totals.fouls}</td>
+                      <td>{statsSummary.totals.turnovers}</td>
+                      <td>{statsSummary.totals.blocks}</td>
+                      <td>{statsSummary.opponentTotals.blocks}</td>
+                      <td className="eff-cell">
+                        {statsSummary.totals.efficiency >= 0 ? "+" : ""}
+                        {statsSummary.totals.efficiency}
+                      </td>
+                    </tr>
+                    {/* 对手合计 */}
+                    <tr className="bp-total-row bp-opp">
+                      <td className="st-name">對手合計</td>
+                      <td>—</td>
+                      <td className="st-num">
+                        {(statsSummary.opponentTotals.minutes / Math.max(statsSummary.opponentTotals.gp, 1)).toFixed(1)}
+                      </td>
+                      <td>{statsSummary.opponentTotals.gp}</td>
+                      <td className="num-cell">
+                        <strong>{statsSummary.opponentTotals.points}</strong>
+                        <span className="muted">
+                          {" "}({(statsSummary.opponentTotals.points / Math.max(statsSummary.opponentTotals.gp, 1)).toFixed(1)})
+                        </span>
+                      </td>
+                      <td className={`pct-cell ${pctTier(statsSummary.opponentTotals.twoPct)}`}>
+                        {fmtPct(statsSummary.opponentTotals.twoPct)}
+                      </td>
+                      <td className={`pct-cell ${pctTier(statsSummary.opponentTotals.tpPct)}`}>
+                        {fmtPct(statsSummary.opponentTotals.tpPct)}
+                      </td>
+                      <td className={`pct-cell ${pctTier(statsSummary.opponentTotals.ftPct)}`}>
+                        {fmtPct(statsSummary.opponentTotals.ftPct)}
+                      </td>
+                      <td>{statsSummary.opponentTotals.offReb}</td>
+                      <td>{statsSummary.opponentTotals.defReb}</td>
+                      <td className="num-cell">
+                        <strong>{statsSummary.opponentTotals.rebounds}</strong>
+                      </td>
+                      <td>{statsSummary.totals.rebounds}</td>
+                      <td className="num-cell">{statsSummary.opponentTotals.assists}</td>
+                      <td className="num-cell">{statsSummary.opponentTotals.steals}</td>
+                      <td>{statsSummary.totals.fouls}</td>
+                      <td>{statsSummary.opponentTotals.fouls}</td>
+                      <td>{statsSummary.opponentTotals.turnovers}</td>
+                      <td>{statsSummary.opponentTotals.blocks}</td>
+                      <td>{statsSummary.totals.blocks}</td>
+                      <td className="eff-cell">
+                        {statsSummary.opponentTotals.efficiency >= 0 ? "+" : ""}
+                        {statsSummary.opponentTotals.efficiency}
+                      </td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             ) : (
               <div className="state">暂无比赛数据（赛季尚未开始或无已结算比赛）</div>
             )}
             <p className="muted" style={{ marginTop: 8, fontSize: 11 }}>
-              ⓘ 场均数据括号内为累计总数；命中率配色：≥50% 绿色 / 35-50% 黄色 / &lt;35% 红色
+              ⓘ 表格底部"本隊合計 / 對手合計"对比球队与对手赛季累计；命中率配色：≥50% 绿色 / 35-50% 黄色 / &lt;35% 红色；效率 = 得分+篮板+助攻+抢断+盖帽 - 投篮失球 - 罚球失球 - 失误 - 犯规
             </p>
           </div>
         </section>

@@ -9,6 +9,7 @@ import { CareerModule } from "../career/career.module.js";
 import { AcademyModule } from "../academy/academy.module.js";
 import { ContractModule } from "../contract/contract.module.js";
 import { DraftModule } from "../draft/draft.module.js";
+import { FinanceModule } from "../finance/finance.module.js";
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { DraftModule } from "../draft/draft.module.js";
     forwardRef(() => AcademyModule),
     forwardRef(() => ContractModule),
     DraftModule,
+    forwardRef(() => FinanceModule),
   ],
   controllers: [SeasonController],
   providers: [SeasonService, ScheduleService],
