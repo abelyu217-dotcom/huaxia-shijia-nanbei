@@ -1,32 +1,45 @@
 /**
  * TeamPage — 球队管理页
  *
- * Tab 切换：阵容 / 战术 / 球员
- * - 阵容：LineupEditor 编辑首发 + 出场时间（仅可编辑自己球队）
- * - 战术：TacticSelector 让用户挑选战术预设（M1 仅展示，M2 持久化）
- * - 球员：PlayerGrid 展示球队所有球员卡片
+ * Tab 切换：球员详情 / 数据统计 / 青年球员 / 少年球员 / 合同管理
+ * - 球员详情：PlayerSkillsTable 展示球队所有球员技能（basketpulse 风格）
+ * - 数据统计：球队薪资总览 + 球员生涯统计
+ * - 青年球员：age ≤ 18 的球员
+ * - 少年球员：age ≤ 12 的球员
+ * - 合同管理：合同列表 + 续约/裁退操作
  */
 
 import { useEffect, useState } from "react";
-import { fetchTactics, fetchTeam, putTeamCaptain, postScoutPlayer, updateTeam, updatePlayer } from "../api";
-import type { PlayerDetail, TacticPreset, TeamDetail } from "../types";
-import { useAuth } from "../auth/AuthContext";
-import { LineupEditor } from "../components/LineupEditor";
-import { TacticEditor } from "../components/TacticEditor";
-import { PlayerSkillsTable } from "../components/PlayerSkillsTable";
 import {
-  DEFENSE_LABEL,
-  OFFENSE_LABEL,
-  TACTIC_CATEGORY_LABEL,
-  TEMPO_LABEL,
-} from "../lib";
+  fetchTeam,
+  fetchTeamCareers,
+  fetchTeamContracts,
+  fetchTeamSalary,
+  putTeamCaptain,
+  postScoutPlayer,
+  postExtendContract,
+  postWaivePlayer,
+  updateTeam,
+  updatePlayer,
+} from "../api";
+import type {
+  Contract,
+  PlayerCareer,
+  PlayerDetail,
+  SalaryStatus,
+  TeamDetail,
+} from "../types";
+import { useAuth } from "../auth/AuthContext";
+import { PlayerSkillsTable } from "../components/PlayerSkillsTable";
 
-type Tab = "lineup" | "tactics" | "players";
+type Tab = "players" | "stats" | "youth" | "junior" | "contracts";
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: "lineup", label: "阵容编辑" },
-  { id: "tactics", label: "战术选择" },
   { id: "players", label: "球员详情" },
+  { id: "stats", label: "数据统计" },
+  { id: "youth", label: "青年球员" },
+  { id: "junior", label: "少年球员" },
+  { id: "contracts", label: "合同管理" },
 ];
 
 /** 状态色 —— #13 状态色体系 */
@@ -74,9 +87,11 @@ export function TeamPage({ teamId }: Props) {
   const { user } = useAuth();
   const isMine = user?.teamId === teamId;
 
-  const [tab, setTab] = useState<Tab>("lineup");
+  const [tab, setTab] = useState<Tab>("players");
   const [team, setTeam] = useState<TeamDetail | null>(null);
-  const [tactics, setTactics] = useState<TacticPreset[] | null>(null);
+  const [careers, setCareers] = useState<PlayerCareer[] | null>(null);
+  const [contracts, setContracts] = useState<Contract[] | null>(null);
+  const [salary, setSalary] = useState<SalaryStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,14 +109,27 @@ export function TeamPage({ teamId }: Props) {
   // 38 项详细档案展开
   const [expandedProfileId, setExpandedProfileId] = useState<string | null>(null);
 
+  // 合同管理：续约/裁退
+  const [extendingContractId, setExtendingContractId] = useState<string | null>(null);
+  const [extendYearsDraft, setExtendYearsDraft] = useState(1);
+  const [extendSalaryDraft, setExtendSalaryDraft] = useState(0);
+  const [contractOpError, setContractOpError] = useState<string | null>(null);
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    Promise.all([fetchTeam(teamId), fetchTactics()])
-      .then(([t, ts]) => {
+    Promise.all([
+      fetchTeam(teamId),
+      isMine ? fetchTeamCareers(teamId) : Promise.resolve<PlayerCareer[]>([]),
+      isMine ? fetchTeamContracts(teamId) : Promise.resolve<Contract[]>([]),
+      isMine ? fetchTeamSalary(teamId) : Promise.resolve<SalaryStatus | null>(null),
+    ])
+      .then(([t, cs, cts, sal]) => {
         if (cancelled) return;
         setTeam(t);
-        setTactics(ts);
+        setCareers(cs);
+        setContracts(cts);
+        setSalary(sal);
       })
       .catch((e: unknown) => {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
@@ -112,7 +140,67 @@ export function TeamPage({ teamId }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [teamId]);
+  }, [teamId, isMine]);
+
+  /** 开始续约：填入当前年薪作为默认值 */
+  function startExtend(ct: Contract) {
+    setContractOpError(null);
+    setExtendYearsDraft(1);
+    setExtendSalaryDraft(ct.salaryPerYear);
+    setExtendingContractId(ct.id);
+  }
+
+  /** 提交续约 */
+  async function handleExtend(contractId: string) {
+    if (!team) return;
+    setContractOpError(null);
+    if (extendYearsDraft < 1 || extendYearsDraft > 5) {
+      setContractOpError("续约年限需在 1-5 年之间");
+      return;
+    }
+    if (extendSalaryDraft < 0) {
+      setContractOpError("新年薪不能为负");
+      return;
+    }
+    try {
+      await postExtendContract(contractId, {
+        addYears: extendYearsDraft,
+        newSalaryPerYear: extendSalaryDraft,
+      });
+      // 刷新合同/薪资/球队
+      const [cts, sal, t] = await Promise.all([
+        fetchTeamContracts(team.id),
+        fetchTeamSalary(team.id),
+        fetchTeam(team.id),
+      ]);
+      setContracts(cts);
+      setSalary(sal);
+      setTeam(t);
+      setExtendingContractId(null);
+    } catch (e) {
+      setContractOpError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  /** 裁退球员 */
+  async function handleWaive(contractId: string, playerName: string) {
+    if (!team) return;
+    if (!window.confirm(`确认裁退「${playerName}」？此操作不可撤销。`)) return;
+    setContractOpError(null);
+    try {
+      await postWaivePlayer(contractId);
+      const [cts, sal, t] = await Promise.all([
+        fetchTeamContracts(team.id),
+        fetchTeamSalary(team.id),
+        fetchTeam(team.id),
+      ]);
+      setContracts(cts);
+      setSalary(sal);
+      setTeam(t);
+    } catch (e) {
+      setContractOpError(e instanceof Error ? e.message : String(e));
+    }
+  }
 
   /** 设置/取消队长（#20） */
   async function handleSetCaptain(playerId: string | null) {
@@ -253,64 +341,6 @@ export function TeamPage({ teamId }: Props) {
           </div>
         </div>
       </div>
-
-      {tab === "lineup" && (
-        <section className="panel">
-          <div className="panel-head">
-            <h2>首发阵容与出场时间</h2>
-            <span className="hint">
-              {isMine
-                ? "勾选 5 名首发，调整出场时间（每人 0-48 min，总 200-240 min）"
-                : "只读模式：你只能编辑自己球队的阵容"}
-            </span>
-          </div>
-          <div className="panel-body">
-            <LineupEditor teamId={teamId} editable={isMine} />
-          </div>
-        </section>
-      )}
-
-      {tab === "tactics" && isMine && <TacticEditor teamId={teamId} />}
-
-      {tab === "tactics" && !isMine && (
-        <section className="panel">
-          <div className="panel-head">
-            <h2>战术选择</h2>
-            <span className="hint">仅查看：其他球队战术一览</span>
-          </div>
-          <div className="panel-body">
-            {tactics ? (
-              <div className="tactic-grid">
-                {tactics.map((t) => (
-                  <div key={t.id} className="tactic-card">
-                    <div className="tc-names">
-                      <span className="tc-name">{t.name}</span>
-                      <span className="tc-name-en">{t.nameEn}</span>
-                    </div>
-                    <div className="tc-chips">
-                      <span className="chip">
-                        {TACTIC_CATEGORY_LABEL[t.category]}
-                      </span>
-                      <span className="chip tempo">
-                        {TEMPO_LABEL[t.tempo]}
-                      </span>
-                      <span className="chip">
-                        进攻 · {OFFENSE_LABEL[t.offenseTendency]}
-                      </span>
-                      <span className="chip">
-                        防守 · {DEFENSE_LABEL[t.defenseTendency]}
-                      </span>
-                    </div>
-                    <p className="tc-desc">{t.desc}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="state">无战术数据</div>
-            )}
-          </div>
-        </section>
-      )}
 
       {tab === "players" && (
         <section className="panel">
@@ -467,6 +497,328 @@ export function TeamPage({ teamId }: Props) {
                   : undefined
               }
             />
+          </div>
+        </section>
+      )}
+
+      {tab === "stats" && (
+        <section className="panel">
+          <div className="panel-head">
+            <h2>数据统计</h2>
+            <span className="hint">
+              {isMine
+                ? "球队薪资总览 + 球员生涯统计"
+                : "球员生涯统计（薪资数据仅本队可见）"}
+            </span>
+          </div>
+          <div className="panel-body">
+            {/* 薪资总览（仅本队） */}
+            {isMine && salary && (
+              <div className="kv-card">
+                <h3 className="kv-card-title">球队薪资总览</h3>
+                <div className="kv">
+                  <div>
+                    <dt>薪资帽</dt>
+                    <dd>{salary.salaryCap.toLocaleString()} 万</dd>
+                  </div>
+                  <div>
+                    <dt>总薪资</dt>
+                    <dd>{salary.totalSalary.toLocaleString()} 万</dd>
+                  </div>
+                  <div>
+                    <dt>占用</dt>
+                    <dd>{salary.capHit.toLocaleString()} 万</dd>
+                  </div>
+                  <div>
+                    <dt>剩余空间</dt>
+                    <dd className={salary.remaining < 0 ? "neg" : "pos"}>
+                      {salary.remaining.toLocaleString()} 万
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>合同数</dt>
+                    <dd>{salary.contractCount}</dd>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 球员生涯统计 */}
+            <h3 className="section-title" style={{ margin: "16px 0 8px" }}>
+              球员生涯统计
+            </h3>
+            {careers && careers.length > 0 ? (
+              <div className="roster-table-wrap">
+                <table className="stats-table">
+                  <thead>
+                    <tr>
+                      <th>姓名</th>
+                      <th>位置</th>
+                      <th>年龄</th>
+                      <th>OVR</th>
+                      <th>潜力</th>
+                      <th>生涯阶段</th>
+                      <th>训练经验</th>
+                      <th>成长空间</th>
+                      <th>退役季</th>
+                      <th>年薪(万)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {careers.map((c) => (
+                      <tr key={c.playerId}>
+                        <td>{c.name}</td>
+                        <td>{c.position}</td>
+                        <td>{c.age}</td>
+                        <td>{c.ovr}</td>
+                        <td>{c.potential}</td>
+                        <td>
+                          <span className={`stage-chip stage-${c.stage}`}>
+                            {c.stageLabel}
+                          </span>
+                        </td>
+                        <td>{c.trainExp}</td>
+                        <td>{c.growthRoom > 0 ? `+${c.growthRoom}` : "—"}</td>
+                        <td>{c.retireSeason ?? (c.retired ? "已退役" : "—")}</td>
+                        <td>{c.salary != null ? c.salary.toLocaleString() : "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="state">暂无生涯统计数据</div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {tab === "youth" && (
+        <section className="panel">
+          <div className="panel-head">
+            <h2>青年球员</h2>
+            <span className="hint">年龄 ≤ 18 岁（来自青年训练营）</span>
+          </div>
+          <div className="panel-body">
+            {(() => {
+              const youth = team.players.filter(
+                (p) => p.age != null && p.age <= 18,
+              );
+              if (youth.length === 0) {
+                return <div className="state">暂无青年球员</div>;
+              }
+              return (
+                <PlayerSkillsTable
+                  players={youth}
+                  exportName={`${team.name}-青年球员`}
+                  disablePagination
+                />
+              );
+            })()}
+          </div>
+        </section>
+      )}
+
+      {tab === "junior" && (
+        <section className="panel">
+          <div className="panel-head">
+            <h2>少年球员</h2>
+            <span className="hint">年龄 ≤ 12 岁（来自少年训练营）</span>
+          </div>
+          <div className="panel-body">
+            {(() => {
+              const junior = team.players.filter(
+                (p) => p.age != null && p.age <= 12,
+              );
+              if (junior.length === 0) {
+                return <div className="state">暂无少年球员</div>;
+              }
+              return (
+                <PlayerSkillsTable
+                  players={junior}
+                  exportName={`${team.name}-少年球员`}
+                  disablePagination
+                />
+              );
+            })()}
+          </div>
+        </section>
+      )}
+
+      {tab === "contracts" && (
+        <section className="panel">
+          <div className="panel-head">
+            <h2>合同管理</h2>
+            <span className="hint">
+              {isMine
+                ? "管理本队球员合同：续约 / 裁退"
+                : "仅查看：其他球队合同一览"}
+            </span>
+          </div>
+          <div className="panel-body">
+            {/* 薪资总览（仅本队） */}
+            {isMine && salary && (
+              <div className="kv-card">
+                <h3 className="kv-card-title">球队薪资总览</h3>
+                <div className="kv">
+                  <div>
+                    <dt>薪资帽</dt>
+                    <dd>{salary.salaryCap.toLocaleString()} 万</dd>
+                  </div>
+                  <div>
+                    <dt>总薪资</dt>
+                    <dd>{salary.totalSalary.toLocaleString()} 万</dd>
+                  </div>
+                  <div>
+                    <dt>占用</dt>
+                    <dd>{salary.capHit.toLocaleString()} 万</dd>
+                  </div>
+                  <div>
+                    <dt>剩余空间</dt>
+                    <dd className={salary.remaining < 0 ? "neg" : "pos"}>
+                      {salary.remaining.toLocaleString()} 万
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>合同数</dt>
+                    <dd>{salary.contractCount}</dd>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 合同列表 */}
+            <h3 className="section-title" style={{ margin: "16px 0 8px" }}>
+              合同列表
+            </h3>
+            {contracts && contracts.length > 0 ? (
+              <div className="roster-table-wrap">
+                <table className="contracts-table">
+                  <thead>
+                    <tr>
+                      <th>球员</th>
+                      <th>位置</th>
+                      <th>年龄</th>
+                      <th>总年限</th>
+                      <th>剩余</th>
+                      <th>年薪(万)</th>
+                      <th>状态</th>
+                      <th>条款</th>
+                      {isMine && <th>操作</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {contracts.map((ct) => (
+                      <tr key={ct.id} className={`contract-row contract-${ct.status}`}>
+                        <td>{ct.player?.name ?? "—"}</td>
+                        <td>{ct.player?.position ?? "—"}</td>
+                        <td>{ct.player?.age ?? "—"}</td>
+                        <td>{ct.yearsTotal}</td>
+                        <td className={ct.yearsRemain <= 1 ? "neg" : ""}>
+                          {ct.yearsRemain}
+                        </td>
+                        <td>{ct.salaryPerYear.toLocaleString()}</td>
+                        <td>
+                          <span className={`status-chip contract-status-${ct.status}`}>
+                            {ct.status === "active"
+                              ? "生效中"
+                              : ct.status === "expired"
+                                ? "已到期"
+                                : "已裁退"}
+                          </span>
+                        </td>
+                        <td className="clause-list">
+                          {ct.playerOption && <span className="chip">球员选项</span>}
+                          {ct.teamOption && <span className="chip">球队选项</span>}
+                          {ct.noTrade && <span className="chip">不可交易</span>}
+                          {!ct.playerOption && !ct.teamOption && !ct.noTrade && (
+                            <span className="muted">—</span>
+                          )}
+                        </td>
+                        {isMine && (
+                          <td>
+                            {ct.status === "active" ? (
+                              <div className="contract-actions">
+                                {extendingContractId === ct.id ? (
+                                  <div className="extend-form">
+                                    <label className="extend-field">
+                                      <span>续约年限</span>
+                                      <input
+                                        type="number"
+                                        min={1}
+                                        max={5}
+                                        value={extendYearsDraft}
+                                        onChange={(e) =>
+                                          setExtendYearsDraft(+e.target.value)
+                                        }
+                                        style={{ width: 60 }}
+                                      />
+                                    </label>
+                                    <label className="extend-field">
+                                      <span>新年薪(万)</span>
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        value={extendSalaryDraft}
+                                        onChange={(e) =>
+                                          setExtendSalaryDraft(+e.target.value)
+                                        }
+                                        style={{ width: 100 }}
+                                      />
+                                    </label>
+                                    <button
+                                      type="button"
+                                      className="btn btn-primary btn-sm"
+                                      disabled={extendingContractId !== ct.id}
+                                      onClick={() => handleExtend(ct.id)}
+                                    >
+                                      确认
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn btn-ghost btn-sm"
+                                      onClick={() => setExtendingContractId(null)}
+                                    >
+                                      取消
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className="btn-link captain-btn"
+                                      onClick={() => startExtend(ct)}
+                                    >
+                                      续约
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn-link captain-btn waive-btn"
+                                      onClick={() => handleWaive(ct.id, ct.player?.name ?? "该球员")}
+                                    >
+                                      裁退
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="muted">—</span>
+                            )}
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="state">暂无合同数据</div>
+            )}
+            {contractOpError && (
+              <div className="error-text" style={{ marginTop: 8 }}>
+                {contractOpError}
+              </div>
+            )}
           </div>
         </section>
       )}

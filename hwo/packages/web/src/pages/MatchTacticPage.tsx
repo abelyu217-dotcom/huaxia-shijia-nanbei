@@ -40,11 +40,21 @@ import {
 } from "../lib";
 import { useAuth } from "../auth/AuthContext";
 import { TacticBoard } from "../components/TacticBoard";
+import { LineupEditor } from "../components/LineupEditor";
+import { TacticEditor } from "../components/TacticEditor";
 
 interface Props {
   matchId?: string;
   teamId?: string;
 }
+
+type Tab = "match" | "lineup" | "tactic";
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: "match", label: "单场战术" },
+  { id: "lineup", label: "阵容编辑" },
+  { id: "tactic", label: "战术选择" },
+];
 
 // modSet 字段标签（本页局部使用，与 TacticEditor 保持一致措辞）
 const OFFENSE_FOCUS_LABELS: Record<string, string> = {
@@ -91,6 +101,7 @@ export function MatchTacticPage({ matchId, teamId }: Props) {
   const { user } = useAuth();
   const myTeamId = teamId ?? user?.teamId ?? undefined;
 
+  const [tab, setTab] = useState<Tab>("match");
   const [matchDay, setMatchDay] = useState<number | null>(null);
   const [match, setMatch] = useState<ScheduleMatch | null>(null);
   const [presets, setPresets] = useState<TacticPreset[]>([]);
@@ -245,19 +256,87 @@ export function MatchTacticPage({ matchId, teamId }: Props) {
     return (
       <div className="match-tactic-page">
         <div className="page-head">
-          <h2>单场战术设定</h2>
-          <p className="muted">为当前比赛定制我方战术，并查看对手分析与反制策略</p>
+          <h2>战术中心</h2>
+          <p className="muted">单场战术 / 阵容编辑 / 战术选择</p>
         </div>
         <div className="empty-block">请先登录并认领球队</div>
       </div>
     );
   }
 
+  // 非单场战术 Tab：直接渲染阵容编辑/战术选择，无需等待比赛数据
+  if (tab === "lineup") {
+    return (
+      <div className="match-tactic-page">
+        <div className="page-head">
+          <h2>战术中心</h2>
+          <div className="team-page-tabs">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={`tab${tab === t.id ? " is-active" : ""}`}
+                onClick={() => setTab(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <section className="panel">
+          <div className="panel-head">
+            <h2>首发阵容与出场时间</h2>
+            <span className="hint">勾选 5 名首发，调整出场时间（每人 0-48 min，总 200-240 min）</span>
+          </div>
+          <div className="panel-body">
+            <LineupEditor teamId={myTeamId} editable />
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  if (tab === "tactic") {
+    return (
+      <div className="match-tactic-page">
+        <div className="page-head">
+          <h2>战术中心</h2>
+          <div className="team-page-tabs">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={`tab${tab === t.id ? " is-active" : ""}`}
+                onClick={() => setTab(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <TacticEditor teamId={myTeamId} />
+      </div>
+    );
+  }
+
+  // 单场战术 Tab：依赖比赛数据加载
   if (loading) {
     return (
       <div className="match-tactic-page">
         <div className="page-head">
-          <h2>单场战术设定</h2>
+          <h2>战术中心</h2>
+          <div className="team-page-tabs">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={`tab${tab === t.id ? " is-active" : ""}`}
+                onClick={() => setTab(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="state">
           <span className="spinner" /> 正在加载战术数据…
@@ -270,7 +349,19 @@ export function MatchTacticPage({ matchId, teamId }: Props) {
     return (
       <div className="match-tactic-page">
         <div className="page-head">
-          <h2>单场战术设定</h2>
+          <h2>战术中心</h2>
+          <div className="team-page-tabs">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={`tab${tab === t.id ? " is-active" : ""}`}
+                onClick={() => setTab(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="state error">加载失败：{error}</div>
       </div>
@@ -305,17 +396,33 @@ export function MatchTacticPage({ matchId, teamId }: Props) {
   return (
     <div className="match-tactic-page">
       <div className="page-head">
-        <h2>单场战术设定</h2>
-        <p className="muted">为当前比赛定制我方战术，并查看对手分析与反制策略</p>
+        <h2>战术中心</h2>
+        <div className="team-page-tabs">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              className={`tab${tab === t.id ? " is-active" : ""}`}
+              onClick={() => setTab(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {notice && (
-        <div className={`match-notice ${notice.kind}`}>{notice.msg}</div>
-      )}
+      {tab === "match" && (
+        <>
+          <p className="muted" style={{ marginBottom: 8 }}>
+            为当前比赛定制我方战术，并查看对手分析与反制策略
+          </p>
+          {notice && (
+            <div className={`match-notice ${notice.kind}`}>{notice.msg}</div>
+          )}
 
-      {/* 比赛信息面板 */}
-      {match && (
-        <section className="panel match-info-panel">
+          {/* 比赛信息面板 */}
+          {match && (
+            <section className="panel match-info-panel">
           <div className="panel-head">
             <h2>比赛信息</h2>
             <span className="hint">第 {matchDay ?? "—"} 日</span>
@@ -642,6 +749,8 @@ export function MatchTacticPage({ matchId, teamId }: Props) {
             <TacticBoard modSet={myTactic.modSet} width={360} />
           </div>
         </section>
+      )}
+      </>
       )}
     </div>
   );

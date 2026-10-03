@@ -9400,5 +9400,146 @@ button {
   color: var(--text);
 }
 
+/* ─────────────────────────────────────────────────────────
+ * TeamPage 新增 Tab：数据统计 / 青年/少年球员 / 合同管理
+ * ───────────────────────────────────────────────────────── */
+
+/* 薪资/合同总览卡片 */
+.kv-card {
+  background: var(--card-bg, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin: 8px 0 16px;
+}
+.kv-card-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.kv dd.neg { color: #ef4444; }
+.kv dd.pos { color: #22c55e; }
+
+/* 生涯统计表 */
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  table-layout: fixed;
+}
+.stats-table th,
+.stats-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stats-table th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted, var(--text-muted));
+  background: rgba(255, 255, 255, 0.02);
+}
+.stats-table tbody tr:hover {
+  background: rgba(255, 122, 0, 0.05);
+}
+
+/* 生涯阶段标签 */
+.stage-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(96, 165, 250, 0.12);
+  color: #60a5fa;
+}
+.stage-chip.stage-rookie { background: rgba(34, 197, 94, 0.12); color: #22c55e; }
+.stage-chip.stage-rising { background: rgba(96, 165, 250, 0.12); color: #60a5fa; }
+.stage-chip.stage-prime  { background: rgba(245, 158, 11, 0.12); color: #f59e0b; }
+.stage-chip.stage-decline{ background: rgba(239, 68, 68, 0.12);  color: #ef4444; }
+.stage-chip.stage-retired{ background: rgba(115, 115, 115, 0.18); color: #9a9a9a; }
+
+/* 合同列表 */
+.contracts-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  table-layout: fixed;
+}
+.contracts-table th,
+.contracts-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.contracts-table th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted, var(--text-muted));
+  background: rgba(255, 255, 255, 0.02);
+}
+.contracts-table tbody tr:hover {
+  background: rgba(255, 122, 0, 0.05);
+}
+.contracts-table .neg { color: #ef4444; font-weight: 700; }
+
+/* 合同状态 chip */
+.contract-status-active  { background: rgba(34, 197, 94, 0.12);  color: #22c55e; }
+.contract-status-expired { background: rgba(245, 158, 11, 0.12); color: #f59e0b; }
+.contract-status-waived  { background: rgba(239, 68, 68, 0.12);  color: #ef4444; }
+
+.contract-row.contract-expired td { opacity: 0.65; }
+.contract-row.contract-waived  td { opacity: 0.5; text-decoration: line-through; }
+
+.clause-list {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* 合同操作按钮组 */
+.contract-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.extend-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+}
+.extend-field {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--muted, var(--text-muted));
+}
+.extend-field input {
+  padding: 4px 6px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+  border-radius: 4px;
+  background: var(--input-bg, rgba(0, 0, 0, 0.2));
+  color: var(--text);
+  font-size: 13px;
+}
+.waive-btn { color: #ef4444; }
+.waive-btn:hover { background: rgba(239, 68, 68, 0.12); }
+
 
 
