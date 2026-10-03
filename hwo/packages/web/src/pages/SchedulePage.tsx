@@ -28,14 +28,18 @@ import { useAuth } from "../auth/AuthContext";
 import { PbpFeed } from "../components/PbpFeed";
 import { BoxScoreTable } from "../components/BoxScoreTable";
 import { QuarterScoreTable } from "../components/QuarterScoreTable";
+import { PlayoffPage } from "./PlayoffPage";
 
 interface Props {
   initialMatchId?: string | null;
   onOpenMatchTactic?: (matchId: string) => void;
 }
 
+type ScheduleTab = "regular" | "playoff";
+
 export function SchedulePage({ initialMatchId, onOpenMatchTactic }: Props) {
   const { user } = useAuth();
+  const [tab, setTab] = useState<ScheduleTab>("regular");
   const [season, setSeason] = useState<SeasonInfo | null>(null);
   const [schedule, setSchedule] = useState<ScheduleDay[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -140,26 +144,67 @@ export function SchedulePage({ initialMatchId, onOpenMatchTactic }: Props) {
     return schedule.find((d) => d.day === selectedDay)?.matches ?? [];
   }, [schedule, selectedDay]);
 
+  const tabBar = (
+    <div className="schedule-tabs">
+      {(
+        [
+          ["regular", "常规赛"],
+          ["playoff", "季后赛"],
+        ] as const
+      ).map(([key, label]) => (
+        <button
+          key={key}
+          type="button"
+          className={`schedule-tab${tab === key ? " is-active" : ""}`}
+          onClick={() => setTab(key)}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+
+  if (tab === "playoff") {
+    return (
+      <div className="schedule-page">
+        {tabBar}
+        <PlayoffPage />
+      </div>
+    );
+  }
+
   if (loading) {
     return (
-      <div className="state">
-        <span className="spinner" /> 正在加载赛程…
+      <div className="schedule-page">
+        {tabBar}
+        <div className="state">
+          <span className="spinner" /> 正在加载赛程…
+        </div>
       </div>
     );
   }
   if (error) {
-    return <div className="state error">赛程加载失败：{error}</div>;
+    return (
+      <div className="schedule-page">
+        {tabBar}
+        <div className="state error">赛程加载失败：{error}</div>
+      </div>
+    );
   }
   if (!schedule || schedule.length === 0) {
     return (
-      <div className="empty-block">
-        当前赛季尚未生成赛程。回到主页点击「生成赛程」即可。
+      <div className="schedule-page">
+        {tabBar}
+        <div className="empty-block">
+          当前赛季尚未生成赛程。回到主页点击「生成赛程」即可。
+        </div>
       </div>
     );
   }
 
   return (
     <div className="schedule-page">
+      {tabBar}
       <div className="schedule-layout">
         {/* 左侧日历 */}
         <aside className="schedule-calendar panel">

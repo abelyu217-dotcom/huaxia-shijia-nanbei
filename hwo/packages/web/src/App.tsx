@@ -39,6 +39,7 @@ import { PlayoffPage } from "./pages/PlayoffPage";
 import { BoardPage } from "./pages/BoardPage";
 import { WorldInfoPage } from "./pages/WorldInfoPage";
 import { ArenaPage } from "./pages/ArenaPage";
+import { PvpPage } from "./pages/PvpPage";
 import { CorePlayersPage } from "./pages/CorePlayersPage";
 import { BoardOfDirectorsPage } from "./pages/BoardOfDirectorsPage";
 import { GuidePage } from "./pages/GuidePage";
@@ -68,6 +69,7 @@ type View =
   | { kind: "scout" }
   | { kind: "watchlist" }
   | { kind: "playoff" }
+  | { kind: "pvp" }
   | { kind: "board" }
   | { kind: "worldInfo" }
   | { kind: "arena" }
@@ -99,6 +101,7 @@ type NavKind =
   | "scout"
   | "watchlist"
   | "playoff"
+  | "pvp"
   | "board"
   | "worldInfo"
   | "arena"
@@ -147,6 +150,7 @@ const NAV_GROUPS: { group: string; items: { id: NavKind; label: string }[] }[] =
     group: "赛事",
     items: [
       { id: "schedule", label: "比赛" },
+      { id: "pvp", label: "PvP 对战" },
       { id: "matchTactic", label: "战术" },
       { id: "league", label: "国内联赛" },
       { id: "intlLeague", label: "国际联赛" },
@@ -179,6 +183,7 @@ function navToView(kind: NavKind, teamId?: string): View {
   if (kind === "scout") return { kind: "scout" };
   if (kind === "watchlist") return { kind: "watchlist" };
   if (kind === "playoff") return { kind: "playoff" };
+  if (kind === "pvp") return { kind: "pvp" };
   if (kind === "board") return { kind: "board" };
   if (kind === "worldInfo") return { kind: "worldInfo" };
   if (kind === "arena") return { kind: "arena" };
@@ -384,6 +389,7 @@ function AppInner() {
           )}
           {view.kind === "watchlist" && <WatchlistPage />}
           {view.kind === "playoff" && <PlayoffPage />}
+          {view.kind === "pvp" && <PvpPage teamId={myTeamId ?? undefined} />}
           {view.kind === "board" && <BoardPage />}
           {view.kind === "worldInfo" && (
             <WorldInfoPage onOpenTeam={openTeam} />
