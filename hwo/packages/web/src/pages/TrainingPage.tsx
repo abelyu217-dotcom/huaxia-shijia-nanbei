@@ -16,14 +16,12 @@ import {
   fetchTrainingLogs,
   putTrainingPlan,
   fetchTeam,
-  fetchTeamStatsSummary,
 } from "../api";
 import type {
   TrainingPlanView,
   DailyTrainingSummary,
   TrainingLogEntry,
   TeamDetail,
-  TeamStatsSummary,
 } from "../types";
 
 interface Props {
@@ -67,7 +65,6 @@ export function TrainingPage({ teamId }: Props) {
   const [today, setToday] = useState<DailyTrainingSummary | null>(null);
   const [logs, setLogs] = useState<TrainingLogEntry[]>([]);
   const [team, setTeam] = useState<TeamDetail | null>(null);
-  const [summary, setSummary] = useState<TeamStatsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -77,16 +74,14 @@ export function TrainingPage({ teamId }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const [p, t, tm, ss] = await Promise.all([
+      const [p, t, tm] = await Promise.all([
         fetchTrainingPlan(teamId),
         fetchTrainingToday(teamId).catch(() => null),
         fetchTeam(teamId),
-        fetchTeamStatsSummary(teamId).catch(() => null),
       ]);
       setPlan(p);
       setToday(t);
       setTeam(tm);
-      setSummary(ss);
       // 训练日志默认按当天过滤；如果当日无日志，则查最近 30 条
       let logs = await fetchTrainingLogs(teamId, { limit: 50 });
       if (logs.length === 0) {
