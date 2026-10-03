@@ -11,7 +11,7 @@
  *      回填后 abilities 列保持原值不变，profile 作为新数据源供后续赛季成长使用。
  */
 
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { deriveProfileFromAbilities } from "@hwo/shared";
 import type { Abilities, Position } from "@hwo/shared";
@@ -34,7 +34,7 @@ async function main() {
   });
 
   const players = await prisma.player.findMany({
-    where: { profile: null },
+    where: { profile: { equals: Prisma.DbNull } },
     select: { id: true, position: true, age: true, abilities: true },
   });
 
