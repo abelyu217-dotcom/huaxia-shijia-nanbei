@@ -38,12 +38,13 @@ import { MatchTacticPage } from "./pages/MatchTacticPage";
 import { ScoutPage } from "./pages/ScoutPage";
 import { WatchlistPage } from "./pages/WatchlistPage";
 import { PlayoffPage } from "./pages/PlayoffPage";
-import { BoardPage } from "./pages/BoardPage";
 import { WorldInfoPage } from "./pages/WorldInfoPage";
 import { ArenaPage } from "./pages/ArenaPage";
 import { PvpPage } from "./pages/PvpPage";
 import { CorePlayersPage } from "./pages/CorePlayersPage";
 import { BoardOfDirectorsPage } from "./pages/BoardOfDirectorsPage";
+import { PublicRelationsPage } from "./pages/PublicRelationsPage";
+import { OperationsCenterPage } from "./pages/OperationsCenterPage";
 import { GuidePage } from "./pages/GuidePage";
 import { DailyReward } from "./components/DailyReward";
 import WorldSelectPage from "./pages/WorldSelectPage";
@@ -77,6 +78,7 @@ type View =
   | { kind: "board" }
   | { kind: "worldInfo" }
   | { kind: "arena" }
+  | { kind: "operations" }
   | { kind: "corePlayers" }
   | { kind: "bod" }
   | { kind: "guide" }
@@ -111,6 +113,7 @@ type NavKind =
   | "board"
   | "worldInfo"
   | "arena"
+  | "operations"
   | "corePlayers"
   | "bod"
   | "guide"
@@ -137,7 +140,8 @@ const NAV_GROUPS: { group: string; items: { id: NavKind; label: string }[] }[] =
       { id: "finance", label: "财务" },
       { id: "bod", label: "董事会" },
       { id: "board", label: "公关部" },
-      { id: "arena", label: "运营中心" },
+      { id: "operations", label: "运营中心" },
+      { id: "arena", label: "球馆" },
     ],
   },
   {
@@ -197,6 +201,7 @@ function navToView(kind: NavKind, teamId?: string): View {
   if (kind === "board") return { kind: "board" };
   if (kind === "worldInfo") return { kind: "worldInfo" };
   if (kind === "arena") return { kind: "arena" };
+  if (kind === "operations") return { kind: "operations" };
   if (kind === "corePlayers") return { kind: "corePlayers" };
   if (kind === "bod") return { kind: "bod" };
   if (kind === "guide") return { kind: "guide" };
@@ -406,12 +411,17 @@ function AppInner() {
           {view.kind === "watchlist" && <WatchlistPage />}
           {view.kind === "playoff" && <PlayoffPage />}
           {view.kind === "pvp" && <PvpPage teamId={myTeamId ?? undefined} />}
-          {view.kind === "board" && <BoardPage />}
+          {view.kind === "board" && (
+            <PublicRelationsPage teamId={myTeamId ?? undefined} />
+          )}
           {view.kind === "worldInfo" && (
             <WorldInfoPage onOpenTeam={openTeam} />
           )}
           {view.kind === "arena" && (
             <ArenaPage teamId={myTeamId ?? undefined} />
+          )}
+          {view.kind === "operations" && (
+            <OperationsCenterPage teamId={myTeamId ?? undefined} />
           )}
           {view.kind === "corePlayers" && (
             <CorePlayersPage teamId={myTeamId ?? undefined} />

@@ -62,6 +62,13 @@ import type {
   BoardSponsorView,
   SeasonGoalView,
   BoardProposalView,
+  PrOverviewView,
+  TeamMessageView,
+  MediaNewsView,
+  LeagueAnnouncementView,
+  FanCenterView,
+  FanEventView,
+  OperationsOverviewView,
 } from "./types";
 
 // ── Token 管理 ──
@@ -1012,6 +1019,114 @@ export function dismissBoardProposal(
   return postJson<{ ok: boolean }>(
     `/api/board/proposals/${encodeURIComponent(proposalId)}/dismiss`,
     { teamId },
+  );
+}
+
+// ── 批次5：公关部（PR）──
+
+/** GET /api/pr/:teamId/overview — 公关部总览 */
+export function fetchPrOverview(teamId: string, seasonId?: string): Promise<PrOverviewView> {
+  const q = new URLSearchParams();
+  if (seasonId) q.set("seasonId", seasonId);
+  const qs = q.toString();
+  return getJson<PrOverviewView>(
+    `/api/pr/${encodeURIComponent(teamId)}/overview${qs ? `?${qs}` : ""}`,
+  );
+}
+
+/** GET /api/pr/:teamId/messages — 球队讯息列表 */
+export function fetchTeamMessages(
+  teamId: string,
+  opts: { limit?: number; unreadOnly?: boolean } = {},
+): Promise<TeamMessageView[]> {
+  const q = new URLSearchParams();
+  if (opts.limit) q.set("limit", String(opts.limit));
+  if (opts.unreadOnly) q.set("unreadOnly", "true");
+  const qs = q.toString();
+  return getJson<TeamMessageView[]>(
+    `/api/pr/${encodeURIComponent(teamId)}/messages${qs ? `?${qs}` : ""}`,
+  );
+}
+
+/** GET /api/pr/:teamId/messages/unread — 未读讯息数 */
+export function fetchUnreadMessageCount(teamId: string): Promise<{ count: number }> {
+  return getJson<{ count: number }>(
+    `/api/pr/${encodeURIComponent(teamId)}/messages/unread`,
+  );
+}
+
+/** POST /api/pr/messages/:id/read — 标记单条讯息已读 */
+export function markMessageRead(messageId: string, teamId: string): Promise<{ ok: boolean }> {
+  return postJson<{ ok: boolean }>(
+    `/api/pr/messages/${encodeURIComponent(messageId)}/read`,
+    { teamId },
+  );
+}
+
+/** POST /api/pr/:teamId/messages/read-all — 标记全部已读 */
+export function markAllMessagesRead(teamId: string): Promise<{ updated: number }> {
+  return postJson<{ updated: number }>(
+    `/api/pr/${encodeURIComponent(teamId)}/messages/read-all`,
+    {},
+  );
+}
+
+/** GET /api/pr/news — 媒体新闻列表 */
+export function fetchMediaNews(
+  opts: { seasonId?: string; category?: string; limit?: number } = {},
+): Promise<MediaNewsView[]> {
+  const q = new URLSearchParams();
+  if (opts.seasonId) q.set("seasonId", opts.seasonId);
+  if (opts.category) q.set("category", opts.category);
+  if (opts.limit) q.set("limit", String(opts.limit));
+  const qs = q.toString();
+  return getJson<MediaNewsView[]>(`/api/pr/news${qs ? `?${qs}` : ""}`);
+}
+
+/** GET /api/pr/announcements — 联盟公告列表 */
+export function fetchAnnouncements(
+  opts: { seasonId?: string; category?: string; limit?: number } = {},
+): Promise<LeagueAnnouncementView[]> {
+  const q = new URLSearchParams();
+  if (opts.seasonId) q.set("seasonId", opts.seasonId);
+  if (opts.category) q.set("category", opts.category);
+  if (opts.limit) q.set("limit", String(opts.limit));
+  const qs = q.toString();
+  return getJson<LeagueAnnouncementView[]>(`/api/pr/announcements${qs ? `?${qs}` : ""}`);
+}
+
+// ── 批次5：运营中心（Operations）──
+
+/** GET /api/operations/:teamId/overview — 运营中心总览 */
+export function fetchOperationsOverview(
+  teamId: string,
+  seasonId?: string,
+): Promise<OperationsOverviewView> {
+  const q = new URLSearchParams();
+  if (seasonId) q.set("seasonId", seasonId);
+  const qs = q.toString();
+  return getJson<OperationsOverviewView>(
+    `/api/operations/${encodeURIComponent(teamId)}/overview${qs ? `?${qs}` : ""}`,
+  );
+}
+
+/** GET /api/operations/:teamId/fan-center — 球迷中心 */
+export function fetchFanCenter(teamId: string): Promise<FanCenterView> {
+  return getJson<FanCenterView>(`/api/operations/${encodeURIComponent(teamId)}/fan-center`);
+}
+
+/** GET /api/operations/:teamId/events — 球迷事件流 */
+export function fetchFanEvents(
+  teamId: string,
+  seasonId?: string,
+  limit?: number,
+): Promise<FanEventView[]> {
+  const q = new URLSearchParams();
+  if (seasonId) q.set("seasonId", seasonId);
+  if (limit) q.set("limit", String(limit));
+  const qs = q.toString();
+  return getJson<FanEventView[]>(
+    `/api/operations/${encodeURIComponent(teamId)}/events${qs ? `?${qs}` : ""}`,
   );
 }
 

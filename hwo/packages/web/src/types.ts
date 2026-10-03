@@ -783,6 +783,94 @@ export interface BoardView {
   avgSponsorSatisfaction: number;
 }
 
+// ── 公关部（批次5）──
+
+/** 球队讯息视图 */
+export interface TeamMessageView {
+  id: string;
+  teamId: string;
+  seasonId: string;
+  day: number;
+  channel: string;
+  type: string;
+  title: string;
+  content: string;
+  refId: string | null;
+  read: boolean;
+  createdAt: string;
+}
+
+/** 媒体新闻视图 */
+export interface MediaNewsView {
+  id: string;
+  worldId: string | null;
+  seasonId: string;
+  day: number;
+  source: string;
+  category: string;
+  title: string;
+  content: string;
+  refId: string | null;
+  tags: string[];
+  createdAt: string;
+}
+
+/** 联盟公告视图 */
+export interface LeagueAnnouncementView {
+  id: string;
+  leagueId: string | null;
+  worldId: string | null;
+  seasonId: string;
+  day: number;
+  category: string;
+  title: string;
+  content: string;
+  refId: string | null;
+  createdAt: string;
+}
+
+/** 公关部总览 */
+export interface PrOverviewView {
+  messages: TeamMessageView[];
+  news: MediaNewsView[];
+  announcements: LeagueAnnouncementView[];
+  unreadCount: number;
+}
+
+// ── 运营中心（批次5）──
+
+/** 球迷中心视图 */
+export interface FanCenterView {
+  teamId: string;
+  fanCount: number;
+  morale: number;
+  loyalty: number;
+  seasonTicketsSold: number;
+  merchandiseRevenue: number;
+  updatedAt: string;
+}
+
+/** 球迷事件视图 */
+export interface FanEventView {
+  id: string;
+  teamId: string;
+  seasonId: string;
+  day: number;
+  type: string;
+  impact: number;
+  note: string | null;
+  createdAt: string;
+}
+
+/** 运营中心总览 */
+export interface OperationsOverviewView {
+  fanCenter: FanCenterView;
+  recentEvents: FanEventView[];
+  moraleTrend: "up" | "down" | "stable";
+  fanGrowth: number;
+  projectedSeasonTickets: number;
+}
+
 export interface SalaryStatus {
   teamId: string;
   totalSalary: number;

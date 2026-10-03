@@ -14,6 +14,8 @@ import { AiManagerService } from "../ai/ai-manager.service.js";
 import { FinanceService } from "../finance/finance.service.js";
 import { TrainingService } from "../training/training.service.js";
 import { BoardService } from "../board/board.service.js";
+import { PrService } from "../pr/pr.service.js";
+import { OperationsService } from "../operations/operations.service.js";
 
 /**
  * 每日结算时刻（北京时间，小时 0-23）。
@@ -57,6 +59,10 @@ export class ScheduleService implements OnModuleInit {
     private readonly training: TrainingService,
     @Inject(forwardRef(() => BoardService))
     private readonly board: BoardService,
+    @Inject(forwardRef(() => PrService))
+    private readonly pr: PrService,
+    @Inject(forwardRef(() => OperationsService))
+    private readonly operations: OperationsService,
   ) {}
 
   /**
@@ -295,6 +301,24 @@ export class ScheduleService implements OnModuleInit {
     } catch (e) {
       this.logger.warn(
         `董事会结算失败（不影响比赛）：${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+
+    // 7. v0.6 §批次5 公关部：每日生成媒体新闻 + 联盟公告
+    try {
+      await this.pr.runDailyAllTeams(seasonId, currentDay);
+    } catch (e) {
+      this.logger.warn(
+        `公关部新闻生成失败（不影响比赛）：${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+
+    // 8. v0.6 §批次5 运营中心：每日生成球迷事件 + 更新球迷中心
+    try {
+      await this.operations.runDailyAllTeams(seasonId, currentDay);
+    } catch (e) {
+      this.logger.warn(
+        `运营中心结算失败（不影响比赛）：${e instanceof Error ? e.message : String(e)}`,
       );
     }
 
