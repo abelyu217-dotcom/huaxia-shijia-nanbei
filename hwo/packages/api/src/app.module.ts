@@ -33,6 +33,7 @@ import { StatsModule } from "./stats/stats.module.js";
 import { FinanceModule } from "./finance/finance.module.js";
 import { StaffModule } from "./staff/staff.module.js";
 import { TrainingModule } from "./training/training.module.js";
+import { BoardModule } from "./board/board.module.js";
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { TrainingModule } from "./training/training.module.js";
     FinanceModule,
     StaffModule,
     TrainingModule,
+    BoardModule,
   ],
 })
 export class AppModule {}

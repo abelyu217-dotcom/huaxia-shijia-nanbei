@@ -1,37 +1,29 @@
 /**
- * BoardOfDirectorsPage —— 董事会页
+ * BoardOfDirectorsPage —— 董事会页（v0.6 §批次4 重构）
  *
- * 参考 Rim Attack 董事会：
- *   - 满意度面板：球迷 / 老板 / 赞助商 三向满意度，进度条可视化
- *     · 球迷满意度 = 战绩胜率推算（winRate * 100）
- *     · 老板满意度 = 财务状况推算（remaining / salaryCap * 100）
- *     · 赞助商满意度 = mock 初始值 70
- *     · 颜色按值变化：>70 绿 / 50-70 黄 / <50 红
- *   - 赛季目标面板：目标列表 + 完成进度 + 状态（进行中 / 已完成 / 失败）
- *   - 球队预算面板：调用 fetchTeamSalary(teamId) 与 fetchWallet()
- *   - 决策面板：董事会提案列表（mock），含预估费用、效果与"批准"按钮
+ * 数据源（真实，对齐后端 BoardService）：
+ *   - fetchBoard(teamId)                → BoardView（董事 + 赞助商 + 目标 + 提案 + 满意度）
+ *   - fetchTeamSalary(teamId)           → 薪资帽使用情况（预算面板）
+ *   - fetchWallet()                     → 经理钱包（仅作展示）
  *
- * 数据来源：
- *   - fetchStandings()        → 积分榜（取我的球队 winRate）
- *   - fetchTeamSalary(teamId) → 薪资帽使用情况
- *   - fetchWallet()           → 当前资金
- *   - fetchCurrentSeason()    → 赛季信息（用于目标判定）
- *
- * 满意度与目标进度部分为前端 mock 推算。
+ * 与早期 mock 版本的区别：
+ *   - 满意度三向（球迷/老板/赞助商）由后端按战绩/财务/公式计算，前端只读
+ *   - 提案为后端每日触发自动生成，含董事投票结果；经理可对 approved 提案点击"忽略"
+ *   - 赛季目标按 OVR/上赛季战绩/薪资占比自动生成，含 basisNote 说明依据
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import {
-  fetchCurrentSeason,
-  fetchStandings,
+  fetchBoard,
   fetchTeamSalary,
   fetchWallet,
+  dismissBoardProposal,
 } from "../api";
 import type {
+  BoardView,
+  BoardProposalView,
   SalaryStatus,
-  SeasonInfo,
-  StandingRow,
   WalletInfo,
 } from "../types";
 
@@ -39,35 +31,9 @@ interface Props {
   teamId?: string;
 }
 
-type GoalStatus = "in_progress" | "completed" | "failed";
-
-interface SeasonGoal {
-  id: string;
-  label: string;
-  /** 0-100 完成进度 */
-  progress: number;
-  status: GoalStatus;
-}
-
-interface BodProposal {
-  id: string;
-  title: string;
-  desc: string;
-  /** 预估费用（Coins） */
-  cost: number;
-  /** 效果说明 */
-  effect: string;
-}
-
-const STATUS_LABEL: Record<GoalStatus, string> = {
-  in_progress: "进行中",
-  completed: "已完成",
-  failed: "失败",
-};
-
-/** 格式化金额：千分位 + $ 前缀 */
+/** 格式化金额：千分位 + ¥ 前缀（与 finance 页统一） */
 function formatMoney(n: number): string {
-  return `$${n.toLocaleString()}`;
+  return `${n.toLocaleString()} 元`;
 }
 
 /** 满意度颜色：>70 绿 / 50-70 黄 / <50 红 */
@@ -77,60 +43,25 @@ function satisfactionColor(value: number): string {
   return "#ef4444";
 }
 
-/** 限制满意度在 0-100 */
-function clamp(value: number): number {
-  if (value < 0) return 0;
-  if (value > 100) return 100;
-  return value;
-}
-
-/** mock 董事会提案（前端固定列表） */
-const PROPOSALS: BodProposal[] = [
-  {
-    id: "prop_academy",
-    title: "增加青训投资",
-    desc: "向青训学院追加投入，提升新秀产出潜力上限。",
-    cost: 80000,
-    effect: "青训新秀潜力 +5，下赛季产出概率提升",
-  },
-  {
-    id: "prop_arena",
-    title: "扩建球馆",
-    desc: "扩容主场座位，提升门票与赞助收入。",
-    cost: 150000,
-    effect: "主场上座率 +15%，赛季收入 +20%",
-  },
-  {
-    id: "prop_star",
-    title: "签约明星球员",
-    desc: "引进一名高 OVR 明星，提升即战力与关注度。",
-    cost: 200000,
-    effect: "球队 OVR +3，球迷满意度 +10",
-  },
-  {
-    id: "prop_marketing",
-    title: "加强市场营销",
-    desc: "扩大品牌曝光，提升赞助商与球迷关注度。",
-    cost: 50000,
-    effect: "赞助商满意度 +8，球迷满意度 +5",
-  },
-];
+const PROPOSAL_STATUS_LABEL: Record<string, string> = {
+  pending: "待投票",
+  approved: "已通过",
+  rejected: "已否决",
+  expired: "已忽略",
+};
 
 export function BoardOfDirectorsPage({ teamId }: Props) {
   const { user } = useAuth();
   const resolvedTeamId = teamId || user?.teamId || "";
 
-  const [standings, setStandings] = useState<StandingRow[] | null>(null);
+  const [board, setBoard] = useState<BoardView | null>(null);
   const [salary, setSalary] = useState<SalaryStatus | null>(null);
   const [wallet, setWallet] = useState<WalletInfo | null>(null);
-  const [season, setSeason] = useState<SeasonInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  // 提案批准状态（mock：仅前端标记，无后端落库）
-  const [approved, setApproved] = useState<Record<string, boolean>>({});
-
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
     if (!resolvedTeamId) {
       setLoading(false);
       setError("未关联球队，无法加载董事会数据");
@@ -138,82 +69,42 @@ export function BoardOfDirectorsPage({ teamId }: Props) {
     }
     setLoading(true);
     setError(null);
-    Promise.all([
-      fetchStandings(),
-      fetchTeamSalary(resolvedTeamId),
-      fetchWallet(),
-      fetchCurrentSeason(),
-    ])
-      .then(([s, sal, w, sea]) => {
-        setStandings(s);
-        setSalary(sal);
-        setWallet(w);
-        setSeason(sea);
-      })
-      .catch((e: unknown) =>
-        setError(e instanceof Error ? e.message : String(e)),
-      )
-      .finally(() => setLoading(false));
+    try {
+      const [b, sal, w] = await Promise.all([
+        fetchBoard(resolvedTeamId),
+        fetchTeamSalary(resolvedTeamId).catch(() => null),
+        fetchWallet().catch(() => null),
+      ]);
+      setBoard(b);
+      setSalary(sal);
+      setWallet(w);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
   }, [resolvedTeamId]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  // 我的球队战绩行
-  const myRow = useMemo<StandingRow | null>(() => {
-    if (!standings || !resolvedTeamId) return null;
-    return standings.find((r) => r.teamId === resolvedTeamId) ?? null;
-  }, [standings, resolvedTeamId]);
-
-  // 球迷满意度：winRate * 100（无战绩则默认 50）
-  const fanSatisfaction = clamp(
-    myRow && myRow.wins + myRow.losses > 0 ? myRow.winRate * 100 : 50,
+  /** 经理忽略已 approved 提案 */
+  const handleDismiss = useCallback(
+    async (p: BoardProposalView) => {
+      if (!resolvedTeamId || busy) return;
+      setBusy(true);
+      try {
+        await dismissBoardProposal(p.id, resolvedTeamId);
+        await load();
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [resolvedTeamId, busy, load],
   );
-  // 老板满意度：remaining / salaryCap * 100（薪资帽为 0 则默认 50）
-  const bossSatisfaction = clamp(
-    salary && salary.salaryCap > 0
-      ? (salary.remaining / salary.salaryCap) * 100
-      : 50,
-  );
-  // 赞助商满意度：mock 初始值 70
-  const sponsorSatisfaction = 70;
-
-  // 赛季目标：依据真实战绩 / 薪资空间推算进度与状态（mock 阈值）
-  const goals = useMemo<SeasonGoal[]>(() => {
-    const winRate = myRow && myRow.wins + myRow.losses > 0 ? myRow.winRate : 0;
-    const capUsagePct =
-      salary && salary.salaryCap > 0
-        ? (salary.totalSalary / salary.salaryCap) * 100
-        : 0;
-    return [
-      {
-        id: "goal_playoff",
-        label: "进入季后赛",
-        // 胜率 >= 50% 视为达成（mock 阈值）
-        progress: clamp(winRate * 100),
-        status: winRate >= 0.5 ? "completed" : "in_progress",
-      },
-      {
-        id: "goal_winrate",
-        label: "胜率超过 50%",
-        progress: clamp(winRate * 100),
-        status:
-          winRate >= 0.5
-            ? "completed"
-            : winRate > 0
-              ? "in_progress"
-              : "failed",
-      },
-      {
-        id: "goal_ovr80",
-        label: "球队 OVR 达到 80",
-        // 无球队 OVR API，使用薪资使用率作为代理（薪资健康视为阵容达标）
-        progress: clamp(100 - capUsagePct),
-        status: capUsagePct > 0 && capUsagePct <= 80 ? "completed" : "in_progress",
-      },
-    ];
-  }, [myRow, salary]);
 
   if (loading) {
     return (
@@ -227,12 +118,21 @@ export function BoardOfDirectorsPage({ teamId }: Props) {
     return <div className="state error">{error}</div>;
   }
 
+  if (!board) {
+    return <div className="state muted">暂无董事会数据</div>;
+  }
+
+  const fan = board.fanSatisfaction;
+  const boss = board.bossSatisfaction;
+  const sponsor = board.avgSponsorSatisfaction;
+  const goal = board.goal;
+
   return (
     <div className="page bod-page">
       <header className="page-head">
         <h2>董事会</h2>
         <p className="muted">
-          球队治理与决策中心，参考 Rim Attack 董事会：满意度、赛季目标、预算与提案。
+          球队治理与决策中心：满意度、赛季目标、赞助商、董事与提案（数据每日由后端结算）。
         </p>
       </header>
 
@@ -241,65 +141,69 @@ export function BoardOfDirectorsPage({ teamId }: Props) {
         <section className="card bod-panel">
           <h3>满意度</h3>
           <p className="muted bod-note">
-            球迷 = 战绩胜率推算；老板 = 薪资空间推算；赞助商 = mock 初始值。
+            球迷 = 战绩胜率推算；老板 = 薪资/现金健康度推算；赞助商 = 战绩/球迷士气推算（每日更新）。
           </p>
           <SatisfactionBar
             label="球迷满意度"
-            value={fanSatisfaction}
-            hint={
-              myRow
-                ? `${myRow.teamName} ${myRow.wins}胜${myRow.losses}负 · 胜率 ${(myRow.winRate * 100).toFixed(1)}%`
-                : "暂无战绩数据"
-            }
+            value={fan}
+            hint="由本季胜率推算"
           />
           <SatisfactionBar
             label="老板满意度"
-            value={bossSatisfaction}
+            value={boss}
             hint={
               salary
-                ? `剩余 ${formatMoney(salary.remaining)} / 帽 ${formatMoney(salary.salaryCap)}`
+                ? `薪资总额 ${formatMoney(salary.totalSalary)} / 帽 ${formatMoney(salary.salaryCap)}`
                 : "暂无薪资数据"
             }
           />
           <SatisfactionBar
             label="赞助商满意度"
-            value={sponsorSatisfaction}
-            hint="mock 初始值 70"
+            value={sponsor}
+            hint={`${board.sponsors.length} 个赞助商的平均值`}
           />
         </section>
 
         {/* 赛季目标面板 */}
         <section className="card bod-panel">
           <h3>赛季目标</h3>
-          <p className="muted bod-note">
-            {season
-              ? `${season.name} · 第 ${season.currentDay} 日`
-              : "暂无赛季信息"}
-          </p>
-          <ul className="bod-goal-list">
-            {goals.map((g) => (
-              <li key={g.id} className="bod-goal">
-                <div className="bod-goal-head">
-                  <span className="bod-goal-label">{g.label}</span>
-                  <span
-                    className={`bod-goal-status bod-goal-status-${g.status}`}
-                  >
-                    {STATUS_LABEL[g.status]}
-                  </span>
-                </div>
-                <div className="bod-goal-track">
-                  <div
-                    className="bod-goal-fill"
-                    style={{
-                      width: `${g.progress}%`,
-                      background: satisfactionColor(g.progress),
-                    }}
+          {goal ? (
+            <>
+              <p className="muted bod-note">
+                {goal.season} 赛季 · 自动制定
+              </p>
+              <ul className="bod-goal-list">
+                <GoalRow
+                  label={`胜率超过 ${(goal.expectedWinRate * 100).toFixed(0)}%`}
+                  progress={Math.min(100, Math.round(goal.expectedWinRate * 100))}
+                  status="in_progress"
+                />
+                <GoalRow
+                  label={goal.expectedPlayoff ? "进入季后赛" : "不要求季后赛"}
+                  progress={goal.expectedPlayoff ? 50 : 100}
+                  status={goal.expectedPlayoff ? "in_progress" : "completed"}
+                />
+                <GoalRow
+                  label={goal.expectedChampionship ? "冲击总冠军" : "夺冠否"}
+                  progress={goal.expectedChampionship ? 30 : 100}
+                  status={goal.expectedChampionship ? "in_progress" : "completed"}
+                />
+                {goal.expectedRank && (
+                  <GoalRow
+                    label={`常规赛排名进入前 ${goal.expectedRank}`}
+                    progress={Math.min(100, (goal.expectedRank / 16) * 100)}
+                    status="in_progress"
                   />
-                </div>
-                <div className="bod-goal-pct">{g.progress.toFixed(0)}%</div>
-              </li>
-            ))}
-          </ul>
+                )}
+              </ul>
+              <details className="bod-goal-basis">
+                <summary className="muted">制定依据</summary>
+                <p className="muted small">{goal.basisNote}</p>
+              </details>
+            </>
+          ) : (
+            <p className="muted">尚未生成赛季目标</p>
+          )}
         </section>
 
         {/* 球队预算面板 */}
@@ -361,55 +265,138 @@ export function BoardOfDirectorsPage({ teamId }: Props) {
           )}
         </section>
 
-        {/* 决策面板 */}
-        <section className="card bod-panel bod-proposals">
-          <h3>董事会提案</h3>
-          <p className="muted bod-note">
-            前端 mock 提案，"批准" 仅在前端标记，不调用后端。
-          </p>
-          <ul className="bod-proposal-list">
-            {PROPOSALS.map((p) => {
-              const isApproved = approved[p.id];
-              return (
-                <li key={p.id} className="bod-proposal">
-                  <div className="bod-proposal-main">
-                    <div className="bod-proposal-title">{p.title}</div>
-                    <div className="bod-proposal-desc">{p.desc}</div>
-                    <div className="bod-proposal-meta">
-                      <span className="bod-proposal-cost">
-                        预估费用：{formatMoney(p.cost)}
-                      </span>
-                      <span className="bod-proposal-effect">
-                        效果：{p.effect}
-                      </span>
+        {/* 赞助商面板 */}
+        <section className="card bod-panel">
+          <h3>赞助商（{board.sponsors.length}）</h3>
+          {board.sponsors.length === 0 ? (
+            <p className="muted">暂无赞助商</p>
+          ) : (
+            <div className="roster-table-wrap">
+              <table className="stats-table">
+                <thead>
+                  <tr>
+                    <th>类型</th>
+                    <th>名称</th>
+                    <th>档位</th>
+                    <th>赛季分成</th>
+                    <th>胜场奖金</th>
+                    <th>满意度</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {board.sponsors.map((s) => (
+                    <tr key={s.id}>
+                      <td>{sponsorTypeLabel(s.type)}</td>
+                      <td className="st-name">{s.name}</td>
+                      <td>
+                        <span className={`badge badge-tier-${s.tier}`}>
+                          {s.tier}
+                        </span>
+                      </td>
+                      <td>{formatMoney(s.basePerSeason)}</td>
+                      <td>{formatMoney(s.bonusPerWin)}/胜</td>
+                      <td>
+                        <strong
+                          style={{ color: satisfactionColor(s.satisfaction) }}
+                        >
+                          {s.satisfaction}
+                        </strong>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        {/* 董事列表 */}
+        <section className="card bod-panel">
+          <h3>董事（{board.directors.length}）</h3>
+          {board.directors.length === 0 ? (
+            <p className="muted">暂无董事</p>
+          ) : (
+            <ul className="bod-director-list">
+              {board.directors.map((d) => (
+                <li key={d.id} className="bod-director">
+                  <div className="bod-director-main">
+                    <div className="bod-director-name">{d.name}</div>
+                    <div className="bod-director-role muted">
+                      {d.roleLabel}
                     </div>
                   </div>
-                  <div className="bod-proposal-action">
-                    {isApproved ? (
-                      <span className="badge badge-new">已批准</span>
-                    ) : (
-                      <button
-                        type="button"
-                        className="btn btn-primary btn-sm"
-                        onClick={() =>
-                          setApproved((prev) => ({ ...prev, [p.id]: true }))
-                        }
-                      >
-                        批准
-                      </button>
-                    )}
+                  <div className="bod-director-loyalty">
+                    <span className="muted small">忠诚度</span>
+                    <strong
+                      style={{ color: satisfactionColor(d.loyalty) }}
+                    >
+                      {d.loyalty}
+                    </strong>
                   </div>
                 </li>
-              );
-            })}
-          </ul>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* 决策面板：提案列表 */}
+        <section className="card bod-panel bod-proposals">
+          <h3>董事会提案（{board.proposals.length}）</h3>
+          <p className="muted bod-note">
+            提案由后端每日检测触发条件自动生成，董事按 loyalty 加权投票，结果通过球队讯息通知经理。
+          </p>
+          {board.proposals.length === 0 ? (
+            <p className="muted">暂无提案</p>
+          ) : (
+            <ul className="bod-proposal-list">
+              {board.proposals.map((p) => {
+                const votes = Array.isArray(p.votes) ? (p.votes as VoteEntry[]) : [];
+                const yes = votes.filter((v) => v.approved).length;
+                const no = votes.length - yes;
+                return (
+                  <li key={p.id} className="bod-proposal">
+                    <div className="bod-proposal-main">
+                      <div className="bod-proposal-title">
+                        {p.typeLabel}{" "}
+                        <span className={`badge badge-proposal-${p.status}`}>
+                          {PROPOSAL_STATUS_LABEL[p.status] ?? p.status}
+                        </span>
+                      </div>
+                      <div className="bod-proposal-desc">{p.reason}</div>
+                      <div className="bod-proposal-meta">
+                        <span className="muted small">
+                          第 {p.day} 日 · 投票 {yes} 赞成 / {no} 反对
+                        </span>
+                      </div>
+                    </div>
+                    <div className="bod-proposal-action">
+                      {p.status === "approved" ? (
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          disabled={busy}
+                          onClick={() => handleDismiss(p)}
+                        >
+                          忽略
+                        </button>
+                      ) : (
+                        <span className="muted small">—</span>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </section>
       </div>
     </div>
   );
 }
 
-/** 满意度进度条子组件 */
+// ── 子组件 ──
+
+/** 满意度进度条 */
 function SatisfactionBar({
   label,
   value,
@@ -437,4 +424,60 @@ function SatisfactionBar({
       {hint && <div className="bod-satisfaction-hint muted">{hint}</div>}
     </div>
   );
+}
+
+/** 赛季目标行 */
+function GoalRow({
+  label,
+  progress,
+  status,
+}: {
+  label: string;
+  progress: number;
+  status: "in_progress" | "completed" | "failed";
+}) {
+  return (
+    <li className="bod-goal">
+      <div className="bod-goal-head">
+        <span className="bod-goal-label">{label}</span>
+        <span className={`bod-goal-status bod-goal-status-${status}`}>
+          {status === "completed" ? "已完成" : status === "failed" ? "失败" : "进行中"}
+        </span>
+      </div>
+      <div className="bod-goal-track">
+        <div
+          className="bod-goal-fill"
+          style={{
+            width: `${progress}%`,
+            background: satisfactionColor(progress),
+          }}
+        />
+      </div>
+      <div className="bod-goal-pct">{progress.toFixed(0)}%</div>
+    </li>
+  );
+}
+
+interface VoteEntry {
+  directorId: string;
+  directorName: string;
+  directorRole: string;
+  approved: boolean;
+  loyalty: number;
+}
+
+/** 赞助商类型中文名 */
+function sponsorTypeLabel(type: string): string {
+  switch (type) {
+    case "main":
+      return "主赞助商";
+    case "kit":
+      return "装备";
+    case "arena":
+      return "球馆";
+    case "broadcast":
+      return "转播";
+    default:
+      return type;
+  }
 }

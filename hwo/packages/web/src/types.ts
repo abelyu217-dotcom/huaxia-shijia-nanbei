@@ -716,6 +716,73 @@ export interface StaffView {
   nickname?: string;
 }
 
+// ── 董事会（批次4）──
+
+/** 董事视图 */
+export interface BoardDirectorView {
+  id: string;
+  name: string;
+  role: string;
+  roleLabel: string;
+  loyalty: number;
+}
+
+/** 赛季目标视图 */
+export interface SeasonGoalView {
+  id: string;
+  seasonId: string;
+  season: number;
+  expectedWinRate: number;
+  expectedPlayoff: boolean;
+  expectedChampionship: boolean;
+  expectedRank: number | null;
+  basisNote: string;
+  achievedNote: string | null;
+}
+
+/** 董事会提案视图 */
+export interface BoardProposalView {
+  id: string;
+  seasonId: string;
+  day: number;
+  type: string;
+  typeLabel: string;
+  payload: unknown;
+  reason: string;
+  status: "pending" | "approved" | "rejected" | "expired";
+  votes: unknown;
+  createdAt: string;
+}
+
+/** 董事会视角的赞助商视图（与 finance 的 SponsorInfo 字段对齐） */
+export interface BoardSponsorView {
+  id: string;
+  teamId: string;
+  type: string;
+  name: string;
+  tier: string;
+  basePerSeason: number;
+  bonusPerWin: number;
+  titleBonus: number;
+  satisfaction: number;
+  expectedWinRate: number;
+  expectedPlayoff: boolean;
+  contractSeasons: number;
+  startSeason: number;
+  endSeason: number | null;
+}
+
+/** 董事会总览 */
+export interface BoardView {
+  directors: BoardDirectorView[];
+  sponsors: BoardSponsorView[];
+  goal: SeasonGoalView | null;
+  proposals: BoardProposalView[];
+  fanSatisfaction: number;
+  bossSatisfaction: number;
+  avgSponsorSatisfaction: number;
+}
+
 export interface SalaryStatus {
   teamId: string;
   totalSalary: number;

@@ -13,6 +13,7 @@ import { SeasonService } from "./season.service.js";
 import { AiManagerService } from "../ai/ai-manager.service.js";
 import { FinanceService } from "../finance/finance.service.js";
 import { TrainingService } from "../training/training.service.js";
+import { BoardService } from "../board/board.service.js";
 
 /**
  * 每日结算时刻（北京时间，小时 0-23）。
@@ -54,6 +55,8 @@ export class ScheduleService implements OnModuleInit {
     private readonly finance: FinanceService,
     @Inject(forwardRef(() => TrainingService))
     private readonly training: TrainingService,
+    @Inject(forwardRef(() => BoardService))
+    private readonly board: BoardService,
   ) {}
 
   /**
@@ -283,6 +286,15 @@ export class ScheduleService implements OnModuleInit {
     } catch (e) {
       this.logger.warn(
         `训练结算失败（不影响比赛）：${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+
+    // 6. v0.6 §批次4 董事会结算：更新赞助商满意度 + 检测提案触发 + 通知经理
+    try {
+      await this.board.runDailyAllTeams(seasonId, currentDay);
+    } catch (e) {
+      this.logger.warn(
+        `董事会结算失败（不影响比赛）：${e instanceof Error ? e.message : String(e)}`,
       );
     }
 

@@ -13,6 +13,7 @@ import { CareerService } from "../career/career.service.js";
 import { AcademyService } from "../academy/academy.service.js";
 import { ContractService } from "../contract/contract.service.js";
 import { DraftService } from "../draft/draft.service.js";
+import { BoardService } from "../board/board.service.js";
 
 @Injectable()
 export class SeasonService {
@@ -27,6 +28,8 @@ export class SeasonService {
     @Inject(forwardRef(() => ContractService))
     private readonly contractService: ContractService,
     private readonly draftService: DraftService,
+    @Inject(forwardRef(() => BoardService))
+    private readonly boardService: BoardService,
   ) {}
 
   /** 获取当前激活的常规赛赛季，不存在则创建 */
@@ -349,6 +352,18 @@ export class SeasonService {
     } catch (e) {
       this.logger.warn(
         `国际联赛创建失败（不影响赛季交接）：${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+
+    // v0.6 §批次4 董事会：新赛季初始化 SeasonGoal + BoardDirector
+    try {
+      const r = await this.boardService.initForNewSeason(newSeason.id, newSeason.year);
+      this.logger.log(
+        `董事会初始化：${r.goals} 个赛季目标，${r.directors} 名新董事`,
+      );
+    } catch (e) {
+      this.logger.warn(
+        `董事会初始化失败（不影响赛季交接）：${e instanceof Error ? e.message : String(e)}`,
       );
     }
 

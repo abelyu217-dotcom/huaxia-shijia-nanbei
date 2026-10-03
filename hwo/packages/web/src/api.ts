@@ -57,6 +57,11 @@ import type {
   DailyTrainingSummary,
   StaffView,
   StaffJob,
+  BoardView,
+  BoardDirectorView,
+  BoardSponsorView,
+  SeasonGoalView,
+  BoardProposalView,
 } from "./types";
 
 // ── Token 管理 ──
@@ -957,6 +962,57 @@ export function fetchFinanceLedger(
 /** GET /api/finance/:teamId/sponsors — 赞助商列表 */
 export function fetchFinanceSponsors(teamId: string): Promise<SponsorInfo[]> {
   return getJson<SponsorInfo[]>(`/api/finance/${encodeURIComponent(teamId)}/sponsors`);
+}
+
+// ── 批次4：董事会 ──
+
+/** GET /api/board/:teamId — 董事会总览（董事 + 赞助商 + 目标 + 提案 + 满意度） */
+export function fetchBoard(teamId: string, seasonId?: string): Promise<BoardView> {
+  const q = new URLSearchParams();
+  if (seasonId) q.set("seasonId", seasonId);
+  const qs = q.toString();
+  return getJson<BoardView>(
+    `/api/board/${encodeURIComponent(teamId)}${qs ? `?${qs}` : ""}`,
+  );
+}
+
+/** GET /api/board/:teamId/sponsors — 董事会视角的赞助商列表 */
+export function fetchBoardSponsors(teamId: string): Promise<BoardSponsorView[]> {
+  return getJson<BoardSponsorView[]>(`/api/board/${encodeURIComponent(teamId)}/sponsors`);
+}
+
+/** GET /api/board/:teamId/directors — 董事列表 */
+export function fetchBoardDirectors(teamId: string): Promise<BoardDirectorView[]> {
+  return getJson<BoardDirectorView[]>(`/api/board/${encodeURIComponent(teamId)}/directors`);
+}
+
+/** GET /api/board/:teamId/goal — 赛季目标 */
+export function fetchSeasonGoal(
+  teamId: string,
+  seasonId?: string,
+): Promise<SeasonGoalView | null> {
+  const q = new URLSearchParams();
+  if (seasonId) q.set("seasonId", seasonId);
+  const qs = q.toString();
+  return getJson<SeasonGoalView | null>(
+    `/api/board/${encodeURIComponent(teamId)}/goal${qs ? `?${qs}` : ""}`,
+  );
+}
+
+/** GET /api/board/:teamId/proposals — 董事会提案列表 */
+export function fetchBoardProposals(teamId: string): Promise<BoardProposalView[]> {
+  return getJson<BoardProposalView[]>(`/api/board/${encodeURIComponent(teamId)}/proposals`);
+}
+
+/** POST /api/board/proposals/:id/dismiss — 经理忽略已 approved 提案 */
+export function dismissBoardProposal(
+  proposalId: string,
+  teamId: string,
+): Promise<{ ok: boolean }> {
+  return postJson<{ ok: boolean }>(
+    `/api/board/proposals/${encodeURIComponent(proposalId)}/dismiss`,
+    { teamId },
+  );
 }
 
 // ── M4: VIP ──
