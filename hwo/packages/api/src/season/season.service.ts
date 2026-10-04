@@ -8,6 +8,7 @@
  */
 
 import { Injectable, Logger, forwardRef, Inject } from "@nestjs/common";
+import { ModuleRef } from "@nestjs/core";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { CareerService } from "../career/career.service.js";
 import { AcademyService } from "../academy/academy.service.js";
@@ -33,7 +34,18 @@ export class SeasonService {
     private readonly boardService: BoardService,
     @Inject(forwardRef(() => MarketService))
     private readonly marketService: MarketService,
+    private readonly moduleRef: ModuleRef,
   ) {}
+
+  /**
+   * 动态获取 ScheduleService 实例（打破 ESM 循环依赖：
+   * SeasonService → ScheduleService → SimService → SeasonService）。
+   * 使用动态 import() 获取类引用，再通过 ModuleRef 获取 NestJS 实例。
+   */
+  private async getScheduleService() {
+    const { ScheduleService } = await import("./schedule.service.js");
+    return this.moduleRef.get(ScheduleService, { strict: false });
+  }
 
   /** 获取当前激活的赛季（常规赛或季后赛阶段），不存在则创建 */
   async getCurrentSeason() {
@@ -376,6 +388,31 @@ export class SeasonService {
     } catch (e) {
       this.logger.warn(
         `市场阶段初始化失败（不影响赛季交接）：${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+
+    // 为新赛季每个联赛生成常规赛赛程
+    try {
+      const scheduleService = await this.getScheduleService();
+      const newLeagues = await this.prisma.league.findMany({
+        where: { seasonId: newSeason.id },
+        select: { id: true, name: true },
+      });
+      let totalMatches = 0;
+      for (const league of newLeagues) {
+        try {
+          const n = await scheduleService.generateSchedule(newSeason.id, league.id);
+          totalMatches += n;
+        } catch (e) {
+          this.logger.warn(
+            `联赛 ${league.name} 赛程生成失败（跳过）：${e instanceof Error ? e.message : String(e)}`,
+          );
+        }
+      }
+      this.logger.log(`新赛季赛程生成：${totalMatches} 场`);
+    } catch (e) {
+      this.logger.warn(
+        `新赛季赛程生成失败：${e instanceof Error ? e.message : String(e)}`,
       );
     }
 
