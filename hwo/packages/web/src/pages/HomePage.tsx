@@ -228,7 +228,7 @@ export function HomePage({ onOpenTeam, onOpenSchedule }: Props) {
     }
   }
 
-  async function handleSpeed(speed: 1 | 2 | 4) {
+  async function handleSpeed(speed: 1 | 2 | 4 | 8 | 16 | 32 | 60) {
     setClockBusy(true);
     try {
       const next = await postWorldClockSpeed(speed);
@@ -264,7 +264,7 @@ export function HomePage({ onOpenTeam, onOpenSchedule }: Props) {
             {seasonStatusBadge(season?.status ?? "regular")}
           </span>
           <div className="season-name">
-            {season?.name ?? "未开赛"} · 第 {clock?.currentDay ?? season?.currentDay ?? 0} 日
+            {(season?.displayName || season?.name) ?? "未开赛"} · 第 {clock?.currentDay ?? season?.currentDay ?? 0} 日
           </div>
           {clock && (
             <span className={`clock-state ${clock.paused ? "paused" : "running"}`}>
@@ -294,7 +294,7 @@ export function HomePage({ onOpenTeam, onOpenSchedule }: Props) {
                 {clock.paused ? "恢复" : "暂停"}
               </button>
               <div className="clock-speed-group" role="group" aria-label="加速倍率">
-                {([1, 2, 4] as const).map((s) => (
+                {([1, 2, 4, 8, 16, 32, 60] as const).map((s) => (
                   <button
                     key={s}
                     type="button"

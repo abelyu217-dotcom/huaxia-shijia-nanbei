@@ -242,6 +242,13 @@ function AppInner() {
   const [view, setView] = useState<View>({ kind: "home" });
   const [myWorldId, setMyWorldId] = useState<string | undefined>(undefined);
   const [season, setSeason] = useState<SeasonInfo | null>(null);
+  const [realTime, setRealTime] = useState(new Date());
+
+  // 现实时钟：每秒更新
+  useEffect(() => {
+    const timer = setInterval(() => setRealTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // 查找我所在的世界（用于选秀页）
   useEffect(() => {
@@ -312,7 +319,7 @@ function AppInner() {
         <div className="header-season">
           {season ? (
             <>
-              <span className="header-season-name">{season.name}</span>
+              <span className="header-season-name">{season.displayName || season.name}</span>
               <span className="header-season-day">
                 第 {season.currentDay} 日 · {seasonLabel(season.status)}
               </span>
@@ -320,6 +327,9 @@ function AppInner() {
           ) : (
             <span className="spinner-sm" />
           )}
+        </div>
+        <div className="header-real-time" title="现实时间">
+          {realTime.toLocaleTimeString("zh-CN", { hour12: false })}
         </div>
         <div className="header-user">
           <span className="header-user-name">{user.nickname}</span>

@@ -216,6 +216,8 @@ export interface UserInfo {
 export interface SeasonInfo {
   id: string;
   name: string;
+  seasonNumber: number;
+  displayName: string;
   year: number;
   status: string;
   currentDay: number;

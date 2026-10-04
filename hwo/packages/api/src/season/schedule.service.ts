@@ -48,8 +48,8 @@ export class ScheduleService implements OnModuleInit {
   /** v0.6 快速推进：是否暂停（前端可调） */
   private rapidPaused = false;
 
-  /** v0.6 加速倍率（1/2/4） */
-  private rapidSpeed: 1 | 2 | 4 = 1;
+  /** v0.6 加速倍率（1/2/4/8/16/32/60） */
+  private rapidSpeed: 1 | 2 | 4 | 8 | 16 | 32 | 60 = 1;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -110,7 +110,7 @@ export class ScheduleService implements OnModuleInit {
   }
 
   /** v0.6 控制接口：设置加速倍率 */
-  setRapidSpeed(speed: 1 | 2 | 4) {
+  setRapidSpeed(speed: 1 | 2 | 4 | 8 | 16 | 32 | 60) {
     this.rapidSpeed = speed;
     this.logger.log(`[WorldClock] 加速倍率：${speed}x`);
   }

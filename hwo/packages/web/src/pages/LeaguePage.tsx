@@ -249,7 +249,7 @@ export function LeaguePage({ teamId }: Props) {
         <h1>联赛资讯</h1>
         {season && (
           <span className="league-page-sub">
-            {season.name} · {season.year}
+            {season.displayName || season.name}
           </span>
         )}
       </div>
@@ -515,8 +515,8 @@ function SeasonPanel({
       <div className="panel-body">
         <div className="season-info-grid">
           <div className="season-info-item">
-            <span className="si-label">赛季名</span>
-            <span className="si-value">{season.name}</span>
+            <span className="si-label">赛季</span>
+            <span className="si-value">{season.displayName || season.name}</span>
           </div>
           <div className="season-info-item">
             <span className="si-label">年份</span>

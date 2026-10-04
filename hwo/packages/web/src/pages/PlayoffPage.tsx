@@ -109,7 +109,7 @@ export function PlayoffPage() {
         <h1>季后赛</h1>
         {season && (
           <span className="playoff-page-sub">
-            {season.name} · {season.year} · {seasonStatusLabel(season.status)}
+            {season.displayName || season.name} · {seasonStatusLabel(season.status)}
             {bracket && ` · ${bracket.leagueName}`}
           </span>
         )}

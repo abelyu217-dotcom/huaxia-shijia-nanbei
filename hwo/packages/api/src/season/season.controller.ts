@@ -27,9 +27,12 @@ export class SeasonController {
   @Get()
   async current() {
     const season = await this.seasonService.getCurrentSeason();
+    const seasonNumber = await this.seasonService.getSeasonNumber(season.id);
     return {
       id: season.id,
       name: season.name,
+      seasonNumber,
+      displayName: `第 ${seasonNumber} 赛季`,
       year: season.year,
       status: season.status,
       currentDay: season.currentDay,
@@ -90,12 +93,16 @@ export class SeasonController {
   @Get("world-clock")
   async worldClock() {
     const season = await this.seasonService.getCurrentSeason();
+    const seasonNumber = await this.seasonService.getSeasonNumber(season.id);
     return {
       seasonId: season.id,
       currentDay: season.currentDay,
       seasonName: season.name,
+      seasonNumber,
+      displayName: `第 ${seasonNumber} 赛季`,
       seasonYear: season.year,
       seasonStatus: season.status,
+      realTime: new Date().toISOString(),
       ...this.scheduleService.getRapidStatus(),
     };
   }
@@ -113,10 +120,11 @@ export class SeasonController {
   @Post("world-clock/speed")
   async setSpeed(@Query("speed") speed: string) {
     const s = Number(speed);
-    if (s !== 1 && s !== 2 && s !== 4) {
-      return { error: "speed must be 1, 2 or 4" };
+    const allowed = [1, 2, 4, 8, 16, 32, 60];
+    if (!allowed.includes(s)) {
+      return { error: `speed must be one of ${allowed.join(", ")}` };
     }
-    this.scheduleService.setRapidSpeed(s as 1 | 2 | 4);
+    this.scheduleService.setRapidSpeed(s as 1 | 2 | 4 | 8 | 16 | 32 | 60);
     return this.scheduleService.getRapidStatus();
   }
 

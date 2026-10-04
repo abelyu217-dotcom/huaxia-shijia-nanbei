@@ -140,6 +140,19 @@ button {
   color: var(--text-muted);
 }
 
+/* 顶栏：现实时钟 */
+.header-real-time {
+  font-family: "SF Mono", "JetBrains Mono", "Consolas", monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-elevated);
+}
+
 .spinner-sm {
   display: inline-block;
   width: 16px;

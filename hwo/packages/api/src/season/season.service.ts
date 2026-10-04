@@ -66,6 +66,22 @@ export class SeasonService {
     return season;
   }
 
+  /**
+   * 获取赛季序号（按创建顺序，第 1 个创建的赛季为 1）。
+   * 用于前端展示「第 N 赛季」替代年份显示。
+   */
+  async getSeasonNumber(seasonId: string): Promise<number> {
+    const season = await this.prisma.season.findUnique({
+      where: { id: seasonId },
+      select: { createdAt: true },
+    });
+    if (!season) return 1;
+    const count = await this.prisma.season.count({
+      where: { createdAt: { lte: season.createdAt } },
+    });
+    return count;
+  }
+
   /** 查询某赛季的积分榜（按胜率排序） */
   async getStandings(seasonId: string, leagueId?: string) {
     const where: { seasonId: string; leagueId?: string } = { seasonId };

@@ -129,7 +129,7 @@ export function DraftPage({ worldId, myTeamId }: Props) {
       <header className="page-head">
         <h2>选秀大会</h2>
         <p className="muted">
-          赛季 {season?.name ?? "—"} · 世界 {worldId.slice(-6)}
+          {(season?.displayName || season?.name) ?? "—"} · 世界 {worldId.slice(-6)}
         </p>
       </header>
 

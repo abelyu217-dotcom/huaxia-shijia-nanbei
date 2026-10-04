@@ -348,10 +348,13 @@ export interface WorldClockStatus {
   seasonId: string;
   currentDay: number;
   seasonName: string;
+  seasonNumber: number;
+  displayName: string;
   seasonYear: number;
   seasonStatus: string;
+  realTime: string;
   paused: boolean;
-  speed: 1 | 2 | 4;
+  speed: 1 | 2 | 4 | 8 | 16 | 32 | 60;
   intervalMs: number;
 }
 
@@ -369,8 +372,8 @@ export function postWorldClockPause(paused: boolean): Promise<WorldClockStatus> 
   );
 }
 
-/** POST /api/season/world-clock/speed?speed=1|2|4 — 加速倍率 */
-export function postWorldClockSpeed(speed: 1 | 2 | 4): Promise<WorldClockStatus> {
+/** POST /api/season/world-clock/speed?speed=1|2|4|8|16|32|60 — 加速倍率 */
+export function postWorldClockSpeed(speed: 1 | 2 | 4 | 8 | 16 | 32 | 60): Promise<WorldClockStatus> {
   return sendJson<WorldClockStatus>(
     "POST",
     `/api/season/world-clock/speed?speed=${speed}`,

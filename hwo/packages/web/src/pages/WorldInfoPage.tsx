@@ -215,7 +215,7 @@ export function WorldInfoPage({ onOpenTeam }: WorldInfoPageProps = {}) {
         <h1>世界资讯</h1>
         {season && (
           <span className="league-page-sub">
-            {season.name} · {seasonStatusLabel(season.status)}
+            {season.displayName || season.name} · {seasonStatusLabel(season.status)}
           </span>
         )}
       </div>

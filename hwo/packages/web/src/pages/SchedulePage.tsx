@@ -210,7 +210,7 @@ export function SchedulePage({ initialMatchId, onOpenMatchTactic }: Props) {
         <aside className="schedule-calendar panel">
           <div className="panel-head">
             <h2>赛程日历</h2>
-            <span className="hint">{season?.name}</span>
+            <span className="hint">{season?.displayName || season?.name}</span>
           </div>
           <div className="panel-body calendar-body">
             {schedule.map((d) => {
