@@ -1,0 +1,272 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "HWO 留存与数据观测看板（M5 §6.3）：DAU/WAU/MAU、留存漏斗、付费转化",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": { "type": "postgres", "uid": "hwo_pg" },
+      "description": "Daily Active Users：当日有 DailyActiveSnapshot 记录的去重用户数",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red" },
+              { "color": "yellow", "value": 50 },
+              { "color": "green", "value": 200 }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "textMode": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto"
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "hwo_pg" },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT date_trunc('day', date) AS time, COUNT(DISTINCT user_id) AS dau FROM daily_active_snapshot WHERE date >= time_zone('utc', now()) - interval '30 days' GROUP BY 1 ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "title": "DAU（日活）",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "hwo_pg" },
+      "description": "Weekly Active Users：最近 7 天活跃去重用户数",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red" },
+              { "color": "yellow", "value": 200 },
+              { "color": "green", "value": 800 }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "hwo_pg" },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(DISTINCT user_id) AS wau FROM daily_active_snapshot WHERE date >= time_zone('utc', now()) - interval '7 days'",
+          "refId": "A"
+        }
+      ],
+      "title": "WAU（周活）",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "hwo_pg" },
+      "description": "Monthly Active Users：最近 30 天活跃去重用户数",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red" },
+              { "color": "yellow", "value": 800 },
+              { "color": "green", "value": 3000 }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "hwo_pg" },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(DISTINCT user_id) AS mau FROM daily_active_snapshot WHERE date >= time_zone('utc', now()) - interval '30 days'",
+          "refId": "A"
+        }
+      ],
+      "title": "MAU（月活）",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "hwo_pg" },
+      "description": "D1/D7/D30 留存率：cohort 当日活跃用户在 1/7/30 天后仍活跃的比例",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "auto",
+            "spanNulls": false
+          },
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        }
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 8 },
+      "id": 4,
+      "options": {
+        "legend": { "calcs": ["mean", "lastNotNull"], "displayMode": "table", "placement": "right" },
+        "tooltip": { "mode": "multi", "sort": "none" }
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "hwo_pg" },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "WITH cohort AS (SELECT date, COUNT(DISTINCT user_id) AS size FROM daily_active_snapshot WHERE date >= time_zone('utc', now()) - interval '30 days' GROUP BY date), retained AS (SELECT c.date AS cohort_date, n.n_day, COUNT(DISTINCT s.user_id)::float / c.size AS rate FROM cohort c JOIN LATERAL (VALUES (1, 'd1'), (7, 'd7'), (30, 'd30')) AS n(n_day, label) ON true LEFT JOIN daily_active_snapshot s ON s.user_id IN (SELECT user_id FROM daily_active_snapshot WHERE date = c.date) AND s.date = c.date + (n.n_day || ' days')::interval GROUP BY c.date, n.n_day, c.size) SELECT cohort_date AS time, 'd1' AS metric, rate FROM retained WHERE n_day = 1 UNION ALL SELECT cohort_date, 'd7', rate FROM retained WHERE n_day = 7 UNION ALL SELECT cohort_date, 'd30', rate FROM retained WHERE n_day = 30",
+          "refId": "A"
+        }
+      ],
+      "title": "留存漏斗（D1/D7/D30）",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "hwo_pg" },
+      "description": "付费用户数 + 当日付费金额（用于付费转化看板）",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "drawStyle": "bars",
+            "fillOpacity": 50,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "showPoints": "auto",
+            "spanNulls": false
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 18 },
+      "id": 5,
+      "options": {
+        "legend": { "calcs": ["sum"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "none" }
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "hwo_pg" },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT date_trunc('day', date) AS time, COUNT(*) FILTER (WHERE paid) AS paid_users, SUM(paid_amount) / 100.0 AS paid_amount_usd FROM daily_active_snapshot WHERE date >= time_zone('utc', now()) - interval '30 days' GROUP BY 1 ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "title": "付费用户 + 金额",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "hwo_pg" },
+      "description": "事件计数按分类（auth / game / commerce / retention / system），用于观察用户行为分布",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "auto",
+            "spanNulls": false
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 18 },
+      "id": 6,
+      "options": {
+        "legend": { "calcs": ["sum", "lastNotNull"], "displayMode": "table", "placement": "right" },
+        "tooltip": { "mode": "multi", "sort": "none" }
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "hwo_pg" },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT date_trunc('day', occurred_at) AS time, category, COUNT(*) AS count FROM analytics_event WHERE occurred_at >= time_zone('utc', now()) - interval '30 days' GROUP BY 1, 2 ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "title": "事件计数（按分类）",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["hwo", "retention", "analytics"],
+  "templating": { "list": [] },
+  "time": { "from": "now-30d", "to": "now" },
+  "timepicker": {},
+  "timezone": "utc",
+  "title": "HWO 留存与数据观测（M5 §6.3）",
+  "uid": "hwo-retention",
+  "version": 1,
+  "weekStart": ""
+}

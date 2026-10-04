@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>技术架构文档 · Hoops World Online</title>
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#141b26; --panel2:#1b2433; --line:#26324a;
+    --ink:#e6edf6; --ink2:#9fb0c7; --ink3:#6b7c97;
+    --accent:#ff6b35; --accent2:#4ade80; --gold:#fbbf24; --red:#ef4444; --blue:#60a5fa; --purple:#a78bfa; --cyan:#22d3ee;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:linear-gradient(180deg,#070a10 0%,#0b0f17 100%);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1100px;margin:0 auto;padding:40px 22px 120px}
+  .hero{
+    position:relative;border:1px solid var(--line);border-radius:18px;padding:42px 34px 30px;
+    background:
+      radial-gradient(800px 280px at 20% -10%, rgba(34,211,238,.16), transparent 60%),
+      radial-gradient(700px 260px at 90% 0%, rgba(96,165,250,.12), transparent 60%),
+      linear-gradient(180deg,#151d2c,#0e1420);
+    overflow:hidden;margin-bottom:30px;
+  }
+  .hero .tag{display:inline-block;font-size:12px;letter-spacing:.16em;color:var(--cyan);border:1px solid rgba(34,211,238,.45);padding:4px 10px;border-radius:999px;margin-bottom:18px;text-transform:uppercase}
+  .hero h1{margin:0 0 8px;font-size:32px;letter-spacing:.5px;font-weight:800}
+  .hero h1 .en{color:var(--ink2);font-weight:600;font-size:18px;margin-left:10px}
+  .hero .pitch{color:var(--ink2);font-size:15px;max-width:860px;margin:10px 0 22px}
+  .hero .meta{display:flex;flex-wrap:wrap;gap:10px}
+  .hero .chip{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--ink2)}
+  .hero .chip b{color:var(--ink);font-weight:600}
+  .hero .gear{position:absolute;right:34px;bottom:18px;font-size:68px;opacity:.08;pointer-events:none}
+
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 28px;margin-bottom:22px}
+  .toc h3{margin:0 0 14px;font-size:14px;color:var(--ink2);letter-spacing:.1em;text-transform:uppercase}
+  .toc ol{margin:0;padding-left:22px;columns:2;column-gap:32px}
+  .toc li{margin:5px 0;break-inside:avoid}
+  .toc a{color:var(--ink2)}
+  .toc a:hover{color:var(--cyan)}
+  @media (max-width:640px){.toc ol{columns:1}}
+
+  section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin-bottom:22px}
+  section > h2{margin:0 0 16px;font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
+  section > h2 .num{font-size:12px;color:#0b0f17;background:var(--cyan);width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;font-weight:800;flex-shrink:0}
+  h3{font-size:16px;margin:22px 0 10px;color:var(--ink)}
+  h4{font-size:14px;margin:18px 0 8px;color:var(--cyan);letter-spacing:.04em}
+  p{margin:8px 0}
+  ul,ol{margin:8px 0 8px 4px;padding-left:22px}
+  li{margin:4px 0}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{background:#0d131d;border:1px solid var(--line);padding:2px 6px;border-radius:5px;font-size:13px;color:var(--gold);font-family:"SF Mono","Fira Code",Consolas,monospace}
+  strong{color:#fff}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px}
+  th,td{padding:9px 11px;text-align:left;border:1px solid var(--line);vertical-align:top}
+  th{background:var(--panel2);color:var(--ink);font-weight:600}
+  tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+
+  .note{border-left:3px solid var(--accent);background:rgba(255,107,53,.06);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;color:var(--ink2)}
+  .note b{color:var(--accent)}
+  .note.green{border-left-color:var(--accent2);background:rgba(74,222,128,.06)}
+  .note.green b{color:var(--accent2)}
+  .note.blue{border-left-color:var(--blue);background:rgba(96,165,250,.06)}
+  .note.blue b{color:var(--blue)}
+  .note.red{border-left-color:var(--red);background:rgba(239,68,68,.06)}
+  .note.red b{color:var(--red)}
+  .note.gold{border-left-color:var(--gold);background:rgba(251,191,36,.06)}
+  .note.gold b{color:var(--gold)}
+  .note.purple{border-left-color:var(--purple);background:rgba(167,139,250,.06)}
+  .note.purple b{color:var(--purple)}
+
+  .formula{background:#0d131d;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;font-family:"SF Mono","Fira Code",Consolas,monospace;font-size:12.5px;overflow-x:auto;line-height:1.9;white-space:pre}
+  .formula .var{color:var(--blue)}
+  .formula .op{color:var(--accent)}
+  .formula .fn{color:var(--purple)}
+  .formula .num{color:var(--gold)}
+  .formula .comment{color:var(--ink3);font-style:italic}
+  .formula .str{color:var(--accent2)}
+  .formula .kw{color:var(--accent2);font-weight:bold}
+  .formula .type{color:var(--cyan)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:14px 0}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .card .t{font-weight:700;color:var(--ink);font-size:14px;margin-bottom:6px}
+  .card .d{font-size:13px;color:var(--ink2)}
+  .badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:999px;font-weight:700;letter-spacing:.04em;vertical-align:middle}
+  .badge.green{background:rgba(74,222,128,.15);color:var(--accent2)}
+  .badge.gold{background:rgba(251,191,36,.15);color:var(--gold)}
+  .badge.red{background:rgba(239,68,68,.15);color:var(--red)}
+  .badge.blue{background:rgba(96,165,250,.15);color:var(--blue)}
+  .badge.purple{background:rgba(167,139,250,.15);color:var(--purple)}
+  .badge.cyan{background:rgba(34,211,238,.15);color:var(--cyan)}
+
+  .arch-box{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:16px;margin:10px 0}
+  .arch-box .ab-title{font-weight:800;color:var(--cyan);font-size:14px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .arch-layer{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}
+  .arch-node{background:#0d131d;border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:12.5px;text-align:center;min-width:120px}
+  .arch-node.svc{border-color:rgba(34,211,238,.3);color:var(--cyan)}
+  .arch-node.db{border-color:rgba(251,191,36,.3);color:var(--gold)}
+  .arch-node.ext{border-color:rgba(167,139,250,.3);color:var(--purple)}
+  .arch-arrow{text-align:center;color:var(--ink3);font-size:12px;margin:4px 0}
+
+  .flow{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:14px 0;font-size:13px}
+  .flow .step{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 14px;color:var(--ink)}
+  .flow .arrow{color:var(--cyan);font-weight:bold}
+
+  .stack-table th{width:140px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ==================== HERO ==================== -->
+<div class="hero">
+  <span class="tag">Technical Architecture</span>
+  <h1>技术架构文档 <span class="en">Technical Architecture</span></h1>
+  <p class="pitch">Hoops World Online 的完整技术架构。深化策划方案 §19 的概述——确认技术选型与理由、服务端分层架构、客户端架构、数据模型与存储、全球时钟结算引擎、通信协议、确定性与重放、部署架构、性能扩展、安全反作弊、CI/CD、监控运维、MVP 技术范围。目标：让工程师拿到此文档即可开始搭建项目骨架。</p>
+  <div class="meta">
+    <span class="chip"><b>基础</b> 策划方案 §19</span>
+    <span class="chip"><b>类型</b> 多人在线 F2P</span>
+    <span class="chip"><b>结算</b> 每日同步批量</span>
+    <span class="chip"><b>版本</b> v1.0</span>
+  </div>
+  <span class="gear">⚙️</span>
+</div>
+
+<!-- ==================== TOC ==================== -->
+<div class="toc">
+  <h3>目录 · Table of Contents</h3>
+  <ol>
+    <li><a href="#s1">技术选型与理由</a></li>
+    <li><a href="#s2">系统总体架构</a></li>
+    <li><a href="#s3">服务端架构</a></li>
+    <li><a href="#s4">客户端架构</a></li>
+    <li><a href="#s5">数据模型与存储</a></li>
+    <li><a href="#s6">全球时钟与结算引擎</a></li>
+    <li><a href="#s7">通信协议</a></li>
+    <li><a href="#s8">确定性与重放</a></li>
+    <li><a href="#s9">部署架构</a></li>
+    <li><a href="#s10">性能与扩展</a></li>
+    <li><a href="#s11">安全与反作弊</a></li>
+    <li><a href="#s12">CI/CD 与开发环境</a></li>
+    <li><a href="#s13">监控与运维</a></li>
+    <li><a href="#s14">MVP 技术范围</a></li>
+  </ol>
+</div>
+
+<!-- ==================== §1 技术选型与理由 ==================== -->
+<section id="s1">
+  <h2><span class="num">1</span>技术选型与理由</h2>
+
+  <div class="note blue"><b>选型原则</b>：① 前后端类型共享（TypeScript 同构）——SimInput/Player/Team 等类型前端后端共用，减少接口对接成本；② sim 引擎是纯函数，TypeScript 性能足够（每日批量结算，非实时高频）；③ 生态成熟、招人容易、开发速度快——M0 阶段小团队的务实选择；④ 可独立扩展——sim worker 可水平扩展。</div>
+
+  <h3>1.1 技术栈一览</h3>
+  <table class="stack-table">
+    <thead><tr><th>层</th><th>技术</th><th>理由</th></tr></thead>
+    <tbody>
+      <tr><td><b>前端</b></td><td>React 18 + Vite + TypeScript + PWA</td><td>移动优先；PWA 离线可看阵容/战术；Vite 极速 HMR</td></tr>
+      <tr><td><b>UI 组件</b></td><td>shadcn/ui + Tailwind CSS</td><td>暗色主题契合运动杂志风格；组件按需引入</td></tr>
+      <tr><td><b>状态管理</b></td><td>Zustand + React Query</td><td>轻量；服务端状态与客户端状态分离</td></tr>
+      <tr><td><b>图表</b></td><td>ECharts / Recharts</td><td>Box Score / 成长曲线 / 雷达图</td></tr>
+      <tr><td><b>后端</b></td><td>Node.js 20 + NestJS + TypeScript</td><td>与前端同构类型共享；NestJS 模块化结构适配多服务</td></tr>
+      <tr><td><b>sim 引擎</b></td><td>纯 TypeScript 纯函数</td><td>确定性 PRNG；可单测/回放/灰度调参；可跑在 worker</td></tr>
+      <tr><td><b>主数据库</b></td><td>PostgreSQL 16</td><td>关系型存球员/球队/合同/赛季；事务一致性</td></tr>
+      <tr><td><b>缓存/队列</b></td><td>Redis 7</td><td>会话/sim 队列/Pub-Sub/排行榜</td></tr>
+      <tr><td><b>对象存储</b></td><td>S3 兼容（MinIO 开发 / 云存储生产）</td><td>回放 JSON / 截图 / 头像</td></tr>
+      <tr><td><b>实时推送</b></td><td>SSE（PBP）+ WebSocket（交易谈判）</td><td>SSE 单向轻量；WebSocket 双向用于交互场景</td></tr>
+      <tr><td><b>任务调度</b></td><td>BullMQ（Redis 队列）+ Cron</td><td>每日结算编排；sim 任务分片并行</td></tr>
+      <tr><td><b>容器</b></td><td>Docker + Docker Compose</td><td>开发环境一致；生产可上 K8s/Sealos</td></tr>
+      <tr><td><b>CI/CD</b></td><td>GitHub Actions</td><td>已有 .github/workflows 基础</td></tr>
+    </tbody>
+  </table>
+
+  <h3>1.2 为什么不是 Go / Rust</h3>
+  <p>Go/Rust 在 sim 性能上更强，但 HWO 的 sim 是每日批量结算（非实时高频），TypeScript 纯函数性能完全足够。选择 TypeScript 全栈的核心收益是<b>前后端类型共享</b>——一个 <code>Player</code> 类型定义在共享包里，前端后端共用，接口对接成本归零。对小团队（M0 阶段）这是最高效的选择。若未来 sim 性能成为瓶颈，sim 引擎可单独用 Go 重写为微服务，不影响整体架构。</p>
+</section>
+
+<!-- ==================== §2 系统总体架构 ==================== -->
+<section id="s2">
+  <h2><span class="num">2</span>系统总体架构</h2>
+
+  <h3>2.1 架构总览</h3>
+  <div class="arch-box">
+    <div class="ab-title">📱 客户端层</div>
+    <div class="arch-layer">
+      <div class="arch-node">React PWA<br><small>阵容/战术/训练</small></div>
+      <div class="arch-node">观赛播放器<br><small>SSE PBP 流</small></div>
+      <div class="arch-node">Dashboard<br><small>快报/Alerts</small></div>
+    </div>
+  </div>
+  <div class="arch-arrow">▼ HTTPS / SSE / WebSocket</div>
+  <div class="arch-box">
+    <div class="ab-title">🌐 API 网关层</div>
+    <div class="arch-layer">
+      <div class="arch-node svc">REST API<br><small>NestJS</small></div>
+      <div class="arch-node svc">SSE Gateway<br><small>PBP 推送</small></div>
+      <div class="arch-node svc">WS Gateway<br><small>交易谈判</small></div>
+      <div class="arch-node svc">Auth 中间件<br><small>JWT</small></div>
+    </div>
+  </div>
+  <div class="arch-arrow">▼</div>
+  <div class="arch-box">
+    <div class="ab-title">⚙️ 服务层（NestJS 模块）</div>
+    <div class="arch-layer">
+      <div class="arch-node svc">sim-engine<br><small>纯函数 PBP</small></div>
+      <div class="arch-node svc">daily-settler<br><small>结算编排</small></div>
+      <div class="arch-node svc">league-scheduler<br><small>赛程/升降级</small></div>
+      <div class="arch-node svc">scouting<br><small>fog 收窄</small></div>
+      <div class="arch-node svc">career-arc<br><small>成长演化</small></div>
+      <div class="arch-node svc">economy<br><small>薪资/合同</small></div>
+      <div class="arch-node svc">ai-manager<br><small>AI 决策</small></div>
+      <div class="arch-node svc">grassroots<br><small>金字塔 sim</small></div>
+    </div>
+  </div>
+  <div class="arch-arrow">▼</div>
+  <div class="arch-box">
+    <div class="ab-title">💾 数据层</div>
+    <div class="arch-layer">
+      <div class="arch-node db">PostgreSQL<br><small>主数据</small></div>
+      <div class="arch-node db">Redis<br><small>缓存/队列</small></div>
+      <div class="arch-node db">S3<br><small>回放/截图</small></div>
+    </div>
+  </div>
+  <div class="arch-arrow">▼</div>
+  <div class="arch-box">
+    <div class="ab-title">🔧 基础设施层</div>
+    <div class="arch-layer">
+      <div class="arch-node ext">BullMQ<br><small>sim 任务队列</small></div>
+      <div class="arch-node ext">Cron<br><small>每日 10:00/16:00</small></div>
+      <div class="arch-node ext">Docker<br><small>容器编排</small></div>
+      <div class="arch-node ext">GitHub Actions<br><small>CI/CD</small></div>
+    </div>
+  </div>
+
+  <h3>2.2 核心设计原则</h3>
+  <div class="grid">
+    <div class="card"><div class="t">服务端权威 <span class="badge red">铁律</span></div><div class="d">所有 sim/结算/经济计算在服务端执行；前端只读结果。比赛结果不可篡改。</div></div>
+    <div class="card"><div class="t">纯函数 sim <span class="badge cyan">确定性</span></div><div class="d">sim-engine 是纯函数，输入相同输出相同。可单测、可回放、可灰度调参、可防作弊。</div></div>
+    <div class="card"><div class="t">批量结算 <span class="badge gold">性能</span></div><div class="d">非实时对战——每日 10:00 全世界批量 sim。这大幅降低实时性要求，性能压力集中在结算窗口。</div></div>
+    <div class="card"><div class="t">分世界分片 <span class="badge blue">扩展</span></div><div class="d">每个世界独立分片，sim 任务按世界分配 worker，DB 按世界分区，避免单点热点。</div></div>
+  </div>
+</section>
+
+<!-- ==================== §3 服务端架构 ==================== -->
+<section id="s3">
+  <h2><span class="num">3</span>服务端架构</h2>
+  <p>NestJS 模块化架构。每个系统设计文档对应一个服务模块。</p>
+
+  <h3>3.1 模块映射</h3>
+  <table>
+    <thead><tr><th>服务模块</th><th>对应设计文档</th><th>核心职责</th></tr></thead>
+    <tbody>
+      <tr><td><code>sim-engine</code></td><td>比赛模拟引擎</td><td>纯函数回合级 PBP 生成；确定性 PRNG</td></tr>
+      <tr><td><code>tactics</code></td><td>战术系统</td><td>预设库/规则 DSL 编译/参数注入 sim</td></tr>
+      <tr><td><code>daily-settler</code></td><td>世界与联赛 §6</td><td>每日结算编排；全世界并行 sim</td></tr>
+      <tr><td><code>league-scheduler</code></td><td>世界与联赛 §5</td><td>赛程生成/升降级/季后赛种子</td></tr>
+      <tr><td><code>scouting</code></td><td>球探系统</td><td>fog 偏差与收窄逻辑；报告生成</td></tr>
+      <tr><td><code>draft</code></td><td>选秀系统</td><td>选秀池生成/顺位/行情/决策</td></tr>
+      <tr><td><code>transfer</code></td><td>签约与转会</td><td>自由市场/交易/续约/裁员</td></tr>
+      <tr><td><code>career-arc</code></td><td>球员成长线</td><td>生涯阶段/动态成长因素/训练响应</td></tr>
+      <tr><td><code>training</code></td><td>训练系统</td><td>训练计划/负荷/效果计算/伤病</td></tr>
+      <tr><td><code>economy</code></td><td>经济系统 + 财务球馆</td><td>薪资/合同/工资帽/收入/球馆</td></tr>
+      <tr><td><code>identity</code></td><td>三身份系统</td><td>经理/化身/职业人；反套利</td></tr>
+      <tr><td><code>relationships</code></td><td>关系系统</td><td>家庭/人际/化学反应</td></tr>
+      <tr><td><code>dynasty</code></td><td>王朝与传承</td><td>时代标签/传承/名人堂/年代史</td></tr>
+      <tr><td><code>social</code></td><td>社交与对抗层</td><td>宿敌/交易声誉/排名/聊天</td></tr>
+      <tr><td><code>ai-manager</code></td><td>各系统 AI 决策</td><td>AI 经理决策（阵容/战术/交易/选秀）</td></tr>
+      <tr><td><code>grassroots</code></td><td>成长线 §4</td><td>业余金字塔赛事 sim 与晋升</td></tr>
+      <tr><td><code>monetization</code></td><td>商业化设计</td><td>Credits/VIP/外观/防套利</td></tr>
+      <tr><td><code>auth</code></td><td>—</td><td>账号/JWT/权限</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.2 sim-engine 模块详细</h3>
+  <p>sim-engine 是核心中的核心——纯函数，零副作用。</p>
+  <div class="formula">
+<span class="comment">// sim-engine 核心接口（共享类型包 @hwo/shared）</span>
+
+<span class="kw">export interface</span> <span class="type">SimInput</span> {
+  <span class="var">matchup</span>: <span class="type">Matchup</span>;          <span class="comment">// 主客队 + 战术 + 轮换</span>
+  <span class="var">players</span>: <span class="type">Player</span>[];        <span class="comment">// 双方球员能力快照</span>
+  <span class="var">tactics</span>: <span class="type">TacticModSet</span>[];  <span class="comment">// 战术参数修正</span>
+  <span class="var">conditions</span>: <span class="type">ConditionState</span>;<span class="comment">// 疲劳/状态/化学反应</span>
+  <span class="var">seed</span>: <span class="kw">number</span>;             <span class="comment">// 确定性 PRNG 种子</span>
+  <span class="var">config</span>: <span class="type">SimConfig</span>;       <span class="comment">// 灰度参数（可热更新）</span>
+}
+
+<span class="kw">export interface</span> <span class="type">SimOutput</span> {
+  <span class="var">pbp</span>: <span class="type">PbpEvent</span>[];          <span class="comment">// 回合级 play-by-play</span>
+  <span class="var">boxScore</span>: <span class="type">BoxScore</span>;        <span class="comment">// 技术统计</span>
+  <span class="var">result</span>: <span class="type">MatchResult</span>;      <span class="comment">// 比分/胜负</span>
+  <span class="var">rngLog</span>: <span class="type">RngLogEntry</span>[];    <span class="comment">// RNG 消耗日志（审计用）</span>
+}
+
+<span class="comment">// 纯函数——输入相同则输出相同</span>
+<span class="kw">export function</span> <span class="fn">simulate</span>(<span class="var">input</span>: <span class="type">SimInput</span>): <span class="type">SimOutput</span>
+
+<span class="comment">// 确定性 PRNG（mulberry32）</span>
+<span class="kw">export function</span> <span class="fn">mulberry32</span>(<span class="var">seed</span>: <span class="kw">number</span>): () <span class="op">=></span> <span class="kw">number</span>
+  </div>
+
+  <h3>3.3 daily-settler 模块详细</h3>
+  <p>每日结算编排器——全世界并行 sim。</p>
+  <div class="formula">
+<span class="comment">// 每日 10:00 结算流程</span>
+
+<span class="kw">async function</span> <span class="fn">dailySettle</span>(<span class="var">day</span>: <span class="kw">number</span>) {
+  <span class="kw">const</span> <span class="var">worlds</span> <span class="op">=</span> <span class="kw">await</span> <span class="fn">getActiveWorlds</span>();
+
+  <span class="comment">// 按世界分片，并行入队</span>
+  <span class="kw">const</span> <span class="var">jobs</span> <span class="op">=</span> <span class="var">worlds</span>.<span class="fn">map</span>(<span class="var">w</span> <span class="op">=></span> ({
+    <span class="var">name</span>: <span class="str">`settle-world-${w.id}`</span>,
+    <span class="var">data</span>: { <span class="var">worldId</span>: <span class="var">w</span>.<span class="var">id</span>, <span class="var">day</span> },
+  }));
+
+  <span class="comment">// BullMQ 队列，worker 按世界并行消费</span>
+  <span class="kw">await</span> <span class="var">settleQueue</span>.<span class="fn">addBulk</span>(<span class="var">jobs</span>);
+}
+
+<span class="comment">// 单世界结算 worker</span>
+<span class="kw">async function</span> <span class="fn">settleWorld</span>(<span class="var">job</span>) {
+  <span class="kw">const</span> { <span class="var">worldId</span>, <span class="var">day</span> } <span class="op">=</span> <span class="var">job</span>.<span class="var">data</span>;
+  <span class="kw">const</span> <span class="var">matchups</span> <span class="op">=</span> <span class="kw">await</span> <span class="fn">getTodayMatchups</span>(<span class="var">worldId</span>, <span class="var">day</span>);
+
+  <span class="kw">for</span> (<span class="kw">const</span> <span class="var">m</span> <span class="kw">of</span> <span class="var">matchups</span>) {
+    <span class="kw">const</span> <span class="var">input</span> <span class="op">=</span> <span class="kw">await</span> <span class="fn">buildSimInput</span>(<span class="var">m</span>);
+    <span class="kw">const</span> <span class="var">output</span> <span class="op">=</span> <span class="fn">simulate</span>(<span class="var">input</span>);   <span class="comment">// 纯函数</span>
+    <span class="kw">await</span> <span class="fn">saveResult</span>(<span class="var">m</span>, <span class="var">output</span>);
+    <span class="kw">await</span> <span class="fn">publishPbp</span>(<span class="var">m</span>, <span class="var">output</span>); <span class="comment">// SSE 推送</span>
+  }
+
+  <span class="kw">await</span> <span class="fn">applyPostMatch</span>(<span class="var">worldId</span>, <span class="var">day</span>); <span class="comment">// 疲劳/状态/成长</span>
+}
+  </div>
+</section>
+
+<!-- ==================== §4 客户端架构 ==================== -->
+<section id="s4">
+  <h2><span class="num">4</span>客户端架构</h2>
+
+  <h3>4.1 前端架构</h3>
+  <table>
+    <thead><tr><th>层</th><th>技术</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>路由</td><td>React Router</td><td>多页面：Dashboard/阵容/战术/训练/球探/选秀/转会/观赛/档案</td></tr>
+      <tr><td>服务端状态</td><td>React Query (TanStack Query)</td><td>API 数据缓存/重试/乐观更新</td></tr>
+      <tr><td>客户端状态</td><td>Zustand</td><td>UI 状态/战术编辑器临时状态</td></tr>
+      <tr><td>UI 组件</td><td>shadcn/ui + Tailwind</td><td>暗色主题；运动杂志风格</td></tr>
+      <tr><td>图表</td><td>ECharts</td><td>Box Score/成长曲线/雷达图/赛程甘特</td></tr>
+      <tr><td>PBP 播放</td><td>自定义 SSE 消费器</td><td>逐回合动画/文字直播</td></tr>
+      <tr><td>PWA</td><td>Vite PWA 插件</td><td>离线可看阵容/战术；Service Worker 缓存</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.2 关键页面</h3>
+  <div class="grid">
+    <div class="card"><div class="t">Dashboard</div><div class="d">Alerts/赛事快报/今日对手/提交状态/球探报告新到</div></div>
+    <div class="card"><div class="t">阵容管理</div><div class="d">球员列表/能力卡/轮换设置/位置分配</div></div>
+    <div class="card"><div class="t">战术编辑器</div><div class="d">预设选择/规则 DSL 编辑/Clutch 卡/存档槽</div></div>
+    <div class="card"><div class="t">训练中心</div><div class="d">训练计划/负荷可视化/效果报告</div></div>
+    <div class="card"><div class="t">球探中心</div><div class="d">任务委派/Watchlist/报告查看/fog 可视化</div></div>
+    <div class="card"><div class="t">观赛播放器</div><div class="d">SSE PBP 实时流/回放/关键球集锦</div></div>
+    <div class="card"><div class="t">选秀大厅</div><div class="d">选秀池/行情/偏好列表/选秀夜</div></div>
+    <div class="card"><div class="t">转会中心</div><div class="d">自由市场/交易谈判/续约/薪资空间</div></div>
+    <div class="card"><div class="t">经理档案</div><div class="d">履历/江湖地位/标签/人脉网络图</div></div>
+    <div class="card"><div class="t">世界年代史</div><div class="d">历史查询/传奇殿堂/王朝记录</div></div>
+  </div>
+
+  <h3>4.3 离线策略（PWA）</h3>
+  <ul>
+    <li><b>可离线</b>：阵容/战术/训练计划查看（只读缓存数据）。</li>
+    <li><b>不可离线</b>：提交操作（需服务端校验）、观赛（需 SSE）、交易（需 WebSocket）。</li>
+    <li><b>提交截止</b>：09:30 前的提交需在线；离线修改不生效。</li>
+  </ul>
+</section>
+
+<!-- ==================== §5 数据模型与存储 ==================== -->
+<section id="s5">
+  <h2><span class="num">5</span>数据模型与存储</h2>
+
+  <h3>5.1 核心表结构</h3>
+  <div class="formula">
+<span class="comment">── PostgreSQL 核心表（简化） ──</span>
+
+<span class="comment">-- 账号与身份</span>
+<span class="kw">CREATE TABLE</span> accounts (
+  id           <span class="type">BIGSERIAL</span> <span class="kw">PRIMARY KEY</span>,
+  world_id     <span class="type">SMALLINT</span> <span class="kw">NOT NULL</span>,
+  display_name <span class="type">VARCHAR</span>(32) <span class="kw">UNIQUE</span> <span class="kw">NOT NULL</span>,
+  created_at   <span class="type">TIMESTAMPTZ</span> <span class="kw">DEFAULT</span> <span class="fn">now</span>(),
+  <span class="comment">-- 经理/化身/职业人 handle 存 JSONB</span>
+  manager      <span class="type">JSONB</span> <span class="kw">NOT NULL</span>,
+  avatar       <span class="type">JSONB</span>,
+  professional <span class="type">JSONB</span>,
+  wallet       <span class="type">JSONB</span> <span class="kw">NOT NULL</span>  <span class="comment">-- credits/reputation/badges</span>
+);
+
+<span class="comment">-- 世界</span>
+<span class="kw">CREATE TABLE</span> worlds (
+  id            <span class="type">SMALLINT</span> <span class="kw">PRIMARY KEY</span>,
+  name          <span class="type">VARCHAR</span>(32) <span class="kw">NOT NULL</span>,
+  language      <span class="type">VARCHAR</span>(8) <span class="kw">NOT NULL</span>,
+  current_season <span class="type">SMALLINT</span> <span class="kw">NOT NULL</span>,
+  current_day   <span class="type">SMALLINT</span> <span class="kw">NOT NULL</span>,
+  status        <span class="type">VARCHAR</span>(16) <span class="kw">NOT NULL</span>,  <span class="comment">-- seeding|active|locked|merging</span>
+  config        <span class="type">JSONB</span> <span class="kw">NOT NULL</span>             <span class="comment">-- 容量/参数</span>
+);
+
+<span class="comment">-- 球队</span>
+<span class="kw">CREATE TABLE</span> teams (
+  id          <span class="type">BIGSERIAL</span> <span class="kw">PRIMARY KEY</span>,
+  world_id    <span class="type">SMALLINT</span> <span class="kw">NOT NULL</span>,
+  manager_id  <span class="type">BIGINT</span>,                  <span class="comment">-- NULL = AI</span>
+  name        <span class="type">VARCHAR</span>(32) <span class="kw">NOT NULL</span>,
+  league_tier <span class="type">SMALLINT</span> <span class="kw">NOT NULL</span>,       <span class="comment">-- 1-4</span>
+  league_group <span class="type">SMALLINT</span> <span class="kw">NOT NULL</span>,
+  cap_space   <span class="type">BIGINT</span> <span class="kw">NOT NULL</span>,
+  arena_level <span class="type">SMALLINT</span> <span class="kw">DEFAULT</span> 1,
+  <span class="kw">UNIQUE</span>(world_id, name)
+);
+
+<span class="comment">-- 球员（核心大表）</span>
+<span class="kw">CREATE TABLE</span> players (
+  id          <span class="type">BIGSERIAL</span> <span class="kw">PRIMARY KEY</span>,
+  world_id    <span class="type">SMALLINT</span> <span class="kw">NOT NULL</span>,
+  team_id     <span class="type">BIGINT</span>,                  <span class="comment">-- NULL = 自由/青训/选秀池</span>
+  name        <span class="type">VARCHAR</span>(32) <span class="kw">NOT NULL</span>,
+  age         <span class="type">SMALLINT</span> <span class="kw">NOT NULL</span>,
+  position    <span class="type">VARCHAR</span>(4) <span class="kw">NOT NULL</span>,
+  abilities   <span class="type">JSONB</span> <span class="kw">NOT NULL</span>,           <span class="comment">-- 能力值快照</span>
+  peak        <span class="type">JSONB</span> <span class="kw">NOT NULL</span>,            <span class="comment">-- Peak 上限</span>
+  traits      <span class="type">JSONB</span> <span class="kw">DEFAULT</span> <span class="str">'[]'</span>,     <span class="comment">-- 显性特质</span>
+  latent_traits <span class="type">JSONB</span> <span class="kw">DEFAULT</span> <span class="str">'[]'</span>, <span class="comment">-- 潜在特质（服务端）</span>
+  contract    <span class="type">JSONB</span>,                  <span class="comment">-- 合同详情</span>
+  career_stage <span class="type">VARCHAR</span>(16) <span class="kw">NOT NULL</span>,   <span class="comment">-- child|youth|young|adult|veteran</span>
+  family_id   <span class="type">BIGINT</span>,                 <span class="comment">-- 家庭关系系统</span>
+  fog_state   <span class="type">JSONB</span> <span class="kw">NOT NULL</span>,          <span class="comment">-- 各经理视角的 fog（按经理ID映射）</span>
+  <span class="kw">UNIQUE</span>(world_id, name)
+);
+
+<span class="comment">-- 比赛</span>
+<span class="kw">CREATE TABLE</span> matches (
+  id          <span class="type">BIGSERIAL</span> <span class="kw">PRIMARY KEY</span>,
+  world_id    <span class="type">SMALLINT</span> <span class="kw">NOT NULL</span>,
+  season      <span class="type">SMALLINT</span> <span class="kw">NOT NULL</span>,
+  day         <span class="type">SMALLINT</span> <span class="kw">NOT NULL</span>,
+  home_team   <span class="type">BIGINT</span> <span class="kw">NOT NULL</span>,
+  away_team   <span class="type">BIGINT</span> <span class="kw">NOT NULL</span>,
+  sim_seed    <span class="type">BIGINT</span> <span class="kw">NOT NULL</span>,          <span class="comment">-- 确定性种子</span>
+  result      <span class="type">JSONB</span>,                  <span class="comment">-- NULL = 未结算</span>
+  box_score   <span class="type">JSONB</span>,
+  pbp_ref     <span class="type">VARCHAR</span>(128),           <span class="comment">-- S3 回放引用</span>
+  is_playoff  <span class="type">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>
+);
+
+<span class="comment">-- 球探报告</span>
+<span class="kw">CREATE TABLE</span> scouting_reports (
+  id          <span class="type">BIGSERIAL</span> <span class="kw">PRIMARY KEY</span>,
+  world_id    <span class="type">SMALLINT</span> <span class="kw">NOT NULL</span>,
+  scout_id    <span class="type">BIGINT</span> <span class="kw">NOT NULL</span>,
+  target_id   <span class="type">BIGINT</span> <span class="kw">NOT NULL</span>,
+  report_data <span class="type">JSONB</span> <span class="kw">NOT NULL</span>,         <span class="comment">-- abilityFog/peakFog/traitHints</span>
+  freshness   <span class="type">REAL</span> <span class="kw">DEFAULT</span> 1.0,
+  created_day <span class="type">SMALLINT</span> <span class="kw">NOT NULL</span>
+);
+  </div>
+
+  <h3>5.2 分片策略</h3>
+  <ul>
+    <li><b>按 world_id 分区</b>：players/teams/matches 等大表按 world_id 分区，避免单表热点。</li>
+    <li><b>读写分离</b>：写主库，读副本（Dashboard/查询走副本）。</li>
+    <li><b>冷热分离</b>：历史赛季数据（>2 季前）归档到冷存储，主库只留近 2 季。</li>
+  </ul>
+
+  <h3>5.3 Redis 用途</h3>
+  <table>
+    <thead><tr><th>用途</th><th>Key 模式</th><th>TTL</th></tr></thead>
+    <tbody>
+      <tr><td>会话/JWT</td><td><code>session:{accountId}</code></td><td>7 天</td></tr>
+      <tr><td>sim 队列</td><td>BullMQ <code>settle-queue</code></td><td>—</td></tr>
+      <tr><td>PBP Pub-Sub</td><td><code>pbp:{matchId}</code></td><td>实时</td></tr>
+      <tr><td>世界排名缓存</td><td><code>rank:{worldId}</code></td><td>1 季</td></tr>
+      <tr><td>提交状态锁</td><td><code>submit-lock:{teamId}:{day}</code></td><td>至 09:30</td></tr>
+      <tr><td>灰度参数</td><td><code>sim-config:live</code></td><td>持久</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== §6 全球时钟与结算引擎 ==================== -->
+<section id="s6">
+  <h2><span class="num">6</span>全球时钟与结算引擎</h2>
+
+  <h3>6.1 全球时钟</h3>
+  <p>对齐世界与联赛结构 §6 的全球时钟节点：</p>
+  <table>
+    <thead><tr><th>时间(UTC+8)</th><th>事件</th><th>技术实现</th></tr></thead>
+    <tbody>
+      <tr><td>09:30</td><td>提交截止</td><td>Redis 分布式锁 <code>submit-lock</code>；截止后 API 拒绝写入</td></tr>
+      <tr><td>10:00</td><td>比赛结算</td><td>Cron 触发 <code>daily-settler</code>；BullMQ 按世界并行 sim</td></tr>
+      <tr><td>10:00+</td><td>PBP 推送</td><td>SSE 逐回合推送；按 matchId 频道分发</td></tr>
+      <tr><td>16:00</td><td>翻天</td><td>Cron 触发 post-match：疲劳恢复/状态翻页/事件触发/成长</td></tr>
+    </tbody>
+  </table>
+
+  <h3>6.2 结算时序</h3>
+  <div class="flow">
+    <span class="step">Cron 10:00</span>
+    <span class="arrow">→</span>
+    <span class="step">加载全世界</span>
+    <span class="arrow">→</span>
+    <span class="step">按世界入队</span>
+    <span class="arrow">→</span>
+    <span class="step">Worker 并行 sim</span>
+    <span class="arrow">→</span>
+    <span class="step">保存结果</span>
+    <span class="arrow">→</span>
+    <span class="step">SSE 推送 PBP</span>
+    <span class="arrow">→</span>
+    <span class="step">16:00 翻天</span>
+  </div>
+
+  <h3>6.3 sim seed 生成</h3>
+  <div class="formula">
+<span class="comment">// 确定性 seed = hash(worldId, season, day, matchSeq)</span>
+<span class="comment">// 保证同一比赛可重放——审计/回放/防作弊</span>
+
+<span class="kw">function</span> <span class="fn">genSimSeed</span>(<span class="var">worldId</span>, <span class="var">season</span>, <span class="var">day</span>, <span class="var">matchSeq</span>): <span class="kw">number</span> {
+  <span class="kw">return</span> <span class="fn">hash</span>(<span class="str">`${worldId}:${season}:${day}:${matchSeq}`</span>);
+}
+  </div>
+
+  <h3>6.4 结算窗口性能预算</h3>
+  <table>
+    <thead><tr><th>指标</th><th>预算</th></tr></thead>
+    <tbody>
+      <tr><td>单场 sim 耗时</td><td>≤200ms（纯函数，无 IO）</td></tr>
+      <tr><td>单世界每日比赛</td><td>~8 场（16 队/组 ÷ 2）</td></tr>
+      <tr><td>10 个世界并行</td><td>~80 场 × 200ms = 16s（单 worker）</td></tr>
+      <tr><td>4 worker 并行</td><td>~4s 完成全部 sim</td></tr>
+      <tr><td>SSE 推送延迟</td><td>sim 完成后 ≤1s 开始推送</td></tr>
+      <tr><td>结算总窗口</td><td>10:00-10:05（5 分钟内完成）</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== §7 通信协议 ==================== -->
+<section id="s7">
+  <h2><span class="num">7</span>通信协议</h2>
+
+  <h3>7.1 三种通信通道</h3>
+  <table>
+    <thead><tr><th>通道</th><th>用途</th><th>方向</th></tr></thead>
+    <tbody>
+      <tr><td><b>REST API</b></td><td>CRUD 操作（阵容/战术/训练/转会/球探）</td><td>请求-响应</td></tr>
+      <tr><td><b>SSE</b></td><td>PBP 实时推送（观赛）</td><td>服务端→客户端（单向）</td></tr>
+      <tr><td><b>WebSocket</b></td><td>交易谈判（实时还价）、聊天</td><td>双向</td></tr>
+    </tbody>
+  </table>
+
+  <h3>7.2 REST API 设计</h3>
+  <div class="formula">
+<span class="comment">// 关键 API 端点（简化）</span>
+
+<span class="kw">POST</span>   <span class="str">/auth/login</span>                    <span class="comment">// 登录，返回 JWT</span>
+<span class="kw">GET</span>    <span class="str">/dashboard</span>                     <span class="comment">// 首页聚合数据</span>
+
+<span class="kw">GET</span>    <span class="str">/team/:teamId/roster</span>           <span class="comment">// 阵容</span>
+<span class="kw">PUT</span>    <span class="str">/team/:teamId/lineup</span>           <span class="comment">// 提交阵容（09:30 前有效）</span>
+<span class="kw">GET</span>    <span class="str">/team/:teamId/tactics</span>          <span class="comment">// 战术存档</span>
+<span class="kw">PUT</span>    <span class="str">/team/:teamId/tactics/:slotId</span>  <span class="comment">// 提交战术</span>
+
+<span class="kw">GET</span>    <span class="str">/training/:teamId/plan</span>         <span class="comment">// 训练计划</span>
+<span class="kw">PUT</span>    <span class="str">/training/:teamId/plan</span>         <span class="comment">// 提交训练计划</span>
+
+<span class="kw">POST</span>   <span class="str">/scouting/task</span>                 <span class="comment">// 委派球探任务</span>
+<span class="kw">GET</span>    <span class="str">/scouting/reports</span>              <span class="comment">// 球探报告列表</span>
+
+<span class="kw">GET</span>    <span class="str">/matches/:matchId/pbp</span>          <span class="comment">// PBP（回放用）</span>
+<span class="kw">GET</span>    <span class="str">/matches/today</span>                 <span class="comment">// 今日赛程</span>
+
+<span class="kw">POST</span>   <span class="str">/transfer/sign</span>                 <span class="comment">// 签约自由球员</span>
+<span class="kw">POST</span>   <span class="str">/transfer/trade/offer</span>          <span class="comment">// 发起交易报价</span>
+<span class="kw">POST</span>   <span class="str">/transfer/trade/respond</span>        <span class="comment">// 回应交易</span>
+  </div>
+
+  <h3>7.3 SSE PBP 推送</h3>
+  <div class="formula">
+<span class="comment">// SSE 事件流</span>
+
+<span class="kw">GET</span> <span class="str">/stream/match/:matchId</span>  <span class="comment">// SSE 长连接</span>
+
+<span class="comment">// 事件格式</span>
+event: pbp
+data: {
+  "quarter": 3,
+  "clock": "4:32",
+  "score": { "home": 78, "away": 75 },
+  "type": "shot",
+  "actor": "player:12345",
+  "desc": "张浩然 三分命中（助攻：李明）",
+  "clutch": false
+}
+
+event: clutch
+data: { "desc": "进入 Clutch 时刻！分差 3 分，最后 2 分钟" }
+
+event: final
+data: { "home": 102, "away": 99, "boxScoreRef": "..." }
+  </div>
+
+  <h3>7.4 WebSocket 交易谈判</h3>
+  <ul>
+    <li><code>ws://.../ws/trade/:tradeId</code>——交易谈判房间。</li>
+    <li>消息类型：<code>OFFER</code>（报价）/ <code>COUNTER</code>（还价）/ <code>ACCEPT</code> / <code>REJECT</code> / <code>CHAT</code>（预设文本）。</li>
+    <li>超时自动拒绝（签约转会 §7 三轮还价限时）。</li>
+  </ul>
+</section>
+
+<!-- ==================== §8 确定性与重放 ==================== -->
+<section id="s8">
+  <h2><span class="num">8</span>确定性与重放</h2>
+
+  <div class="note gold"><b>核心机制</b>：sim-engine 是纯函数，seed 确定性保证——同一 SimInput 永远产出同一 SimOutput。这是可单测、可回放、可灰度调参、可防作弊的基础。</div>
+
+  <h3>8.1 确定性保证</h3>
+  <ul>
+    <li><b>PRNG</b>：mulberry32，种子由 <code>genSimSeed(worldId, season, day, matchSeq)</code> 生成。</li>
+    <li><b>RNG 消耗顺序</b>：严格固定——同一 sim 路径中 RNG 调用顺序不变。</li>
+    <li><b>无副作用</b>：simulate() 不读写 DB/不调网络/不依赖时间戳。</li>
+    <li><b>浮点谨慎</b>：避免不同平台浮点差异（尽量用整数运算或固定精度）。</li>
+  </ul>
+
+  <h3>8.2 回放</h3>
+  <ul>
+    <li>每场比赛的 <code>SimInput</code> + <code>sim_seed</code> 存档。</li>
+    <li>回放 = 重新调用 <code>simulate(savedInput)</code>，输出与原始一致。</li>
+    <li>回放用于：观赛回放、争议仲裁、bug 复现、平衡性调参验证。</li>
+  </ul>
+
+  <h3>8.3 灰度调参</h3>
+  <div class="formula">
+<span class="comment">// 灰度参数存储在 Redis，sim 时注入</span>
+
+<span class="kw">async function</span> <span class="fn">buildSimInput</span>(<span class="var">matchup</span>): <span class="type">SimInput</span> {
+  <span class="kw">const</span> <span class="var">config</span> <span class="op">=</span> <span class="kw">await</span> <span class="var">redis</span>.<span class="fn">get</span>(<span class="str">"sim-config:live"</span>);
+  <span class="comment">// config 可热更新——不需重启服务即可调参</span>
+  <span class="comment">// 调参后下一场 sim 立即生效；旧比赛不受影响（seed+input 不变）</span>
+  <span class="kw">return</span> { <span class="var">matchup</span>, <span class="var">seed</span>: <span class="fn">genSimSeed</span>(...), <span class="var">config</span>, ... };
+}
+  </div>
+
+  <h3>8.4 防作弊审计</h3>
+  <ul>
+    <li><b>RNG 日志</b>：每场 sim 记录 RNG 消耗日志（rngLog），可审计是否被篡改。</li>
+    <li><b>结果校验</b>：任何争议可重放 sim 验证结果一致性。</li>
+    <li><b>服务端权威</b>：前端永不执行 sim——比赛结果只能来自服务端。</li>
+  </ul>
+</section>
+
+<!-- ==================== §9 部署架构 ==================== -->
+<section id="s9">
+  <h2><span class="num">9</span>部署架构</h2>
+
+  <h3>9.1 开发环境</h3>
+  <div class="formula">
+<span class="comment"># docker-compose.yml（简化）</span>
+
+services:
+  postgres:     <span class="comment"># PostgreSQL 16</span>
+  redis:        <span class="comment"># Redis 7</span>
+  minio:        <span class="comment"># S3 兼容对象存储</span>
+  api:          <span class="comment"># NestJS 服务端（热重载）</span>
+  web:          <span class="comment"># Vite 开发服务器（HMR）</span>
+  worker:       <span class="comment"># sim worker（BullMQ 消费者）</span>
+  <span class="comment"># 一条命令起全套：docker compose up</span>
+  </div>
+
+  <h3>9.2 生产部署</h3>
+  <table>
+    <thead><tr><th>组件</th><th>部署</th><th>扩展</th></tr></thead>
+    <tbody>
+      <tr><td>API 服务</td><td>Docker 容器 ×2+（负载均衡）</td><td>水平扩展</td></tr>
+      <tr><td>sim worker</td><td>Docker 容器 ×4+（按世界分片）</td><td>按世界数扩展</td></tr>
+      <tr><td>SSE/WS 网关</td><td>Docker 容器 ×2+（粘性会话）</td><td>按连接数扩展</td></tr>
+      <tr><td>PostgreSQL</td><td>主从（读写分离）</td><td>读副本扩展</td></tr>
+      <tr><td>Redis</td><td>主从 + 哨兵</td><td>—</td></tr>
+      <tr><td>对象存储</td><td>云 S3</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  <h3>9.3 环境划分</h3>
+  <ul>
+    <li><b>dev</b>：本地 docker compose；单世界；模拟数据。</li>
+    <li><b>staging</b>：类生产；2-3 世界；内测。</li>
+    <li><b>prod</b>：多世界；真实玩家。</li>
+  </ul>
+
+  <h3>9.4 Sealos 部署选项</h3>
+  <p>生产可选用 Sealos Cloud（已有技能支持）部署——一键容器化，内置 PostgreSQL/Redis 数据库服务，适合小团队无专职运维的场景。</p>
+</section>
+
+<!-- ==================== §10 性能与扩展 ==================== -->
+<section id="s10">
+  <h2><span class="num">10</span>性能与扩展</h2>
+
+  <h3>10.1 性能瓶颈分析</h3>
+  <table>
+    <thead><tr><th>场景</th><th>瓶颈</th><th>对策</th></tr></thead>
+    <tbody>
+      <tr><td>每日 10:00 结算</td><td>CPU（sim 计算）</td><td>worker 水平扩展；按世界分片并行</td></tr>
+      <tr><td>SSE 推送</td><td>连接数</td><td>SSE 网关水平扩展；按 matchId 频道</td></tr>
+      <tr><td>Dashboard 查询</td><td>DB 读</td><td>读副本；Redis 缓存聚合数据</td></tr>
+      <tr><td>球员表膨胀</td><td>DB 存储</td><td>按 world_id 分区；冷热分离归档</td></tr>
+      <tr><td>PBP 存储</td><td>对象存储量</td><td>S3 存储；旧比赛 PBP 可清理（保留 Box Score）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>10.2 扩展策略</h3>
+  <ul>
+    <li><b>世界级隔离</b>：每个世界独立分片，互不影响。世界数增长 = 加 worker。</li>
+    <li><b>sim worker 无状态</b>：worker 可随时增减，按队列消费。</li>
+    <li><b>读副本</b>：查询走副本，结算写主库。</li>
+    <li><b>缓存层</b>：Dashboard/排名/统计走 Redis 缓存。</li>
+  </ul>
+</section>
+
+<!-- ==================== §11 安全与反作弊 ==================== -->
+<section id="s11">
+  <h2><span class="num">11</span>安全与反作弊</h2>
+
+  <h3>11.1 服务端权威</h3>
+  <ul>
+    <li>所有 sim/经济/成长计算在服务端；前端只读结果。</li>
+    <li>前端任何输入（阵容/战术/训练/交易）经服务端校验后生效。</li>
+    <li>09:30 提交截止由服务端 Redis 锁强制——前端时间不可信。</li>
+  </ul>
+
+  <h3>11.2 确定性审计</h3>
+  <ul>
+    <li>每场比赛存 SimInput + seed + rngLog。</li>
+    <li>争议可重放验证——结果不一致=服务端 bug（非玩家作弊）。</li>
+    <li>玩家无法影响 sim——seed 由服务端生成，输入由服务端组装。</li>
+  </ul>
+
+  <h3>11.3 反多账号</h3>
+  <ul>
+    <li>同设备/同 IP 多账号检测。</li>
+    <li>同世界多账号禁止——防自我交易套利。</li>
+    <li>交易模式检测——反复单向交易触发审查（社交系统 §12）。</li>
+  </ul>
+
+  <h3>11.4 商业化隔离</h3>
+  <ul>
+    <li>Credits 与薪资空间完全隔离（商业化系统 §10）——代码层防火墙。</li>
+    <li>付费操作全审计——可追溯是否有红线违规。</li>
+  </ul>
+
+  <h3>11.5 认证与授权</h3>
+  <ul>
+    <li>JWT 认证；Redis 会话管理。</li>
+    <li>按角色/世界隔离——A 世界经理不能操作 B 世界数据。</li>
+    <li>敏感操作（交易/签约/充值）二次确认。</li>
+  </ul>
+</section>
+
+<!-- ==================== §12 CI/CD 与开发环境 ==================== -->
+<section id="s12">
+  <h2><span class="num">12</span>CI/CD 与开发环境</h2>
+
+  <h3>12.1 代码仓库结构</h3>
+  <div class="formula">
+<span class="comment">── Monorepo（pnpm workspace） ──</span>
+
+hwo/
+├── packages/
+│   ├── shared/          <span class="comment"># 共享类型与纯函数（sim-engine 核心在此）</span>
+│   │   ├── types/       <span class="comment"># Player/Team/Matchup/SimInput 等</span>
+│   │   ├── sim/         <span class="comment"># simulate() 纯函数 + mulberry32</span>
+│   │   └── prng/        <span class="comment"># 确定性 PRNG</span>
+│   ├── api/             <span class="comment"># NestJS 服务端</span>
+│   ├── web/             <span class="comment"># React + Vite 前端</span>
+│   └── worker/          <span class="comment"># BullMQ sim worker</span>
+├── docker-compose.yml
+├── pnpm-workspace.yaml
+└── .github/workflows/
+  </div>
+
+  <h3>12.2 CI 流水线（GitHub Actions）</h3>
+  <div class="flow">
+    <span class="step">Push</span>
+    <span class="arrow">→</span>
+    <span class="step">Lint + Type Check</span>
+    <span class="arrow">→</span>
+    <span class="step">Unit Test</span>
+    <span class="arrow">→</span>
+    <span class="step">sim 确定性测试</span>
+    <span class="arrow">→</span>
+    <span class="step">Build</span>
+    <span class="arrow">→</span>
+    <span class="step">Deploy staging</span>
+  </div>
+
+  <h3>12.3 sim 确定性测试</h3>
+  <ul>
+    <li>CI 中跑确定性测试——固定 seed 跑 sim，断言输出与快照一致。</li>
+    <li>若 sim 逻辑变更导致输出变化，测试失败——强制开发者确认是有意变更。</li>
+    <li>这保证 sim 不会被意外破坏（如浮点优化/重构引入非确定性）。</li>
+  </ul>
+
+  <h3>12.4 开发命令</h3>
+  <div class="formula">
+<span class="comment"># 起全套开发环境</span>
+docker compose up<span class="op"> -</span>d
+
+<span class="comment"># 前端开发（HMR）</span>
+pnpm <span class="op">--</span>filter web dev
+
+<span class="comment"># 后端开发（热重载）</span>
+pnpm <span class="op">--</span>filter api start:dev
+
+<span class="comment"># 跑 sim 单测</span>
+pnpm <span class="op">--</span>filter shared test
+
+<span class="comment"># 跑确定性测试</span>
+pnpm <span class="op">--</span>filter shared test:determinism
+  </div>
+</section>
+
+<!-- ==================== §13 监控与运维 ==================== -->
+<section id="s13">
+  <h2><span class="num">13</span>监控与运维</h2>
+
+  <h3>13.1 监控指标</h3>
+  <table>
+    <thead><tr><th>类别</th><th>指标</th></tr></thead>
+    <tbody>
+      <tr><td>结算健康</td><td>每日结算耗时/sim 失败数/worker 队列积压</td></tr>
+      <tr><td>API 健康</td><td>响应时间/错误率/QPS</td></tr>
+      <tr><td>SSE 健康</td><td>连接数/推送延迟/断线率</td></tr>
+      <tr><td>DB 健康</td><td>慢查询/连接数/复制延迟</td></tr>
+      <tr><td>业务指标</td><td>DAU/付费率/留存率/世界活跃球队数</td></tr>
+    </tbody>
+  </table>
+
+  <h3>13.2 告警</h3>
+  <ul>
+    <li>结算失败 → 立即告警（影响全体玩家）。</li>
+    <li>sim 确定性测试失败 → 阻断部署。</li>
+    <li>DB 复制延迟 >5s → 告警。</li>
+    <li>世界活跃球队 <阈值 → 告警（需 AI 填充）。</li>
+  </ul>
+
+  <h3>13.3 灰度发布</h3>
+  <ul>
+    <li>sim 参数灰度——先在 staging 世界验证，再推 prod。</li>
+    <li>新功能灰度——按世界百分比开放。</li>
+  </ul>
+</section>
+
+<!-- ==================== §14 MVP 技术范围 ==================== -->
+<section id="s14">
+  <h2><span class="num">14</span>MVP 技术范围</h2>
+
+  <div class="note green"><b>MVP 原则</b>：17 个系统不可能同时进 MVP。MVP 只做核心循环——让玩家能"组建球队→设战术→每日比赛→看结果→调整"的最小可玩闭环。其余系统分期迭代。</div>
+
+  <h3>14.1 MVP 范围（M1 里程碑）</h3>
+  <table>
+    <thead><tr><th>系统</th><th>MVP 状态</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><b>Sim Engine</b></td><td><span class="badge green">✅ 核心</span></td><td>完整——纯函数 PBP 生成</td></tr>
+      <tr><td><b>战术系统</b></td><td><span class="badge green">✅ 核心</span></td><td>基础战术（L1）+ 预设库；规则 DSL 可延后</td></tr>
+      <tr><td><b>世界与联赛</b></td><td><span class="badge green">✅ 核心</span></td><td>单世界 + T1-T4 金字塔 + 全球时钟结算</td></tr>
+      <tr><td><b>签约转会</b></td><td><span class="badge green">✅ 核心</span></td><td>自由市场签约 + 基础交易；续约/裁员可延后</td></tr>
+      <tr><td><b>训练系统</b></td><td><span class="badge gold">简化</span></td><td>基础训练计划 + 负荷；专项/恢复可延后</td></tr>
+      <tr><td><b>球员成长</b></td><td><span class="badge gold">简化</span></td><td>成人阶段成长；童子/少年可延后</td></tr>
+      <tr><td><b>AI 经理</b></td><td><span class="badge green">✅ 核心</span></td><td>填充 AI 球队基础决策</td></tr>
+      <tr><td>球探系统</td><td><span class="badge red">延后</span></td><td>MVP 用全可见（无 fog）简化</td></tr>
+      <tr><td>选秀系统</td><td><span class="badge red">延后</span></td><td>MVP 用自由市场替代</td></tr>
+      <tr><td>三身份系统</td><td><span class="badge red">延后</span></td><td>MVP 仅经理身份</td></tr>
+      <tr><td>关系系统</td><td><span class="badge red">延后</span></td><td>MVP 无</td></tr>
+      <tr><td>王朝传承</td><td><span class="badge red">延后</span></td><td>MVP 无（需多赛季才显效）</td></tr>
+      <tr><td>财务球馆</td><td><span class="badge gold">简化</span></td><td>基础收入/薪资空间；球馆升级可延后</td></tr>
+      <tr><td>商业化</td><td><span class="badge red">延后</span></td><td>MVP 免费；商业化在 EA 后期</td></tr>
+      <tr><td>社交对抗</td><td><span class="badge red">延后</span></td><td>MVP 无社交</td></tr>
+    </tbody>
+  </table>
+
+  <h3>14.2 MVP 核心循环</h3>
+  <div class="flow">
+    <span class="step">组建球队（自由市场签约）</span>
+    <span class="arrow">→</span>
+    <span class="step">设阵容+战术（L1 基础）</span>
+    <span class="arrow">→</span>
+    <span class="step">提交（09:30 前）</span>
+    <span class="arrow">→</span>
+    <span class="step">每日 10:00 sim 结算</span>
+    <span class="arrow">→</span>
+    <span class="step">观赛（SSE PBP）</span>
+    <span class="arrow">→</span>
+    <span class="step">看 Box Score</span>
+    <span class="arrow">→</span>
+    <span class="step">调整→下一日</span>
+  </div>
+
+  <h3>14.3 MVP 技术交付清单</h3>
+  <ul>
+    <li>✅ Monorepo 骨架（shared/api/web/worker）</li>
+    <li>✅ sim-engine 纯函数 + 确定性测试</li>
+    <li>✅ PostgreSQL 核心表 + Redis</li>
+    <li>✅ NestJS API（阵容/战术/赛程/签约）</li>
+    <li>✅ daily-settler + BullMQ worker</li>
+    <li>✅ SSE PBP 推送</li>
+    <li>✅ React Dashboard + 阵容 + 战术 + 观赛</li>
+    <li>✅ AI 经理基础决策</li>
+    <li>✅ docker-compose 开发环境</li>
+    <li>✅ GitHub Actions CI</li>
+  </ul>
+
+  <div class="note blue"><b>MVP 验证目标</b>：核心循环是否好玩——组建→战术→比赛→观赛→调整的每日循环是否让玩家想"明天再来"。这是 HWO 的生死线。验证通过后再分期加入球探/选秀/三身份/关系/王朝等深度系统。</div>
+</section>
+
+<footer style="text-align:center;color:var(--ink3);font-size:12px;padding:20px 0 40px;border-top:1px solid var(--line);margin-top:20px">
+  技术架构文档 v1.0 · Hoops World Online · 2026-09-28<br>
+  策划方案 §19 深化文档 · TypeScript 全栈 · 服务端权威 · 确定性 sim
+</footer>
+
+</div>
+</body>
+</html>

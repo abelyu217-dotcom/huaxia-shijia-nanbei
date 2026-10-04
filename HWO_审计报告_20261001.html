@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HWO 系统审计报告 · 2026-10-01</title>
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#141b26; --panel2:#1b2433; --line:#26324a;
+    --ink:#e6edf6; --ink2:#9fb0c7; --ink3:#6b7c97;
+    --accent:#ff6b35; --accent2:#4ade80; --gold:#fbbf24; --red:#ef4444; --blue:#60a5fa; --purple:#a78bfa;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:linear-gradient(180deg,#070a10 0%,#0b0f17 100%);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 22px 120px}
+  .hero{
+    position:relative;border:1px solid var(--line);border-radius:18px;padding:38px 34px 28px;
+    background:
+      radial-gradient(700px 240px at 15% -10%, rgba(255,107,53,.18), transparent 60%),
+      linear-gradient(180deg,#151d2c,#0e1420);
+    overflow:hidden;margin-bottom:28px;
+  }
+  .hero .tag{display:inline-block;font-size:12px;letter-spacing:.16em;color:var(--accent);border:1px solid rgba(255,107,53,.45);padding:4px 12px;border-radius:999px;margin-bottom:16px;text-transform:uppercase}
+  .hero h1{margin:0 0 6px;font-size:30px;font-weight:800}
+  .hero .sub{color:var(--ink2);font-size:15px;margin-bottom:18px}
+  .hero .meta{display:flex;flex-wrap:wrap;gap:10px}
+  .hero .chip{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;padding:7px 12px;font-size:13px;color:var(--ink2)}
+  .hero .chip b{color:var(--ink)}
+
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 26px;margin-bottom:22px}
+  .toc h3{margin:0 0 12px;font-size:13px;color:var(--ink2);letter-spacing:.1em;text-transform:uppercase}
+  .toc ol{margin:0;padding-left:22px;columns:2;column-gap:32px}
+  .toc li{margin:4px 0;break-inside:avoid}
+  .toc a{color:var(--ink2);text-decoration:none}
+  .toc a:hover{color:var(--accent)}
+
+  section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin-bottom:20px}
+  section > h2{margin:0 0 16px;font-size:19px;font-weight:700;display:flex;align-items:center;gap:10px}
+  section > h2 .num{font-size:12px;color:#0b0f17;background:var(--accent);width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;font-weight:800;flex-shrink:0}
+  h3{font-size:16px;margin:20px 0 8px;color:var(--ink)}
+  h4{font-size:14px;margin:14px 0 6px;color:var(--accent2)}
+  p{margin:8px 0}
+  ul,ol{margin:6px 0 8px 4px;padding-left:22px}
+  li{margin:4px 0}
+  a{color:var(--blue);text-decoration:none}
+  code{background:#0d131d;border:1px solid var(--line);padding:2px 6px;border-radius:5px;font-size:13px;color:var(--gold)}
+  strong{color:#fff}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+  th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--accent);font-weight:700;font-size:12px;letter-spacing:.05em;text-transform:uppercase;background:rgba(255,255,255,.02)}
+  td b{color:var(--ink)}
+  tr:hover td{background:rgba(255,255,255,.02)}
+
+  .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;letter-spacing:.04em}
+  .badge.p0{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+  .badge.p1{background:rgba(96,165,250,.15);color:var(--blue);border:1px solid rgba(96,165,250,.3)}
+  .badge.p2{background:rgba(251,191,36,.15);color:var(--gold);border:1px solid rgba(251,191,36,.3)}
+  .badge.ok{background:rgba(74,222,128,.15);color:var(--accent2);border:1px solid rgba(74,222,128,.3)}
+  .badge.partial{background:rgba(251,191,36,.15);color:var(--gold);border:1px solid rgba(251,191,36,.3)}
+  .badge.missing{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+
+  .note{border-left:3px solid var(--accent);background:rgba(255,107,53,.06);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;color:var(--ink2)}
+  .note b{color:var(--accent)}
+  .note.green{border-left-color:var(--accent2);background:rgba(74,222,128,.06)}
+  .note.green b{color:var(--accent2)}
+  .note.blue{border-left-color:var(--blue);background:rgba(96,165,250,.06)}
+  .note.blue b{color:var(--blue)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin:14px 0}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:16px}
+  .card .t{font-weight:700;margin-bottom:6px;color:var(--ink)}
+  .card .d{font-size:13px;color:var(--ink2)}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:16px 0}
+  .stat{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  .stat .n{font-size:28px;font-weight:800;color:var(--accent)}
+  .stat .l{font-size:12px;color:var(--ink2);margin-top:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <span class="tag">Audit Report</span>
+    <h1>HWO 系统审计报告</h1>
+    <p class="sub">Hoops World Online · 篮球经理世界 — 全量系统实现度审计与 6 项问题根因分析</p>
+    <div class="meta">
+      <span class="chip"><b>审计日期</b> · 2026-10-01</span>
+      <span class="chip"><b>版本</b> · v0.5.0</span>
+      <span class="chip"><b>审计范围</b> · packages/api + packages/web + packages/shared</span>
+      <span class="chip"><b>策划对照</b> · 篮球经理世界_游戏策划方案.html</span>
+    </div>
+  </div>
+
+  <div class="toc">
+    <h3>目录</h3>
+    <ol>
+      <li><a href="#exec">执行摘要</a></li>
+      <li><a href="#scope">审计范围与方法</a></li>
+      <li><a href="#backend">后端系统实现清单</a></li>
+      <li><a href="#frontend">前端页面实现清单</a></li>
+      <li><a href="#issue1">问题 1：单场战术页流程断裂</a></li>
+      <li><a href="#issue2">问题 2：生涯/训练系统过浅</a></li>
+      <li><a href="#issue3">问题 3：后端有前端无的系统</a></li>
+      <li><a href="#issue4">问题 4：策划未实现系统</a></li>
+      <li><a href="#issue5">问题 5：多人在线缺失</a></li>
+      <li><a href="#issue6">问题 6：比赛直播系统</a></li>
+      <li><a href="#priority">优先级与实施建议</a></li>
+    </ol>
+  </div>
+
+  <!-- 执行摘要 -->
+  <section id="exec">
+    <h2><span class="num">1</span>执行摘要</h2>
+    <div class="stats">
+      <div class="stat"><div class="n">24</div><div class="l">后端模块</div></div>
+      <div class="stat"><div class="n">22</div><div class="l">前端页面</div></div>
+      <div class="stat"><div class="n">3</div><div class="l">后端有/前端无</div></div>
+      <div class="stat"><div class="n">7+</div><div class="l">策划未实现系统</div></div>
+    </div>
+    <p>本次审计覆盖 HWO 全栈代码（NestJS 后端 24 模块、React 前端 22 页面、shared sim 引擎），并对照策划方案 24 个章节进行实现度核验。核心结论：</p>
+    <ul>
+      <li><b>P0 断裂问题 3 个</b>：单场战术页入口断裂、直播场上 5 人不同步、直播时间流速过快（全场 2-3 分钟）。</li>
+      <li><b>多人在线名存实亡</b>：注册自动认领 AI 球队、手动推进一日、无世界大厅、无社交层，实际为单机体验。</li>
+      <li><b>训练系统浅层化</b>：Drill 为前端 mock、后端忽略训练类型、无疲劳/设施/属性成长。</li>
+      <li><b>策划系统实现度约 60%</b>：三身份、王朝传承、社交对抗、球员关系等核心系统未启动。</li>
+    </ul>
+  </section>
+
+  <!-- 审计范围 -->
+  <section id="scope">
+    <h2><span class="num">2</span>审计范围与方法</h2>
+    <h3>代码范围</h3>
+    <ul>
+      <li><code>packages/api/src/*</code> — 24 个 NestJS 模块（controller/service）</li>
+      <li><code>packages/web/src/*</code> — 22 个页面组件 + 15 个通用组件</li>
+      <li><code>packages/shared/src/*</code> — sim 引擎、战术、生涯、球探迷雾</li>
+      <li><code>/workspace/*.html</code> — 策划方案 + 17 个系统设计文档</li>
+    </ul>
+    <h3>方法</h3>
+    <ul>
+      <li>路由级对照：后端 <code>@Controller</code> 路由 vs 前端 <code>api.ts</code> 调用函数</li>
+      <li>页面级对照：前端 <code>App.tsx</code> 导航 vs 后端模块</li>
+      <li>行为级核验：关键交互流程走读（注册→认领→推进→直播）</li>
+      <li>策划级对照：24 章节逐项核验实现状态</li>
+    </ul>
+  </section>
+
+  <!-- 后端清单 -->
+  <section id="backend">
+    <h2><span class="num">3</span>后端系统实现清单</h2>
+    <table>
+      <thead><tr><th>模块</th><th>核心路由</th><th>前端对接</th></tr></thead>
+      <tbody>
+        <tr><td><b>auth</b></td><td>register / login / me</td><td>✅</td></tr>
+        <tr><td><b>team</b></td><td>teams / team / captain / update</td><td>✅</td></tr>
+        <tr><td><b>lineup</b></td><td>GET/PUT lineup</td><td>✅</td></tr>
+        <tr><td><b>tactic</b></td><td>presets / team tactic / counter / usage</td><td>✅</td></tr>
+        <tr><td><b>sim</b></td><td>demo / match</td><td>✅</td></tr>
+        <tr><td><b>match-stream</b></td><td>SSE 直播流</td><td>✅</td></tr>
+        <tr><td><b>season</b></td><td>season / standings / leagues / schedule / advance / generate</td><td>✅</td></tr>
+        <tr><td><b>career</b></td><td>player / team / train / advance</td><td>✅</td></tr>
+        <tr><td><b>academy</b></td><td>GET / upgrade / invest / produce</td><td>✅</td></tr>
+        <tr><td><b>contract</b></td><td>team / salary / free-agents / sign / extend / waive</td><td>✅</td></tr>
+        <tr><td><b>draft</b></td><td>init / board / pick / auto / results</td><td>✅</td></tr>
+        <tr><td><b>scout</b></td><td>reports / budget / scout / potential</td><td>✅</td></tr>
+        <tr><td><b>trade</b></td><td>offer / sent / received / accept / reject / counter / ai-decide</td><td>✅</td></tr>
+        <tr><td><b>wallet</b></td><td>GET / spend-coins / spend-credits</td><td>✅</td></tr>
+        <tr><td><b>vip</b></td><td>status / plans / subscribe</td><td>✅</td></tr>
+        <tr><td><b>cosmetic</b></td><td>list / owned / buy / equip</td><td>✅</td></tr>
+        <tr><td><b>payment</b></td><td>packages / create-order / verify / sandbox-complete</td><td>✅</td></tr>
+        <tr><td><b>push</b></td><td>subscribe (web push)</td><td>✅</td></tr>
+        <tr><td><b>ai</b></td><td>refresh / train</td><td>✅</td></tr>
+        <tr><td><b>world</b></td><td>create / list / get / stats / join</td><td>✅</td></tr>
+        <tr><td><b>analytics</b></td><td>track / dau / retention / retention/series / events</td><td>❌ 无页面</td></tr>
+        <tr><td><b>audit</b></td><td>replay / match-anomaly / scan / trade-anomaly</td><td>❌ 无页面</td></tr>
+        <tr><td><b>simconfig</b></td><td>get / history / update / rollback / reset</td><td>❌ 无页面</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 前端清单 -->
+  <section id="frontend">
+    <h2><span class="num">4</span>前端页面实现清单</h2>
+    <table>
+      <thead><tr><th>页面</th><th>分组</th><th>状态</th></tr></thead>
+      <tbody>
+        <tr><td>HomePage 主页</td><td>球會</td><td><span class="badge ok">已实现</span></td></tr>
+        <tr><td>LeaguePage 联赛资讯</td><td>球會</td><td><span class="badge ok">已实现</span></td></tr>
+        <tr><td>BoardPage 公布栏</td><td>球會</td><td><span class="badge ok">已实现</span></td></tr>
+        <tr><td>WorldInfoPage 世界资讯</td><td>球會</td><td><span class="badge ok">已实现</span></td></tr>
+        <tr><td>TeamPage 我的球队</td><td>人事</td><td><span class="badge ok">已实现</span></td></tr>
+        <tr><td>CorePlayersPage 核心球员</td><td>人事</td><td><span class="badge ok">已实现</span></td></tr>
+        <tr><td>FinancePage 财务</td><td>人事</td><td><span class="badge ok">已实现</span></td></tr>
+        <tr><td>ContractPage 合同</td><td>人事</td><td><span class="badge ok">已实现</span></td></tr>
+        <tr><td>ScoutPage 球探</td><td>人事</td><td><span class="badge ok">已实现</span></td></tr>
+        <tr><td>WatchlistPage 观察名单</td><td>人事</td><td><span class="badge ok">已实现</span></td></tr>
+        <tr><td>TradePage 交易</td><td>人事</td><td><span class="badge ok">已实现</span></td></tr>
+        <tr><td>CareerPage 生涯</td><td>人事</td><td><span class="badge partial">浅层</span></td></tr>
+        <tr><td>AcademyPage 青训</td><td>人事</td><td><span class="badge ok">已实现</span></td></tr>
+        <tr><td>DraftPage 选秀</td><td>人事</td><td><span class="badge ok">已实现</span></td></tr>
+        <tr><td>SchedulePage 赛程</td><td>比赛</td><td><span class="badge ok">已实现</span></td></tr>
+        <tr><td>MatchTacticPage 单场战术</td><td>比赛</td><td><span class="badge missing">入口断裂</span></td></tr>
+        <tr><td>PlayoffPage 季后赛</td><td>比赛</td><td><span class="badge ok">已实现</span></td></tr>
+        <tr><td>ArenaPage 竞技场</td><td>比赛</td><td><span class="badge partial">浅层</span></td></tr>
+        <tr><td>MatchSimView 模拟/直播</td><td>比赛</td><td><span class="badge partial">回放非直播</span></td></tr>
+        <tr><td>BoardOfDirectorsPage 董事会</td><td>管理</td><td><span class="badge ok">已实现</span></td></tr>
+        <tr><td>ShopPage 商店</td><td>商城</td><td><span class="badge ok">已实现</span></td></tr>
+        <tr><td>GuidePage 游戏说明</td><td>商城</td><td><span class="badge ok">已实现</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 问题 1 -->
+  <section id="issue1">
+    <h2><span class="num">5</span>问题 1：单场战术制定页面流程断裂 <span class="badge p0">P0</span></h2>
+    <h3>现象</h3>
+    <p>侧边栏点「单场战术」→ 显示「请从赛程页选择一场比赛」→ 但赛程页没有任何进入战术页的入口 → 用户永远无法操作。</p>
+    <h3>根因</h3>
+    <ul>
+      <li><code>MatchTacticPage</code> 必须接收 <code>matchId</code> prop 才能加载数据。</li>
+      <li>导航函数 <code>navToView("matchTactic")</code> 返回 <code>{ kind: "matchTactic" }</code>，<b>未携带 matchId</b>。</li>
+      <li><code>SchedulePage</code> 内无任何跳转到 <code>matchTactic</code> 视图的代码（grep 无匹配）。</li>
+    </ul>
+    <h3>修复方案</h3>
+    <div class="note green"><b>推荐方案</b>：进入「单场战术」时，自动拉取当前用户球队的<b>下一场未结算比赛</b>，无需从赛程页选择。同时在赛程页每场比赛旁加「战术」快捷按钮作为备用入口。</div>
+    <p>改动点：</p>
+    <ol>
+      <li><code>MatchTacticPage</code> 增加 <code>useEffect</code>：无 matchId 时，从 schedule 中筛选 <code>myTeamId</code> 的下一场 <code>result === null</code> 比赛，自动填充。</li>
+      <li><code>SchedulePage</code> 每场比赛卡片增加「设置战术」按钮，调用 <code>setView({ kind: "matchTactic", matchId })</code>。</li>
+      <li><code>App.tsx</code> 的 <code>View</code> 类型 <code>matchTactic</code> 已支持 <code>matchId?</code>，无需改类型。</li>
+    </ol>
+  </section>
+
+  <!-- 问题 2 -->
+  <section id="issue2">
+    <h2><span class="num">6</span>问题 2：生涯面板/训练系统过浅 <span class="badge p1">P1</span></h2>
+    <h3>现象</h3>
+    <p>「生涯」页面本质是一个训练按钮列表，与「生涯弧线」的定位不符；训练系统深度不足。</p>
+    <h3>根因</h3>
+    <ul>
+      <li>6 种 Drill（投篮/控球/传球/防守/体能/综合）是<b>前端写死的 mock 常量</b>，适配度评级 A/B/C/D 也是前端硬编码。</li>
+      <li>点击「训练」调用 <code>postTrainPlayer(playerId)</code>，<b>后端完全忽略选了哪个 Drill</b>，只返回 OVR 前后变化。</li>
+      <li>无训练排期、无设施加成、无疲劳管理、无单项属性成长、无发展计划。</li>
+    </ul>
+    <h3>Basketball+ 风格训练系统设计</h3>
+    <table>
+      <thead><tr><th>维度</th><th>当前</th><th>目标</th></tr></thead>
+      <tbody>
+        <tr><td>训练类型</td><td>6 种前端 mock</td><td>后端定义，影响具体属性（投篮→3PT/中投，防守→STL/BLK）</td></tr>
+        <tr><td>效果展示</td><td>仅 OVR 变化</td><td>具体属性变化（+1 三分、+0.5 速度）+ 训练报告</td></tr>
+        <tr><td>疲劳系统</td><td>无</td><td>连续训练降效+受伤风险，需休息恢复</td></tr>
+        <tr><td>设施加成</td><td>无</td><td>训练馆等级影响训练效果倍率</td></tr>
+        <tr><td>发展计划</td><td>无</td><td>设定目标属性，系统推荐训练组合</td></tr>
+        <tr><td>生涯与训练分离</td><td>混在一页</td><td>「生涯」看弧线/里程碑，「训练」独立操作</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 问题 3 -->
+  <section id="issue3">
+    <h2><span class="num">7</span>问题 3：后端已实现但前端缺失 <span class="badge p2">P2</span></h2>
+    <table>
+      <thead><tr><th>后端模块</th><th>功能</th><th>缺失影响</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>analytics</b></td>
+          <td>DAU、留存曲线、事件埋点查询</td>
+          <td>运营无法查看用户活跃与留存数据</td>
+        </tr>
+        <tr>
+          <td><b>audit</b></td>
+          <td>比赛回放审计、异常检测、交易异常扫描</td>
+          <td>无法审计 sim 公平性、无法检测异常交易</td>
+        </tr>
+        <tr>
+          <td><b>simconfig</b></td>
+          <td>实时调整 sim 参数、回滚、重置</td>
+          <td>无法线上调参，改参数需发版</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note blue"><b>说明</b>：这三个模块偏 GM/运营后台，普通玩家无感知。建议做一个隐藏的管理后台页面（仅管理员可见）统一承载。</div>
+  </section>
+
+  <!-- 问题 4 -->
+  <section id="issue4">
+    <h2><span class="num">8</span>问题 4：策划方案中未实现的系统 <span class="badge p2">P2</span></h2>
+    <p>对照 <code>篮球经理世界_游戏策划方案.html</code> 24 个章节：</p>
+    <table>
+      <thead><tr><th>策划系统</th><th>状态</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>三身份系统（经理+球员化身+职业人）</td><td><span class="badge missing">未实现</span></td><td>目前只有经理身份</td></tr>
+        <tr><td>业余梯队赛制金字塔</td><td><span class="badge partial">部分</span></td><td>有青训学院产出新秀，但无梯队联赛</td></tr>
+        <tr><td>王朝与传承</td><td><span class="badge missing">未实现</span></td><td>无名人堂、无时代传承</td></tr>
+        <tr><td>社交与对抗层</td><td><span class="badge missing">未实现</span></td><td>无聊天、无好友、无联盟动态</td></tr>
+        <tr><td>球员家庭与人际关系</td><td><span class="badge missing">未实现</span></td><td>无家庭背景、人际关系网</td></tr>
+        <tr><td>半场调整 + Clutch 战术卡</td><td><span class="badge missing">未实现</span></td><td>只有全场单一战术预设</td></tr>
+        <tr><td>实时观战（结算时直播）</td><td><span class="badge partial">部分</span></td><td>只有赛后回放，无结算时实时推送</td></tr>
+        <tr><td>球馆系统</td><td><span class="badge partial">部分</span></td><td>有 ArenaPage 但功能浅</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 问题 5 -->
+  <section id="issue5">
+    <h2><span class="num">9</span>问题 5：多人在线 — 当前为单机 <span class="badge p1">P1</span></h2>
+    <h3>现状</h3>
+    <ul>
+      <li>注册时自动认领一支 AI 球队（<code>auth.service.ts</code> 查找 <code>userId: null</code> 的球队）。</li>
+      <li>「推进一日」是<b>手动按钮</b>，所有比赛瞬间批量模拟完。</li>
+      <li>无世界大厅/选服、无固定结算时钟、无玩家间交互。</li>
+    </ul>
+    <h3>策划要求</h3>
+    <div class="note"><b>策划 §2.2</b>：登录 → 操作 → <b>10:00 结算看比赛（可实时观战 PBP）</b> → 复盘 → <b>16:00 翻天</b>。</div>
+    <h3>改造方向</h3>
+    <ol>
+      <li><b>世界大厅</b>：新玩家选择加入哪个世界（而非自动分配）。</li>
+      <li><b>固定结算时钟</b>：后端 cron 在 10:00 触发赛季结算，替代手动「推进一日」。</li>
+      <li><b>实时直播</b>：结算时通过 SSE 推送正在进行的比赛 PBP，而非赛后回放。</li>
+      <li><b>社交层</b>：聊天、联盟动态、跨玩家交易确认、实时观战他人比赛。</li>
+    </ol>
+  </section>
+
+  <!-- 问题 6 -->
+  <section id="issue6">
+    <h2><span class="num">10</span>问题 6：比赛直播系统 <span class="badge p0">P0</span></h2>
+
+    <h3>6a. 时间流速过快</h3>
+    <p><b>根因</b>：后端推送间隔固定 300ms/事件（<code>match-stream.service.ts:31</code>），前端回放间隔 650ms/事件。每节约 125 事件 × 300ms ≈ <b>37 秒/节</b>，全场 2-3 分钟播完。</p>
+    <div class="note green"><b>方案</b>：根据 PBP 事件的 <code>clock</code> 字段，计算与上一事件的真实时间差，按比例（1:1 或可配置倍速）sleep 后推送。节间暂停加入自然停顿。</div>
+
+    <h3>6b. 直播内容过于简单</h3>
+    <ul>
+      <li>PBP 只有文字描述（<code>vividDesc</code>），无球场图、球员跑位、投篮热区。</li>
+      <li>Basketball+ 有 2D 球场动画、球员位置点、传球路线、投篮点标注、攻防跑位演示。</li>
+    </ul>
+
+    <h3>6c. 数据统计项不全</h3>
+    <p>当前 <code>LiveMatch.tsx</code> 统计：得分/篮板/助攻/抢断/盖帽/失误/两分/三分/罚球。</p>
+    <p><b>缺失</b>：上场时间、进攻篮板/防守篮板分开、+/-、效率值(PER)、真实命中率、失误比、回合数。</p>
+
+    <h3>6d. 场上 5 人不同步</h3>
+    <p><b>根因</b>：<code>LiveMatch.tsx:109-112</code> 硬编码 <code>team.players.slice(0, 5)</code> 作为场上五人。sim 引擎内部有完整换人逻辑（<code>substitute()</code>、<code>onCourtPlayers()</code>、轮换阵容、犯规离场），但 <b>PBP 事件未携带「当前场上球员」字段</b>，前端无法同步。</p>
+    <div class="note green"><b>方案</b>：在 sim 的每个 PBP 事件中加入 <code>onCourtHome</code> / <code>onCourtAway</code>（5 个球员 ID），前端据此实时更新场上五人。</div>
+  </section>
+
+  <!-- 优先级 -->
+  <section id="priority">
+    <h2><span class="num">11</span>优先级与实施建议</h2>
+    <table>
+      <thead><tr><th>优先级</th><th>问题</th><th>改动量</th><th>预期效果</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="badge p0">P0</span></td>
+          <td>单场战术页流程修复</td>
+          <td>小</td>
+          <td>玩家可正常设置单场战术</td>
+        </tr>
+        <tr>
+          <td><span class="badge p0">P0</span></td>
+          <td>直播场上 5 人同步</td>
+          <td>中</td>
+          <td>直播换人实时反映</td>
+        </tr>
+        <tr>
+          <td><span class="badge p0">P0</span></td>
+          <td>直播时间流速改为真实时钟</td>
+          <td>中</td>
+          <td>全场 48 分钟真实节奏</td>
+        </tr>
+        <tr>
+          <td><span class="badge p1">P1</span></td>
+          <td>训练系统深化（Basketball+ 风格）</td>
+          <td>大</td>
+          <td>有意义的球员养成</td>
+        </tr>
+        <tr>
+          <td><span class="badge p1">P1</span></td>
+          <td>直播统计项补全</td>
+          <td>中</td>
+          <td>数据维度完整</td>
+        </tr>
+        <tr>
+          <td><span class="badge p1">P1</span></td>
+          <td>多人在线（固定结算+世界大厅）</td>
+          <td>大</td>
+          <td>从单机变多人</td>
+        </tr>
+        <tr>
+          <td><span class="badge p2">P2</span></td>
+          <td>社交/王朝/三身份等策划系统</td>
+          <td>很大</td>
+          <td>策划完整度</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note"><b>建议</b>：先修 P0 三项（战术页流程、场上 5 人同步、直播流速），改动可控且立竿见影；再推进 P1 的训练系统和多人在线。</div>
+  </section>
+
+  <footer>
+    HWO 系统审计报告 · 生成于 2026-10-01 · 审计范围 packages/{api,web,shared}
+  </footer>
+
+</div>
+</body>
+</html>

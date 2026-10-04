@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>sim 平衡分布报告 · 10000 场</title>
+<style>
+  body{background:#0b0f17;color:#e6edf6;font-family:-apple-system,"PingFang SC",sans-serif;padding:30px;line-height:1.6}
+  h1{color:#22d3ee;border-bottom:1px solid #26324a;padding-bottom:12px}
+  .summary{background:#141b26;border:1px solid #26324a;border-radius:10px;padding:18px 22px;margin:18px 0}
+  .summary.pass{border-left:4px solid #4ade80}
+  table{width:100%;border-collapse:collapse;margin:18px 0;font-size:14px}
+  th,td{padding:10px 12px;border:1px solid #26324a;text-align:left}
+  th{background:#1b2433}
+  tr.pass{color:#4ade80}
+  tr.fail{color:#ef4444;background:rgba(239,68,68,.05)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:18px 0}
+  .card{background:#1b2433;border:1px solid #26324a;border-radius:10px;padding:14px 16px}
+  .card .v{font-size:24px;color:#22d3ee;font-weight:700}
+  .card .l{font-size:12px;color:#9fb0c7;margin-top:4px}
+  .histogram{background:#1b2433;border:1px solid #26324a;border-radius:10px;padding:18px;margin:18px 0}
+  .bar{display:flex;align-items:center;margin:4px 0;font-size:13px}
+  .bar .lbl{width:80px;color:#9fb0c7}
+  .bar .fill{background:linear-gradient(90deg,#4ade80,#22d3ee);height:18px;border-radius:3px;margin:0 8px}
+  .bar .cnt{color:#e6edf6;width:60px;text-align:right}
+  code{background:#0d131d;padding:2px 6px;border-radius:4px;color:#fbbf24}
+</style>
+</head>
+<body>
+<h1>sim 平衡分布报告 <span style="font-size:18px;color:#9fb0c7">M5 §6.1</span></h1>
+
+<div class="summary pass">
+  <strong>✓ 全部 9 项校验通过（10000 场，平均 0.73ms/场）</strong><br>
+  <span style="color:#9fb0c7">总场次: 10000 | 错误: 0 | 平均耗时: 0.73ms/场</span>
+</div>
+
+<div class="grid">
+  <div class="card"><div class="v">10000</div><div class="l">总场数</div></div>
+  <div class="card"><div class="v">0</div><div class="l">错误数</div></div>
+  <div class="card"><div class="v">0.73ms</div><div class="l">平均单场耗时</div></div>
+  <div class="card"><div class="v">3.12%</div><div class="l">加时赛比例</div></div>
+  <div class="card"><div class="v">67.2%</div><div class="l">主场胜率</div></div>
+  <div class="card"><div class="v">56.0</div><div class="l">平均得分（NBA 理想 56）</div></div>
+  <div class="card"><div class="v">51.2%</div><div class="l">平均投篮命中率（NBA 50%）</div></div>
+  <div class="card"><div class="v">18.5</div><div class="l">平均篮板（NBA 22）</div></div>
+</div>
+
+<h2>分布校验明细</h2>
+<table>
+  <thead><tr><th>指标</th><th>实际均值</th><th>理想值</th><th>合理区间</th><th>评估</th></tr></thead>
+  <tbody><tr class="pass"><td>✓ 球队得分</td><td>56.036</td><td>56</td><td>[40, 70]</td><td>落在合理区间 [40, 70]</td></tr><tr class="pass"><td>✓ 投篮命中率</td><td>0.512</td><td>0.5</td><td>[0.4, 0.6]</td><td>落在合理区间 [0.4, 0.6]</td></tr><tr class="pass"><td>✓ 三分命中率</td><td>0.430</td><td>0.38</td><td>[0.3, 0.5]</td><td>落在合理区间 [0.3, 0.5]</td></tr><tr class="pass"><td>✓ 罚球命中率</td><td>0.843</td><td>0.78</td><td>[0.65, 0.9]</td><td>落在合理区间 [0.65, 0.9]</td></tr><tr class="pass"><td>✓ 篮板数</td><td>18.490</td><td>22</td><td>[12, 35]</td><td>落在合理区间 [12, 35]</td></tr><tr class="pass"><td>✓ 助攻数</td><td>12.892</td><td>12</td><td>[6, 22]</td><td>落在合理区间 [6, 22]</td></tr><tr class="pass"><td>✓ 失误数</td><td>5.774</td><td>7</td><td>[3, 14]</td><td>落在合理区间 [3, 14]</td></tr><tr class="pass"><td>✓ 主场胜率</td><td>0.672</td><td>0.6</td><td>[0.5, 0.75]</td><td>落在合理区间 [0.5, 0.75]</td></tr><tr class="pass"><td>✓ 加时赛比例</td><td>0.031</td><td>0.06</td><td>[0.02, 0.15]</td><td>落在合理区间 [0.02, 0.15]</td></tr></tbody>
+</table>
+
+<h2>得分分布直方图</h2>
+<div class="histogram"><div class="bar"><span class="lbl">25-29</span><div class="fill" style="width:0.4%"></div><span class="cnt">16</span></div><div class="bar"><span class="lbl">30-34</span><div class="fill" style="width:2.6%"></div><span class="cnt">114</span></div><div class="bar"><span class="lbl">35-39</span><div class="fill" style="width:11.5%"></div><span class="cnt">496</span></div><div class="bar"><span class="lbl">40-44</span><div class="fill" style="width:32.5%"></div><span class="cnt">1405</span></div><div class="bar"><span class="lbl">45-49</span><div class="fill" style="width:64.3%"></div><span class="cnt">2776</span></div><div class="bar"><span class="lbl">50-54</span><div class="fill" style="width:90.8%"></div><span class="cnt">3924</span></div><div class="bar"><span class="lbl">55-59</span><div class="fill" style="width:100.0%"></div><span class="cnt">4320</span></div><div class="bar"><span class="lbl">60-64</span><div class="fill" style="width:78.5%"></div><span class="cnt">3393</span></div><div class="bar"><span class="lbl">65-69</span><div class="fill" style="width:49.5%"></div><span class="cnt">2139</span></div><div class="bar"><span class="lbl">70-74</span><div class="fill" style="width:22.8%"></div><span class="cnt">986</span></div><div class="bar"><span class="lbl">75-79</span><div class="fill" style="width:8.0%"></div><span class="cnt">344</span></div><div class="bar"><span class="lbl">80-84</span><div class="fill" style="width:1.5%"></div><span class="cnt">66</span></div><div class="bar"><span class="lbl">85-89</span><div class="fill" style="width:0.4%"></div><span class="cnt">19</span></div><div class="bar"><span class="lbl">90-94</span><div class="fill" style="width:0.0%"></div><span class="cnt">1</span></div><div class="bar"><span class="lbl">95-99</span><div class="fill" style="width:0.0%"></div><span class="cnt">1</span></div></div>
+
+<h2>性能预算</h2>
+<table>
+  <thead><tr><th>指标</th><th>实际</th><th>预算</th><th>状态</th></tr></thead>
+  <tbody>
+    <tr class="pass">
+      <td>单场 sim 平均耗时</td>
+      <td>0.73ms</td>
+      <td>≤ 50ms</td>
+      <td>✓ 通过</td>
+    </tr>
+    <tr class="pass">
+      <td>无 sim 错误</td>
+      <td>0</td>
+      <td>0</td>
+      <td>✓ 通过</td>
+    </tr>
+  </tbody>
+</table>
+
+<footer style="margin-top:40px;padding-top:14px;border-top:1px solid #26324a;color:#6b7c97;font-size:13px">
+  HWO sim 平衡批量回归 · 生成于 2026-09-30T13:06:36.259Z · 10000 场自动对局
+</footer>
+</body>
+</html>

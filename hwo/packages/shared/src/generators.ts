@@ -1,0 +1,202 @@
+/**
+ * 球员与球队生成器
+ * 生成有真实感的球员数据用于 MVP 演示
+ */
+
+import { Abilities, Player, Position, Team, Lineup } from "./types.js";
+import { buildProfile, deriveAbilities } from "./profile.js";
+
+// 姓氏池
+const SURNAMES = ["王", "李", "张", "刘", "陈", "杨", "黄", "赵", "周", "吴",
+  "徐", "孙", "马", "朱", "胡", "郭", "林", "何", "高", "罗",
+  "郑", "梁", "谢", "宋", "唐", "许", "韩", "冯", "邓", "曹"];
+
+// 名字池
+const GIVEN_NAMES = ["伟", "强", "磊", "洋", "勇", "军", "杰", "涛", "明", "超",
+  "鹏", "斌", "波", "宇", "辉", "凯", "晨", "昊", "翔", "旭",
+  "子轩", "浩然", "俊杰", "嘉伟", "思远", "梓涵", "雨泽", "博文", "启航", "天佑",
+  "一鸣", "子墨", "沐阳", "承恩", "彦霖", "锦程", "逸飞", "景行", "维康", "怀瑾"];
+
+function rngFromSeed(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function pick<T>(arr: readonly T[], rng: () => number): T {
+  return arr[Math.floor(rng() * arr.length)]!;
+}
+
+function randInt(min: number, max: number, rng: () => number): number {
+  return Math.floor(rng() * (max - min + 1)) + min;
+}
+
+/** 特质 ID */
+export type TraitId =
+  | "sharpshooter"      // 神射手：三分命中率 +5%
+  | "interior_monster"  // 禁区霸主：内线/低位命中率 +5%，篮板加成
+  | "iron_man"          // 铁人：疲劳累积 -30%
+  | "clutch_performer"  // 关键先生：关键时刻额外加成
+  | "playmaker";        // 组织核心：助攻概率提升
+
+/** 特质中文标签 */
+export const TRAIT_LABELS: Record<TraitId, string> = {
+  sharpshooter: "神射手",
+  interior_monster: "禁区霸主",
+  iron_man: "铁人",
+  clutch_performer: "关键先生",
+  playmaker: "组织核心",
+};
+
+/** 根据位置与档次生成特质（0-2 个，档次越高概率越大） */
+function generateTraits(position: Position, abilities: Abilities, rng: () => number): TraitId[] {
+  const traits: TraitId[] = [];
+  const roll = rng();
+
+  // 位置相关特质
+  if ((position === "SG" || position === "SF") && abilities.three >= 75 && roll > 0.4) {
+    traits.push("sharpshooter");
+  }
+  if ((position === "PF" || position === "C") && abilities.inside >= 75 && rng() > 0.4) {
+    traits.push("interior_monster");
+  }
+  if (position === "PG" && abilities.passing >= 80 && rng() > 0.5) {
+    traits.push("playmaker");
+  }
+  if (abilities.stamina >= 85 && rng() > 0.6) {
+    traits.push("iron_man");
+  }
+  if (abilities.clutch >= 85 && rng() > 0.5) {
+    traits.push("clutch_performer");
+  }
+
+  return traits;
+}
+
+const POSITIONS: Position[] = ["PG", "SG", "SF", "PF", "C"];
+
+function generatePlayer(
+  id: string,
+  position: Position,
+  tier: number,
+  seed: number,
+  age = 22,
+): Player {
+  const rng = rngFromSeed(seed);
+  const name = pick(SURNAMES, rng) + pick(GIVEN_NAMES, rng);
+  // P0-① 属性双层结构：roll 38 项档案 → 推导 17 项引擎能力
+  const profile = buildProfile(position, tier, age, seed);
+  const abilities = deriveAbilities(profile);
+  const traits = generateTraits(position, abilities, rng);
+  return {
+    id,
+    name,
+    position,
+    abilities,
+    profile,
+    condition: { fatigue: 0, foulTrouble: 0, hot: 0 },
+    traits,
+  };
+}
+
+const TEAM_NAMES = [
+  { id: "tigers", name: "东方猛虎", city: "上海" },
+  { id: "dragons", name: "南方飞龙", city: "广州" },
+  { id: "eagles", name: "北方雄鹰", city: "北京" },
+  { id: "wolves", name: "西部群狼", city: "成都" },
+  { id: "sharks", name: "海岸鲨鱼", city: "深圳" },
+  { id: "thunder", name: "高原雷霆", city: "昆明" },
+  { id: "phoenix", name: "江城凤凰", city: "武汉" },
+  { id: "lions", name: "钱塘雄狮", city: "杭州" },
+  { id: "bears", name: "津门棕熊", city: "天津" },
+  { id: "hawks", name: "山城猎鹰", city: "重庆" },
+  { id: "bulls", name: "金陵公牛", city: "南京" },
+  { id: "knights", name: "三晋骑士", city: "太原" },
+  { id: "storm", name: "冰城风暴", city: "哈尔滨" },
+  { id: "foxes", name: "鹭岛灵狐", city: "厦门" },
+  { id: "rhinos", name: "泉城犀牛", city: "济南" },
+  { id: "pirates", name: "椰城海盗", city: "海口" },
+];
+
+/**
+ * 生成一支球队：5 首发（tier 1-3 混合）+ 5 替补（tier 0-1）
+ */
+export function generateTeam(teamIndex: number, seed: number): Team {
+  const teamInfo = TEAM_NAMES[teamIndex % TEAM_NAMES.length]!;
+  const rng = rngFromSeed(seed + teamIndex * 1000);
+
+  const players: Player[] = [];
+  // 首发：随机一个位置为巨星(3)，可能一个全明星(2)，其余首发级(1)
+  const rng2 = rngFromSeed(seed + teamIndex * 9999);
+  const tiers = [1, 1, 1, 1, 1];
+  tiers[randInt(0, 4, rng2)] = 2;
+  if (rng2() > 0.5) tiers[randInt(0, 4, rng2)] = 3;
+
+  for (let i = 0; i < 5; i++) {
+    players.push(
+      generatePlayer(
+        `${teamInfo.id}-s${i + 1}`,
+        POSITIONS[i]!,
+        tiers[i]!,
+        seed + teamIndex * 1000 + i,
+      ),
+    );
+  }
+  // 替补：5 个角色球员/首发级
+  for (let i = 0; i < 5; i++) {
+    const tier = rng() > 0.6 ? 1 : 0;
+    players.push(
+      generatePlayer(
+        `${teamInfo.id}-b${i + 1}`,
+        POSITIONS[i]!,
+        tier,
+        seed + teamIndex * 1000 + 500 + i,
+      ),
+    );
+  }
+
+  const starters = players.slice(0, 5).map((p) => p.id);
+  const minutes: Record<string, number> = {};
+  // 首发每人 32-36 分钟，替补 12-18 分钟
+  players.slice(0, 5).forEach((p) => { minutes[p.id] = randInt(32, 36, rng); });
+  players.slice(5).forEach((p) => { minutes[p.id] = randInt(10, 18, rng); });
+
+  const lineup: Lineup = { starters, minutes };
+
+  return {
+    id: teamInfo.id,
+    name: `${teamInfo.city}${teamInfo.name}`,
+    players,
+    lineup,
+    tactic: {
+      teamId: teamInfo.id,
+      tendencyMod: { three: 0, midrange: 0, inside: 0, drive: 0, postup: 0 },
+      fastBreakChance: 0.15, pickRollChance: 0.3, defenseContest: 0.2,
+      helpDefChance: 0.4, stealChance: 0.08, possessionTimeDelta: 0,
+    },
+    chemistry: randInt(50, 70, rng),
+  };
+}
+
+/**
+ * 生成全部 16 支球队
+ */
+export function generateAllTeams(seed = 42): Team[] {
+  return TEAM_NAMES.map((_, i) => generateTeam(i, seed));
+}
+
+/**
+ * 能力值综合评分（用于排序展示）
+ */
+export function overallRating(abilities: Abilities): number {
+  const a = abilities;
+  const offense = (a.three + a.midrange + a.inside + a.drive + a.postup + a.ballHandle + a.passing) / 7;
+  const defense = (a.perimeterD + a.interiorD + a.steal + a.block) / 4;
+  const body = (a.speed + a.strength + a.jumping + a.stamina) / 4;
+  const mental = (a.iq + a.clutch) / 2;
+  return Math.round(offense * 0.4 + defense * 0.25 + body * 0.2 + mental * 0.15);
+}

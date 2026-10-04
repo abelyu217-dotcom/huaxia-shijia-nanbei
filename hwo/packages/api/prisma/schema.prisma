@@ -1,0 +1,1025 @@
+// HWO Prisma Schema
+// 参见：开发计划.html §2.1 数据持久化层
+// 复杂嵌套结构（abilities/lineup/tactic/pbp/box_score）使用 Json 存储，
+// 与 @hwo/shared 的 TypeScript 类型一一对应，保证前后端类型共享。
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── 用户 ───
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  nickname     String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // M4: 双货币
+  coins    Int  @default(50000) // Coins（游戏内产出）
+  credits  Int  @default(0)     // Credits（付费购买）
+
+  teams Team[]
+
+  // M4: VIP 订阅
+  vipSubscription VipSubscription?
+  // M4: 外观拥有
+  userCosmetics    UserCosmetic[]
+  // M4: 支付订单
+  paymentOrders   PaymentOrder[]
+  // M4: 推送订阅
+  pushSubscriptions PushSubscription[]
+  // M5 §6.3: 行为埋点 + 日活快照
+  analyticsEvents    AnalyticsEvent[]
+  dailyActiveSnapshots DailyActiveSnapshot[]
+
+  // P3-1: 三身份
+  avatar       Avatar?
+  professional Professional?
+}
+
+// ─── 世界 ───
+// M2：多玩家世界容器，一个世界包含 16 支球队（真实玩家 + AI 填充），
+// 分 L1/L2 两级联赛。世界内经济封闭，跨世界不可交易。
+model World {
+  id          String       @id @default(cuid())
+  name        String
+  /** 地区/国家标识，用于国际联赛分组（如 "CN", "US", "EU"） */
+  region      String       @default("CN")
+  seasonId    String
+  season      Season       @relation(fields: [seasonId], references: [id])
+  teams       Team[]
+  leagues     League[]
+  tradeOffers TradeOffer[]
+
+  createdAt DateTime @default(now())
+}
+
+// ─── 联赛 ───
+model League {
+  id        String     @id @default(cuid())
+  name      String
+  level     Int        @default(1) // 1 = L1 顶级联赛 | 2 = L2 次级联赛
+  /** 联赛类型：domestic=国内联赛（隶属于某个 world），international=国际联赛（跨 world） */
+  type      String     @default("domestic")
+  worldId   String?
+  world     World?     @relation(fields: [worldId], references: [id])
+  seasonId  String
+  season    Season     @relation(fields: [seasonId], references: [id])
+  teams     Team[]
+  leagueTeams LeagueTeam[]
+  matches   Match[]
+  standings Standing[]
+
+  createdAt DateTime @default(now())
+}
+
+// ─── 联赛-球队 多对多关联 ───
+// 国内联赛通过 Team.leagueId 直接关联（保持兼容）；
+// 国际联赛通过此表关联（一支球队可同时参加国内+国际联赛）
+model LeagueTeam {
+  leagueId String
+  teamId   String
+  league   League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  team     Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@id([leagueId, teamId])
+  @@index([teamId])
+}
+
+// ─── 赛季 ───
+model Season {
+  id         String   @id @default(cuid())
+  year       Int
+  name       String // 如 "2026-2027"
+  status     String   @default("regular") // regular | playoff | offseason
+  currentDay Int      @default(1)
+  leagues    League[]
+  matches    Match[]
+  worlds     World[]
+  draftPicks DraftPick[]
+  // v0.6: 联盟级事件流（公告/媒体新闻/交易市场阶段）
+  announcements LeagueAnnouncement[]
+  mediaNews     MediaNews[]
+  transferMarketPhase TransferMarketPhase?
+  createdAt  DateTime @default(now())
+}
+
+// ─── 球队 ───
+model Team {
+  id        String  @id
+  name      String
+  city      String?
+  chemistry Int     @default(60)
+  userId    String?
+  user      User?   @relation(fields: [userId], references: [id])
+
+  worldId  String?
+  world    World?  @relation(fields: [worldId], references: [id])
+  leagueId String?
+  league   League? @relation(fields: [leagueId], references: [id])
+
+  players     Player[]
+  lineup      Lineup?
+  tactic      Tactic?
+  leagueTeams LeagueTeam[]
+  // 队长（#20）：手动指定，每队 1 人
+  captainId   String?
+  homeMatches Match[]    @relation("HomeTeam")
+  awayMatches Match[]    @relation("AwayTeam")
+  standings   Standing[]
+
+  // 作为交易参与方
+  tradeOffersAsOfferor TradeOffer[] @relation("OfferorTeam")
+  tradeOffersAsOfferee TradeOffer[] @relation("OffereeTeam")
+
+  // M3
+  academy     Academy?
+  draftPicks  DraftPick[]  @relation("DraftPicks")
+  contracts   Contract[]   @relation("Contracts")
+
+  // P2-3: 球馆设施（训练馆 + 主场馆）
+  facility    Facility?
+
+  // P3-3: 王朝记录
+  dynastyRecords DynastyRecord[]
+
+  // v0.6: 经济/董事会/公关/球迷/训练/资讯/职员系统
+  cash            TeamCash?
+  ledgers         CashLedger[]
+  sponsors        Sponsor[]
+  boardDirectors  BoardDirector[]
+  seasonGoals     SeasonGoal[]
+  boardProposals  BoardProposal[]
+  teamMessages    TeamMessage[]
+  fanCenter       FanCenter?
+  fanEvents       FanEvent[]
+  trainingPlan    TrainingPlan?
+  trainingLogs    TrainingLog[]
+  teamNews        TeamNews[]
+  pendingSignings PendingSigning[]
+
+  // 季后赛
+  playoffSeriesAsA PlayoffSeries[] @relation("PlayoffTeamA")
+  playoffSeriesAsB PlayoffSeries[] @relation("PlayoffTeamB")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── P2-3: 球馆设施 ───
+// 训练馆等级影响训练成长倍率；主场馆等级影响比赛日营收与主场优势
+model Facility {
+  id             String   @id @default(cuid())
+  teamId         String   @unique
+  team           Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  trainingHallLv Int     @default(1) // 训练馆等级 1-5
+  arenaLv        Int     @default(1) // 主场馆等级 1-5
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// ─── 球员 ───
+model Player {
+  id        String  @id
+  teamId    String? // 可为空（自由球员）
+  team      Team?   @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  name      String
+  position  String // PG | SG | SF | PF | C
+  abilities Json // Abilities 接口（17 项能力值）
+  profile   Json? // P0-① PlayerProfile 接口（38 项档案，唯一数据源；abilities 由其推导）
+  traits    Json // string[] 特质 ID 列表
+  age       Int    @default(25)
+  salary    Int    @default(0)
+
+  // M3: 生涯弧线
+  potential Int?     @default(75) // 潜力上限（0-99）
+  trainExp  Int      @default(0)  // 训练经验值（累积）
+  retired   Boolean  @default(false) // 是否已退役
+  retireSeason Int?  // 退役赛季年份
+
+  // 状态体系（#13）：疲劳累积 + 状态等级
+  fatigue   Int      @default(0)  // 疲劳值 0-100，随出场时间累积，休息日恢复
+  status    String   @default("good") // peak | good | tired | exhausted
+
+  // M3: 关系
+  contract  Contract?
+  draftPick DraftPick?
+
+  // P3-1: 化身关联
+  avatarOf  Avatar?
+
+  // P3-3: 王朝与传承
+  hallOfFameEntry HallOfFameEntry?
+  legaciesAsFrom  Legacy[] @relation("LegacyFrom")
+
+  // P3-4: 人际关系
+  relationshipsAsSource PlayerRelationship[] @relation("RelSource")
+  relationshipsAsTarget PlayerRelationship[] @relation("RelTarget")
+  family                PlayerFamily?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([teamId])
+  @@index([retired])
+}
+
+// ─── 阵容（首发 + 上场时间） ───
+model Lineup {
+  id        String   @id @default(cuid())
+  teamId    String   @unique
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  starters  Json // string[] 5 个 player id
+  minutes   Json // Record<string, number> 目标出场时间
+  updatedAt DateTime @updatedAt
+}
+
+// ─── 战术 ───
+model Tactic {
+  id        String   @id @default(cuid())
+  teamId    String   @unique
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  presetId  String // 战术预设 ID（对应 tactics.ts 的预设库）
+  modSet    Json // TacticModSet 完整参数
+  updatedAt DateTime @updatedAt
+}
+
+// ─── 战术使用率统计（M4 #8） ───
+model TacticUsage {
+  id            String  @id @default(cuid())
+  presetId      String  @unique // 战术预设 ID
+  gamesPlayed   Int     @default(0) // 使用该战术的比赛场数
+  wins          Int     @default(0) // 胜场
+  losses        Int     @default(0) // 负场
+  pointsFor     Int     @default(0) // 总得分
+  pointsAgainst Int     @default(0) // 总失分
+  updatedAt     DateTime @updatedAt
+}
+
+// ─── 比赛 ───
+model Match {
+  id       String  @id @default(cuid())
+  seasonId String
+  season   Season  @relation(fields: [seasonId], references: [id])
+  leagueId String?
+  league   League? @relation(fields: [leagueId], references: [id])
+
+  homeTeamId String
+  homeTeam   Team   @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeamId String
+  awayTeam   Team   @relation("AwayTeam", fields: [awayTeamId], references: [id])
+
+  day         Int // 赛季第几日
+  scheduledAt DateTime?
+  status      String    @default("scheduled") // scheduled | settled
+  seed        Int? // sim 随机种子
+  phase       String    @default("regular") // regular | playoff
+
+  result MatchResult?
+
+  playoffSeriesId String?
+  playoffSeries   PlayoffSeries? @relation(fields: [playoffSeriesId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime  @default(now())
+  settledAt DateTime?
+
+  @@index([seasonId, day])
+  @@index([status])
+  @@index([phase])
+}
+
+// ─── 季后赛系列赛（对阵树节点） ───
+// 每一轮的每个对阵是一条 PlayoffSeries，记录双方种子、系列赛胜场、胜者晋级的下一轮位置。
+// bestOf=5 表示五局三胜，先达到 ceil(bestOf/2) 胜的一方晋级。
+model PlayoffSeries {
+  id        String  @id @default(cuid())
+  seasonId  String
+  leagueId  String
+  round     Int     // 轮次：1=首轮，数字越大越靠后（决赛轮次最大）
+  slot      Int     // 该轮中的位置（1-based）
+  bestOf    Int     @default(5) // 系列赛局数：5=五局三胜，7=七局四胜
+  teamAId   String? // 高种子方（A）
+  teamA     Team?   @relation("PlayoffTeamA", fields: [teamAId], references: [id], onDelete: SetNull)
+  teamBId   String? // 低种子方（B）
+  teamB     Team?   @relation("PlayoffTeamB", fields: [teamBId], references: [id], onDelete: SetNull)
+  seedA     Int?
+  seedB     Int?
+  winsA     Int     @default(0)
+  winsB     Int     @default(0)
+  status    String  @default("pending") // pending | in_progress | completed
+  winnerId  String?
+  nextRound Int?    // 胜者晋级的下一轮轮次
+  nextSlot  Int?    // 胜者晋级的下一轮位置（1-based）
+  createdAt DateTime @default(now())
+
+  matches Match[]
+
+  @@index([seasonId, leagueId])
+  @@unique([seasonId, leagueId, round, slot])
+}
+
+// ─── 比赛结果（PBP + Box Score） ───
+model MatchResult {
+  id      String @id @default(cuid())
+  matchId String @unique
+  match   Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  homeScore Int
+  awayScore Int
+  winnerId  String
+  loserId   String
+  isClutch  Boolean @default(false)
+
+  pbp           Json // PbpEvent[] 逐回合事件
+  boxScore      Json // BoxScore 技术统计
+  quarterScores Json // { home: number[], away: number[] }
+  rngLog        Json? // RngLogEntry[] 审计日志（可选，防作弊）
+  seed          Int
+
+  createdAt DateTime @default(now())
+}
+
+// ─── 积分榜 ───
+model Standing {
+  id       String @id @default(cuid())
+  leagueId String
+  league   League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  teamId   String
+  team     Team   @relation(fields: [teamId], references: [id])
+  seasonId String
+
+  wins          Int     @default(0)
+  losses        Int     @default(0)
+  pointsFor     Int     @default(0) // 总得分
+  pointsAgainst Int     @default(0) // 总失分
+  streak        String? // 如 "W3" 或 "L2"
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([leagueId, teamId])
+}
+
+// ─── 交易报价 ───
+// M2：跨经理交易系统。状态机：pending → accepted | rejected | countered | expired
+// 报价筹码：球员 + 选秀权 + 现金；薪资匹配规则：双方薪资差 ≤ 25%
+model TradeOffer {
+  id      String   @id @default(cuid())
+  worldId String?
+  world   World?   @relation(fields: [worldId], references: [id])
+
+  offerorTeamId String
+  offerorTeam   Team   @relation("OfferorTeam", fields: [offerorTeamId], references: [id])
+  offereeTeamId String
+  offereeTeam   Team   @relation("OffereeTeam", fields: [offereeTeamId], references: [id])
+
+  // 筹码：球员 ID 列表 + 现金
+  offerorPlayers Json // string[] 报价方送出的球员
+  offereePlayers Json // string[] 报价方索要的球员
+  offerorCash    Int  @default(0) // 报价方送出的现金
+  offereeCash    Int  @default(0) // 报价方索要的现金
+
+  status    String   @default("pending") // pending | accepted | rejected | countered | expired
+  round     Int      @default(1) // 第几轮（最多 3 轮还价）
+  expiresAt DateTime // 报价过期时间（创建后 24h）
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([worldId, status])
+  @@index([offerorTeamId, status])
+  @@index([offereeTeamId, status])
+}
+
+// ─── M3: 青训学院 ───
+model Academy {
+  id          String  @id @default(cuid())
+  teamId      String  @unique
+  team        Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  level       Int     @default(1)    // 学院等级 1-5
+  investment  Int     @default(0)    // 累计投入资金
+  lastProdYear Int?   // 上次产出年份
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─── M3: 选秀 ───
+model DraftPick {
+  id        String  @id @default(cuid())
+  seasonId  String
+  season    Season  @relation(fields: [seasonId], references: [id])
+  worldId   String?
+  round     Int     // 第几轮（1 或 2）
+  pickNum   Int     // 该轮顺位（1-16）
+  teamId    String? // 拥有此顺位的球队
+  team      Team?   @relation("DraftPicks", fields: [teamId], references: [id])
+  playerId  String? @unique // 选中的球员
+  player    Player? @relation(fields: [playerId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@unique([seasonId, round, pickNum])
+  @@index([seasonId])
+  @@index([teamId])
+}
+
+// ─── M3: 球员合同 ───
+model Contract {
+  id          String   @id @default(cuid())
+  playerId    String   @unique
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  teamId      String
+  team        Team     @relation("Contracts", fields: [teamId], references: [id])
+  yearsTotal  Int      // 合同总年数
+  yearsRemain Int      // 剩余年数
+  salaryPerYear Int    // 年薪
+  playerOption Boolean @default(false) // 球员选项（最后一年可提前跳出）
+  teamOption   Boolean @default(false) // 球队选项
+  noTrade     Boolean  @default(false) // 交易否决权
+  status      String   @default("active") // active | expired | waived
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([teamId, status])
+}
+
+// ─── M4: VIP 订阅 ───
+model VipSubscription {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // monthly | seasonal
+  status    String   @default("active") // active | expired
+  startedAt  DateTime @default(now())
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// ─── M4: 外观商店 ───
+model CosmeticItem {
+  id          String   @id @default(cuid())
+  type        String   // jersey | arena_skin | avatar_frame
+  name        String
+  description String?
+  price       Int      // 价格（Credits）
+  rarity      String   @default("common") // common | rare | epic | legendary
+  data        Json     // 外观数据（颜色/图案等）
+  userCosmetics UserCosmetic[]
+
+  createdAt   DateTime @default(now())
+}
+
+model UserCosmetic {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId    String
+  item      CosmeticItem @relation(fields: [itemId], references: [id])
+  equipped  Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, itemId])
+}
+
+// ─── M4: 支付订单 ───
+model PaymentOrder {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount        Int      // 金额（分）
+  credits       Int      // 购买的 Credits 数量
+  provider      String   // stripe | alipay | wechat
+  providerOrderId String? // 支付商订单 ID
+  status        String   @default("pending") // pending | paid | failed | refunded
+  paidAt        DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId, status])
+}
+
+// ─── M4: Web Push 推送订阅 ───
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique // 推送服务端点 URL
+  keys      Json     // { p256dh, auth }
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ─── M5 §6.3: 行为埋点（Analytics Events） ───
+// 设计：所有关键用户行为 + 系统事件统一记入此表，用于留存漏斗、转化分析、看板。
+// 注意：高频事件（如 PBP）不入此表，仅记录用户主动行为 + 关键节点。
+model AnalyticsEvent {
+  id         String   @id @default(cuid())
+  userId     String?  // 可空（系统事件无 user）
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /** 事件类型（如 login / register / lineup_edit / sim_match / season_advance / payment_paid / vip_subscribe） */
+  event      String
+  /** 事件分类（auth / game / commerce / retention / system） */
+  category   String
+  /** 事件附加属性（JSON，如 { teamId, worldId, amount }） */
+  properties Json?
+  /** 触发时间（UTC） */
+  occurredAt DateTime @default(now())
+
+  @@index([userId, occurredAt])
+  @@index([event, occurredAt])
+  @@index([category, occurredAt])
+}
+
+// ─── M5 §6.3: 用户日活快照（用于快速计算 DAU/留存，无需扫全表） ───
+// 每个 (userId, date) 唯一一行，记录当日是否活跃 + 当日付费状态。
+model DailyActiveSnapshot {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /** 日期（仅日期，不含时间，UTC） */
+  date        DateTime
+  /** 当日是否付费（升级 Credits / 订阅 VIP / 购买外观） */
+  paid        Boolean  @default(false)
+  /** 当日付费金额（分） */
+  paidAmount  Int      @default(0)
+  /** 当日游戏内行为次数（sim_match / lineup_edit 等） */
+  actions     Int      @default(0)
+
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([date])
+}
+
+// ─── P3-1: 三身份系统 ───
+// 经理身份：Team.userId 已隐式表示（每个 User 拥有一支球队）
+// 球员化身 Avatar：玩家自创的一名球员，进入世界球员池
+// 职业人 Professional：玩家选择的 11 职之一，可被雇佣
+
+model Avatar {
+  id        String  @id @default(cuid())
+  userId    String  @unique
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  playerId  String  @unique
+  player    Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  /** 化身状态：home_team | floated | on_other_team | retired */
+  status    String  @default("home_team")
+  /** 控制模式：owner_controlled | ai_controlled */
+  controlMode String @default("owner_controlled")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Professional {
+  id        String  @id @default(cuid())
+  userId    String  @unique
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /** 职业线：tech | biz | media | gov */
+  line      String
+  /** 当前职业：scout | asst_coach | head_coach | trainer | agent | merchant | arena_ops | reporter | caster | arbiter | union_rep */
+  job       String
+  /** 职业等级 1-10 */
+  level     Int     @default(1)
+  /** 职业声望 */
+  proReputation Int @default(0)
+  /** 经验值 */
+  experience Int @default(0)
+  /** 技能点（Json: { branch1: n, branch2: n, branch3: n }） */
+  skillPoints Json @default("{}")
+  /** 雇佣状态：unemployed | hired_by_manager | preset_npc */
+  employmentStatus String @default("unemployed")
+  /** 雇主球队 ID（hired_by_manager 时） */
+  employerTeamId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([job])
+}
+
+// ─── P3-3: 王朝与传承系统 ───
+
+model DynastyRecord {
+  id        String  @id @default(cuid())
+  teamId    String
+  team      Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  /** 王朝等级：legendary | golden | silver | rising */
+  tier      String
+  startSeason Int
+  endSeason Int?
+  titles    Int     @default(0)
+  runnerUps Int     @default(0)
+  /** 标志性时代标签（Json: string[]） */
+  signatureTags Json @default("[]")
+  legacyScore Float  @default(0)
+  active    Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([teamId])
+  @@index([tier])
+}
+
+model HallOfFameEntry {
+  id        String  @id @default(cuid())
+  playerId  String  @unique
+  player    Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  /** 层级：legendary | hall | honor */
+  tier      String
+  legacyScore Float
+  titles    Int
+  inductedSeason Int
+  /** 入选时叙事文本 */
+  narrative String?
+  createdAt DateTime @default(now())
+
+  @@index([tier])
+  @@index([legacyScore])
+}
+
+model EraTag {
+  id        String  @id @default(cuid())
+  /** 标签类型：player | team | season */
+  type      String
+  /** 引用 ID（playerId / teamId / seasonId） */
+  refId     String
+  label     String
+  season    Int
+  weight    Float
+  narrative String?
+  createdAt DateTime @default(now())
+
+  @@index([type, refId])
+  @@index([season])
+}
+
+model Legacy {
+  id        String  @id @default(cuid())
+  fromPlayerId String
+  fromPlayer   Player @relation("LegacyFrom", fields: [fromPlayerId], references: [id], onDelete: Cascade)
+  /** 传承类型：bloodline | mentorship | spirit | record */
+  type      String
+  /** 传承目标 ID（球员/球队） */
+  toRefId   String
+  /** 传承效果（Json: { mentalFortitude?: number, peakBonus?: number, traitAwakenBonus?: {} }） */
+  effects   Json @default("{}")
+  season    Int
+  createdAt DateTime @default(now())
+
+  @@index([fromPlayerId])
+  @@index([toRefId])
+}
+
+// ─── P3-4: 球员家庭与人际关系系统 ───
+
+model PlayerRelationship {
+  id        String  @id @default(cuid())
+  sourceId  String
+  source    Player  @relation("RelSource", fields: [sourceId], references: [id], onDelete: Cascade)
+  targetId  String
+  target    Player  @relation("RelTarget", fields: [targetId], references: [id], onDelete: Cascade)
+  /** 关系类型：family | teammate | mentor | rival | friend | external */
+  type      String
+  /** 羁绊值 0-100 */
+  bond      Int     @default(50)
+  /** 关系描述/备注 */
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sourceId, targetId, type])
+  @@index([sourceId])
+  @@index([targetId])
+}
+
+model PlayerFamily {
+  id        String  @id @default(cuid())
+  playerId  String  @unique
+  player    Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  /** 家庭背景：sports_family | normal | single_parent | overseas | sports_school */
+  background String @default("normal")
+  /** 家庭成员（Json: [{ name, relation, age }]） */
+  members   Json @default("[]")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── The Fog：球探报告（信息迷雾系统） ───
+// 每 (teamId, playerId) 唯一，记录某经理对某球员的情报累积。
+// 参见 球探系统设计.html §3-§5
+model ScoutReport {
+  id            String   @id @default(cuid())
+  /** 球探方球队 ID */
+  teamId        String
+  /** 被探查球员 ID */
+  playerId      String
+  /** 各能力的 (est, range) 估值，未探查的能力不在此 map 中 */
+  abilityFog    Json     @default("{}")
+  /** Peak 潜力估值 (est, range)，仅潜力探查产出 */
+  peakFog       Json?
+  /** 已揭示的特质线索 ID 列表 */
+  traitHints    Json     @default("[]")
+  /** 最近一次探查时间（用于 7 日内收益递减判断） */
+  lastScoutedAt DateTime @default(now())
+  /** 累计探查次数（收益递减 ×0.7^count） */
+  scoutCount    Int      @default(0)
+  /** 球探等级（1-5），影响收窄幅度 */
+  scoutLevel    Int      @default(3)
+  /** 累计消耗预算 */
+  totalCost     Int      @default(0)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([teamId, playerId])
+  @@index([teamId])
+  @@index([playerId])
+}
+
+// ═══════════════════════════════════════════════════════════
+// v0.6 系统调整：经济 / 董事会 / 公关 / 球迷 / 训练 / 资讯
+// ═══════════════════════════════════════════════════════════
+
+// ─── 财务：球队现金账户 ───
+model TeamCash {
+  id            String   @id @default(cuid())
+  teamId        String   @unique
+  team          Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  balance       Int      @default(5000000)  // 当前余额（元）
+  sponsorTier   String   @default("C")       // D<C<B<A<S
+  ticketPrice   Int      @default(50)        // 票价基准
+  debt          Int      @default(0)          // 负债
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ─── 财务：现金流水（真实收支依据） ───
+model CashLedger {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  seasonId  String
+  day       Int
+  category  String   // sponsor | ticket | broadcast | salary | staff | facility | academy | transfer | fine | other
+  subType   String   // main_sponsor / kit_sponsor / home_game / player_salary ...
+  amount    Int      // 正=收入 负=支出
+  refId     String?  // 关联实体 ID
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([teamId, seasonId, day])
+  @@index([teamId, category])
+}
+
+// ─── 董事会：赞助商 ───
+model Sponsor {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  type      String   // main | kit | arena | broadcast
+  name      String
+  tier      String   // D | C | B | A | S
+  basePerSeason Int
+  bonusPerWin   Int
+  titleBonus    Int
+  satisfaction  Int   @default(60)  // 0-100
+  expectedWinRate Float @default(0.5)
+  expectedPlayoff Boolean @default(true)
+  contractSeasons Int @default(2)
+  startSeason Int
+  endSeason   Int?
+  createdAt DateTime @default(now())
+
+  @@index([teamId])
+}
+
+// ─── 董事会：董事 ───
+model BoardDirector {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  name      String
+  role      String   // chair | ceo | sports_director | finance_director | investor
+  loyalty   Int      @default(60)  // 0-100
+  createdAt DateTime @default(now())
+}
+
+// ─── 董事会：赛季目标 ───
+model SeasonGoal {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  seasonId  String
+  season    Int
+  expectedWinRate      Float
+  expectedPlayoff      Boolean
+  expectedChampionship Boolean
+  expectedRank         Int?
+  basisNote  String   // 制定依据（自动生成）
+  achievedNote String?
+  createdAt DateTime @default(now())
+
+  @@unique([teamId, seasonId])
+}
+
+// ─── 董事会：提案 ───
+model BoardProposal {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  seasonId  String
+  day       Int
+  type      String   // budget_request | facility_upgrade | fire_manager | sign_sponsor | academy_invest
+  payload   Json
+  reason    String   // 触发依据（自动生成）
+  status    String   @default("pending") // pending | approved | rejected | expired
+  votes     Json     @default("[]")
+  createdAt DateTime @default(now())
+
+  @@index([teamId, status])
+}
+
+// ─── 公关：联盟公告 ───
+model LeagueAnnouncement {
+  id        String   @id @default(cuid())
+  leagueId  String?
+  worldId   String?
+  seasonId  String
+  season    Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  day       Int
+  category  String   // trade | injury | suspension | milestone | rule_change | schedule_change
+  title     String
+  content   String
+  refId     String?
+  createdAt DateTime @default(now())
+
+  @@index([seasonId, day])
+}
+
+// ─── 公关：球队讯息 ───
+model TeamMessage {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  seasonId  String
+  day       Int
+  channel   String   // board | sponsor | player | staff | scout | league
+  type      String   // board_complaint / sponsor_praise / player_request ...
+  title     String
+  content   String
+  refId     String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([teamId, read])
+}
+
+// ─── 公关：媒体中心新闻 ───
+model MediaNews {
+  id        String   @id @default(cuid())
+  worldId   String?
+  seasonId  String
+  season    Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  day       Int
+  source    String   // espn | nba_tv | local_paper | insider
+  category  String   // trade | game | injury | rumor | front_office | fan
+  title     String
+  content   String
+  refId     String?
+  tags      Json     @default("[]")
+  createdAt DateTime @default(now())
+
+  @@index([seasonId, day])
+}
+
+// ─── 运营：球迷中心 ───
+model FanCenter {
+  id           String   @id @default(cuid())
+  teamId       String   @unique
+  team         Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  fanCount    Int      @default(1000)
+  morale      Int      @default(60)   // 0-100
+  loyalty     Int      @default(60)   // 0-100
+  seasonTicketsSold Int @default(0)
+  merchandiseRevenue Int @default(0)
+  updatedAt   DateTime @updatedAt
+}
+
+// ─── 运营：球迷事件流 ───
+model FanEvent {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  seasonId  String
+  day       Int
+  type      String   // win | loss | trade | signing | firing | title | scandal
+  impact    Int      // 球迷情绪影响值（+/-）
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([teamId, seasonId, day])
+}
+
+// ─── 训练：训练计划 ───
+model TrainingPlan {
+  id        String   @id @default(cuid())
+  teamId    String   @unique
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  focusByPosition Json @default("{}") // { PG: "passing", SG: "three", SF: "midrange", PF: "rebounding", C: "postUp" }
+  teamFocus Json @default("{}")       // 整队能力成长权重
+  updatedAt DateTime @updatedAt
+}
+
+// ─── 训练：训练日志（每日结果，可追溯） ───
+model TrainingLog {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  seasonId  String
+  day       Int
+  playerId  String
+  abilityKey String
+  beforeVal  Int
+  afterVal   Int
+  gain       Float
+  source     String   // team_training | position_training | individual
+  createdAt DateTime @default(now())
+
+  @@index([teamId, seasonId, day])
+}
+
+// ─── 球探：探查任务（支持球员 + 各类职员） ───
+model ScoutMission {
+  id        String   @id @default(cuid())
+  teamId    String
+  scoutId   String   // Professional id
+  targetType String   // player | head_coach | asst_coach | trainer | agent | merchant | reporter | caster | arbiter | union_rep
+  targetRef String?
+  region    String?
+  status    String   @default("pending") // pending | completed | expired
+  report    Json?
+  accuracy  Int?
+  createdAt DateTime @default(now())
+  completedAt DateTime?
+
+  @@index([teamId, status])
+}
+
+// ─── 人才市场：阶段切换 ───
+model TransferMarketPhase {
+  id        String   @id @default(cuid())
+  seasonId  String   @unique
+  season    Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  phase     String   @default("closed") // closed | free_agency | restricted
+  freeAgencyEndDay Int?
+  restrictedStartDay Int?
+  restrictedEndDay   Int?
+  updatedAt DateTime @updatedAt
+}
+
+// ─── 人才市场：受限市场期间"待加入"签约（赛季末统一入队） ───
+model PendingSigning {
+  id          String   @id @default(cuid())
+  teamId      String
+  team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  seasonId    String
+  day         Int
+  targetType  String   // player | head_coach | asst_coach | trainer | scout | agent | ...
+  targetRef   String   // Player.id 或 Professional.id
+  targetName  String
+  cost        Int
+  status      String   @default("pending") // pending | joined | cancelled
+  createdAt   DateTime @default(now())
+
+  @@index([teamId, status])
+  @@index([seasonId, status])
+}
+
+// ─── 概览：球队资讯流 ───
+model TeamNews {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  seasonId  String
+  day       Int
+  category  String   // match | training | injury | transfer | contract | finance | board | fan | academy | facility
+  title     String
+  content   String
+  refId     String?
+  createdAt DateTime @default(now())
+
+  @@index([teamId, seasonId, day])
+}

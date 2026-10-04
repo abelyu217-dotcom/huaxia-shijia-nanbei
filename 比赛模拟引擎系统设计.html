@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>比赛模拟引擎系统设计 · Hoops World Online</title>
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#141b26; --panel2:#1b2433; --line:#26324a;
+    --ink:#e6edf6; --ink2:#9fb0c7; --ink3:#6b7c97;
+    --accent:#ff6b35; --accent2:#4ade80; --gold:#fbbf24; --red:#ef4444; --blue:#60a5fa; --purple:#a78bfa; --cyan:#22d3ee;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:linear-gradient(180deg,#070a10 0%,#0b0f17 100%);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 22px 120px}
+  .hero{
+    position:relative;border:1px solid var(--line);border-radius:18px;padding:42px 34px 30px;
+    background:
+      radial-gradient(800px 280px at 20% -10%, rgba(255,107,53,.15), transparent 60%),
+      radial-gradient(700px 260px at 90% 0%, rgba(34,211,238,.10), transparent 60%),
+      linear-gradient(180deg,#151d2c,#0e1420);
+    overflow:hidden;margin-bottom:30px;
+  }
+  .hero .tag{display:inline-block;font-size:12px;letter-spacing:.16em;color:var(--accent);border:1px solid rgba(255,107,53,.4);padding:4px 10px;border-radius:999px;margin-bottom:18px;text-transform:uppercase}
+  .hero h1{margin:0 0 8px;font-size:32px;letter-spacing:.5px;font-weight:800}
+  .hero h1 .en{color:var(--ink2);font-weight:600;font-size:18px;margin-left:10px}
+  .hero .pitch{color:var(--ink2);font-size:15px;max-width:820px;margin:10px 0 22px}
+  .hero .meta{display:flex;flex-wrap:wrap;gap:10px}
+  .hero .chip{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--ink2)}
+  .hero .chip b{color:var(--ink);font-weight:600}
+  .hero .court{position:absolute;right:-50px;bottom:-50px;width:180px;height:180px;border:2px solid rgba(255,107,53,.12);border-radius:50%;pointer-events:none}
+  .hero .court::before{content:"";position:absolute;inset:26px;border:2px solid rgba(255,107,53,.08);border-radius:50%}
+
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 28px;margin-bottom:22px}
+  .toc h3{margin:0 0 14px;font-size:14px;color:var(--ink2);letter-spacing:.1em;text-transform:uppercase}
+  .toc ol{margin:0;padding-left:22px;columns:2;column-gap:32px}
+  .toc li{margin:5px 0;break-inside:avoid}
+  .toc a{color:var(--ink2)}
+  .toc a:hover{color:var(--accent)}
+  @media (max-width:640px){.toc ol{columns:1}}
+
+  section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin-bottom:22px}
+  section > h2{margin:0 0 16px;font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
+  section > h2 .num{font-size:12px;color:#0b0f17;background:var(--accent);width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;font-weight:800;flex-shrink:0}
+  h3{font-size:16px;margin:22px 0 10px;color:var(--ink)}
+  h4{font-size:14px;margin:18px 0 8px;color:var(--accent2);letter-spacing:.04em}
+  h5{font-size:13px;margin:14px 0 6px;color:var(--gold);letter-spacing:.03em}
+  p{margin:8px 0}
+  ul,ol{margin:8px 0 8px 4px;padding-left:22px}
+  li{margin:4px 0}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{background:#0d131d;border:1px solid var(--line);padding:2px 6px;border-radius:5px;font-size:13px;color:var(--gold);font-family:"SF Mono","Fira Code",Consolas,monospace}
+  strong{color:#fff}
+  .note{border-left:3px solid var(--accent);background:rgba(255,107,53,.06);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;color:var(--ink2)}
+  .note b{color:var(--accent)}
+  .note.green{border-left-color:var(--accent2);background:rgba(74,222,128,.06)}
+  .note.green b{color:var(--accent2)}
+  .note.blue{border-left-color:var(--blue);background:rgba(96,165,250,.06)}
+  .note.blue b{color:var(--blue)}
+  .note.red{border-left-color:var(--red);background:rgba(239,68,68,.06)}
+  .note.red b{color:var(--red)}
+  .note.gold{border-left-color:var(--gold);background:rgba(251,191,36,.06)}
+  .note.gold b{color:var(--gold)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--accent);font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;background:rgba(255,255,255,.02)}
+  td b{color:var(--ink)}
+  tr:hover td{background:rgba(255,255,255,.02)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:14px 0}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:16px}
+  .card .t{font-weight:700;margin-bottom:6px;color:var(--ink)}
+  .card .d{font-size:13px;color:var(--ink2)}
+  .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;letter-spacing:.04em}
+  .badge.green{background:rgba(74,222,128,.15);color:var(--accent2);border:1px solid rgba(74,222,128,.3)}
+  .badge.blue{background:rgba(96,165,250,.15);color:var(--blue);border:1px solid rgba(96,165,250,.3)}
+  .badge.gold{background:rgba(251,191,36,.15);color:var(--gold);border:1px solid rgba(251,191,36,.3)}
+  .badge.red{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+  .badge.purple{background:rgba(167,139,250,.15);color:var(--purple);border:1px solid rgba(167,139,250,.3)}
+
+  /* Formula box */
+  .formula{background:#0d131d;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;font-family:"SF Mono","Fira Code",Consolas,monospace;font-size:13px;color:var(--gold);overflow-x:auto;line-height:1.8}
+  .formula .var{color:var(--blue)}
+  .formula .op{color:var(--ink2)}
+  .formula .fn{color:var(--accent2)}
+  .formula .num{color:var(--accent)}
+  .formula .comment{color:var(--ink3);font-style:italic}
+  .formula .str{color:var(--cyan)}
+
+  /* Flow diagram */
+  .flow{display:flex;flex-direction:column;align-items:center;gap:0;margin:20px 0}
+  .flow-node{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 24px;font-size:13px;font-weight:600;text-align:center;min-width:200px;position:relative}
+  .flow-node.start{border-color:var(--accent2);background:rgba(74,222,128,.08)}
+  .flow-node.decision{border-color:var(--gold);background:rgba(251,191,36,.06);min-width:280px}
+  .flow-node.end{border-color:var(--red);background:rgba(239,68,68,.06)}
+  .flow-node .fn-label{font-size:11px;color:var(--ink3);font-weight:400;margin-top:2px}
+  .flow-arrow{color:var(--ink3);font-size:18px;line-height:1;margin:4px 0}
+  .flow-branch{display:flex;gap:40px;align-items:flex-start;justify-content:center;width:100%;flex-wrap:wrap}
+  .flow-col{display:flex;flex-direction:column;align-items:center;gap:0}
+
+  /* Decision tree */
+  .tree{margin:16px 0;padding:0;list-style:none}
+  .tree li{position:relative;padding-left:28px;margin:6px 0}
+  .tree li::before{content:"";position:absolute;left:8px;top:0;bottom:0;border-left:1px solid var(--line)}
+  .tree li::after{content:"";position:absolute;left:8px;top:14px;width:14px;border-top:1px solid var(--line)}
+  .tree > li::before{display:none}
+  .tree > li{padding-left:0}
+  .tree > li::after{display:none}
+  .tree .tl-node{display:inline-block;font-size:13px;font-weight:600;color:var(--accent2);background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:4px 12px}
+  .tree .tl-node.d{color:var(--gold);border-color:rgba(251,191,36,.3)}
+  .tree .tl-node.e{color:var(--red);border-color:rgba(239,68,68,.3)}
+  .tree .tl-desc{font-size:12.5px;color:var(--ink2);margin-left:8px}
+
+  footer{text-align:center;color:var(--ink2);font-size:13px;margin-top:30px;border-top:1px solid var(--line);padding-top:18px}
+  @media (max-width:640px){
+    .wrap{padding:22px 14px 80px}
+    .hero{padding:30px 20px}
+    .hero h1{font-size:26px}
+    section{padding:20px 16px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ==================== HERO ==================== -->
+  <div class="hero">
+    <span class="tag">System Design Document · v1.0</span>
+    <h1>比赛模拟引擎系统设计 <span class="en">Sim Engine · HWO</span></h1>
+    <p class="pitch">篮球经理世界的比赛模拟引擎（Sim Engine）是整个游戏的核心引擎。它接收双方阵容、战术、球员状态作为输入，输出逐回合 PBP 直播、Box Score 统计、赛事快报叙事摘要。引擎为纯函数，输入相同则输出相同——可单测、可回放、可灰度调参、可防作弊。</p>
+    <div class="meta">
+      <span class="chip"><b>文档版本</b> · v1.0</span>
+      <span class="chip"><b>关联文档</b> · 游戏策划方案 §9 / 球员成长线 / 经济系统</span>
+      <span class="chip"><b>里程碑</b> · M0 概念验证（核心依赖）</span>
+      <span class="chip"><b>设计原则</b> · 纯函数 · 服务端权威 · 海量回归校准</span>
+    </div>
+    <div class="court"></div>
+  </div>
+
+  <!-- ==================== TOC ==================== -->
+  <div class="toc">
+    <h3>目录</h3>
+    <ol>
+      <li><a href="#s1">设计原则与架构</a></li>
+      <li><a href="#s2">能力模型与 Sim 映射</a></li>
+      <li><a href="#s3">回合结构与比赛流程</a></li>
+      <li><a href="#s4">球权与控球者选择</a></li>
+      <li><a href="#s5">出手决策算法</a></li>
+      <li><a href="#s6">投篮命中判定</a></li>
+      <li><a href="#s7">防守对位算法</a></li>
+      <li><a href="#s8">篮板争夺算法</a></li>
+      <li><a href="#s9">失误与犯规判定</a></li>
+      <li><a href="#s10">罚球系统</a></li>
+      <li><a href="#s11">Condition / 疲劳 / 化学修正</a></li>
+      <li><a href="#s12">战术系统接入</a></li>
+      <li><a href="#s13">Clutch 与半场调整</a></li>
+      <li><a href="#s14">轮换引擎</a></li>
+      <li><a href="#s15">PBP 生成系统</a></li>
+      <li><a href="#s16">Box Score 汇总</a></li>
+      <li><a href="#s17">赛事快报与叙事生成</a></li>
+      <li><a href="#s18">纯函数与种子系统</a></li>
+      <li><a href="#s19">平衡与校准框架</a></li>
+      <li><a href="#s20">数值附录</a></li>
+    </ol>
+  </div>
+
+  <!-- ==================== §1 设计原则与架构 ==================== -->
+  <section id="s1">
+    <h2><span class="num">1</span>设计原则与架构</h2>
+
+    <h3>1.1 四大设计铁律</h3>
+    <div class="grid">
+      <div class="card"><div class="t">① 纯函数确定性</div><div class="d"><code>simulateMatch(inputs, seed) → result</code>。相同输入永远产出相同结果。所有随机性来自种子驱动的 PRNG，无隐式状态、无系统时间、无 IO 副作用。</div></div>
+      <div class="card"><div class="t">② 服务端权威</div><div class="d">所有 sim 在服务端执行，客户端只读 PBP / Box Score / 快报。客户端零计算权威，从根源杜绝作弊。</div></div>
+      <div class="card"><div class="t">③ 可回放可审计</div><div class="d">每场比赛存档 <code>(inputs_hash, seed)</code>；任意历史比赛可 100% 精确复现。用于申诉仲裁、平衡回归、bug 复现。</div></div>
+      <div class="card"><div class="t">④ 可灰度调参</div><div class="d">所有数值常量抽离为配置表（<code>sim_config.json</code>），不停机热更新；A/B 对局用不同配置并行跑回归。</div></div>
+    </div>
+
+    <h3>1.2 引擎输入</h3>
+    <div class="formula">
+<span class="comment">// 引擎主函数签名（伪代码）</span>
+<span class="fn">simulateMatch</span>(
+  <span class="var">homeRoster</span>:    Roster,        <span class="comment">// 主队 12 人名单 + 当前能力 + Condition + Traits</span>
+  <span class="var">awayRoster</span>:    Roster,        <span class="comment">// 客队同上</span>
+  <span class="var">homeTactics</span>:  MatchTactics,  <span class="comment">// 战术设置（基础+高级+Clutch卡+半场调整+对位针对性）</span>
+  <span class="var">awayTactics</span>:  MatchTactics,
+  <span class="var">homeChemistry</span>: TeamChemistry, <span class="comment">// 团队化学反应值（来自人际关系系统）</span>
+  <span class="var">awayChemistry</span>: TeamChemistry,
+  <span class="var">seed</span>:          u32,           <span class="comment">// 随机种子（由比赛ID哈希生成，确定性）</span>
+  <span class="var">config</span>:        SimConfig      <span class="comment">// 全局数值配置（可热更新）</span>
+) → <span class="var">MatchResult</span>
+
+<span class="comment">// Roster 数据结构</span>
+<span class="var">Roster</span> = {
+  players: Player[],        <span class="comment">// 12 人名单</span>
+  starters: [5]playerId,    <span class="comment">// 首发五人</span>
+  benchOrder: [7]playerId,  <span class="comment">// 替补顺序</span>
+}
+<span class="var">Player</span> = {
+  id, name, position,       <span class="comment">// PG/SG/SF/PF/C</span>
+  abilities: AbilitySet,    <span class="comment">// 20 项能力 1-99（服务端真实值）</span>
+  condition: f32,           <span class="comment">// 0-100 疲劳状态</span>
+  traits: Trait[],          <span class="comment">// 特质标签（冷血杀手/玻璃人等）</span>
+  personality: Personality, <span class="comment">// 性格（影响 AI 决策倾向）</span>
+  fouls: u8 = 0,            <span class="comment">// 本场个人犯规数</span>
+  minutes: f32 = 0,         <span class="comment">// 本场已上场分钟数</span>
+  stats: GameStats = 0,     <span class="comment">// 本场累计统计</span>
+}
+    </div>
+
+    <h3>1.3 引擎输出</h3>
+    <div class="formula">
+<span class="var">MatchResult</span> = {
+  pbp:        PBPEvent[],     <span class="comment">// 逐回合事件流（~100-110 条）</span>
+  boxScore:   BoxScore,       <span class="comment">// 双方逐人统计</span>
+  keyPlays:   KeyPlay[],      <span class="comment">// 高光/关键回合索引</span>
+  summary:    MatchSummary,   <span class="comment">// 3-5 句叙事摘要</span>
+  finalScore: (home: u16, away: u16),
+  qScores:    [(h, a); 4],    <span class="comment">// 四节比分（+OT）</span>
+  mvp:        playerId,
+  entropy:    f32,            <span class="comment">// 比赛随机度指标（调试用）</span>
+}
+    </div>
+
+    <h3>1.4 模拟层级架构</h3>
+    <table>
+      <thead><tr><th>层级</th><th>模块</th><th>职责</th></tr></thead>
+      <tbody>
+        <tr><td><b>L0</b></td><td>PRNG & Seed</td><td>确定性随机数生成；同一 seed 产出同一序列</td></tr>
+        <tr><td><b>L1</b></td><td>Possession Loop</td><td>回合循环：球权分配 → 决策 → 判定 → 球权转换</td></tr>
+        <tr><td><b>L2</b></td><td>Decision Engine</td><td>出手决策树：控球者选择 → 行动选择 → 出手类型</td></tr>
+        <tr><td><b>L3</b></td><td>Resolution Engine</td><td>投篮命中/失误/犯规/篮板/罚球的概率判定</td></tr>
+        <tr><td><b>L4</b></td><td>Modifier Layer</td><td>Condition/疲劳/化学/战术/Clutch 修正叠加</td></tr>
+        <tr><td><b>L5</b></td><td>Rotation Engine</td><td>换人决策：疲劳/犯规/对位/战术触发</td></tr>
+        <tr><td><b>L6</b></td><td>Output Layer</td><td>PBP 文本生成 + Box Score 汇总 + 快报叙事</td></tr>
+      </tbody>
+    </table>
+
+    <div class="note"><b>架构约束</b>：L0-L3 为<b>纯计算层</b>，不依赖外部状态；L4-L5 读取战术与状态但<b>不修改</b>原始输入（内部维护可变副本）；L6 仅消费 L1-L5 的输出。这样任何一层可独立单测。</div>
+  </section>
+
+  <!-- ==================== §2 能力模型与 Sim 映射 ==================== -->
+  <section id="s2">
+    <h2><span class="num">2</span>能力模型与 Sim 映射</h2>
+
+    <h3>2.1 20 项能力 → Sim 用途映射</h3>
+    <p>策划方案 §5.1 定义的 20 项能力（1-99 量表），每项在 sim 中有明确的消费点。能力"相互作用而非独立裁决"是核心设计。</p>
+    <table>
+      <thead><tr><th>组</th><th>能力项</th><th>Sim 消费点</th><th>影响权重类型</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="6"><b>身体</b></td><td>Wingspan</td><td>盖帽概率、防守干扰半径、传球拦截</td><td>防守修正</td></tr>
+        <tr><td>Standing Reach</td><td>篮板争夺、盖帽、内线防守干扰</td><td>篮板/防守修正</td></tr>
+        <tr><td>Speed</td><td>快攻转换、突破过人、回防速度</td><td>进攻/转换修正</td></tr>
+        <tr><td>Vertical</td><td>篮板争夺、盖帽、空接终结</td><td>篮板/防守修正</td></tr>
+        <tr><td>Strength</td><td>内线背打、卡位篮板、护筐抗推</td><td>进攻/篮板修正</td></tr>
+        <tr><td>Agility</td><td>突破变向、横移防守、抢断启动</td><td>进攻/防守修正</td></tr>
+        <tr><td rowspan="4"><b>投射</b></td><td>Mid-Range</td><td>中距离出手命中率</td><td>投篮命中核心</td></tr>
+        <tr><td>Three-Point</td><td>三分出手命中率 + 出手倾向权重</td><td>投篮命中核心 + 决策权重</td></tr>
+        <tr><td>Inside</td><td>内线终结命中率 + 攻筐倾向</td><td>投篮命中核心 + 决策权重</td></tr>
+        <tr><td>Free Throw</td><td>罚球命中率</td><td>罚球命中核心</td></tr>
+        <tr><td rowspan="5"><b>防守/篮板</b></td><td>Steal</td><td>抢断概率、传球拦截</td><td>防守事件概率</td></tr>
+        <tr><td>Perimeter D</td><td>外线出手干扰（三分/中距离防守修正）</td><td>防守命中修正</td></tr>
+        <tr><td>Interior D</td><td>内线出手干扰（攻筐防守修正 + 护筐）</td><td>防守命中修正</td></tr>
+        <tr><td>Off Rebound</td><td>前场篮板争夺权重</td><td>篮板争夺</td></tr>
+        <tr><td>Def Rebound</td><td>后场篮板争夺权重</td><td>篮板争夺</td></tr>
+        <tr><td rowspan="3"><b>控传</b></td><td>Dribbling</td><td>突破倾向、护球（降低被抢断）</td><td>决策权重 + 失误修正</td></tr>
+        <tr><td>Passing</td><td>传球成功率（降低传球失误）、助攻概率</td><td>失误修正</td></tr>
+        <tr><td>Post Move</td><td>背打成功率、内线策应倾向</td><td>决策权重 + 命中修正</td></tr>
+        <tr><td rowspan="4"><b>心智</b></td><td>Offensive IQ</td><td>出手选择质量（降低低效出手）、传球决策</td><td>决策修正</td></tr>
+        <tr><td>Defensive IQ</td><td>防守站位（降低被过概率）、协防触发</td><td>防守修正</td></tr>
+        <tr><td>Aggression</td><td>造犯规倾向、攻击篮筐倾向、犯规风险</td><td>决策权重 + 犯规概率</td></tr>
+        <tr><td>Leadership</td><td>化学修正（团队加成）、Clutch 稳定性</td><td>团队修正 + Clutch 修正</td></tr>
+      </tbody>
+    </table>
+
+    <h3>2.2 能力归一化</h3>
+    <p>所有能力在进入 sim 计算前先归一化到 <code>0.0–1.0</code> 区间，便于公式统一：</p>
+    <div class="formula">
+<span class="var">norm</span>(ability) <span class="op">=</span> <span class="fn">clamp</span>(ability / <span class="num">99.0</span>, <span class="num">0.01</span>, <span class="num">1.0</span>)
+    </div>
+
+    <h3>2.3 能力交互规则</h3>
+    <p>单一能力不独立裁决，关键判定使用<b>组合能力</b>：</p>
+    <table>
+      <thead><tr><th>判定场景</th><th>组合公式</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>三分出手质量</td><td><code>0.5×ThreePoint + 0.2×OffIQ + 0.15×Dribbling + 0.15×Agility</code></td><td>投射为主，但有分离空间能力加成</td></tr>
+        <tr><td>攻筐终结质量</td><td><code>0.4×Inside + 0.2×Strength + 0.15×Speed + 0.15×Vertical + 0.1×Aggression</code></td><td>终结 + 身体对抗 + 弹跳</td></tr>
+        <tr><td>中距离出手质量</td><td><code>0.5×MidRange + 0.25×OffIQ + 0.15×Dribbling + 0.1×Agility</code></td><td>投射 + 创造空间</td></tr>
+        <tr><td>背打质量</td><td><code>0.35×PostMove + 0.3×Strength + 0.2×Inside + 0.15×Footwork(Agility)</code></td><td>技术 + 力量 + 终结</td></tr>
+        <tr><td>外线防守干扰</td><td><code>0.45×PerimeterD + 0.2×Agility + 0.15×Speed + 0.1×DefIQ + 0.1×Wingspan</code></td><td>横移 + 臂展 + 判断</td></tr>
+        <tr><td>内线防守干扰</td><td><code>0.35×InteriorD + 0.25×StandingReach + 0.15×Strength + 0.15×Vertical + 0.1×DefIQ</code></td><td>护筐 + 高度 + 对抗</td></tr>
+        <tr><td>护球能力</td><td><code>0.5×Dribbling + 0.2×Passing + 0.15×OffIQ + 0.15×Agility</code></td><td>控运 + 视野 + 敏捷</td></tr>
+        <tr><td>篮板争夺</td><td>进攻：<code>0.3×OffReb + 0.25×Vertical + 0.2×Strength + 0.15×StandingReach + 0.1×Agility</code><br>防守：<code>0.3×DefReb + 0.25×Vertical + 0.2×Strength + 0.15×StandingReach + 0.1×DefIQ</code></td><td>篮板专项 + 身体 + 卡位</td></tr>
+      </tbody>
+    </table>
+    <div class="note green"><b>设计意图</b>：组合公式确保"一个 99 三分的球员如果速度/控运极低，仍可能被锁死"——没有无脑堆单项的最优解，呼应策划方案 §21.3 "每项能力对结果有边际贡献，避免单一能力碾压"。</div>
+  </section>
+
+  <!-- ==================== §3 回合结构与比赛流程 ==================== -->
+  <section id="s3">
+    <h2><span class="num">3</span>回合结构与比赛流程</h2>
+
+    <h3>3.1 比赛时间模型</h3>
+    <table>
+      <thead><tr><th>参数</th><th>值</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>比赛总时长</td><td>48 分钟（4 节 × 12 分钟）</td><td>标准篮球比赛时长</td></tr>
+        <tr><td>模拟回合数</td><td>~100-110 回合</td><td>双方各约 50-55 个进攻回合</td></tr>
+        <tr><td>每回合耗时</td><td>约 14-18 秒（均值 ~16s）</td><td>含 24 秒进攻时限内的出手时间分布</td></tr>
+        <tr><td>加时赛</td><td>5 分钟/OT，最多 3 OT</td><td>第 4 OT 后强制 sudden death</td></tr>
+        <tr><td>每节节间</td><td>2 分钟模拟间隔</td><td>执行轮换检查、半场调整评估</td></tr>
+      </tbody>
+    </table>
+
+    <h3>3.2 单回合完整决策树</h3>
+    <p>每个进攻回合经过以下完整流程。每个节点消耗一次或多次 PRNG 调用。</p>
+    <ul class="tree">
+      <li><span class="tl-node">① 球权归属判定</span><span class="tl-desc">跳球/进球后/死球后 → 确定进攻方</span></li>
+      <li><span class="tl-node">② 进场与对位</span><span class="tl-desc">5 名进攻球员 vs 5 名防守球员，按战术对位规则匹配</span></li>
+      <li><span class="tl-node">③ 控球者选择</span><span class="tl-desc">按战术角色（主控/副控）+ 能力 + 随机权重选控球者</span></li>
+      <li><span class="tl-node">④ 攻击模式决策</span><span class="tl-desc d">决策树：快攻？半场阵地？→ 控球者读取战术倾向</span></li>
+      <li>
+        <span class="tl-node">⑤ 行动选择</span><span class="tl-desc d">加权随机选择：投篮 / 传球 / 突破 / 背打</span>
+        <ul>
+          <li><span class="tl-node">⑤a 若传球</span><span class="tl-desc">选择接球者 → 传球判定（成功/被抢断）→ 新控球者 → 返回 ④</span></li>
+          <li><span class="tl-node">⑤b 若突破</span><span class="tl-desc">突破判定（过人成功/被堵）→ 选择终结方式 → 进入 ⑥</span></li>
+          <li><span class="tl-node">⑤c 若背打</span><span class="tl-desc">背打判定（到位/被顶出）→ 选择终结方式 → 进入 ⑥</span></li>
+          <li><span class="tl-node">⑤d 若投篮</span><span class="tl-desc">直接进入 ⑥</span></li>
+        </ul>
+      </li>
+      <li><span class="tl-node">⑥ 出手类型与位置确定</span><span class="tl-desc">三分 / 中距离 / 内线 → 确定出手位置</span></li>
+      <li><span class="tl-node">⑦ 防守反应判定</span><span class="tl-desc d">对位防守者干扰 + 协防者干扰 → 防守修正</span></li>
+      <li><span class="tl-node">⑧ 投篮命中判定</span><span class="tl-desc d">baseRate + 能力加成 - 防守干扰 + 情境修正 + 随机</span></li>
+      <li>
+        <span class="tl-node">⑨ 结果分支</span><span class="tl-desc d">命中 / 未中 / 被盖帽 / 进攻犯规</span>
+        <ul>
+          <li><span class="tl-node">⑨a 命中</span><span class="tl-desc">计分 → 检查 and-one 罚球 → 球权转换</span></li>
+          <li><span class="tl-node">⑨b 未中</span><span class="tl-desc">→ 进入 ⑩ 篮板争夺</span></li>
+          <li><span class="tl-node">⑨c 被盖帽</span><span class="tl-desc">→ 进入 ⑩ 篮板争夺（或直接球权转换）</span></li>
+          <li><span class="tl-node">⑨d 进攻犯规</span><span class="tl-desc">→ 失误 + 球权转换</span></li>
+        </ul>
+      </li>
+      <li><span class="tl-node">⑩ 篮板争夺</span><span class="tl-desc d">所有球员按篮板争夺值加权竞争 → 进攻篮板 / 防守篮板</span></li>
+      <li>
+        <span class="tl-node">⑪ 球权转换</span><span class="tl-desc">进攻篮板→返回④ / 防守篮板→对方球权 / 失误→对方球权</span>
+        <ul>
+          <li><span class="tl-node">⑪a 进攻篮板</span><span class="tl-desc">进攻方保留球权 → 重置进攻时钟 → 返回 ④</span></li>
+          <li><span class="tl-node">⑪b 防守篮板</span><span class="tl-desc">防守方获得球权 → 进入快攻判定 → 对方回合 ①</span></li>
+        </ul>
+      </li>
+      <li><span class="tl-node">⑫ 回合结束</span><span class="tl-desc e">更新双方球员统计、Condition 衰减、犯规检查 → 检查轮换 → 回合 +1</span></li>
+    </ul>
+
+    <h3>3.3 回合时间消耗模型</h3>
+    <p>每个回合消耗的模拟时间决定比赛总回合数。时间消耗由进攻节奏和行动类型决定：</p>
+    <div class="formula">
+<span class="var">possessionTime</span> <span class="op">=</span> <span class="fn">clamp</span>(
+  <span class="var">baseTime</span> <span class="op">+</span> <span class="var">tempoMod</span> <span class="op">+</span> <span class="var">actionTime</span> <span class="op">+</span> <span class="fn">Random</span>(<span class="num">-2</span>, <span class="num">+2</span>),
+  <span class="num">6</span>, <span class="num">24</span>
+)
+
+<span class="var">baseTime</span>   <span class="op">=</span> <span class="num">16.0</span>  <span class="comment">// 秒，标准半场阵地战基线</span>
+<span class="var">tempoMod</span>   <span class="op">=</span> 快攻倾向: <span class="num">-4.0</span> / 平衡: <span class="num">0</span> / 慢节奏: <span class="op">+</span><span class="num">3.0</span>
+<span class="var">actionTime</span> <span class="op">=</span> {
+  <span class="str">"three"</span>:   <span class="num">-3.0</span>,   <span class="comment">// 三分出手通常较快</span>
+  <span class="str">"midrange"</span>: <span class="num">-1.0</span>,
+  <span class="str">"inside"</span>:   <span class="num">+1.0</span>,   <span class="comment">// 内线攻通常耗时更多</span>
+  <span class="str">"drive"</span>:    <span class="num">-2.0</span>,   <span class="comment">// 突破较快</span>
+  <span class="str">"postup"</span>:   <span class="num">+3.0</span>,   <span class="comment">// 背打耗时最多</span>
+  <span class="str">"pass"</span>:     <span class="num">+2.0</span>,   <span class="comment">// 传球消耗额外时间</span>
+}
+    </div>
+
+    <div class="note"><b>快攻判定</b>：每回合开始时，若防守方刚获得球权（防守篮板/抢断/对方失误），执行快攻概率判定。快攻成功则跳过半场阵地决策树，直接进入简化终结判定（速度+控运为主，命中率修正更高）。</div>
+  </section>
+
+  <!-- ==================== §4 球权与控球者选择 ==================== -->
+  <section id="s4">
+    <h2><span class="num">4</span>球权与控球者选择</h2>
+
+    <h3>4.1 球权归属判定</h3>
+    <table>
+      <thead><tr><th>场景</th><th>球权归属</th><th>额外判定</th></tr></thead>
+      <tbody>
+        <tr><td>比赛开局</td><td>跳球</td><td>双方 C 球员按 <code>Vertical + Strength + Agility</code> 加权争夺</td></tr>
+        <tr><td>进球后</td><td>失分方</td><td>无额外判定</td></tr>
+        <tr><td>防守篮板后</td><td>抢到篮板方</td><td>触发快攻判定</td></tr>
+        <tr><td>抢断后</td><td>抢断方</td><td>触发快攻判定（快攻概率更高）</td></tr>
+        <tr><td>失误后（非抢断）</td><td>防守方</td><td>触发快攻判定</td></tr>
+        <tr><td>进攻犯规</td><td>防守方</td><td>触发快攻判定</td></tr>
+        <tr><td>犯规罚球后（最后一罚命中）</td><td>失分方</td><td>无快攻</td></tr>
+        <tr><td>犯规罚球后（最后一罚未中）</td><td>篮板争夺</td><td>按篮板争夺算法</td></tr>
+        <tr><td>节间开球</td><td>交替 possession arrow</td><td>每节交替</td></tr>
+      </tbody>
+    </table>
+
+    <h3>4.2 快攻判定</h3>
+    <div class="formula">
+<span class="var">fastBreakChance</span> <span class="op">=</span> <span class="var">baseFB</span> <span class="op">×</span> <span class="var">ballHandlerSpeed</span> <span class="op">×</span> <span class="var">teamTempoMod</span> <span class="op">×</span> <span class="var">defenseRecoverMod</span>
+
+<span class="var">baseFB</span>             <span class="op">=</span> <span class="num">0.15</span>  <span class="comment">// 防守篮板后基础快攻概率</span>
+<span class="var">baseFB</span> (抢断后)     <span class="op">=</span> <span class="num">0.35</span>  <span class="comment">// 抢断后快攻概率更高</span>
+<span class="var">ballHandlerSpeed</span>   <span class="op">=</span> <span class="fn">norm</span>(Speed) <span class="op">×</span> <span class="num">0.6</span> <span class="op">+</span> <span class="fn">norm</span>(Dribbling) <span class="op">×</span> <span class="num">0.4</span>
+<span class="var">teamTempoMod</span>       <span class="op">=</span> 快: <span class="num">1.4</span> / 平衡: <span class="num">1.0</span> / 慢: <span class="num">0.7</span>
+<span class="var">defenseRecoverMod</span>  <span class="op">=</span> <span class="num">1.0</span> <span class="op">-</span> <span class="fn">avg</span>(<span class="var">defTeam</span>.Speed) <span class="op">×</span> <span class="num">0.3</span>  <span class="comment">// 防守方速度越高快攻越难</span>
+
+<span class="comment">// 快攻成功 → 简化终结判定（跳过半场决策树）</span>
+<span class="comment">// 快攻出手命中率 baseRate +10%（防守未落位）</span>
+    </div>
+
+    <h3>4.3 控球者选择</h3>
+    <p>半场阵地战中，每回合选择控球者。控球者通常是 PG，但战术角色可覆盖。</p>
+    <div class="formula">
+<span class="comment">// 控球者权重 = 战术角色权重 × 能力适配 × Condition修正 × 随机</span>
+<span class="var">ballHandlerWeight</span>[p] <span class="op">=</span> <span class="var">roleWeight</span>[p] <span class="op">×</span> <span class="var">abilityFit</span>[p] <span class="op">×</span> <span class="var">condMod</span>[p]
+
+<span class="var">roleWeight</span>:
+  主控（Primary Handler） <span class="op">=</span> <span class="num">3.0</span>
+  副控（Secondary）       <span class="op">=</span> <span class="num">1.0</span>
+  其他                     <span class="op">=</span> <span class="num">0.15</span>  <span class="comment">// 偶尔由非控球者发起</span>
+
+<span class="var">abilityFit</span>[p] <span class="op">=</span> <span class="num">0.4</span><span class="op">×</span><span class="fn">norm</span>(Dribbling) <span class="op">+</span> <span class="num">0.3</span><span class="op">×</span><span class="fn">norm</span>(Passing) <span class="op">+</span> <span class="num">0.2</span><span class="op">×</span><span class="fn">norm</span>(OffIQ) <span class="op">+</span> <span class="num">0.1</span><span class="op">×</span><span class="fn">norm</span>(Speed)
+
+<span class="comment">// 战术可指定特定球员为固定主控（如"以核心后卫为轴"）</span>
+    </div>
+
+    <h3>4.4 传球链</h3>
+    <p>控球者可选择传球而非直接攻击。传球链模拟球的流动：</p>
+    <ul>
+      <li><b>传球次数上限</b>：单回合最多 4 次传球（第 5 次强制出手，模拟进攻时限压力）</li>
+      <li><b>每次传球</b>：消耗 ~3-5 秒模拟时间 + 一次传球成功/失误判定</li>
+      <li><b>传球目标选择</b>：按战术角色（主攻点/空位射手/内线枢纽）+ 空间位置加权</li>
+      <li><b>传球失误概率</b>：由传球者 Passing + 接球者 OffIQ + 防守者 Steal 决定</li>
+    </ul>
+    <div class="formula">
+<span class="var">passTurnoverChance</span> <span class="op">=</span> <span class="num">0.04</span> <span class="op">×</span> (<span class="num">1</span> <span class="op">-</span> <span class="fn">norm</span>(Passing)<span class="op">×</span><span class="num">0.5</span>) <span class="op">×</span> (<span class="num">1</span> <span class="op">+</span> <span class="fn">norm</span>(nearestDefSteal)<span class="op">×</span><span class="num">0.6</span>)
+<span class="comment">// 基础 4% 失误率，好传球者降至 ~2%，面对抢断高手升至 ~6%</span>
+    </div>
+  </section>
+
+  <!-- ==================== §5 出手决策算法 ==================== -->
+  <section id="s5">
+    <h2><span class="num">5</span>出手决策算法</h2>
+    <p>出手决策是 sim engine 的核心：每回合从多种行动中加权随机选择一种。权重由<b>球员能力 × 战术倾向 × 对位 × 情境</b>共同决定。</p>
+
+    <h3>5.1 行动类型定义</h3>
+    <table>
+      <thead><tr><th>行动类型</th><th>代码</th><th>出手位置</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>三分投篮</td><td><code>three</code></td><td>三分线外</td><td>接球投三分 / pull-up 三分</td></tr>
+        <tr><td>中距离投篮</td><td><code>midrange</code></td><td>罚球线-三分线间</td><td>中距离跳投 / 挡拆后中投</td></tr>
+        <tr><td>内线攻筐</td><td><code>inside</code></td><td>禁区</td><td>上篮 / 扣篮 / 篮下强攻</td></tr>
+        <tr><td>突破上篮</td><td><code>drive</code></td><td>禁区（从外线发起）</td><td>持球突破到篮下终结</td></tr>
+        <tr><td>背打</td><td><code>postup</code></td><td>低位/禁区</td><td>背身单打到篮下</td></tr>
+        <tr><td>传球</td><td><code>pass</code></td><td>—</td><td>转移到队友（不直接出手）</td></tr>
+      </tbody>
+    </table>
+
+    <h3>5.2 基础权重表</h3>
+    <p>每种行动有一个基础权重，受战术倾向和球员能力修正：</p>
+    <table>
+      <thead><tr><th>行动</th><th>baseWeight</th><th>主要能力驱动</th><th>战术倾向影响</th></tr></thead>
+      <tbody>
+        <tr><td>三分</td><td>1.0</td><td>Three-Point</td><td>外线倾向 ×2.0 / 平衡 ×1.0 / 内线 ×0.3</td></tr>
+        <tr><td>中距离</td><td>1.2</td><td>Mid-Range</td><td>平衡 ×1.2 / 外线 ×0.6 / 内线 ×0.6</td></tr>
+        <tr><td>内线攻筐</td><td>1.0</td><td>Inside + Strength</td><td>内线倾向 ×2.0 / 平衡 ×1.0 / 外线 ×0.4</td></tr>
+        <tr><td>突破</td><td>0.8</td><td>Dribbling + Speed + Agility</td><td>快节奏 ×1.3 / 慢节奏 ×0.7</td></tr>
+        <tr><td>背打</td><td>0.5</td><td>Post Move + Strength</td><td>内线倾向 ×1.5 / 外线 ×0.4</td></tr>
+        <tr><td>传球</td><td>1.5</td><td>Passing + OffIQ</td><td>慢节奏 ×1.2 / 快节奏 ×0.9</td></tr>
+      </tbody>
+    </table>
+
+    <h3>5.3 完整权重计算</h3>
+    <div class="formula">
+<span class="comment">// 对球员 p 在当前情境下，每种行动的权重</span>
+<span class="var">actionWeight</span>[p][action] <span class="op">=</span>
+    <span class="var">baseWeight</span>[action]
+  <span class="op">×</span> <span class="var">abilityMod</span>[p][action]        <span class="comment">// 球员能力修正</span>
+  <span class="op">×</span> <span class="var">tendencyMod</span>[action]          <span class="comment">// 战术倾向修正</span>
+  <span class="op">×</span> <span class="var">matchupMod</span>[p][action]        <span class="comment">// 对位修正</span>
+  <span class="op">×</span> <span class="var">situationMod</span>[action]         <span class="comment">// 情境修正（比分/时间/疲劳）</span>
+  <span class="op">×</span> <span class="var">personalityMod</span>[p][action]   <span class="comment">// 性格修正</span>
+  <span class="op">×</span> <span class="var">clutchMod</span>[action]            <span class="comment">// Clutch 覆盖（仅最后3分钟/OT）</span>
+
+<span class="comment">// 最终概率 = 归一化后的权重</span>
+<span class="var">actionProb</span>[p][action] <span class="op">=</span> <span class="var">actionWeight</span>[p][action] <span class="op">/</span> <span class="fn">Σ</span>(<span class="var">actionWeight</span>[p][<span class="op">*</span>])
+    </div>
+
+    <h4>5.3.1 能力修正 abilityMod</h4>
+    <div class="formula">
+<span class="var">abilityMod</span>[three]   <span class="op">=</span> <span class="fn">norm</span>(ThreePoint) <span class="op">×</span> <span class="num">1.5</span> <span class="op">+</span> <span class="num">0.3</span>
+<span class="var">abilityMod</span>[midrange]<span class="op">=</span> <span class="fn">norm</span>(MidRange) <span class="op">×</span> <span class="num">1.5</span> <span class="op">+</span> <span class="num">0.3</span>
+<span class="var">abilityMod</span>[inside]  <span class="op">=</span> (<span class="fn">norm</span>(Inside)<span class="op">×</span><span class="num">0.6</span> <span class="op">+</span> <span class="fn">norm</span>(Strength)<span class="op">×</span><span class="num">0.4</span>) <span class="op">×</span> <span class="num">1.5</span> <span class="op">+</span> <span class="num">0.3</span>
+<span class="var">abilityMod</span>[drive]   <span class="op">=</span> (<span class="fn">norm</span>(Dribbling)<span class="op">×</span><span class="num">0.4</span> <span class="op">+</span> <span class="fn">norm</span>(Speed)<span class="op">×</span><span class="num">0.35</span> <span class="op">+</span> <span class="fn">norm</span>(Agility)<span class="op">×</span><span class="num">0.25</span>) <span class="op">×</span> <span class="num">1.5</span> <span class="op">+</span> <span class="num">0.2</span>
+<span class="var">abilityMod</span>[postup]  <span class="op">=</span> (<span class="fn">norm</span>(PostMove)<span class="op">×</span><span class="num">0.5</span> <span class="op">+</span> <span class="fn">norm</span>(Strength)<span class="op">×</span><span class="num">0.3</span> <span class="op">+</span> <span class="fn">norm</span>(Inside)<span class="op">×</span><span class="num">0.2</span>) <span class="op">×</span> <span class="num">1.5</span> <span class="op">+</span> <span class="num">0.2</span>
+<span class="var">abilityMod</span>[pass]    <span class="op">=</span> (<span class="fn">norm</span>(Passing)<span class="op">×</span><span class="num">0.5</span> <span class="op">+</span> <span class="fn">norm</span>(OffIQ)<span class="op">×</span><span class="num">0.5</span>) <span class="op">×</span> <span class="num">1.2</span> <span class="op">+</span> <span class="num">0.4</span>
+
+<span class="comment">// 球员风格（终结型/3D/组织型等）作为额外乘数</span>
+<span class="comment">// 如"组织型" pass ×1.3, drive ×0.8</span>
+<span class="comment">// 如"终结型" inside ×1.2, drive ×1.1, pass ×0.8</span>
+    </div>
+
+    <h4>5.3.2 对位修正 matchupMod</h4>
+    <p>对位修正让球员根据防守者的强弱调整出手选择——"聪明地攻击弱点"。</p>
+    <div class="formula">
+<span class="comment">// 三分出手对位修正：对手外线防守越强，三分意愿越低</span>
+<span class="var">matchupMod</span>[three]   <span class="op">=</span> <span class="fn">clamp</span>(<span class="num">1.5</span> <span class="op">-</span> <span class="fn">norm</span>(defPerimeterD)<span class="op">×</span><span class="num">0.8</span>, <span class="num">0.4</span>, <span class="num">1.5</span>)
+
+<span class="comment">// 内线出手对位修正：对手内线防守越强，攻筐意愿越低</span>
+<span class="var">matchupMod</span>[inside]  <span class="op">=</span> <span class="fn">clamp</span>(<span class="num">1.5</span> <span class="op">-</span> <span class="fn">norm</span>(defInteriorD)<span class="op">×</span><span class="num">0.7</span> <span class="op">-</span> <span class="fn">norm</span>(defStandingReach)<span class="op">×</span><span class="num">0.2</span>, <span class="num">0.3</span>, <span class="num">1.5</span>)
+
+<span class="comment">// 突破对位修正：对手横移防守越差越愿突破</span>
+<span class="var">matchupMod</span>[drive]   <span class="op">=</span> <span class="fn">clamp</span>(<span class="num">0.5</span> <span class="op">+</span> (<span class="num">1</span><span class="op">-</span><span class="fn">norm</span>(defPerimeterD))<span class="op">×</span><span class="num">0.8</span>, <span class="num">0.3</span>, <span class="num">1.8</span>)
+
+<span class="comment">// 背打对位修正：对手力量越弱越愿背打</span>
+<span class="var">matchupMod</span>[postup]  <span class="op">=</span> <span class="fn">clamp</span>(<span class="num">0.5</span> <span class="op">+</span> (<span class="num">1</span><span class="op">-</span><span class="fn">norm</span>(defStrength))<span class="op">×</span><span class="num">0.8</span>, <span class="num">0.3</span>, <span class="num">1.6</span>)
+    </div>
+
+    <h4>5.3.3 情境修正 situationMod</h4>
+    <table>
+      <thead><tr><th>情境</th><th>修正</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>落后 10+</td><td>three ×1.3 / midrange ×0.8 / postup ×0.6</td><td>追分倾向外线</td></tr>
+        <tr><td>领先 10+</td><td>three ×0.7 / inside ×1.3 / pass ×1.2</td><td>控节奏，低风险</td></tr>
+        <tr><td>进攻时钟 < 5s</td><td>three ×1.5 / midrange ×1.3 / pass ×0.1</td><td>时间压力强制出手</td></tr>
+        <tr><td>本节最后 30s</td><td>pass ×1.3 / drive ×1.2</td><td>追求最后一攻质量</td></tr>
+        <tr><td>个人犯规 ≥ 4</td><td>inside ×0.7 / drive ×0.8 / postup ×0.6</td><td>犯规麻烦球员避免对抗</td></tr>
+        <tr><td>Condition < 40</td><td>drive ×0.6 / postup ×0.7 / three ×1.1</td><td>疲劳球员减少对抗，倾向外线</td></tr>
+      </tbody>
+    </table>
+
+    <h4>5.3.4 性格修正 personalityMod</h4>
+    <table>
+      <thead><tr><th>性格</th><th>修正</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>冷血杀手</td><td>three ×1.2 / drive ×1.1 / pass ×0.8</td><td>倾向个人强攻</td></tr>
+        <tr><td>团队领袖</td><td>pass ×1.3 / inside ×1.1 / three ×0.9</td><td>优先组织串联</td></tr>
+        <tr><td>独狼</td><td>pass ×0.5 / drive ×1.3 / midrange ×1.2</td><td>极少传球</td></tr>
+        <tr><td>大心脏</td><td>Clutch 时段 three ×1.4 / drive ×1.2</td><td>关键时刻敢投</td></tr>
+        <tr><td>老好人</td><td>pass ×1.2 / 所有投篮 ×0.9</td><td>过度无私</td></tr>
+        <tr><td>玻璃心</td><td>Condition 低时所有投篮 ×0.8 / pass ×1.2</td><td>状态差时退缩</td></tr>
+      </tbody>
+    </table>
+
+    <h3>5.4 传球链中的出手时机</h3>
+    <p>传球后接球者成为新的控球者，重新执行行动选择，但<b>传球次数影响后续权重</b>：</p>
+    <div class="formula">
+<span class="comment">// 传球次数越多，出手压力越大（进攻时限逼近）</span>
+<span class="var">passCountMod</span> <span class="op">=</span> {
+  <span class="num">0</span> pass: pass ×<span class="num">1.5</span>, shoot ×<span class="num">0.8</span>   <span class="comment">// 首选组织</span>
+  <span class="num">1</span> pass: pass ×<span class="num">1.2</span>, shoot ×<span class="num">0.95</span>
+  <span class="num">2</span> pass: pass ×<span class="num">0.8</span>, shoot ×<span class="num">1.1</span>
+  <span class="num">3</span> pass: pass ×<span class="num">0.3</span>, shoot ×<span class="num">1.4</span>   <span class="comment">// 时间不多，强制出手</span>
+  <span class="num">4</span> pass: pass ×<span class="num">0.0</span>, shoot ×<span class="num">2.0</span>   <span class="comment">// 最后机会，必须出手</span>
+}
+    </div>
+  </section>
+
+  <!-- ==================== §6 投篮命中判定 ==================== -->
+  <section id="s6">
+    <h2><span class="num">6</span>投篮命中判定</h2>
+    <p>出手类型确定后，进入命中判定。命中率由<b>基础命中率 + 能力加成 - 防守干扰 + 情境修正 + 随机</b>决定。</p>
+
+    <h3>6.1 基础命中率表</h3>
+    <p>不同出手类型有不同的真实篮球参考命中率基线：</p>
+    <table>
+      <thead><tr><th>出手类型</th><th>baseRate</th><th>参考真实命中率</th></tr></thead>
+      <tbody>
+        <tr><td>三分（空位）</td><td>0.375</td><td>~37.5%（NBA 平均空位三分）</td></tr>
+        <tr><td>三分（受干扰）</td><td>0.300</td><td>~30%</td></tr>
+        <tr><td>中距离（空位）</td><td>0.440</td><td>~44%</td></tr>
+        <tr><td>中距离（受干扰）</td><td>0.360</td><td>~36%</td></tr>
+        <tr><td>内线攻筐（空位）</td><td>0.620</td><td>~62%</td></tr>
+        <tr><td>内线攻筐（受干扰）</td><td>0.480</td><td>~48%</td></tr>
+        <tr><td>快攻上篮</td><td>0.680</td><td>~68%</td></tr>
+        <tr><td>背打勾手/跳投</td><td>0.450</td><td>~45%</td></tr>
+        <tr><td>突破上篮</td><td>0.550</td><td>~55%</td></tr>
+      </tbody>
+    </table>
+
+    <h3>6.2 完整命中判定公式</h3>
+    <div class="formula">
+<span class="var">shotResult</span> <span class="op">=</span> <span class="fn">compare</span>(<span class="var">shotProb</span>, <span class="fn">RNG</span>())  <span class="comment">// shotProb > random → 命中</span>
+
+<span class="var">shotProb</span> <span class="op">=</span> <span class="fn">clamp</span>(
+    <span class="var">baseRate</span>(shotType, contested)
+  <span class="op">+</span> <span class="var">abilityBonus</span>
+  <span class="op">-</span> <span class="var">defensePenalty</span>
+  <span class="op">+</span> <span class="var">situationBonus</span>
+  <span class="op">+</span> <span class="var">chemistryBonus</span>
+  <span class="op">+</span> <span class="var">clutchBonus</span>
+  <span class="op">+</span> <span class="var">traitBonus</span>
+  <span class="op">-</span> <span class="var">fatiguePenalty</span>,
+  <span class="num">0.05</span>, <span class="num">0.95</span>  <span class="comment">// 硬限：再强也有 5% 失手，再弱也有 5% 命中</span>
+)
+    </div>
+
+    <h3>6.3 能力加成 abilityBonus</h3>
+    <div class="formula">
+<span class="comment">// 能力加成 = 组合能力评分的线性映射</span>
+<span class="var">abilityBonus</span>[three]   <span class="op">=</span> (<span class="var">shotQuality</span>[three] <span class="op">-</span> <span class="num">0.5</span>) <span class="op">×</span> <span class="num">0.30</span>
+<span class="var">abilityBonus</span>[midrange]<span class="op">=</span> (<span class="var">shotQuality</span>[midrange] <span class="op">-</span> <span class="num">0.5</span>) <span class="op">×</span> <span class="num">0.30</span>
+<span class="var">abilityBonus</span>[inside]  <span class="op">=</span> (<span class="var">shotQuality</span>[inside] <span class="op">-</span> <span class="num">0.5</span>) <span class="op">×</span> <span class="num">0.35</span>
+<span class="var">abilityBonus</span>[drive]   <span class="op">=</span> (<span class="var">shotQuality</span>[drive] <span class="op">-</span> <span class="num">0.5</span>) <span class="op">×</span> <span class="num">0.32</span>
+<span class="var">abilityBonus</span>[postup]  <span class="op">=</span> (<span class="var">shotQuality</span>[postup] <span class="op">-</span> <span class="num">0.5</span>) <span class="op">×</span> <span class="num">0.30</span>
+
+<span class="comment">// shotQuality 来自 §2.3 的组合能力公式</span>
+<span class="comment">// 能力 50（平均） → shotQuality ≈ 0.5 → abilityBonus ≈ 0（不加不减）</span>
+<span class="comment">// 能力 90（顶级） → shotQuality ≈ 0.91 → abilityBonus ≈ +0.12~+0.14</span>
+<span class="comment">// 能力 20（很差） → shotQuality ≈ 0.20 → abilityBonus ≈ -0.09~-0.10</span>
+    </div>
+
+    <h3>6.4 防守干扰 defensePenalty</h3>
+    <p>防守干扰由对位防守者 + 协防者共同构成。干扰程度分为"空位 / 轻微干扰 / 强干扰 / 严密防守"四档。</p>
+    <div class="formula">
+<span class="comment">// 防守干扰度 = 对位防守者干扰 + 协防者干扰</span>
+<span class="var">defenseContest</span> <span class="op">=</span> <span class="fn">clamp</span>(
+    <span class="var">primaryDefContest</span> <span class="op">×</span> <span class="num">0.75</span>
+  <span class="op">+</span> <span class="var">helpDefContest</span> <span class="op">×</span> <span class="num">0.25</span>,
+  <span class="num">0.0</span>, <span class="num">1.0</span>
+)
+
+<span class="comment">// 对位防守者干扰（使用 §2.3 的防守组合能力）</span>
+<span class="var">primaryDefContest</span>[three, midrange] <span class="op">=</span> <span class="var">defQuality</span>[perimeter]  <span class="comment">// 外线防守组合</span>
+<span class="var">primaryDefContest</span>[inside, drive, postup] <span class="op">=</span> <span class="var">defQuality</span>[interior]  <span class="comment">// 内线防守组合</span>
+
+<span class="comment">// 协防触发判定</span>
+<span class="var">helpDefContest</span> <span class="op">=</span> <span class="num">0</span>  <span class="comment">// 默认无协防</span>
+<span class="keyword">if</span> <span class="fn">RNG</span>() <span class="op"><</span> <span class="var">helpDefChance</span>:
+    <span class="var">helpDefContest</span> <span class="op">=</span> <span class="var">helpDefQuality</span> <span class="op">×</span> <span class="num">0.6</span>  <span class="comment">// 协防干扰折扣</span>
+
+<span class="var">helpDefChance</span> <span class="op">=</span> <span class="num">0.20</span> <span class="op">×</span> <span class="fn">norm</span>(nearestHelpDefIQ)  <span class="comment">// 高 DefIQ 球员更易协防</span>
+
+<span class="comment">// defensePenalty = 干扰度 × 出手类型干扰系数</span>
+<span class="var">defensePenalty</span> <span class="op">=</span> <span class="var">defenseContest</span> <span class="op">×</span> <span class="var">contestImpact</span>[shotType]
+
+<span class="var">contestImpact</span>:
+  three: <span class="num">0.12</span>    <span class="comment">// 三分受干扰影响大</span>
+  midrange: <span class="num">0.10</span>
+  inside: <span class="num">0.14</span>    <span class="comment">// 内线受护筐影响最大</span>
+  drive: <span class="num">0.13</span>
+  postup: <span class="num">0.08</span>    <span class="comment">// 背打受干扰影响相对小（已卡住位置）</span>
+    </div>
+
+    <div class="note"><b>干扰档位与 baseRate 选择</b>：defenseContest < 0.2 → 空位（使用空位 baseRate）；0.2-0.5 → 轻微干扰；0.5-0.75 → 强干扰；> 0.75 → 严密防守（使用受干扰 baseRate）。四档之间线性插值，避免硬切换。</div>
+
+    <h3>6.5 特质加成 traitBonus</h3>
+    <table>
+      <thead><tr><th>特质</th><th>触发条件</th><th>效果</th></tr></thead>
+      <tbody>
+        <tr><td>冷血杀手</td><td>Clutch 时段出手</td><td>+0.08 命中率</td></tr>
+        <tr><td>护筐大师</td><td>防守方内线干扰</td><td>defensePenalty ×1.3</td></tr>
+        <tr><td>外线锁</td><td>防守方外线干扰</td><td>defensePenalty ×1.25</td></tr>
+        <tr><td>微波</td><td>连续命中后</td><td>+0.03/连续命中（上限 +0.09）</td></tr>
+        <tr><td>铁人</td><td>Condition < 40 时出手</td><td>fatiguePenalty ×0.5</td></tr>
+        <tr><td>玻璃人</td><td>Condition < 50 时</td><td>fatiguePenalty ×1.5 + 受伤概率 ×1.5</td></tr>
+        <tr><td>空接王</td><td>接球即投三分</td><td>+0.05 三分命中率</td></tr>
+        <tr><td>篮下野兽</td><td>内线攻筐</td><td>+0.06 命中率 + 扣篮概率提升</td></tr>
+      </tbody>
+    </table>
+
+    <h3>6.6 And-One 判定</h3>
+    <p>投篮命中时有概率获得加罚（and-one）。由投篮者的 Aggression + 防守者的 Aggression 共同决定。</p>
+    <div class="formula">
+<span class="var">andOneChance</span> <span class="op">=</span> <span class="num">0.08</span> <span class="op">×</span> (<span class="num">0.5</span> <span class="op">+</span> <span class="fn">norm</span>(shooterAggression)<span class="op">×</span><span class="num">0.5</span>) <span class="op">×</span> (<span class="num">0.7</span> <span class="op">+</span> <span class="fn">norm</span>(defAggression)<span class="op">×</span><span class="num">0.3</span>)
+<span class="comment">// 基础 8%，攻击型球员最高 ~12%</span>
+<span class="comment">// 仅 inside / drive / postup 可触发 and-one；three / midrange 不触发</span>
+    </div>
+  </section>
+
+  <!-- ==================== §7 防守对位算法 ==================== -->
+  <section id="s7">
+    <h2><span class="num">7</span>防守对位算法</h2>
+
+    <h3>7.1 对位匹配规则</h3>
+    <p>每回合开始时，防守方 5 人按以下规则匹配进攻方 5 人：</p>
+    <ol>
+      <li><b>默认对位</b>：PG↔PG, SG↔SG, SF↔SF, PF↔PF, C↔C（按注册位置）</li>
+      <li><b>战术对位覆盖</b>：战术可指定针对性对位（如"用最好的外线防守者锁对方核心 SG"）</li>
+      <li><b>换防</b>：挡拆后自动换防（见 7.3），换防后对位临时变更</li>
+      <li><b>对位针对性策略</b>：策划方案 §8.3 的 4 种针对性防守（包夹/护筐/换防/放投）</li>
+    </ol>
+
+    <h3>7.2 对位针对性策略</h3>
+    <table>
+      <thead><tr><th>策略</th><th>触发</th><th>Sim 效果</th></tr></thead>
+      <tbody>
+        <tr><td><b>包夹（Double Team）</b></td><td>对方核心持球时</td><td>defenseContest +0.2 但 passTurnoverChance ×0.5（更容易传球出空位）；被包夹者 turnoverChance ×1.5</td></tr>
+        <tr><td><b>护筐（Protect the Rim）</b></td><td>对方攻筐时</td><td>inside/drive 的 defensePenalty ×1.3 但 three 的 defensePenalty ×0.6（放投外线）</td></tr>
+        <tr><td><b>换防（Switch All）</b></td><td>挡拆时</td><td>消除挡拆错位优势 但 matchupMod 重算（可能形成小打大/大打小）</td></tr>
+        <tr><td><b>放投（Sag Off）</b></td><td>对方三分差时</td><td>three 的 defensePenalty ×0.4 但 drive 的 defensePenalty ×1.2（收缩防守堵突破）</td></tr>
+      </tbody>
+    </table>
+
+    <h3>7.3 挡拆与换防</h3>
+    <div class="formula">
+<span class="comment">// 挡拆触发概率（控球者 + 内线队友的默认配合）</span>
+<span class="var">pickRollChance</span> <span class="op">=</span> <span class="num">0.25</span> <span class="op">×</span> (<span class="num">0.5</span> <span class="op">+</span> <span class="fn">norm</span>(ballHandlerOffIQ)<span class="op">×</span><span class="num">0.3</span> <span class="op">+</span> <span class="fn">norm</span>(screenerOffIQ)<span class="op">×</span><span class="num">0.2</span>)
+
+<span class="comment">// 挡拆后结果分支：</span>
+<span class="comment">// 40% → 控球者利用掩护出手（matchupMod 按 switch 后重算）</span>
+<span class="comment">// 25% → 顺下者接球攻筐（inside, matchupMod ×1.3 错位优势）</span>
+<span class="comment">// 20% → 外传射手（three, defensePenalty ×0.5 空位）</span>
+<span class="comment">// 15% → 正常 continuation（回到常规决策树）</span>
+
+<span class="comment">// 换防判定：</span>
+<span class="comment">// 如果防守方设了 Switch All → 100% 换防，消除错位但可能小打大/大打小</span>
+<span class="comment">// 否则 → 60% 追防（不换防）, 25% 换防, 15% 包夹持球人</span>
+    </div>
+
+    <h3>7.4 协防系统</h3>
+    <p>当进攻方在禁区附近出手时，最近的非对位防守者（通常是 C/PF）有概率执行协防：</p>
+    <div class="formula">
+<span class="var">helpDefTrigger</span> <span class="op">=</span> <span class="num">0.15</span> <span class="op">×</span> <span class="fn">norm</span>(helpDefenderDefIQ) <span class="op">×</span> <span class="fn">norm</span>(helpDefenderInteriorD)
+<span class="comment">// 高 DefIQ + 高 Interior D 的内线 ≈ 15% 协防概率</span>
+
+<span class="comment">// 协防成功 → defensePenalty ×1.15（额外干扰）</span>
+<span class="comment">// 协防代价 → helpDefender 的对位者获得空位（下回合 three matchupMod ×1.4）</span>
+    </div>
+
+    <h3>7.5 盖帽判定</h3>
+    <div class="formula">
+<span class="var">blockChance</span> <span class="op">=</span> <span class="num">0.05</span> <span class="op">×</span> (<span class="fn">norm</span>(defenderStandingReach)<span class="op">×</span><span class="num">0.35</span> <span class="op">+</span> <span class="fn">norm</span>(defenderVertical)<span class="op">×</span><span class="num">0.30</span>
+  <span class="op">+</span> <span class="fn">norm</span>(defenderInteriorD)<span class="op">×</span><span class="num">0.20</span> <span class="op">+</span> <span class="fn">norm</span>(defenderWingspan)<span class="op">×</span><span class="num">0.15</span>)
+
+<span class="comment">// 基础 5%，顶级护筐者 ≈ 12-15%</span>
+<span class="comment">// 仅 inside / drive / postup 可被盖帽；three / midrange 盖帽概率 ×0.2</span>
+<span class="comment">// 被盖帽 → 计为 miss + blocker 获得 block 统计 + 球权争夺（50/50）</span>
+    </div>
+  </section>
+
+  <!-- ==================== §8 篮板争夺算法 ==================== -->
+  <section id="s8">
+    <h2><span class="num">8</span>篮板争夺算法</h2>
+
+    <h3>8.1 篮板争夺模型</h3>
+    <p>投篮未中后，所有场上 10 名球员参与篮板争夺。每个球员有一个篮板争夺值，按权重分配球权。</p>
+    <div class="formula">
+<span class="comment">// 每个球员的篮板争夺值</span>
+<span class="var">reboundContest</span>[p] <span class="op">=</span> <span class="var">reboundQuality</span>[p] <span class="op">×</span> <span class="var">positionMod</span>[p] <span class="op">×</span> <span class="var">condMod</span>[p] <span class="op">×</span> <span class="fn">Random</span>(<span class="num">0.7</span>, <span class="num">1.3</span>)
+
+<span class="comment">// reboundQuality 使用 §2.3 的篮板组合公式</span>
+<span class="comment">// positionMod: C=1.5, PF=1.2, SF=0.8, SG=0.5, PG=0.4（位置篮板优势）</span>
+<span class="comment">// condMod: Condition 100=1.0, 50=0.85, 30=0.70</span>
+
+<span class="comment">// 前场篮板 vs 后场篮板的分配</span>
+<span class="var">orebChance</span> <span class="op">=</span> <span class="fn">Σ</span>(<span class="var">offTeam</span>.reboundContest) <span class="op">/</span> <span class="fn">Σ</span>(<span class="var">all</span>.reboundContest) <span class="op">×</span> <span class="var">orebBaseMod</span>
+
+<span class="var">orebBaseMod</span> <span class="op">=</span> <span class="num">0.72</span>  <span class="comment">// 防守篮板天然优势（约 72% 防守篮板）</span>
+<span class="comment">// 实际 OREB% ≈ 28%（NBA 平均约 25-30%）</span>
+    </div>
+
+    <h3>8.2 篮板归属判定</h3>
+    <div class="formula">
+<span class="comment">// 在获得篮板方内部分配给具体球员</span>
+<span class="var">rebounderProb</span>[p] <span class="op">=</span> <span class="var">reboundContest</span>[p] <span class="op">/</span> <span class="fn">Σ</span>(<span class="var">reboundingTeam</span>.reboundContest)
+
+<span class="comment">// 特殊：长篮板（三分未中弹远）→ 后卫参与度提升</span>
+<span class="keyword">if</span> shotType <span class="op">==</span> <span class="str">"three"</span> <span class="op">&&</span> <span class="fn">RNG</span>() <span class="op"><</span> <span class="num">0.3</span>:
+    <span class="var">positionMod</span>[PG, SG] <span class="op">=</span> <span class="num">0.9</span>  <span class="comment">// 30% 三分未中为长篮板，后卫可争</span>
+    <span class="var">positionMod</span>[C] <span class="op">=</span> <span class="num">1.2</span>
+    <span class="var">positionMod</span>[PF] <span class="op">=</span> <span class="num">1.1</span>
+    </div>
+
+    <h3>8.3 团队篮板修正</h3>
+    <p>团队化学反应和教练篮板训练影响团队篮板表现：</p>
+    <div class="formula">
+<span class="var">teamReboundMod</span> <span class="op">=</span> <span class="num">1.0</span> <span class="op">+</span> (<span class="var">chemistry</span> <span class="op">-</span> <span class="num">0.5</span>) <span class="op">×</span> <span class="num">0.08</span> <span class="op">+</span> <span class="var">reboundingDrillBonus</span>
+<span class="comment">// 化学反应 0.8 → +2.4% 篮板；篮板训练投入 → +0-5%</span>
+    </div>
+  </section>
+
+  <!-- ==================== §9 失误与犯规判定 ==================== -->
+  <section id="s9">
+    <h2><span class="num">9</span>失误与犯规判定</h2>
+
+    <h3>9.1 失误类型与概率</h3>
+    <table>
+      <thead><tr><th>类型</th><th>触发时机</th><th>概率公式</th></tr></thead>
+      <tbody>
+        <tr><td><b>传球失误</b></td><td>每次传球</td><td><code>0.04 × (1-norm(Passing)×0.5) × (1+norm(defSteal)×0.6)</code></td></tr>
+        <tr><td><b>运球失误</b></td><td>控球者持球时</td><td><code>0.02 × (1-norm(Dribbling)×0.5) × (1+norm(defSteal)×0.5)</code></td></tr>
+        <tr><td><b>进攻犯规</b></td><td>突破/背打时</td><td><code>0.03 × norm(shooterAggression) × (1+norm(defStrength)×0.3)</code></td></tr>
+        <tr><td><b>24秒违例</b></td><td>进攻时钟到期</td><td>由 possessionTime 自然触发（极少见，因 actionTime 会提前强制出手）</td></tr>
+        <tr><td><b>走步/其他</b></td><td>持球时</td><td><code>0.005 × (1-norm(OffIQ)×0.5)</code>（极低概率，菜鸟略高）</td></tr>
+      </tbody>
+    </table>
+
+    <h3>9.2 抢断判定</h3>
+    <div class="formula">
+<span class="comment">// 每回合，每个防守者有一次抢断检定机会</span>
+<span class="var">stealChance</span>[def] <span class="op">=</span> <span class="num">0.015</span> <span class="op">×</span> (<span class="fn">norm</span>(defSteal)<span class="op">×</span><span class="num">0.5</span> <span class="op">+</span> <span class="fn">norm</span>(defAgility)<span class="op">×</span><span class="num">0.25</span> <span class="op">+</span> <span class="fn">norm</span>(defSpeed)<span class="op">×</span><span class="num">0.15</span> <span class="op">+</span> <span class="fn">norm</span>(defWingspan)<span class="op">×</span><span class="num">0.1</span>)
+<span class="op">×</span> (<span class="num">1</span> <span class="op">-</span> <span class="fn">norm</span>(ballHandlerDribbling)<span class="op">×</span><span class="num">0.4</span>)
+
+<span class="comment">// 基础 1.5%/回合/防守者，顶级抢断者 ≈ 4%</span>
+<span class="comment">// 抢断成功 → 球权转换 + 快攻判定（快攻概率更高）</span>
+    </div>
+
+    <h3>9.3 犯规判定</h3>
+    <p>犯规分进攻犯规和防守犯规两类。防守犯规是最常见的犯规类型。</p>
+    <div class="formula">
+<span class="comment">// 防守犯规概率（对位防守者）</span>
+<span class="var">defFoulChance</span>[def] <span class="op">=</span> <span class="num">0.05</span> <span class="op">×</span> (<span class="fn">norm</span>(defAggression)<span class="op">×</span><span class="num">0.4</span> <span class="op">+</span> <span class="fn">norm</span>(defSpeed)<span class="op">×</span><span class="num">0.2</span>) <span class="op">×</span> <span class="fn">Random</span>(<span class="num">0.8</span>, <span class="num">1.2</span>)
+<span class="comment">// 基础 5%/回合，攻击型防守者更高</span>
+
+<span class="comment">// 投篮犯规（shooting foul）判定</span>
+<span class="keyword">if</span> <span class="fn">RNG</span>() <span class="op"><</span> <span class="var">defFoulChance</span>[def]:
+    <span class="keyword">if</span> shotType <span class="op">in</span> [inside, drive, postup]:
+        <span class="var">shootingFoulChance</span> <span class="op">=</span> <span class="num">0.60</span>  <span class="comment">// 60% 为投篮犯规</span>
+    <span class="keyword">else</span>:
+        <span class="var">shootingFoulChance</span> <span class="op">=</span> <span class="num">0.25</span>
+
+    <span class="keyword">if</span> <span class="fn">RNG</span>() <span class="op"><</span> <span class="var">shootingFoulChance</span>:
+        <span class="comment">// 投篮犯规 → 2/3 罚球（三分犯规 3 罚）</span>
+        <span class="comment">// 原投篮仍执行命中判定（and-one 逻辑）</span>
+    <span class="keyword">else</span>:
+        <span class="comment">// 非投篮犯规 → 球权保留/交替 possession arrow</span>
+    </div>
+
+    <h3>9.4 犯规麻烦修正</h3>
+    <table>
+      <thead><tr><th>个人犯规数</th><th>修正</th></tr></thead>
+      <tbody>
+        <tr><td>0-2</td><td>正常</td></tr>
+        <tr><td>3</td><td>defFoulChance ×0.85（开始收敛）</td></tr>
+        <tr><td>4</td><td>defFoulChance ×0.65 + situationMod 避免对抗</td></tr>
+        <tr><td>5</td><td>defFoulChance ×0.40 + 轮换引擎检查替换</td></tr>
+        <tr><td>6（犯满）</td><td>自动驱逐出场 → 轮换引擎强制替换</td></tr>
+      </tbody>
+    </table>
+    <div class="note"><b>全队犯规</b>：每节全队累计 4 犯后进入 bonus，后续所有投篮犯规均罚球。系统追踪每节全队犯规计数。</div>
+  </section>
+
+  <!-- ==================== §10 罚球系统 ==================== -->
+  <section id="s10">
+    <h2><span class="num">10</span>罚球系统</h2>
+
+    <h3>10.1 罚球命中率</h3>
+    <div class="formula">
+<span class="var">ftProb</span> <span class="op">=</span> <span class="fn">clamp</span>(
+    <span class="num">0.40</span> <span class="op">+</span> <span class="fn">norm</span>(FreeThrow) <span class="op">×</span> <span class="num">0.50</span>  <span class="comment">// 基础 40% + 能力修正</span>
+  <span class="op">+</span> <span class="var">clutchFTMod</span>
+  <span class="op">-</span> <span class="var">fatigueFTMod</span>,
+  <span class="num">0.10</span>, <span class="num">0.95</span>
+)
+<span class="comment">// FreeThrow 50 → ~65%, 90 → ~85%, 20 → ~50%</span>
+
+<span class="var">clutchFTMod</span>  <span class="op">=</span> Clutch 时段: 大心脏 <span class="op">+</span><span class="num">0.05</span>, 玻璃心 <span class="op">-</span><span class="num">0.08</span>, 其他 <span class="op">-</span><span class="num">0.03</span>
+<span class="var">fatigueFTMod</span> <span class="op">=</span> Condition <span class="op"><</span> <span class="num">40</span> ? <span class="num">0.05</span> : <span class="num">0</span>
+    </div>
+
+    <h3>10.2 罚球情景</h3>
+    <table>
+      <thead><tr><th>情景</th><th>罚球数</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>两分投篮犯规</td><td>2 罚</td><td>投篮未中时</td></tr>
+        <tr><td>三分投篮犯规</td><td>3 罚</td><td>三分出手时被犯规</td></tr>
+        <tr><td>And-One</td><td>1 罚</td><td>投篮命中 + 防守犯规</td></tr>
+        <tr><td>全队 bonus</td><td>2 罚</td><td>每节全队 4 犯后非投篮犯规</td></tr>
+        <tr><td>恶意犯规</td><td>2 罚 + 球权</td><td>极低概率特殊事件</td></tr>
+        <tr><td>技术犯规</td><td>1 罚</td><td>极低概率，性格驱动</td></tr>
+      </tbody>
+    </table>
+
+    <h3>10.3 最后一罚篮板</h3>
+    <p>最后一罚未中时触发篮板争夺，罚球方与非罚球方均参与。罚球方的前场篮板概率有天然劣势：</p>
+    <div class="formula">
+<span class="var">ftOrebMod</span> <span class="op">=</span> <span class="num">0.85</span>  <span class="comment">// 罚球前场篮板概率 × 0.85（比运动战更低）</span>
+    </div>
+  </section>
+
+  <!-- ==================== §11 Condition / 疲劳 / 化学修正 ==================== -->
+  <section id="s11">
+    <h2><span class="num">11</span>Condition / 疲劳 / 化学修正</h2>
+
+    <h3>11.1 Condition 衰减模型</h3>
+    <p>球员在比赛中每回合消耗 Condition（体力）。Condition 降低后影响所有 sim 参数。</p>
+    <div class="formula">
+<span class="comment">// 每回合 Condition 衰减（上场球员）</span>
+<span class="var">conditionLoss</span>[p] <span class="op">=</span> <span class="var">baseLoss</span> <span class="op">×</span> <span class="var">intensityMod</span> <span class="op">×</span> <span class="var">playTypeMod</span> <span class="op">×</span> <span class="var">durabilityMod</span>
+
+<span class="var">baseLoss</span>      <span class="op">=</span> <span class="num">0.35</span>  <span class="comment">// 每回合基础衰减</span>
+<span class="var">intensityMod</span>  <span class="op">=</span> 快节奏: <span class="num">1.3</span> / 平衡: <span class="num">1.0</span> / 慢节奏: <span class="num">0.8</span>
+<span class="var">playTypeMod</span>   <span class="op">=</span> {
+  出手: <span class="num">1.2</span>,   <span class="comment">// 出手消耗略大</span>
+  突破: <span class="num">1.5</span>,   <span class="comment">// 突破消耗最大</span>
+  背打: <span class="num">1.4</span>,
+  传球: <span class="num">0.9</span>,
+  防守对抗: <span class="num">1.1</span>,
+  无球跑动: <span class="num">0.8</span>,
+}
+<span class="var">durabilityMod</span> <span class="op">=</span> <span class="num">1.0</span> <span class="op">-</span> <span class="fn">norm</span>(Durability)<span class="op">×</span><span class="num">0.3</span>  <span class="comment">// 铁人衰减更慢</span>
+
+<span class="comment">// 每分钟约 3-4 回合 → 36 分钟主力 ≈ 衰减 40-55 点</span>
+<span class="comment">// 替补休息时每回合恢复 0.8 点 Condition</span>
+    </div>
+
+    <h3>11.2 Condition 对 sim 的影响</h3>
+    <table>
+      <thead><tr><th>Condition 区间</th><th>修正</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>90-100</td><td>正常</td><td>满状态</td></tr>
+        <tr><td>70-89</td><td>abilityBonus ×0.97 / drive ×0.95</td><td>轻微疲劳</td></tr>
+        <tr><td>50-69</td><td>abilityBonus ×0.92 / drive ×0.85 / defensePenalty ×0.92</td><td>明显疲劳，防守也松懈</td></tr>
+        <tr><td>30-49</td><td>abilityBonus ×0.82 / drive ×0.65 / defensePenalty ×0.85 / turnoverChance ×1.3</td><td>严重疲劳</td></tr>
+        <tr><td>< 30</td><td>abilityBonus ×0.70 / drive ×0.40 / turnoverChance ×1.6 / injuryRisk ×2</td><td>濒临力竭，受伤风险飙升</td></tr>
+      </tbody>
+    </table>
+
+    <h3>11.3 团队化学反应修正</h3>
+    <p>团队化学值（来自人际关系系统）作为全局修正叠加到 sim 计算：</p>
+    <div class="formula">
+<span class="var">chemMod</span> <span class="op">=</span> <span class="fn">clamp</span>((<span class="var">teamChemistry</span> <span class="op">-</span> <span class="num">0.5</span>) <span class="op">×</span> <span class="num">0.10</span>, <span class="op">-</span><span class="num">0.05</span>, <span class="op">+</span><span class="num">0.05</span>)
+<span class="comment">// chemistry 0.8 → +3% 全队能力加成（命中率/传球成功率等）</span>
+<span class="comment">// chemistry 0.2 → -3% 全队能力惩罚（化学反应差）</span>
+
+<span class="comment">// 化学影响范围：</span>
+<span class="comment">//  + shotProb（命中率微调）</span>
+<span class="comment">//  + passTurnoverChance ×(1-chemMod)（默契传球减少失误）</span>
+<span class="comment">//  + helpDefChance ×(1+chemMod)（默契协防更多）</span>
+<span class="comment">//  + 快攻成功率 ×(1+chemMod×0.5)</span>
+    </div>
+
+    <h3>11.4 主场优势</h3>
+    <div class="formula">
+<span class="var">homeCourtMod</span> <span class="op">=</span> <span class="num">0.03</span>  <span class="comment">// 主队全局命中率 +3% / 客队 -2%</span>
+<span class="comment">// 另：主队 Clutch 时段 shotProb +0.02（主场氛围）</span>
+    </div>
+  </section>
+
+  <!-- ==================== §12 战术系统接入 ==================== -->
+  <section id="s12">
+    <h2><span class="num">12</span>战术系统接入</h2>
+    <p>战术不是遥控器——它是<b>修改 sim 决策权重的参数集</b>。战术通过 Modifier Layer (L4) 注入到 L1-L3 的计算中。</p>
+
+    <h3>12.1 基础战术参数映射</h3>
+    <table>
+      <thead><tr><th>基础设置</th><th>选项</th><th>Sim 参数影响</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="3"><b>进攻倾向</b></td><td>外线</td><td>tendencyMod[three] ×2.0, [inside] ×0.4, [midrange] ×0.8</td></tr>
+        <tr><td>平衡</td><td>所有 tendencyMod ×1.0</td></tr>
+        <tr><td>内线</td><td>tendencyMod[inside] ×2.0, [three] ×0.3, [postup] ×1.5</td></tr>
+        <tr><td rowspan="3"><b>防守倾向</b></td><td>压迫</td><td>defFoulChance ×1.3, stealChance ×1.3, defenseContest ×1.05</td></tr>
+        <tr><td>平衡</td><td>正常</td></tr>
+        <tr><td>收缩</td><td>inside defensePenalty ×1.2, three defensePenalty ×0.6, helpDefChance ×1.3</td></tr>
+        <tr><td rowspan="3"><b>节奏</b></td><td>快</td><td>possessionTime baseTime -3, fastBreakChance ×1.4, conditionLoss ×1.3</td></tr>
+        <tr><td>平衡</td><td>正常</td></tr>
+        <tr><td>慢</td><td>possessionTime baseTime +3, fastBreakChance ×0.7, pass actionWeight ×1.2</td></tr>
+      </tbody>
+    </table>
+
+    <h3>12.2 高级战术编辑器参数</h3>
+    <table>
+      <thead><tr><th>高级参数</th><th>类型</th><th>Sim 影响</th></tr></thead>
+      <tbody>
+        <tr><td>主攻点指定</td><td>指定 1-2 名球员</td><td>主攻点 actionWeight[shoot] ×1.5, ballHandlerWeight ×2.0</td></tr>
+        <tr><td>角色分配</td><td>3D/蓝领/第六人等</td><td>3D: three ×1.2 + defensePenalty ×1.1; 蓝领: inside ×1.3 + reboundContest ×1.2</td></tr>
+        <tr><td>挡拆频率</td><td>低/中/高</td><td>pickRollChance baseMod: 0.15/0.25/0.40</td></tr>
+        <tr><td>三分频率</td><td>低/中/高</td><td>tendencyMod[three] 额外 ×0.7/×1.0/×1.4</td></tr>
+        <tr><td>快攻倾向</td><td>低/中/高</td><td>fastBreakChance ×0.6/×1.0/×1.5</td></tr>
+        <tr><td>防守对位指定</td><td>指定 5 组对位</td><td>覆盖默认 PG↔PG 对位</td></tr>
+      </tbody>
+    </table>
+
+    <h3>12.3 条件规则系统</h3>
+    <p>高级编辑器允许设置条件规则（仅特定情境触发）。条件规则在 sim 中按优先级覆盖默认战术参数。</p>
+    <div class="formula">
+<span class="comment">// 条件规则结构</span>
+<span class="var">ConditionalRule</span> <span class="op">=</span> {
+  conditions: [
+    { type: <span class="str">"score_diff"</span>,  op: <span class="str">"<="</span>, value: <span class="op">-</span><span class="num">8</span> },  <span class="comment">// 落后 8+ 分</span>
+    { type: <span class="str">"quarter"</span>,     op: <span class="str">">="</span>, value: <span class="num">4</span> },      <span class="comment">// 第四节</span>
+    { type: <span class="str">"clock"</span>,       op: <span class="str">"<="</span>, value: <span class="num">300</span> },   <span class="comment">// 5 分钟内</span>
+  ],
+  action: {
+    tendencyMod[three]: <span class="num">1.5</span>,   <span class="comment">// 提升三分倾向</span>
+    fastBreakChance: <span class="num">1.3</span>,      <span class="comment">// 加快节奏</span>
+  },
+  priority: <span class="num">10</span>,  <span class="comment">// 高优先级覆盖低优先级</span>
+}
+
+<span class="comment">// sim 每回合开始时按 priority 降序检查所有条件规则</span>
+<span class="comment">// 所有满足条件的规则叠加（后者覆盖前者同参数）</span>
+    </div>
+
+    <h3>12.4 Per-game 战术覆盖</h3>
+    <p>Per-game 战术在指定比赛中完全替代默认战术，且<b>对手不可见</b>。sim 引擎不区分默认与 per-game——它只消费传入的 <code>MatchTactics</code> 结构。</p>
+  </section>
+
+  <!-- ==================== §13 Clutch 与半场调整 ==================== -->
+  <section id="s13">
+    <h2><span class="num">13</span>Clutch 与半场调整</h2>
+
+    <h3>13.1 Clutch 时段定义</h3>
+    <table>
+      <thead><tr><th>时段</th><th>触发条件</th><th>Sim 行为</th></tr></thead>
+      <tbody>
+        <tr><td>Clutch 进入</td><td>第四节最后 3 分钟 或 OT，且分差 ≤ 5</td><td>激活 Clutch 战术卡覆盖默认战术</td></tr>
+        <tr><td>最后一攻</td><td>第四节/OT 最后一回合（最后 24 秒）</td><td>执行 Clutch 最后一攻战术卡</td></tr>
+        <tr><td>垃圾时间</td><td>第四节最后 5 分钟，分差 ≥ 20</td><td>自动换上替补（双方均触发）</td></tr>
+      </tbody>
+    </table>
+
+    <h3>13.2 Clutch 战术卡系统</h3>
+    <p>Clutch 战术卡在 Clutch 时段覆盖默认决策权重。每张卡定义一组覆盖参数。</p>
+    <table>
+      <thead><tr><th>卡牌类型</th><th>覆盖效果</th><th>适用场景</th></tr></thead>
+      <tbody>
+        <tr><td><b>最后一攻·三分绝杀</b></td><td>actionWeight[three] ×3.0, ballHandlerWeight 强制指定为主攻点, abilityBonus[three] +0.05</td><td>落后 3 分最后一攻</td></tr>
+        <tr><td><b>最后一攻·突破造杀伤</b></td><td>actionWeight[drive] ×2.5, andOneChance ×1.3, ftProb +0.05</td><td>落后 1-2 分最后一攻</td></tr>
+        <tr><td><b>最后一攻·中距离绝杀</b></td><td>actionWeight[midrange] ×2.5, ballHandlerWeight 指定最佳中距离射手</td><td>落后 2 分最后一攻</td></tr>
+        <tr><td><b>防守·锁死核心</b></td><td>对方主攻点 defenseContest ×1.3, 包夹触发 ×2.0, 但对方其他球员 defensePenalty ×0.7</td><td>领先时锁死对方核心</td></tr>
+        <tr><td><b>防守·护筐</b></td><td>inside defensePenalty ×1.4, three defensePenalty ×0.5</td><td>领先 2-3 分防突破</td></tr>
+        <tr><td><b>节奏·控时间</b></td><td>possessionTime +5, pass ×1.5, shoot ×0.6</td><td>领先控节奏消耗时间</td></tr>
+        <tr><td><b>节奏·抢攻</b></td><td>possessionTime -4, fastBreakChance ×1.5, three ×1.3</td><td>落后追分</td></tr>
+      </tbody>
+    </table>
+
+    <h3>13.3 Clutch 球员修正</h3>
+    <div class="formula">
+<span class="comment">// Clutch 时段球员能力修正（基于性格和特质）</span>
+<span class="var">clutchPlayerMod</span>[p] <span class="op">=</span> {
+  <span class="str">"大心脏"</span>性格:  shotProb <span class="op">+</span><span class="num">0.05</span>, turnoverChance <span class="op">-</span><span class="num">0.02</span>
+  <span class="str">"冷血杀手"</span>特质: shotProb <span class="op">+</span><span class="num">0.08</span>, actionWeight[shoot] <span class="op">×</span><span class="num">1.3</span>
+  <span class="str">"玻璃心"</span>性格:  shotProb <span class="op">-</span><span class="num">0.06</span>, pass <span class="op">×</span><span class="num">1.3</span>  <span class="comment">// 关键时刻退缩</span>
+  <span class="str">"团队领袖"</span>性格: 全队 shotProb <span class="op">+</span><span class="num">0.02</span>, pass <span class="op">×</span><span class="num">1.2</span>
+  其他: shotProb <span class="op">-</span><span class="num">0.02</span>  <span class="comment">// 普通球员关键球略降</span>
+}
+
+<span class="comment">// Leadership 能力修正：Clutch 时全队 shotProb + norm(Leadership)×0.02</span>
+    </div>
+
+    <h3>13.4 半场调整</h3>
+    <p>中场休息时，战术系统允许基于上半场 Box Score 做最多 2 处调整：</p>
+    <div class="formula">
+<span class="comment">// 半场调整规则</span>
+<span class="var">HalftimeAdjustment</span> <span class="op">=</span> {
+  maxSlots: <span class="num">2</span>,  <span class="comment">// 最多 2 处调整</span>
+  availableActions: [
+    <span class="str">"change_tendency"</span>,       <span class="comment">// 改进攻/防守倾向</span>
+    <span class="str">"change_tempo"</span>,          <span class="comment">// 改节奏</span>
+    <span class="str">"change_matchup"</span>,       <span class="comment">// 改对位</span>
+    <span class="str">"change_primary_scorer"</span>, <span class="comment">// 改主攻点</span>
+  ],
+  triggeredBy: <span class="str">"auto_or_manual"</span>,
+  <span class="comment">// auto: AI 经理自动根据 box score 调整（如对方核心上半场 20 分 → 自动包夹）</span>
+  <span class="comment">// manual: 玩家预设的条件规则（如"若对方 C 上半场 >15 分 → 收缩防守"）</span>
+}
+    </div>
+  </section>
+
+  <!-- ==================== §14 轮换引擎 ==================== -->
+  <section id="s14">
+    <h2><span class="num">14</span>轮换引擎</h2>
+    <p>轮换引擎在每回合结束后检查换人条件。换人决策由<b>位置优先级 + 疲劳阈值 + 犯规麻烦 + 对位调整</b>共同驱动。</p>
+
+    <h3>14.1 换人触发条件</h3>
+    <table>
+      <thead><tr><th>触发条件</th><th>阈值</th><th>行为</th></tr></thead>
+      <tbody>
+        <tr><td>Condition 过低</td><td>Condition < 35</td><td>强制换下，优先换上 Condition 最高的同位置替补</td></tr>
+        <tr><td>Condition 偏低 + 替补可用</td><td>Condition < 55 且有休息充分的替补</td><td>换人检查（非强制，按轮换逻辑评估）</td></tr>
+        <tr><td>犯规麻烦</td><td>个人犯规 ≥ 4（上半场）或 ≥ 5（下半场）</td><td>按战术设置决定是否换下（保守/激进）</td></tr>
+        <tr><td>犯满出场</td><td>个人犯规 = 6</td><td>强制换下，不可逆</td></tr>
+        <tr><td>受伤</td><td>受伤事件触发</td><td>强制换下，本场不再上场</td></tr>
+        <tr><td>战术对位调整</td><td>半场调整/Clutch 卡触发</td><td>换上特定对位球员</td></tr>
+        <tr><td>垃圾时间</td><td>第四节最后 5 分钟，分差 ≥ 20</td><td>双方自动换上全部替补</td></tr>
+        <tr><td>节间轮换</td><td>每节结束</td><td>按预设轮换模式调整（如第二节初上替补）</td></tr>
+      </tbody>
+    </table>
+
+    <h3>14.2 替补选择算法</h3>
+    <div class="formula">
+<span class="comment">// 换下球员 p_off 后，选择替补 p_on</span>
+<span class="var">subWeight</span>[p_on] <span class="op">=</span>
+    <span class="var">positionFit</span>[p_on][p_off.position]      <span class="comment">// 位置适配</span>
+  <span class="op">×</span> <span class="var">condFactor</span>[p_on]                  <span class="comment">// 体力因素</span>
+  <span class="op">×</span> <span class="var">roleFit</span>[p_on]                     <span class="comment">// 战术角色适配</span>
+  <span class="op">×</span> <span class="fn">Random</span>(<span class="num">0.8</span>, <span class="num">1.2</span>)
+
+<span class="var">positionFit</span>[p_on][pos]:
+  同位置: <span class="num">1.0</span>
+  相邻位置（PG↔SG, SF↔PF, PF↔C）: <span class="num">0.7</span>
+  跨位置: <span class="num">0.3</span>  <span class="comment">// 仅紧急情况</span>
+
+<span class="var">condFactor</span>[p_on] <span class="op">=</span> <span class="fn">norm</span>(p_on.condition)  <span class="comment">// 体力高的优先</span>
+<span class="var">roleFit</span>[p_on] <span class="op">=</span> 匹配 p_off 的战术角色权重（如换下主攻点→选第二得分点）
+    </div>
+
+    <h3>14.3 分钟分配预设</h3>
+    <p>玩家可预设主力/替补的分钟分配目标，轮换引擎在无特殊触发时按预设执行：</p>
+    <table>
+      <thead><tr><th>轮换模式</th><th>主力分钟</th><th>替补分钟</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>主力优先</td><td>38-40 min</td><td>8-10 min</td><td>依赖核心，疲劳风险高</td></tr>
+        <tr><td>均衡轮换</td><td>30-34 min</td><td>14-18 min</td><td>推荐默认</td></tr>
+        <tr><td>深度轮换</td><td>24-28 min</td><td>20-24 min</td><td>板凳深度优势，核心数据分散</td></tr>
+      </tbody>
+    </table>
+    <div class="note red"><b>设计约束</b>：重用主力不自动正确。38 分钟主力 Condition 衰减约 50 点 → 进入 30-49 区间 → 能力惩罚 ×0.82。这是策划方案 §8.5 "重用主力不自动正确"的数学实现。</div>
+  </section>
+
+  <!-- ==================== §15 PBP 生成系统 ==================== -->
+  <section id="s15">
+    <h2><span class="num">15</span>PBP 生成系统</h2>
+    <p>PBP（Play-By-Play）是逐回合文字直播，是"看直播"体验的核心载体。PBP 在 sim 过程中逐回合生成，而非事后填充。</p>
+
+    <h3>15.1 PBP 事件结构</h3>
+    <div class="formula">
+<span class="var">PBPEvent</span> <span class="op">=</span> {
+  seq:        u32,           <span class="comment">// 序号（从 1 开始）</span>
+  quarter:    u8,            <span class="comment">// 节次 1-4（5+=OT）</span>
+  clock:      f32,          <span class="comment">// 剩余时间（秒）</span>
+  score:      (home, away), <span class="comment">// 当前比分</span>
+  type:       EventType,    <span class="comment">// 事件类型（见下表）</span>
+  actor:      playerId,     <span class="comment">// 主要球员</span>
+  secondary:  playerId?,    <span class="comment">// 次要球员（助攻/防守者等）</span>
+  text:       string,       <span class="comment">// 生成文字</span>
+  meta:       EventMeta,    <span class="comment">// 附加数据（出手位置/距离/犯规类型等）</span>
+  isKey:      bool,         <span class="comment">// 是否为关键回合</span>
+}
+    </div>
+
+    <h3>15.2 事件类型</h3>
+    <table>
+      <thead><tr><th>type</th><th>说明</th><th>模板数</th></tr></thead>
+      <tbody>
+        <tr><td><code>shot_made</code></td><td>投篮命中</td><td>12</td></tr>
+        <tr><td><code>shot_miss</code></td><td>投篮未中</td><td>8</td></tr>
+        <tr><td><code>block</code></td><td>盖帽</td><td>6</td></tr>
+        <tr><td><code>rebound</code></td><td>篮板</td><td>4</td></tr>
+        <tr><td><code>steal</code></td><td>抢断</td><td>6</td></tr>
+        <tr><td><code>turnover</code></td><td>失误</td><td>8</td></tr>
+        <tr><td><code>foul</code></td><td>犯规</td><td>6</td></tr>
+        <tr><td><code>free_throw</code></td><td>罚球</td><td>4</td></tr>
+        <tr><td><code>substitution</code></td><td>换人</td><td>2</td></tr>
+        <tr><td><code>timeout</code></td><td>暂停</td><td>2</td></tr>
+        <tr><td><code>quarter_end</code></td><td>节间</td><td>4</td></tr>
+        <tr><td><code>game_end</code></td><td>比赛结束</td><td>2</td></tr>
+        <tr><td><code>key_highlight</code></td><td>关键高光</td><td>10</td></tr>
+      </tbody>
+    </table>
+
+    <h3>15.3 文本模板系统</h3>
+    <p>每种事件类型有多个文本模板，按情境选择并填充变量。模板使用占位符语法：</p>
+    <div class="formula">
+<span class="comment">// 模板示例</span>
+<span class="str">"{actor} 接 {secondary} 传球，三分线外果断出手——球进了！"</span>
+<span class="str">"{actor} 突破到篮下，面对 {secondary} 的防守强行上篮命中！"</span>
+<span class="str">"{actor} 背打 {secondary}，转身勾手——弹框而出。"</span>
+<span class="str">"{actor} 抢断成功！快攻一条龙上篮得分！"</span>
+<span class="str">"{secondary} 送出大帽，{actor} 的上篮被直接扇飞！"</span>
+
+<span class="comment">// 模板选择规则：</span>
+<span class="comment">// 1. 按 shotType + result + contestLevel 筛选模板池</span>
+<span class="comment">// 2. 从模板池中按 RNG 随机选一个（避免重复，连续相同类型避免同模板）</span>
+<span class="comment">// 3. 填充变量：{actor}=球员名, {secondary}=次要球员名, {score}=比分, {clock}=时间</span>
+    </div>
+
+    <h3>15.4 关键回合高亮</h3>
+    <p>满足以下条件的回合标记为 <code>isKey=true</code>，在 PBP 流中以高亮样式呈现，并进高光回放列表：</p>
+    <ul>
+      <li><b>比分交替领先</b>（lead change）</li>
+      <li><b>Clutch 时段</b>（最后 3 分钟 / OT）的所有回合</li>
+      <li><b>扣篮</b>（inside 命中且 Vertical 高时有概率触发扣篮描述）</li>
+      <li><b>盖帽</b></li>
+      <li><b>连续得分</b>（同一球员连续命中 3+ 球）</li>
+      <li><b>绝杀 / 准绝杀</b>（最后一回合反超或锁定比分）</li>
+      <li><b>犯满出场</b></li>
+    </ul>
+
+    <h3>15.5 PBP 推送</h3>
+    <p>sim 在 10:00 结算时通过 WebSocket/SSE 逐回合推送 PBP 事件。推送节奏为每 1.5 秒一条事件，模拟实时观赛体验。整场约 100-110 回合 × 1.5 秒 ≈ 2.5 分钟观赛体验。错过可看回放（完整 PBP 流 + 高光剪辑）。</p>
+  </section>
+
+  <!-- ==================== §16 Box Score 汇总 ==================== -->
+  <section id="s16">
+    <h2><span class="num">16</span>Box Score 汇总</h2>
+    <p>Box Score 在 sim 过程中逐回合累加，比赛结束后输出完整统计。</p>
+
+    <h3>16.1 统计项</h3>
+    <table>
+      <thead><tr><th>统计项</th><th>累加方式</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>得分 (PTS)</td><td>投篮命中分值 + 罚球命中分</td><td>三分=3, 两分=2, 罚球=1/球</td></tr>
+        <tr><td>篮板 (REB)</td><td>oreb + dreb</td><td>前场篮板 + 后场篮板分别统计</td></tr>
+        <tr><td>助攻 (AST)</td><td>传球者在接球者投篮命中时 +1</td><td>仅在出手前最后一次传球者计助攻</td></tr>
+        <tr><td>抢断 (STL)</td><td>抢断事件触发时 +1</td><td></td></tr>
+        <tr><td>盖帽 (BLK)</td><td>盖帽事件触发时 +1</td><td></td></tr>
+        <tr><td>失误 (TO)</td><td>所有失误类型触发时 +1</td><td>含传球失误/运球失误/进攻犯规/走步</td></tr>
+        <tr><td>犯规 (PF)</td><td>个人犯规时 +1</td><td></td></tr>
+        <tr><td>投篮 (FGM/FGA)</td><td>出手 +1 FGA, 命中 +1 FGM</td><td>分三分和两分</td></tr>
+        <tr><td>三分 (3PM/3PA)</td><td>三分出手/命中</td><td></td></tr>
+        <tr><td>罚球 (FTM/FTA)</td><td>罚球出手/命中</td><td></td></tr>
+        <tr><td>正负值 (+/-)</td><td>该球员在场期间球队净分差</td><td>逐回合追踪</td></tr>
+        <tr><td>上场时间 (MIN)</td><td>在场回合数 × possessionTime 累加</td><td>精确到 0.1 分钟</td></tr>
+        <tr><td>效率值 (PER)</td><td>赛后由 Box Score 公式计算</td><td>综合效率评分</td></tr>
+      </tbody>
+    </table>
+
+    <h3>16.2 高级统计（赛后计算）</h3>
+    <table>
+      <thead><tr><th>统计项</th><th>公式</th></tr></thead>
+      <tbody>
+        <tr><td>真实命中率 (TS%)</td><td>PTS / (2 × (FGA + 0.44 × FTA))</td></tr>
+        <tr><td>有效命中率 (eFG%)</td><td>(FGM + 0.5 × 3PM) / FGA</td></tr>
+        <tr><td>使用率 (USG%)</td><td>(FGA + 0.44×FTA + TO) / (球队回合数) × 100%</td></tr>
+        <tr><td>防守篮板率 (DRB%)</td><td>dreb / (球队总 dreb 机会)</td></tr>
+        <tr><td>进攻篮板率 (ORB%)</td><td>oreb / (球队总 oreb 机会)</td></tr>
+        <tr><td>助攻率 (AST%)</td><td>AST / (该球员在场时球队 FGM)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>16.3 MVP 判定</h3>
+    <div class="formula">
+<span class="comment">// MVP = 胜方得分最高球员（平局时按效率值排序）</span>
+<span class="var">mvp</span> <span class="op">=</span> <span class="fn">argmax</span>(<span class="var">winningTeam</span>.players, <span class="fn">key</span><span class="op">=</span>(PTS <span class="op">+</span> REB<span class="op">×</span><span class="num">1.2</span> <span class="op">+</span> AST<span class="op">×</span><span class="num">1.5</span> <span class="op">+</span> STL<span class="op">×</span><span class="num">2</span> <span class="op">+</span> BLK<span class="op">×</span><span class="num">2</span> <span class="op">-</span> TO<span class="op">×</span><span class="num">1.5</span>))
+    </div>
+  </section>
+
+  <!-- ==================== §17 赛事快报与叙事生成 ==================== -->
+  <section id="s17">
+    <h2><span class="num">17</span>赛事快报与叙事生成</h2>
+    <p>赛事快报是 3-5 句的叙事摘要，进入报纸流。它从 PBP 关键回合 + Box Score 中自动提取叙事要素并生成。</p>
+
+    <h3>17.1 快报生成流程</h3>
+    <div class="formula">
+<span class="comment">// 快报生成 = 叙事模板选择 + 要素填充</span>
+<span class="fn">generateSummary</span>(<span class="var">pbp</span>, <span class="var">boxScore</span>, <span class="var">keyPlays</span>) → <span class="var">MatchSummary</span>
+
+<span class="comment">// 步骤：</span>
+<span class="comment">// 1. 提取叙事要素</span>
+<span class="var">elements</span> <span class="op">=</span> {
+  winner, loser, finalScore, margin,
+  topScorer, topScorerPts,
+  mvp, mvpLine,
+  clutchPlay:    <span class="fn">lastKeyPlay</span>(<span class="var">keyPlays</span>),   <span class="comment">// 最后一个关键回合</span>
+  comeback:      <span class="fn">maxComeback</span>(<span class="var">pbp</span>),        <span class="comment">// 最大逆转分差</span>
+  streak:        <span class="fn">maxRun</span>(<span class="var">pbp</span>),              <span class="comment">// 最大连续得分</span>
+  upset:         <span class="fn">isUpset</span>(<span class="var">teamRatings</span>),      <span class="comment">// 是否爆冷</span>
+  overtime:      <span class="fn">hasOT</span>(<span class="var">pbp</span>),
+}
+
+<span class="comment">// 2. 选择叙事模板（按要素组合匹配）</span>
+<span class="comment">// 3. 填充模板生成 3-5 句摘要</span>
+    </div>
+
+    <h3>17.2 叙事模板库</h3>
+    <table>
+      <thead><tr><th>模板类型</th><th>触发条件</th><th>示例输出</th></tr></thead>
+      <tbody>
+        <tr><td>碾压局</td><td>分差 ≥ 20</td><td>"{winner} 以 {score} 大胜 {loser}，{topScorer} 砍下 {pts} 分统治全场。"</td></tr>
+        <tr><td>逆转局</td><td>comeback ≥ 10</td><td>"{winner} 上半场落后 {comeback} 分，下半场上演惊天逆转，{mvp} 贡献 {line}。"</td></tr>
+        <tr><td>绝杀局</td><td>clutchPlay 在最后 24s 反超</td><td>"{mvp} 最后时刻 {clutchAction}，帮助 {winner} 以 {score} 险胜 {loser}！"</td></tr>
+        <tr><td>加时局</td><td>hasOT</td><td>"{winner} 经 {otCount} 个加时以 {score} 力克 {loser}，{topScorer} 狂砍 {pts} 分。"</td></tr>
+        <tr><td>爆冷局</td><td>isUpset</td><td>"爆冷！{loser} 不敌排名更低的 {winner}，{mvp} {line} 成为关键。"</td></tr>
+        <tr><td>拉锯局</td><td>分差 ≤ 3 且无绝杀</td><td>"{winner} 以 {score} 险胜 {loser}，双方鏖战到最后时刻，{mvp} 关键发挥锁定胜局。"</td></tr>
+      </tbody>
+    </table>
+
+    <h3>17.3 球员叙事标签</h3>
+    <p>快报中根据球员表现自动附加叙事标签，增强故事感：</p>
+    <table>
+      <thead><tr><th>标签</th><th>触发条件</th></tr></thead>
+      <tbody>
+        <tr><td>"砍分机器"</td><td>得分 ≥ 35</td></tr>
+        <tr><td>"三双王"</td><td>任意三项双位数</td></tr>
+        <tr><td>"板凳匪徒"</td><td>替补出场得分 ≥ 25</td></tr>
+        <tr><td>"铁血防守"</td><td>抢断+盖帽 ≥ 6 且犯规 ≤ 2</td></tr>
+        <tr><td>"效率低下"</td><td>FGA ≥ 15 且 FG% < 35%</td></tr>
+        <tr><td>"冷血杀手"</td><td>Clutch 时段命中关键球</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ==================== §18 纯函数与种子系统 ==================== -->
+  <section id="s18">
+    <h2><span class="num">18</span>纯函数与种子系统</h2>
+
+    <h3>18.1 PRNG 选择</h3>
+    <p>使用 <b>mulberry32</b> 算法作为 PRNG：速度快、周期足够、确定性强、无状态依赖。</p>
+    <div class="formula">
+<span class="comment">// mulberry32 伪代码</span>
+<span class="fn">mulberry32</span>(<span class="var">seed</span>) {
+  <span class="var">state</span> <span class="op">=</span> <span class="var">seed</span>
+  <span class="keyword">return function</span>() {
+    <span class="var">state</span> <span class="op">|=</span> <span class="num">0</span>; <span class="var">state</span> <span class="op">=</span> <span class="var">state</span> <span class="op">+</span> <span class="num">0x6D2B79F5</span> <span class="op">|</span> <span class="num">0</span>
+    <span class="var">t</span> <span class="op">=</span> <span class="fn">Math.imul</span>(<span class="var">state</span> <span class="op">^</span> <span class="var">state</span> <span class="op">>>></span> <span class="num">15</span>, <span class="num">1</span> <span class="op">|</span> <span class="var">state</span>)
+    <span class="var">t</span> <span class="op">=</span> <span class="var">t</span> <span class="op">+</span> <span class="fn">Math.imul</span>(<span class="var">t</span> <span class="op">^</span> <span class="var">t</span> <span class="op">>>></span> <span class="num">7</span>, <span class="num">61</span> <span class="op">|</span> <span class="var">t</span>)
+    <span class="keyword">return</span> ((<span class="var">t</span> <span class="op">^</span> <span class="var">t</span> <span class="op">>>></span> <span class="num">14</span>) <span class="op">>>></span> <span class="num">0</span>) <span class="op">/</span> <span class="num">4294967296</span>
+  }
+}
+    </div>
+
+    <h3>18.2 种子生成规则</h3>
+    <div class="formula">
+<span class="var">seed</span> <span class="op">=</span> <span class="fn">hash</span>(<span class="var">matchId</span> <span class="op">+</span> <span class="str">"_"</span> <span class="op">+</span> <span class="var">seasonId</span> <span class="op">+</span> <span class="str">"_"</span> <span class="op">+</span> <span class="var">dayIndex</span>)
+
+<span class="comment">// matchId = 全局唯一比赛ID（含世界ID+联赛ID+赛季+场次）</span>
+<span class="comment">// 同一场比赛永远使用同一 seed → 永远可复现</span>
+<span class="comment">// seed 写入 MatchResult 存档，用于回放与审计</span>
+    </div>
+
+    <h3>18.3 RNG 消费顺序</h3>
+    <p>为保证确定性，PRNG 的消费顺序必须严格固定。每回合的 RNG 调用顺序：</p>
+    <table>
+      <thead><tr><th>序号</th><th>消费点</th><th>调用次数</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>快攻判定</td><td>1</td></tr>
+        <tr><td>2</td><td>控球者选择</td><td>1</td></tr>
+        <tr><td>3</td><td>行动选择（投篮/传球/突破/背打）</td><td>1</td></tr>
+        <tr><td>4</td><td>传球目标选择（若传球）</td><td>0-4</td></tr>
+        <tr><td>5</td><td>传球成功/失误判定（若传球）</td><td>0-4</td></tr>
+        <tr><td>6</td><td>挡拆触发判定</td><td>0-1</td></tr>
+        <tr><td>7</td><td>出手位置确定</td><td>1</td></tr>
+        <tr><td>8</td><td>协防触发判定</td><td>0-1</td></tr>
+        <tr><td>9</td><td>投篮命中判定</td><td>1</td></tr>
+        <tr><td>10</td><td>盖帽判定（若未中）</td><td>0-1</td></tr>
+        <tr><td>11</td><td>犯规判定</td><td>1-2</td></tr>
+        <tr><td>12</td><td>And-One 判定（若命中）</td><td>0-1</td></tr>
+        <tr><td>13</td><td>篮板争夺</td><td>1</td></tr>
+        <tr><td>14</td><td>抢断检定（每防守者）</td><td>1-5</td></tr>
+        <tr><td>15</td><td>回合时间随机修正</td><td>1</td></tr>
+        <tr><td>16</td><td>PBP 模板选择</td><td>1</td></tr>
+        <tr><td>17</td><td>轮换检查</td><td>0-2</td></tr>
+      </tbody>
+    </table>
+    <div class="note"><b>关键约束</b>：任何分支（如"未触发快攻"）的 RNG 调用次数必须与"触发快攻"时一致——通过预消费或跳过规则保证。这是纯函数可复现的核心保障。</div>
+
+    <h3>18.4 回放与审计</h3>
+    <div class="formula">
+<span class="comment">// 回放：存储 (inputs_hash, seed) 即可 100% 复现</span>
+<span class="fn">replayMatch</span>(<span class="var">matchArchive</span>) {
+  <span class="var">inputs</span> <span class="op">=</span> <span class="fn">restoreInputs</span>(<span class="var">matchArchive</span>)
+  <span class="var">result</span> <span class="op">=</span> <span class="fn">simulateMatch</span>(<span class="var">inputs</span>, <span class="var">matchArchive</span>.seed)
+  <span class="fn">assert</span>(<span class="var">result</span> <span class="op">==</span> <span class="var">matchArchive</span>.result)  <span class="comment">// 验证一致性</span>
+}
+
+<span class="comment">// 用途：</span>
+<span class="comment">// 1. 申诉仲裁 → 复现比赛验证结果</span>
+<span class="comment">// 2. 平衡回归 → 跑同一批种子用新 config 对比</span>
+<span class="comment">// 3. Bug 复现 → 精确定位哪一回合哪个 RNG 调用出了问题</span>
+    </div>
+  </section>
+
+  <!-- ==================== §19 平衡与校准框架 ==================== -->
+  <section id="s19">
+    <h2><span class="num">19</span>平衡与校准框架</h2>
+    <p>策划方案 §21.3 要求"海量自动对局回归测试校准"。本节定义校准框架的规格。</p>
+
+    <h3>19.1 自动回归测试系统</h3>
+    <div class="formula">
+<span class="comment">// 回归测试流程</span>
+<span class="fn">runRegressionSuite</span>(<span class="var">config</span>: SimConfig) → <span class="var">RegressionReport</span> {
+  <span class="comment">// 1. 生成测试阵容（覆盖各种能力分布）</span>
+  <span class="var">testRosters</span> <span class="op">=</span> <span class="fn">generateTestRosters</span>()  <span class="comment">// S/A/B/C/D 档各 20 队</span>
+
+  <span class="comment">// 2. 全配对自动对局（100 队 × 100 队 × 1000 种子 = 1000 万场）</span>
+  <span class="var">results</span> <span class="op">=</span> <span class="fn">runAllMatches</span>(<span class="var">testRosters</span>, <span class="var">seeds</span>, <span class="var">config</span>)
+
+  <span class="comment">// 3. 统计关键指标</span>
+  <span class="keyword">return</span> {
+    winRateByTierGap,   <span class="comment">// 档位差 vs 胜率（应单调）</span>
+    scoreDistribution,  <span class="comment">// 得分分布（应接近真实篮球）</span>
+    statDistribution,   <span class="comment">// 各项统计分布</span>
+    clutchFrequency,    <span class="comment">// Clutch 频率（应 20-30%）</span>
+    upsetRate,          <span class="comment">// 爆冷率（低档胜高档，应 5-15%）</span>
+    paceDistribution,   <span class="comment">// 回合数分布（应 95-115）</span>
+    fgDistribution,     <span class="comment">// 命中率分布（三分 33-42%, 两分 48-55%）</span>
+  }
+}
+    </div>
+
+    <h3>19.2 校准目标区间</h3>
+    <table>
+      <thead><tr><th>指标</th><th>目标区间</th><th>不达标时的调参方向</th></tr></thead>
+      <tbody>
+        <tr><td>S 档 vs A 档胜率</td><td>65-75%</td><td>过低→加 abilityBonus 权重；过高→减</td></tr>
+        <tr><td>S 档 vs D 档胜率</td><td>88-95%</td><td>过低→加能力差距放大；过高→减</td></tr>
+        <tr><td>场均得分</td><td>95-110 分</td><td>过高→降 baseRate；过低→升</td></tr>
+        <tr><td>三分命中率</td><td>33-42%</td><td>过高→升 defensePenalty；过低→降</td></tr>
+        <tr><td>两分命中率</td><td>48-55%</td><td>同上</td></tr>
+        <tr><td>场均回合数</td><td>95-115</td><td>过低→降 baseTime；过高→升</td></tr>
+        <tr><td>Clutch 频率</td><td>20-30%</td><td>过低→缩小分差判定窗口；过高→扩大</td></tr>
+        <tr><td>爆冷率（C 胜 S）</td><td>5-12%</td><td>过低→增随机权重；过高→减</td></tr>
+        <tr><td>场均失误</td><td>12-16 次</td><td>过高→降 turnoverChance base；过低→升</td></tr>
+        <tr><td>场均犯规</td><td>18-24 次</td><td>过高→降 defFoulChance base；过低→升</td></tr>
+        <tr><td>场均篮板</td><td>40-48 个</td><td>过高→降 orebBaseMod；过低→升</td></tr>
+      </tbody>
+    </table>
+
+    <h3>19.3 灰度调参流程</h3>
+    <div class="formula">
+<span class="comment">// 灰度调参：A/B 对比</span>
+<span class="var">configA</span> <span class="op">=</span> <span class="var">currentConfig</span>           <span class="comment">// 当前线上配置</span>
+<span class="var">configB</span> <span class="op">=</span> <span class="fn">tuneConfig</span>(<span class="var">configA</span>)    <span class="comment">// 调整后的候选配置</span>
+
+<span class="var">reportA</span> <span class="op">=</span> <span class="fn">runRegressionSuite</span>(<span class="var">configA</span>)
+<span class="var">reportB</span> <span class="op">=</span> <span class="fn">runRegressionSuite</span>(<span class="var">configB</span>)
+
+<span class="comment">// 对比关键指标，选择更优配置</span>
+<span class="keyword">if</span> <span class="fn">isBetter</span>(<span class="var">reportB</span>, <span class="var">reportA</span>, <span class="var">targets</span>):
+    <span class="fn">deploy</span>(<span class="var">configB</span>)  <span class="comment">// 热更新上线</span>
+    </div>
+
+    <h3>19.4 单测覆盖</h3>
+    <p>每个 sim 层级需独立单测，核心测试用例：</p>
+    <ul>
+      <li><b>L0</b>：同一 seed 产出同一序列；不同 seed 产出不同序列</li>
+      <li><b>L1</b>：48 分钟总回合数落在 95-115；OT 正确触发与结束</li>
+      <li><b>L2</b>：S 档球员出手权重偏向其擅长的类型；战术倾向正确影响权重</li>
+      <li><b>L3</b>：空位命中率 &gt; 受干扰命中率；顶级射手命中率 &gt; 菜鸟命中率</li>
+      <li><b>L4</b>：Condition 0 球员命中率显著低于 Condition 100；化学 0.8 优于 0.2</li>
+      <li><b>L5</b>：Condition &lt; 35 强制换人；犯满自动出场</li>
+      <li><b>L6</b>：Box Score 总分 = PBP 流中所有得分事件之和；MVP 在胜方</li>
+      <li><b>端到端</b>：同 inputs + seed 的两次 sim 结果完全一致</li>
+    </ul>
+  </section>
+
+  <!-- ==================== §20 数值附录 ==================== -->
+  <section id="s20">
+    <h2><span class="num">20</span>数值附录</h2>
+
+    <h3>20.1 全局常量表</h3>
+    <table>
+      <thead><tr><th>常量名</th><th>默认值</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><code>GAME_MINUTES</code></td><td>48</td><td>比赛总分钟数</td></tr>
+        <tr><td><code>QUARTER_MINUTES</code></td><td>12</td><td>每节分钟数</td></tr>
+        <tr><td><code>OT_MINUTES</code></td><td>5</td><td>加时赛分钟数</td></tr>
+        <tr><td><code>MAX_OT</code></td><td>3</td><td>最大加时次数</td></tr>
+        <tr><td><code>SHOT_CLOCK</code></td><td>24</td><td>进攻时限（秒）</td></tr>
+        <tr><td><code>POSSESSION_TIME_BASE</code></td><td>16.0</td><td>回合时间基线（秒）</td></tr>
+        <tr><td><code>MAX_PASSES</code></td><td>4</td><td>单回合最大传球次数</td></tr>
+        <tr><td><code>FOUL_LIMIT</code></td><td>6</td><td>个人犯满出场</td></tr>
+        <tr><td><code>TEAM_FOUL_BONUS</code></td><td>4</td><td>每节全队犯规 bonus 阈值</td></tr>
+        <tr><td><code>CLUTCH_CLOCK</code></td><td>180</td><td>Clutch 进入时间（秒，最后3分钟）</td></tr>
+        <tr><td><code>CLUTCH_SCORE_DIFF</code></td><td>5</td><td>Clutch 触发分差阈值</td></tr>
+        <tr><td><code>GARBAGE_TIME_CLOCK</code></td><td>300</td><td>垃圾时间判定（最后5分钟）</td></tr>
+        <tr><td><code>GARBAGE_TIME_DIFF</code></td><td>20</td><td>垃圾时间分差阈值</td></tr>
+        <tr><td><code>PBP_PUSH_INTERVAL</code></td><td>1.5</td><td>PBP 推送间隔（秒）</td></tr>
+      </tbody>
+    </table>
+
+    <h3>20.2 概率基线表</h3>
+    <table>
+      <thead><tr><th>概率名</th><th>默认值</th><th>公式位置</th></tr></thead>
+      <tbody>
+        <tr><td>快攻基础概率（防守篮板后）</td><td>0.15</td><td>§4.2</td></tr>
+        <tr><td>快攻基础概率（抢断后）</td><td>0.35</td><td>§4.2</td></tr>
+        <tr><td>传球失误基础概率</td><td>0.04</td><td>§4.4</td></tr>
+        <tr><td>运球失误基础概率</td><td>0.02</td><td>§9.1</td></tr>
+        <tr><td>进攻犯规基础概率</td><td>0.03</td><td>§9.1</td></tr>
+        <tr><td>走步/其他失误基础概率</td><td>0.005</td><td>§9.1</td></tr>
+        <tr><td>抢断基础概率（每防守者/回合）</td><td>0.015</td><td>§9.2</td></tr>
+        <tr><td>防守犯规基础概率</td><td>0.05</td><td>§9.3</td></tr>
+        <tr><td>投篮犯规转化率（内线）</td><td>0.60</td><td>§9.3</td></tr>
+        <tr><td>投篮犯规转化率（外线）</td><td>0.25</td><td>§9.3</td></tr>
+        <tr><td>And-One 基础概率</td><td>0.08</td><td>§6.6</td></tr>
+        <tr><td>盖帽基础概率</td><td>0.05</td><td>§7.5</td></tr>
+        <tr><td>协防触发基础概率</td><td>0.15</td><td>§7.4</td></tr>
+        <tr><td>挡拆触发基础概率</td><td>0.25</td><td>§7.3</td></tr>
+        <tr><td>前场篮板基础修正</td><td>0.72</td><td>§8.1</td></tr>
+        <tr><td>长篮板概率（三分未中）</td><td>0.30</td><td>§8.2</td></tr>
+      </tbody>
+    </table>
+
+    <h3>20.3 命中率基线表</h3>
+    <table>
+      <thead><tr><th>出手类型</th><th>空位 baseRate</th><th>受干扰 baseRate</th><th>干扰影响系数</th></tr></thead>
+      <tbody>
+        <tr><td>三分</td><td>0.375</td><td>0.300</td><td>0.12</td></tr>
+        <tr><td>中距离</td><td>0.440</td><td>0.360</td><td>0.10</td></tr>
+        <tr><td>内线攻筐</td><td>0.620</td><td>0.480</td><td>0.14</td></tr>
+        <tr><td>快攻上篮</td><td>0.680</td><td>—</td><td>—</td></tr>
+        <tr><td>背打</td><td>0.450</td><td>0.380</td><td>0.08</td></tr>
+        <tr><td>突破上篮</td><td>0.550</td><td>0.420</td><td>0.13</td></tr>
+        <tr><td>罚球（baseRate 公式不同，见 §10.1）</td><td>—</td><td>—</td><td>—</td></tr>
+      </tbody>
+    </table>
+
+    <h3>20.4 Condition 衰减表</h3>
+    <table>
+      <thead><tr><th>参数</th><th>值</th></tr></thead>
+      <tbody>
+        <tr><td>每回合基础衰减</td><td>0.35</td></tr>
+        <tr><td>快节奏修正</td><td>×1.3</td></tr>
+        <tr><td>慢节奏修正</td><td>×0.8</td></tr>
+        <tr><td>出手修正</td><td>×1.2</td></tr>
+        <tr><td>突破修正</td><td>×1.5</td></tr>
+        <tr><td>背打修正</td><td>×1.4</td></tr>
+        <tr><td>传球修正</td><td>×0.9</td></tr>
+        <tr><td>防守对抗修正</td><td>×1.1</td></tr>
+        <tr><td>无球跑动修正</td><td>×0.8</td></tr>
+        <tr><td>休息恢复率</td><td>0.8/回合</td></tr>
+        <tr><td>Durability 衰减减免</td><td>×(1 - norm(Durability)×0.3)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>20.5 能力组合权重速查</h3>
+    <table>
+      <thead><tr><th>判定场景</th><th>组合公式</th></tr></thead>
+      <tbody>
+        <tr><td>三分出手质量</td><td>0.5×TP + 0.2×OffIQ + 0.15×Drib + 0.15×Agi</td></tr>
+        <tr><td>攻筐终结质量</td><td>0.4×Inside + 0.2×Str + 0.15×Spd + 0.15×Vert + 0.1×Aggr</td></tr>
+        <tr><td>中距离出手质量</td><td>0.5×Mid + 0.25×OffIQ + 0.15×Drib + 0.1×Agi</td></tr>
+        <tr><td>背打质量</td><td>0.35×Post + 0.3×Str + 0.2×Inside + 0.15×Agi</td></tr>
+        <tr><td>外线防守干扰</td><td>0.45×PerD + 0.2×Agi + 0.15×Spd + 0.1×DefIQ + 0.1×Wing</td></tr>
+        <tr><td>内线防守干扰</td><td>0.35×IntD + 0.25×Reach + 0.15×Str + 0.15×Vert + 0.1×DefIQ</td></tr>
+        <tr><td>护球能力</td><td>0.5×Drib + 0.2×Pass + 0.15×OffIQ + 0.15×Agi</td></tr>
+        <tr><td>前场篮板</td><td>0.3×OffReb + 0.25×Vert + 0.2×Str + 0.15×Reach + 0.1×Agi</td></tr>
+        <tr><td>后场篮板</td><td>0.3×DefReb + 0.25×Vert + 0.2×Str + 0.15×Reach + 0.1×DefIQ</td></tr>
+      </tbody>
+    </table>
+
+    <h3>20.6 硬限表</h3>
+    <table>
+      <thead><tr><th>参数</th><th>下限</th><th>上限</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>shotProb（投篮命中率）</td><td>0.05</td><td>0.95</td><td>再强 5% 失手，再弱 5% 命中</td></tr>
+        <tr><td>ftProb（罚球命中率）</td><td>0.10</td><td>0.95</td><td>罚球下限略高</td></tr>
+        <tr><td>possessionTime</td><td>6s</td><td>24s</td><td>不少于 6 秒，不超过进攻时限</td></tr>
+        <tr><td>actionProb（任一行动概率）</td><td>0.01</td><td>0.80</td><td>任何行动至少 1% 概率；不超 80%</td></tr>
+        <tr><td>chemMod（化学修正）</td><td>-0.05</td><td>+0.05</td><td>化学影响上限 5%</td></tr>
+        <tr><td>homeCourtMod</td><td>—</td><td>+0.03</td><td>主场优势上限 3%</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    比赛模拟引擎系统设计 · Sim Engine Design · v1.0<br>
+    篮球经理世界 Hoops World Online · 关联策划方案 §9 / M0 核心依赖
+  </footer>
+
+</div>
+</body>
+</html>
