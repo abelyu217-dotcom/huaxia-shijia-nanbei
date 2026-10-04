@@ -234,9 +234,10 @@ export class SeasonService {
       },
     });
 
-    // 获取当前赛季所有联赛（按 world 分组）
+    // 获取当前赛季的国内联赛（按 world 分组处理升降级）
+    // 注意：国际联赛由 createInternationalLeague 单独重建，不在此复制
     const leagues = await this.prisma.league.findMany({
-      where: { seasonId },
+      where: { seasonId, type: "domestic" },
       include: { world: true },
     });
 
@@ -249,8 +250,9 @@ export class SeasonService {
     }
 
     for (const [, worldLeagues] of worlds) {
-      const l1 = worldLeagues.find((l) => l.level === 1);
-      const l2 = worldLeagues.find((l) => l.level === 2);
+      // 只在 domestic 联赛中找 L1/L2，避免被国际联赛干扰
+      const l1 = worldLeagues.find((l) => l.level === 1 && l.type === "domestic");
+      const l2 = worldLeagues.find((l) => l.level === 2 && l.type === "domestic");
 
       // 计算升降级球队
       let relegatedTeamIds: string[] = [];
@@ -265,13 +267,14 @@ export class SeasonService {
         );
       }
 
-      // 为每个联赛在新赛季创建对应记录，并重新分配球队
+      // 为每个国内联赛在新赛季创建对应记录，并重新分配球队
       for (const league of worldLeagues) {
         const newLeague = await this.prisma.league.create({
           data: {
             seasonId: newSeason.id,
             name: league.name,
             level: league.level,
+            type: league.type,
             worldId: league.worldId,
           },
         });
