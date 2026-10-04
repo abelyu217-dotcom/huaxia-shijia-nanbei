@@ -35,10 +35,10 @@ export class SeasonService {
     private readonly marketService: MarketService,
   ) {}
 
-  /** 获取当前激活的常规赛赛季，不存在则创建 */
+  /** 获取当前激活的赛季（常规赛或季后赛阶段），不存在则创建 */
   async getCurrentSeason() {
     let season = await this.prisma.season.findFirst({
-      where: { status: "regular" },
+      where: { status: { in: ["regular", "playoff"] } },
       orderBy: { createdAt: "desc" },
     });
     if (!season) {

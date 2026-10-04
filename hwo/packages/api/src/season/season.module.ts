@@ -2,6 +2,7 @@ import { Module, forwardRef } from "@nestjs/common";
 import { SeasonController } from "./season.controller.js";
 import { SeasonService } from "./season.service.js";
 import { ScheduleService } from "./schedule.service.js";
+import { PlayoffService } from "./playoff.service.js";
 import { SimModule } from "../sim/sim.module.js";
 import { AuthModule } from "../auth/auth.module.js";
 import { AiManagerModule } from "../ai/ai-manager.module.js";
@@ -35,7 +36,7 @@ import { ScoutModule } from "../scout/scout.module.js";
     forwardRef(() => ScoutModule),
   ],
   controllers: [SeasonController],
-  providers: [SeasonService, ScheduleService],
-  exports: [SeasonService, ScheduleService],
+  providers: [SeasonService, ScheduleService, PlayoffService],
+  exports: [SeasonService, ScheduleService, PlayoffService],
 })
 export class SeasonModule {}

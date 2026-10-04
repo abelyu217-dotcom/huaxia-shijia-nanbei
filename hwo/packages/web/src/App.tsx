@@ -166,6 +166,7 @@ const NAV_GROUPS: { group: string; items: { id: NavKind; label: string }[] }[] =
     group: "赛事",
     items: [
       { id: "schedule", label: "比赛" },
+      { id: "playoff", label: "季后赛" },
       { id: "pvp", label: "PvP 对战" },
       { id: "matchTactic", label: "战术" },
       { id: "league", label: "国内联赛" },

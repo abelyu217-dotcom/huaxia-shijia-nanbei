@@ -291,6 +291,53 @@ export function fetchSchedule(): Promise<ScheduleDay[]> {
   return getJson<ScheduleDay[]>("/api/season/schedule");
 }
 
+/** 季后赛对阵树 */
+export interface PlayoffMatchInfo {
+  id: string;
+  day: number;
+  homeTeamId: string | null;
+  homeTeamName: string;
+  awayTeamId: string | null;
+  awayTeamName: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  winnerId: string | null;
+  status: string;
+}
+
+export interface PlayoffSeriesInfo {
+  id: string;
+  round: number;
+  slot: number;
+  bestOf: number;
+  teamAId: string | null;
+  teamAName: string;
+  seedA: number | null;
+  teamBId: string | null;
+  teamBName: string;
+  seedB: number | null;
+  winsA: number;
+  winsB: number;
+  status: "pending" | "in_progress" | "completed";
+  winnerId: string | null;
+  matches: PlayoffMatchInfo[];
+}
+
+export interface PlayoffBracket {
+  seasonId: string;
+  leagueId: string;
+  leagueName: string;
+  totalRounds: number;
+  series: PlayoffSeriesInfo[];
+  championId: string | null;
+  championName: string | null;
+}
+
+/** GET /api/season/playoff — 当前季后赛对阵树 */
+export function fetchPlayoff(): Promise<PlayoffBracket | null> {
+  return getJson<PlayoffBracket | null>("/api/season/playoff");
+}
+
 /** POST /api/season/advance — 推进一日，结算当日所有比赛（需 JWT） */
 export function postAdvanceDay(): Promise<AdvanceResult> {
   return sendJson<AdvanceResult>("POST", "/api/season/advance", {});

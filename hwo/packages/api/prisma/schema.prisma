@@ -164,6 +164,10 @@ model Team {
   teamNews        TeamNews[]
   pendingSignings PendingSigning[]
 
+  // 季后赛
+  playoffSeriesAsA PlayoffSeries[] @relation("PlayoffTeamA")
+  playoffSeriesAsB PlayoffSeries[] @relation("PlayoffTeamB")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -275,14 +279,49 @@ model Match {
   scheduledAt DateTime?
   status      String    @default("scheduled") // scheduled | settled
   seed        Int? // sim 随机种子
+  phase       String    @default("regular") // regular | playoff
 
   result MatchResult?
+
+  playoffSeriesId String?
+  playoffSeries   PlayoffSeries? @relation(fields: [playoffSeriesId], references: [id], onDelete: SetNull)
 
   createdAt DateTime  @default(now())
   settledAt DateTime?
 
   @@index([seasonId, day])
   @@index([status])
+  @@index([phase])
+}
+
+// ─── 季后赛系列赛（对阵树节点） ───
+// 每一轮的每个对阵是一条 PlayoffSeries，记录双方种子、系列赛胜场、胜者晋级的下一轮位置。
+// bestOf=5 表示五局三胜，先达到 ceil(bestOf/2) 胜的一方晋级。
+model PlayoffSeries {
+  id        String  @id @default(cuid())
+  seasonId  String
+  leagueId  String
+  round     Int     // 轮次：1=首轮，数字越大越靠后（决赛轮次最大）
+  slot      Int     // 该轮中的位置（1-based）
+  bestOf    Int     @default(5) // 系列赛局数：5=五局三胜，7=七局四胜
+  teamAId   String? // 高种子方（A）
+  teamA     Team?   @relation("PlayoffTeamA", fields: [teamAId], references: [id], onDelete: SetNull)
+  teamBId   String? // 低种子方（B）
+  teamB     Team?   @relation("PlayoffTeamB", fields: [teamBId], references: [id], onDelete: SetNull)
+  seedA     Int?
+  seedB     Int?
+  winsA     Int     @default(0)
+  winsB     Int     @default(0)
+  status    String  @default("pending") // pending | in_progress | completed
+  winnerId  String?
+  nextRound Int?    // 胜者晋级的下一轮轮次
+  nextSlot  Int?    // 胜者晋级的下一轮位置（1-based）
+  createdAt DateTime @default(now())
+
+  matches Match[]
+
+  @@index([seasonId, leagueId])
+  @@unique([seasonId, leagueId, round, slot])
 }
 
 // ─── 比赛结果（PBP + Box Score） ───

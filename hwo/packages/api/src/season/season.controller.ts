@@ -11,6 +11,7 @@
 import { Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
 import { SeasonService } from "./season.service.js";
 import { ScheduleService } from "./schedule.service.js";
+import { PlayoffService } from "./playoff.service.js";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 
@@ -20,6 +21,7 @@ export class SeasonController {
     private readonly seasonService: SeasonService,
     private readonly scheduleService: ScheduleService,
     private readonly prisma: PrismaService,
+    private readonly playoffService: PlayoffService,
   ) {}
 
   @Get()
@@ -55,6 +57,26 @@ export class SeasonController {
   async schedule() {
     const season = await this.seasonService.getCurrentSeason();
     return this.seasonService.getSchedule(season.id);
+  }
+
+  /** 季后赛对阵树（含比赛结果与系列赛胜场） */
+  @Get("playoff")
+  async playoff(@Query("leagueId") leagueId?: string) {
+    const season = await this.seasonService.getCurrentSeason();
+    let league = leagueId
+      ? await this.prisma.league.findUnique({ where: { id: leagueId }, select: { id: true } })
+      : null;
+    if (!league) {
+      // 默认取当前赛季的 L1 联赛
+      league = await this.prisma.league.findFirst({
+        where: { seasonId: season.id, level: 1, type: "domestic" },
+        select: { id: true },
+      });
+    }
+    if (!league) {
+      return { seasonId: season.id, leagueId: null, totalRounds: 0, series: [], championId: null, championName: null };
+    }
+    return this.playoffService.getBracket(season.id, league.id);
   }
 
   @UseGuards(JwtAuthGuard)

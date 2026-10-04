@@ -157,14 +157,21 @@ export class SimService {
       });
     }
 
-    // 更新积分榜
-    await this.seasonService.applyMatchResult(seasonId, leagueId, {
-      homeTeamId: params.homeTeamId,
-      awayTeamId: params.awayTeamId,
-      homeScore: result.homeScore,
-      awayScore: result.awayScore,
-      winnerId: result.winnerId,
-    });
+    // 季后赛比赛不影响常规赛积分榜
+    const matchPhase = params.matchId
+      ? (await this.prisma.match.findUnique({ where: { id: params.matchId }, select: { phase: true } }))?.phase ?? "regular"
+      : "regular";
+
+    if (matchPhase !== "playoff") {
+      // 更新积分榜
+      await this.seasonService.applyMatchResult(seasonId, leagueId, {
+        homeTeamId: params.homeTeamId,
+        awayTeamId: params.awayTeamId,
+        homeScore: result.homeScore,
+        awayScore: result.awayScore,
+        winnerId: result.winnerId,
+      });
+    }
 
     // 更新球员疲劳值（#13 状态色体系）：根据出场时间累积疲劳
     await this.applyFatigueFromBoxScore(output.boxScore);

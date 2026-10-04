@@ -18,6 +18,7 @@ import { PrService } from "../pr/pr.service.js";
 import { OperationsService } from "../operations/operations.service.js";
 import { MarketService } from "../market/market.service.js";
 import { ScoutService } from "../scout/scout.service.js";
+import { PlayoffService } from "./playoff.service.js";
 
 /**
  * 每日结算时刻（北京时间，小时 0-23）。
@@ -69,6 +70,7 @@ export class ScheduleService implements OnModuleInit {
     private readonly market: MarketService,
     @Inject(forwardRef(() => ScoutService))
     private readonly scout: ScoutService,
+    private readonly playoff: PlayoffService,
   ) {}
 
   /**
@@ -354,27 +356,113 @@ export class ScheduleService implements OnModuleInit {
       );
     }
 
-    // 检查是否还有后续比赛
-    const remaining = await this.prisma.match.count({
-      where: { seasonId, status: "scheduled" },
-    });
-
     // 推进日期
     const updated = await this.prisma.season.update({
       where: { id: seasonId },
       data: { currentDay: { increment: 1 } },
-      select: { currentDay: true },
+      select: { currentDay: true, status: true },
     });
 
-    // 如果没有剩余比赛，触发赛季交接
+    const nextDay = updated.currentDay;
     let seasonEnded = false;
-    if (remaining === 0) {
-      seasonEnded = await this.seasonService.handleSeasonEnd(seasonId);
+
+    // 赛季状态机：regular → playoff → offseason
+    if (season.status === "regular") {
+      // 常规赛：检查是否还有常规赛未结算
+      const remainingRegular = await this.prisma.match.count({
+        where: { seasonId, status: "scheduled", phase: "regular" },
+      });
+      // 只有在常规赛确实存在过比赛（已全部结算）时才进入季后赛，
+      // 避免赛季刚创建、尚未生成赛程时误触发
+      const hasRegularMatches = await this.prisma.match.count({
+        where: { seasonId, phase: "regular" },
+      });
+      if (remainingRegular === 0 && hasRegularMatches > 0) {
+        // 常规赛结束 → 生成季后赛对阵 + 排首轮赛程
+        this.logger.log(`常规赛结束，生成季后赛对阵…`);
+        const leagues = await this.prisma.league.findMany({
+          where: { seasonId },
+          select: { id: true, name: true, level: true, type: true },
+        });
+        let totalSeries = 0;
+        for (const league of leagues) {
+          if (league.type !== "international" && league.level !== 1) continue;
+          try {
+            const r = await this.playoff.generateBracket(seasonId, league.id);
+            totalSeries += r.seriesCount;
+          } catch (e) {
+            this.logger.warn(
+              `联赛 ${league.name} 季后赛生成失败（跳过）：${e instanceof Error ? e.message : String(e)}`,
+            );
+          }
+        }
+        // 排首轮赛程（在下一日）
+        for (const league of leagues) {
+          if (league.type !== "international" && league.level !== 1) continue;
+          try {
+            const scheduled = await this.playoff.scheduleRound(seasonId, league.id, nextDay);
+            if (scheduled > 0) {
+              this.logger.log(`联赛 ${league.name} 季后赛首轮已排 ${scheduled} 场`);
+            }
+          } catch (e) {
+            this.logger.warn(
+              `联赛 ${league.name} 季后赛排程失败：${e instanceof Error ? e.message : String(e)}`,
+            );
+          }
+        }
+        if (totalSeries > 0) {
+          await this.prisma.season.update({
+            where: { id: seasonId },
+            data: { status: "playoff" },
+          });
+          this.logger.log(`赛季进入季后赛阶段`);
+        } else {
+          // 无季后赛（如只有 L2），直接结束
+          seasonEnded = await this.seasonService.handleSeasonEnd(seasonId);
+        }
+      }
+    } else if (season.status === "playoff") {
+      // 季后赛：结算系列赛胜场 + 晋级 + 排下一轮
+      const leagues = await this.prisma.league.findMany({
+        where: { seasonId },
+        select: { id: true, name: true },
+      });
+      let allComplete = leagues.length > 0;
+      for (const league of leagues) {
+        const bracketExists = await this.prisma.playoffSeries.count({
+          where: { seasonId, leagueId: league.id },
+        });
+        if (bracketExists === 0) continue;
+
+        const r = await this.playoff.processResults(seasonId, league.id);
+        if (r.completedSeries > 0) {
+          this.logger.log(
+            `联赛 ${league.name}：${r.completedSeries} 组系列赛结束，${r.advancedToNextRound} 队晋级`,
+          );
+        }
+        // 为新确定双方的系列赛排赛程
+        const scheduled = await this.playoff.scheduleRound(seasonId, league.id, nextDay);
+        if (scheduled > 0) {
+          this.logger.log(`联赛 ${league.name} 下一轮已排 ${scheduled} 场`);
+        }
+        const done = await this.playoff.isComplete(seasonId, league.id);
+        if (!done) allComplete = false;
+      }
+
+      if (allComplete) {
+        // 所有联赛季后赛结束 → 休赛期 + 赛季交接
+        await this.prisma.season.update({
+          where: { id: seasonId },
+          data: { status: "offseason" },
+        });
+        this.logger.log(`季后赛全部结束，进入休赛期`);
+        seasonEnded = await this.seasonService.handleSeasonEnd(seasonId);
+      }
     }
 
     return {
       settled: todayMatches.length,
-      nextDay: updated.currentDay,
+      nextDay,
       seasonEnded,
     };
   }
