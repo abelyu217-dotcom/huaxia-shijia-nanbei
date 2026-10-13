@@ -12,7 +12,7 @@
  */
 
 import { Body, Controller, ForbiddenException, Get, NotFoundException, Param, Put, Query, Request, UseGuards } from "@nestjs/common";
-import { overallRating, type Player, type Team, type Abilities, type FogValue, type PlayerProfile } from "@hwo/shared";
+import { overallRating, type Player, type Team, type Abilities, type FogValue, type PlayerProfile, type PlayerFace } from "@hwo/shared";
 import { TeamService } from "./team.service.js";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard.js";
 import { PrismaService } from "../prisma/prisma.service.js";
@@ -55,6 +55,8 @@ interface PlayerDetail {
   scouted: boolean;
   /** 38 项详细档案（仅本队球员可见） */
   profile?: PlayerProfile;
+  /** 面部外观数据（facesjs），渲染头像用 */
+  face?: PlayerFace;
 }
 
 /** 详情视图：完整 Team，但 players 带 ovr */
@@ -169,6 +171,7 @@ export class TeamController {
           peak: null,
           scouted: true,
           profile: p.profile,
+          face: p.face,
         });
       } else {
         // 对手球员：应用 fog
@@ -211,6 +214,7 @@ export class TeamController {
           isRookie: p.isRookie,
           peak: report?.peakFog ?? null,
           scouted: !!report,
+          face: p.face,
         });
       }
     }

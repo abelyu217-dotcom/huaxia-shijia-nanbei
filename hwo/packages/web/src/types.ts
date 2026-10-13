@@ -18,7 +18,7 @@
  *   POST /api/season/generate      → { generated: number }（需 JWT）
  */
 
-import type { Position, Abilities, MatchResult, FogValue, PlayerProfile } from "@hwo/shared";
+import type { Position, Abilities, MatchResult, FogValue, PlayerProfile, PlayerFace } from "@hwo/shared";
 
 /** 统一从 ./types 导出 shared 中与 API 契约一致的类型，便于组件单一来源导入。 */
 export type {
@@ -28,6 +28,7 @@ export type {
   MatchResult,
   FogValue,
   PlayerProfile,
+  PlayerFace,
 } from "@hwo/shared";
 
 /** ScoutReport 直接从 shared 导出（球探报告） */
@@ -145,6 +146,8 @@ export interface PlayerDetail {
   traits?: string[];
   /** P0-①：38 项档案层（仅本队球员可见，存量球员可能为 undefined） */
   profile?: PlayerProfile;
+  /** 面部外观数据（facesjs），渲染头像用 */
+  face?: PlayerFace;
 }
 
 export interface TeamDetail {
@@ -1030,6 +1033,8 @@ export interface IdentityView {
     position?: string;
     status?: string;
     controlMode?: string;
+    /** 面部外观数据（facesjs） */
+    face?: PlayerFace;
   };
   professional: {
     exists: boolean;
@@ -1056,6 +1061,8 @@ export interface AvatarCreateParams {
   position: string;
   playStyle?: string;
   familyBackground?: string;
+  /** 自定义头像（facesjs 面部数据）。省略则后端自动随机生成 */
+  face?: PlayerFace;
 }
 
 // ── P3-3: 王朝与传承系统 ──

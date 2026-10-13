@@ -12,7 +12,7 @@
  */
 
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
-import { generateAllTeams, tacticFromPreset, type Team } from "@hwo/shared";
+import { generateAllTeams, generateFace, tacticFromPreset, type Team } from "@hwo/shared";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { ScheduleService } from "../season/schedule.service.js";
 import { SeasonService } from "../season/season.service.js";
@@ -120,6 +120,8 @@ export class WorldService {
               traits: p.traits as unknown as object,
               age: 25,
               salary: this.calculateSalary(p.abilities),
+              // 每个球员自动生成一张确定性随机的头像
+              face: (p.face ?? generateFace()) as unknown as object,
             })),
           },
           lineup: {

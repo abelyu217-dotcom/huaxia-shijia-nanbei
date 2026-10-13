@@ -15,6 +15,9 @@ import {
   postSwitchProfession,
   postAddSkillPoint,
 } from "../api";
+import { generateFace, type PlayerFace as PlayerFaceData } from "@hwo/shared";
+import { FaceEditor } from "../components/FaceEditor";
+import { PlayerFace } from "../components/PlayerFace";
 import type { IdentityView, ProfessionDef } from "../types";
 
 const LINE_LABEL: Record<string, string> = {
@@ -59,6 +62,8 @@ export function IdentityPage() {
   // 化身创建表单
   const [avatarName, setAvatarName] = useState("");
   const [avatarPosition, setAvatarPosition] = useState<string>("PG");
+  // 化身头像（facesjs 面部数据），默认随机生成一张，可在创建前定制
+  const [avatarFace, setAvatarFace] = useState<PlayerFaceData>(() => generateFace());
 
   // 转职目标
   const [switchJob, setSwitchJob] = useState("");
@@ -91,7 +96,11 @@ export function IdentityPage() {
     setBusy(true);
     setError(null);
     try {
-      await postCreateAvatar({ name: avatarName.trim(), position: avatarPosition });
+      await postCreateAvatar({
+        name: avatarName.trim(),
+        position: avatarPosition,
+        face: avatarFace,
+      });
       setAvatarName("");
       await load();
     } catch (e: unknown) {
@@ -202,15 +211,19 @@ export function IdentityPage() {
         </div>
         <div className="card-body">
           {avatar.exists ? (
-            <div className="info-grid">
-              <div><span className="muted">球员姓名</span><b>{avatar.playerName}</b></div>
-              <div><span className="muted">位置</span><b>{POSITION_CN[avatar.position ?? ""] ?? avatar.position}</b></div>
-              <div><span className="muted">状态</span><b>{STATUS_LABEL[avatar.status ?? ""] ?? avatar.status}</b></div>
-              <div><span className="muted">控制模式</span><b>{avatar.controlMode === "owner_controlled" ? "玩家控制" : "AI 控制"}</b></div>
+            <div className="avatar-summary">
+              <PlayerFace face={avatar.face} size={96} className="avatar-summary-face" title={avatar.playerName} />
+              <div className="info-grid">
+                <div><span className="muted">球员姓名</span><b>{avatar.playerName}</b></div>
+                <div><span className="muted">位置</span><b>{POSITION_CN[avatar.position ?? ""] ?? avatar.position}</b></div>
+                <div><span className="muted">状态</span><b>{STATUS_LABEL[avatar.status ?? ""] ?? avatar.status}</b></div>
+                <div><span className="muted">控制模式</span><b>{avatar.controlMode === "owner_controlled" ? "玩家控制" : "AI 控制"}</b></div>
+              </div>
             </div>
           ) : (
             <div>
-              <p className="muted">尚未创建化身。创建后将有一名自定义球员加入本队。</p>
+              <p className="muted">尚未创建化身。创建后将有一名自定义球员加入本队。下方可先定制头像，或直接使用随机头像。</p>
+              <FaceEditor face={avatarFace} onChange={setAvatarFace} />
               <div className="form-row">
                 <input
                   type="text"

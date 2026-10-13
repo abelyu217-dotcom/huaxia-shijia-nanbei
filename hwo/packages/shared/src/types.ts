@@ -7,6 +7,8 @@
  * 参见：比赛模拟引擎系统设计、技术架构文档 §3.2
  */
 
+import type { PlayerFace } from "./faces.js";
+
 /** 球场位置 */
 export type Position = "PG" | "SG" | "SF" | "PF" | "C";
 
@@ -68,6 +70,8 @@ export interface Player {
   isRookie?: boolean;
   /** 38 项球员档案（P0-① 属性双层结构）。若存在则为唯一数据源，abilities 由其推导 */
   profile?: PlayerProfile;
+  /** 面部外观数据（facesjs）。每个球员随机生成，化身可自定义 */
+  face?: PlayerFace;
 }
 
 /** 球员进攻原型（借鉴 JBL Po Archetype） */

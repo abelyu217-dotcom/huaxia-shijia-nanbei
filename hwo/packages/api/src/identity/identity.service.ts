@@ -16,6 +16,7 @@
  */
 
 import { Injectable, BadRequestException, Logger, NotFoundException } from "@nestjs/common";
+import { isPlayerFace, generateFace, type PlayerFace } from "@hwo/shared";
 import { PrismaService } from "../prisma/prisma.service.js";
 
 /** 11 职业定义 */
@@ -48,6 +49,8 @@ export interface IdentityView {
     position?: string;
     status?: string;
     controlMode?: string;
+    /** 面部外观数据（facesjs） */
+    face?: PlayerFace;
   };
   professional: {
     exists: boolean;
@@ -69,6 +72,8 @@ export interface AvatarCreateParams {
   playStyle?: string;
   /** 家庭背景 */
   familyBackground?: string;
+  /** 自定义头像（facesjs 面部数据）。省略则自动随机生成一张 */
+  face?: PlayerFace;
 }
 
 @Injectable()
@@ -84,7 +89,7 @@ export class IdentityService {
       include: {
         teams: { take: 1, select: { id: true, name: true } },
         avatar: {
-          include: { player: { select: { name: true, position: true } } },
+          include: { player: { select: { name: true, position: true, face: true } } },
         },
         professional: true,
       },
@@ -109,6 +114,7 @@ export class IdentityService {
             position: user.avatar.player.position,
             status: user.avatar.status,
             controlMode: user.avatar.controlMode,
+            face: (user.avatar.player.face as PlayerFace | null) ?? undefined,
           }
         : { exists: false },
       professional: user.professional
@@ -146,6 +152,8 @@ export class IdentityService {
     // 创建球员（初始能力 60，潜力 75）
     // Player.id 无默认值，需手动生成唯一 ID
     const playerId = `avatar-${userId.slice(0, 8)}-${Date.now()}`;
+    // 头像：优先使用用户定制的，否则自动随机生成
+    const face = isPlayerFace(params.face) ? params.face : generateFace();
     const player = await this.prisma.player.create({
       data: {
         id: playerId,
@@ -156,6 +164,7 @@ export class IdentityService {
         abilities: this.baseAbilities(),
         traits: [],
         potential: 75,
+        face: face as unknown as object,
       },
     });
 

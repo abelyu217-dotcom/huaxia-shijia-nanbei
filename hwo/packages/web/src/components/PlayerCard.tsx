@@ -5,6 +5,7 @@
 
 import { useState } from "react";
 import type { PlayerDetail, FogValue, Abilities, PlayerProfile } from "../types";
+import { PlayerFace } from "./PlayerFace";
 import { KEY_ABILITIES, POSITION_LABEL, ovrTier } from "../lib";
 
 // 38 项档案分组展示配置（字段名须与 shared/types.ts 的 PlayerProfile 一致）
@@ -109,6 +110,7 @@ export function PlayerCard({ player, onScout, scouted }: PlayerCardProps) {
   return (
     <article className={`player-card tier-${tier}${ovrFogged ? " is-fogged" : ""}`}>
       <div className="pc-head">
+        <PlayerFace face={player.face} size={64} className="pc-face" title={player.name} />
         <div className="pc-ovr" aria-label={`综合评分 ${ovrVal}`}>
           {ovrVal}
           {ovrFogged && (

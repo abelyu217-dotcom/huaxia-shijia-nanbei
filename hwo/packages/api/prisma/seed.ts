@@ -51,6 +51,8 @@ async function seedTeam(team: Team): Promise<void> {
       abilities: p.abilities,
       traits: p.traits,
       salary: calcSalary(ovr),
+      // 每个球员自动生成确定性随机头像（facesjs）
+      face: p.face,
     };
   });
   await prisma.player.createMany({ data: playerData });

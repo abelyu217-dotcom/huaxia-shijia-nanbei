@@ -19,7 +19,7 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service.js";
-import { generateRookieAbilities, computeOVR, type Abilities } from "@hwo/shared";
+import { generateRookieAbilities, computeOVR, generateFace, seedFromString, type Abilities } from "@hwo/shared";
 import type { Prisma } from "@prisma/client";
 
 /** 每轮顺位数（每世界 16 队） */
@@ -469,6 +469,8 @@ export class DraftService {
           potential,
           trainExp: 0,
           retired: false,
+          // 自动随机头像（由球员 ID 派生种子，稳定可复现）
+          face: generateFace(seedFromString(playerId)) as unknown as Prisma.InputJsonValue,
         },
       });
       created++;

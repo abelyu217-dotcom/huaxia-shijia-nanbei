@@ -9,6 +9,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import type { PlayerDetail, Position, Abilities, FogValue } from "../types";
+import { PlayerFace } from "./PlayerFace";
 import {
   KEY_ABILITIES,
   POSITION_LABEL,
@@ -301,14 +302,17 @@ export function PlayerSkillsTable({
               return (
                 <tr key={p.id} className={`tier-row tier-${tier}${ovrFogged ? " is-fogged" : ""}`}>
                   <td className="cell-name">
-                    <span className="player-tags">
-                      {p.isCaptain && <span className="tag tag-captain" title="队长">C</span>}
-                      {p.isRookie && <span className="tag tag-rookie" title="新秀">R</span>}
-                      <span className="player-name" title={p.name}>{p.name}</span>
-                      {ovrFogged && (
-                        <span className="fog-badge" title="未探查">雾</span>
-                      )}
-                    </span>
+                    <div className="cell-name-main">
+                      <PlayerFace face={p.face} size={36} className="cell-face" title={p.name} />
+                      <span className="player-tags">
+                        {p.isCaptain && <span className="tag tag-captain" title="队长">C</span>}
+                        {p.isRookie && <span className="tag tag-rookie" title="新秀">R</span>}
+                        <span className="player-name" title={p.name}>{p.name}</span>
+                        {ovrFogged && (
+                          <span className="fog-badge" title="未探查">雾</span>
+                        )}
+                      </span>
+                    </div>
                     {renderNameExtra?.(p)}
                   </td>
                   <td>

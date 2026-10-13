@@ -9,3 +9,4 @@ export * from "./sim-config-store.js";
 export * from "./replay.js";
 export * from "./fog.js";
 export * from "./profile.js";
+export * from "./faces.js";

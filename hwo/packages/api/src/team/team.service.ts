@@ -13,6 +13,7 @@ import {
   type Abilities,
   type Lineup,
   type Player,
+  type PlayerFace,
   type PlayerProfile,
   type TacticModSet,
   type Team,
@@ -69,7 +70,7 @@ export class TeamService {
       chemistry: number;
       captainId?: string | null;
       userId?: string | null;
-      players: { id: string; name: string; position: string; abilities: unknown; traits: unknown; salary?: number | null; fatigue?: number; age?: number; profile?: unknown }[];
+      players: { id: string; name: string; position: string; abilities: unknown; traits: unknown; salary?: number | null; fatigue?: number; age?: number; profile?: unknown; face?: unknown }[];
       lineup: { starters: unknown; minutes: unknown } | null;
       tactic: { modSet: unknown } | null;
     },
@@ -93,6 +94,8 @@ export class TeamService {
         isRookie: (p.age ?? 25) <= 22,
         // P0-①：38 项档案层（可能为 null，存量球员回填后才有值）
         profile: (p.profile as PlayerProfile | null) ?? undefined,
+        // 面部外观（facesjs），存量球员回填后才有值
+        face: (p.face as PlayerFace | null) ?? undefined,
       };
     });
 

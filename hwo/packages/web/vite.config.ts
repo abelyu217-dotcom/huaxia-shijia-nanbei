@@ -7,6 +7,11 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
+  // facesjs 的 faceToSvgString() 依赖浏览器/Node 的 `global`，浏览器无该全局变量，
+  // 这里将其映射为 globalThis。
+  define: {
+    global: "globalThis",
+  },
   server: {
     host: "0.0.0.0",
     port: 5173,

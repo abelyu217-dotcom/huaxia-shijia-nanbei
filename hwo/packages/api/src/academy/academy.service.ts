@@ -9,7 +9,7 @@
 
 import { Injectable, Logger, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service.js";
-import { generateRookieAbilities } from "@hwo/shared";
+import { generateRookieAbilities, generateFace, seedFromString } from "@hwo/shared";
 import type { Prisma } from "@prisma/client";
 
 /** 学院等级上限 */
@@ -155,6 +155,8 @@ export class AcademyService {
           potential,
           trainExp: 0,
           retired: false,
+          // 自动随机头像（由球员 ID 派生种子，稳定可复现）
+          face: generateFace(seedFromString(playerId)) as unknown as Prisma.InputJsonValue,
         },
       });
 

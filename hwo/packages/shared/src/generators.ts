@@ -5,6 +5,7 @@
 
 import { Abilities, Player, Position, Team, Lineup } from "./types.js";
 import { buildProfile, deriveAbilities } from "./profile.js";
+import { generateFace } from "./faces.js";
 
 // 姓氏池
 const SURNAMES = ["王", "李", "张", "刘", "陈", "杨", "黄", "赵", "周", "吴",
@@ -100,6 +101,8 @@ function generatePlayer(
     profile,
     condition: { fatigue: 0, foulTrouble: 0, hot: 0 },
     traits,
+    // 每个球员自动生成一张确定性随机的头像
+    face: generateFace(seed),
   };
 }
 
