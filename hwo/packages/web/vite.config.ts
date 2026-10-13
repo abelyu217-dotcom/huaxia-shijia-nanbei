@@ -7,8 +7,8 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
-  // facesjs 的 faceToSvgString() 依赖浏览器/Node 的 `global`，浏览器无该全局变量，
-  // 这里将其映射为 globalThis。
+  // 浏览器没有 Node 风格的 `global` 变量，将其映射为 globalThis 以兼容依赖。
+  // 注意：facesjs 的浏览器渲染走 display()（见 PlayerFace 组件），不用 faceToSvgString。
   define: {
     global: "globalThis",
   },

@@ -1,12 +1,13 @@
 /**
  * PlayerFace——球员头像渲染组件
  *
- * 用 facesjs 的 faceToSvgString() 把面部数据渲染为 SVG 字符串，直接注入 DOM。
+ * 浏览器端通过 facesjs 的 display()（经 shared 暴露为 renderFace）把面部数据
+ * 直接渲染进 DOM 容器；faceToSvgString() 仅适用于 Node，不可在浏览器调用。
  * 无面部数据时降级为占位块。
  */
 
-import { useMemo } from "react";
-import { faceToSvg, type PlayerFace as PlayerFaceData } from "@hwo/shared";
+import { useLayoutEffect, useRef } from "react";
+import { renderFace, type PlayerFace as PlayerFaceData } from "@hwo/shared";
 
 interface Props {
   face?: PlayerFaceData | null;
@@ -17,29 +18,26 @@ interface Props {
 }
 
 export function PlayerFace({ face, size = 40, className, title }: Props) {
-  const svg = useMemo(() => {
-    if (!face) return null;
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || !face) return;
     try {
-      return faceToSvg(face);
+      renderFace(el, face);
+      // facesjs 默认按 xMinYMin meet 渲染（画面贴左上角）。方形头像改为铺满容器并居中裁剪。
+      el.querySelector("svg")?.setAttribute("preserveAspectRatio", "xMidYMid slice");
     } catch {
-      return null;
+      el.innerHTML = "";
     }
   }, [face]);
 
   const cls = `player-face${className ? ` ${className}` : ""}`;
   const style = { width: size, height: size };
 
-  if (!svg) {
+  if (!face) {
     return <span className={`${cls} player-face-empty`} style={style} title={title} aria-hidden />;
   }
 
-  return (
-    <span
-      className={cls}
-      style={style}
-      title={title}
-      role="img"
-      dangerouslySetInnerHTML={{ __html: svg }}
-    />
-  );
+  return <span className={cls} style={style} ref={ref} title={title} role="img" aria-label={title} />;
 }

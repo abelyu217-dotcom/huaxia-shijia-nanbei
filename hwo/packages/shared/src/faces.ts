@@ -6,13 +6,24 @@
  * 这里在调用 generate() 期间临时用确定性 PRNG 覆盖 Math.random。
  * generate() 是纯同步函数（内部无 await），因此不存在并发交错问题。
  *
- * 前端渲染：faceToSvg() 返回 SVG 字符串，可直接注入页面。
+ * 渲染：
+ *  - 浏览器端用 renderFace()，把面部数据直接渲染进 DOM 容器（facesjs 官方推荐方式）。
+ *  - Node/服务端用 faceToSvg()，得到 SVG 字符串（facesjs 的 faceToSvgString 仅面向 Node）。
  * 参见：.uploads/HWO球员外观编辑器demo.html
  */
 
 import { generate, faceToSvgString, svgsIndex } from "facesjs";
 import type { FaceConfig, Feature, Gender, Overrides } from "facesjs";
 import { mulberry32 } from "./prng.js";
+
+/**
+ * 将面部数据渲染进一个 DOM 容器（浏览器专用）。
+ *
+ * 直接复用 facesjs 的 display()：它通过临时改写 `global.document` 的方式实现
+ * `faceToSvgString()`，而 `window.document` 在浏览器中是只读属性，赋值会抛错，
+ * 因此浏览器端必须走 display() 而非 faceToSvg()。
+ */
+export { display as renderFace } from "facesjs";
 
 /** 球员面部数据（结构等价于 facesjs 的 FaceConfig），存于 Player.face */
 export type PlayerFace = FaceConfig;
@@ -45,7 +56,7 @@ export function generateFace(seed?: number, gender: Gender = "male"): PlayerFace
   }
 }
 
-/** 将面部数据渲染为 SVG 字符串（无需真实 DOM，可在任意环境调用） */
+/** 将面部数据渲染为 SVG 字符串（仅 Node/服务端可用，浏览器端请用 renderFace） */
 export function faceToSvg(face: PlayerFace, overrides?: Overrides): string {
   return faceToSvgString(face, overrides);
 }
