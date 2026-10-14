@@ -1,0 +1,191 @@
+{
+  "generatedAt": "2026-09-30T13:06:36.260Z",
+  "gamesPlayed": 10000,
+  "errors": 0,
+  "avgMs": 0.7288,
+  "elapsedSeconds": 7.319,
+  "otRate": 0.0312,
+  "homeWinRate": 0.6718,
+  "scoreSummary": {
+    "mean": 56.03615,
+    "median": 56,
+    "min": 26,
+    "max": 98,
+    "std": 9.041700237096777,
+    "p5": 41,
+    "p95": 71
+  },
+  "fgPctSummary": {
+    "mean": 0.5116594019783819,
+    "median": 0.5116279069767442,
+    "min": 0.21428571428571427,
+    "max": 0.8095238095238095,
+    "std": 0.07820839360097295,
+    "p5": 0.3829787234042553,
+    "p95": 0.6410256410256411
+  },
+  "threePctSummary": {
+    "mean": 0.4297084101788121,
+    "median": 0.42857142857142855,
+    "min": 0,
+    "max": 1,
+    "std": 0.17885388103316857,
+    "p5": 0.14285714285714285,
+    "p95": 0.75
+  },
+  "ftPctSummary": {
+    "mean": 0.8429001328892342,
+    "median": 0.8571428571428571,
+    "min": 0,
+    "max": 1,
+    "std": 0.13741107211002018,
+    "p5": 0.6,
+    "p95": 1
+  },
+  "reboundsSummary": {
+    "mean": 18.4897,
+    "median": 18,
+    "min": 5,
+    "max": 41,
+    "std": 3.8825628018101335,
+    "p5": 12,
+    "p95": 25
+  },
+  "assistsSummary": {
+    "mean": 12.892,
+    "median": 13,
+    "min": 2,
+    "max": 28,
+    "std": 3.310111176381194,
+    "p5": 8,
+    "p95": 18
+  },
+  "turnoversSummary": {
+    "mean": 5.77355,
+    "median": 6,
+    "min": 0,
+    "max": 16,
+    "std": 2.296360249939154,
+    "p5": 2,
+    "p95": 10
+  },
+  "checks": [
+    {
+      "metric": "球队得分",
+      "mean": 56.03615,
+      "ideal": 56,
+      "minObserved": 56.03615,
+      "maxObserved": 56.03615,
+      "rangeMin": 40,
+      "rangeMax": 70,
+      "passed": true,
+      "note": "落在合理区间 [40, 70]"
+    },
+    {
+      "metric": "投篮命中率",
+      "mean": 0.5116594019783819,
+      "ideal": 0.5,
+      "minObserved": 0.5116594019783819,
+      "maxObserved": 0.5116594019783819,
+      "rangeMin": 0.4,
+      "rangeMax": 0.6,
+      "passed": true,
+      "note": "落在合理区间 [0.4, 0.6]"
+    },
+    {
+      "metric": "三分命中率",
+      "mean": 0.4297084101788121,
+      "ideal": 0.38,
+      "minObserved": 0.4297084101788121,
+      "maxObserved": 0.4297084101788121,
+      "rangeMin": 0.3,
+      "rangeMax": 0.5,
+      "passed": true,
+      "note": "落在合理区间 [0.3, 0.5]"
+    },
+    {
+      "metric": "罚球命中率",
+      "mean": 0.8429001328892342,
+      "ideal": 0.78,
+      "minObserved": 0.8429001328892342,
+      "maxObserved": 0.8429001328892342,
+      "rangeMin": 0.65,
+      "rangeMax": 0.9,
+      "passed": true,
+      "note": "落在合理区间 [0.65, 0.9]"
+    },
+    {
+      "metric": "篮板数",
+      "mean": 18.4897,
+      "ideal": 22,
+      "minObserved": 18.4897,
+      "maxObserved": 18.4897,
+      "rangeMin": 12,
+      "rangeMax": 35,
+      "passed": true,
+      "note": "落在合理区间 [12, 35]"
+    },
+    {
+      "metric": "助攻数",
+      "mean": 12.892,
+      "ideal": 12,
+      "minObserved": 12.892,
+      "maxObserved": 12.892,
+      "rangeMin": 6,
+      "rangeMax": 22,
+      "passed": true,
+      "note": "落在合理区间 [6, 22]"
+    },
+    {
+      "metric": "失误数",
+      "mean": 5.77355,
+      "ideal": 7,
+      "minObserved": 5.77355,
+      "maxObserved": 5.77355,
+      "rangeMin": 3,
+      "rangeMax": 14,
+      "passed": true,
+      "note": "落在合理区间 [3, 14]"
+    },
+    {
+      "metric": "主场胜率",
+      "mean": 0.6718,
+      "ideal": 0.6,
+      "minObserved": 0.6718,
+      "maxObserved": 0.6718,
+      "rangeMin": 0.5,
+      "rangeMax": 0.75,
+      "passed": true,
+      "note": "落在合理区间 [0.5, 0.75]"
+    },
+    {
+      "metric": "加时赛比例",
+      "mean": 0.0312,
+      "ideal": 0.06,
+      "minObserved": 0.0312,
+      "maxObserved": 0.0312,
+      "rangeMin": 0.02,
+      "rangeMax": 0.15,
+      "passed": true,
+      "note": "落在合理区间 [0.02, 0.15]"
+    }
+  ],
+  "allPassed": true,
+  "scoreHistogram": {
+    "25": 16,
+    "30": 114,
+    "35": 496,
+    "40": 1405,
+    "45": 2776,
+    "50": 3924,
+    "55": 4320,
+    "60": 3393,
+    "65": 2139,
+    "70": 986,
+    "75": 344,
+    "80": 66,
+    "85": 19,
+    "90": 1,
+    "95": 1
+  }
+}

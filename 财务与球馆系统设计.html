@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>财务与球馆系统设计 · Hoops World Online</title>
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#141b26; --panel2:#1b2433; --line:#26324a;
+    --ink:#e6edf6; --ink2:#9fb0c7; --ink3:#6b7c97;
+    --accent:#ff6b35; --accent2:#4ade80; --gold:#fbbf24; --red:#ef4444; --blue:#60a5fa; --purple:#a78bfa; --cyan:#22d3ee;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:linear-gradient(180deg,#070a10 0%,#0b0f17 100%);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 22px 120px}
+  .hero{
+    position:relative;border:1px solid var(--line);border-radius:18px;padding:42px 34px 30px;
+    background:
+      radial-gradient(800px 280px at 20% -10%, rgba(74,222,128,.16), transparent 60%),
+      radial-gradient(700px 260px at 90% 0%, rgba(251,191,36,.12), transparent 60%),
+      linear-gradient(180deg,#151d2c,#0e1420);
+    overflow:hidden;margin-bottom:30px;
+  }
+  .hero .tag{display:inline-block;font-size:12px;letter-spacing:.16em;color:var(--accent2);border:1px solid rgba(74,222,128,.45);padding:4px 10px;border-radius:999px;margin-bottom:18px;text-transform:uppercase}
+  .hero h1{margin:0 0 8px;font-size:32px;letter-spacing:.5px;font-weight:800}
+  .hero h1 .en{color:var(--ink2);font-weight:600;font-size:18px;margin-left:10px}
+  .hero .pitch{color:var(--ink2);font-size:15px;max-width:840px;margin:10px 0 22px}
+  .hero .meta{display:flex;flex-wrap:wrap;gap:10px}
+  .hero .chip{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--ink2)}
+  .hero .chip b{color:var(--ink);font-weight:600}
+  .hero .arena{position:absolute;right:34px;bottom:18px;font-size:68px;opacity:.08;pointer-events:none}
+
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 28px;margin-bottom:22px}
+  .toc h3{margin:0 0 14px;font-size:14px;color:var(--ink2);letter-spacing:.1em;text-transform:uppercase}
+  .toc ol{margin:0;padding-left:22px;columns:2;column-gap:32px}
+  .toc li{margin:5px 0;break-inside:avoid}
+  .toc a{color:var(--ink2)}
+  .toc a:hover{color:var(--accent2)}
+  @media (max-width:640px){.toc ol{columns:1}}
+
+  section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin-bottom:22px}
+  section > h2{margin:0 0 16px;font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
+  section > h2 .num{font-size:12px;color:#0b0f17;background:var(--accent2);width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;font-weight:800;flex-shrink:0}
+  h3{font-size:16px;margin:22px 0 10px;color:var(--ink)}
+  h4{font-size:14px;margin:18px 0 8px;color:var(--accent2);letter-spacing:.04em}
+  p{margin:8px 0}
+  ul,ol{margin:8px 0 8px 4px;padding-left:22px}
+  li{margin:4px 0}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{background:#0d131d;border:1px solid var(--line);padding:2px 6px;border-radius:5px;font-size:13px;color:var(--gold);font-family:"SF Mono","Fira Code",Consolas,monospace}
+  strong{color:#fff}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px}
+  th,td{padding:9px 11px;text-align:left;border:1px solid var(--line);vertical-align:top}
+  th{background:var(--panel2);color:var(--ink);font-weight:600}
+  tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+
+  .note{border-left:3px solid var(--accent);background:rgba(255,107,53,.06);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;color:var(--ink2)}
+  .note b{color:var(--accent)}
+  .note.green{border-left-color:var(--accent2);background:rgba(74,222,128,.06)}
+  .note.green b{color:var(--accent2)}
+  .note.blue{border-left-color:var(--blue);background:rgba(96,165,250,.06)}
+  .note.blue b{color:var(--blue)}
+  .note.red{border-left-color:var(--red);background:rgba(239,68,68,.06)}
+  .note.red b{color:var(--red)}
+  .note.gold{border-left-color:var(--gold);background:rgba(251,191,36,.06)}
+  .note.gold b{color:var(--gold)}
+  .note.purple{border-left-color:var(--purple);background:rgba(167,139,250,.06)}
+  .note.purple b{color:var(--purple)}
+
+  .formula{background:#0d131d;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;font-family:"SF Mono","Fira Code",Consolas,monospace;font-size:13px;overflow-x:auto;line-height:1.9;white-space:pre}
+  .formula .var{color:var(--blue)}
+  .formula .op{color:var(--accent)}
+  .formula .fn{color:var(--purple)}
+  .formula .num{color:var(--gold)}
+  .formula .comment{color:var(--ink3);font-style:italic}
+  .formula .str{color:var(--accent2)}
+  .formula .kw{color:var(--accent2);font-weight:bold}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:14px 0}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .card .t{font-weight:700;color:var(--ink);font-size:14px;margin-bottom:6px}
+  .card .d{font-size:13px;color:var(--ink2)}
+  .badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:999px;font-weight:700;letter-spacing:.04em;vertical-align:middle}
+  .badge.green{background:rgba(74,222,128,.15);color:var(--accent2)}
+  .badge.gold{background:rgba(251,191,36,.15);color:var(--gold)}
+  .badge.red{background:rgba(239,68,68,.15);color:var(--red)}
+  .badge.blue{background:rgba(96,165,250,.15);color:var(--blue)}
+  .badge.purple{background:rgba(167,139,250,.15);color:var(--purple)}
+
+  .flow{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:14px 0;font-size:13px}
+  .flow .step{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 14px;color:var(--ink)}
+  .flow .arrow{color:var(--accent2);font-weight:bold}
+
+  .arena-tiers{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:16px 0}
+  .arena-card{border-radius:10px;padding:16px 14px;text-align:center;border:1px solid var(--line);background:var(--panel2)}
+  .arena-card .ico{font-size:28px;margin-bottom:6px}
+  .arena-card .name{font-weight:800;font-size:15px;margin-bottom:4px;color:var(--accent2)}
+  .arena-card .cap{font-size:18px;font-weight:800;color:var(--gold);margin:4px 0}
+  .arena-card .desc{font-size:11.5px;color:var(--ink2);line-height:1.5}
+
+  .fan-bar{height:24px;border-radius:6px;overflow:hidden;display:flex;margin:8px 0;border:1px solid var(--line)}
+  .fan-seg{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#0b0f17}
+  .fan-seg.s1{background:var(--red);flex:20}
+  .fan-seg.s2{background:#f97316;flex:20}
+  .fan-seg.s3{background:var(--gold);flex:20}
+  .fan-seg.s4{background:var(--accent2);flex:20}
+  .fan-seg.s5{background:var(--cyan);flex:20}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ==================== HERO ==================== -->
+<div class="hero">
+  <span class="tag">System Design · Finance & Arena</span>
+  <h1>财务与球馆系统 <span class="en">Finance & Arena System</span></h1>
+  <p class="pitch">经济系统的深化聚焦文档。经济系统 §6-8 已定义收入分解、球馆等级表、财务面板与赛季财报的数值框架——本系统不重复这些表，而是补全其决策维度：球迷热情引擎（被多处引用但未定义）、球馆升级决策模型、重复奢侈税深化、财务公平竞赛（FFP）、财务健康评分、收入优化博弈，以及与签约转会/训练/球探/王朝系统的财务联动规则。</p>
+  <div class="meta">
+    <span class="chip"><b>优先级</b> P1</span>
+    <span class="chip"><b>基础文档</b> 经济系统设计 §6-8</span>
+    <span class="chip"><b>依赖</b> 经济系统 · 签约转会 · 训练 · 球探 · 世界结构</span>
+    <span class="chip"><b>版本</b> v1.0</span>
+  </div>
+  <span class="arena">🏟️</span>
+</div>
+
+<!-- ==================== TOC ==================== -->
+<div class="toc">
+  <h3>目录 · Table of Contents</h3>
+  <ol>
+    <li><a href="#s1">深化方向与原则</a></li>
+    <li><a href="#s2">系统总览</a></li>
+    <li><a href="#s3">球迷热情引擎</a></li>
+    <li><a href="#s4">球馆升级决策模型</a></li>
+    <li><a href="#s5">收入优化博弈</a></li>
+    <li><a href="#s6">重复奢侈税深化</a></li>
+    <li><a href="#s7">财务公平竞赛 FFP</a></li>
+    <li><a href="#s8">财务健康评分</a></li>
+    <li><a href="#s9">赛季财务规划</a></li>
+    <li><a href="#s10">与签约转会联动</a></li>
+    <li><a href="#s11">与训练球探联动</a></li>
+    <li><a href="#s12">与王朝世界联动</a></li>
+    <li><a href="#s13">AI 财务决策</a></li>
+    <li><a href="#s14">异常处理与边界规则</a></li>
+    <li><a href="#s15">数值附录</a></li>
+  </ol>
+</div>
+
+<!-- ==================== §1 深化方向与原则 ==================== -->
+<section id="s1">
+  <h2><span class="num">1</span>深化方向与原则</h2>
+
+  <div class="note green"><b>深化定位</b>：经济系统 §6-8 已建立财务与球馆的数值骨架——收入分解占比、球馆 Lv1-5 等级表、财务面板、赛季财报。本系统不重复这些数值表，而是补全其"决策维度"：球迷热情如何动态变化、球馆何时升级才值得、重复奢侈税如何运作、FFP 如何约束、财务健康如何评分、收入如何优化博弈。数值沿用经济系统，本系统聚焦"怎么做财务决策"。</div>
+
+  <h3>1.1 经济系统已覆盖 vs 本系统深化</h3>
+  <table>
+    <thead><tr><th>模块</th><th>经济系统已覆盖</th><th>本系统深化</th></tr></thead>
+    <tbody>
+      <tr><td>收入</td><td>§6 收入分解占比、球票/转播/赞助/周边公式</td><td>§5 收入优化博弈（票价/赞助/周边的策略权衡）</td></tr>
+      <tr><td>球馆</td><td>§7.4 球馆 Lv1-5 等级表（容量/维护/升级费/效果）</td><td>§4 升级决策模型（何时升/为何升/回本周期）</td></tr>
+      <tr><td>球迷热情</td><td>多处引用但未定义</td><td>§3 球迷热情引擎（完整定义）</td></tr>
+      <tr><td>奢侈税</td><td>§5 基础奢侈税</td><td>§6 重复奢侈税深化（递进惩罚）</td></tr>
+      <tr><td>FFP</td><td>§8 财报面板提及风险预警</td><td>§7 FFP 完整规则与处罚</td></tr>
+      <tr><td>财务健康</td><td>无</td><td>§8 财务健康评分模型</td></tr>
+    </tbody>
+  </table>
+
+  <h3>1.2 深化原则</h3>
+  <div class="grid">
+    <div class="card"><div class="t">① 决策而非记账 <span class="badge green">玩法</span></div><div class="d">财务不是被动记账，而是主动博弈——票价定多高？球馆何时升级？接受奢侈税换冠军值不值？每个决策都有取舍。</div></div>
+    <div class="card"><div class="t">② 长期 vs 短期 <span class="badge gold">张力</span></div><div class="d">高票价短期赚钱但伤球迷热情→长期上座率下降；球馆升级长期回本但短期吃现金流。财务的核心张力是时间。</div></div>
+    <div class="card"><div class="t">③ 健康可持续 <span class="badge blue">约束</span></div><div class="d">FFP 与财务健康评分防止"烧钱夺冠后破产"——可持续经营是底线，不是可选。</div></div>
+    <div class="card"><div class="t">④ 联动而非孤立 <span class="badge purple">耦合</span></div><div class="d">财务是所有系统的下游约束——签约转会受薪资空间约束、训练受运营预算约束、球探受球探预算约束。</div></div>
+  </div>
+</section>
+
+<!-- ==================== §2 系统总览 ==================== -->
+<section id="s2">
+  <h2><span class="num">2</span>系统总览</h2>
+
+  <h3>2.1 财务循环</h3>
+  <div class="flow">
+    <span class="step">赛季初规划</span>
+    <span class="arrow">→</span>
+    <span class="step">每日收入结算</span>
+    <span class="arrow">→</span>
+    <span class="step">每日支出扣除</span>
+    <span class="arrow">→</span>
+    <span class="step">球迷热情动态</span>
+    <span class="arrow">→</span>
+    <span class="step">赛季末财报</span>
+    <span class="arrow">→</span>
+    <span class="step">FFP 审查</span>
+    <span class="arrow">→</span>
+    <span class="step">财务健康评分</span>
+  </div>
+
+  <h3>2.2 经理的财务决策点</h3>
+  <table>
+    <thead><tr><th>决策</th><th>频率</th><th>核心张力</th></tr></thead>
+    <tbody>
+      <tr><td>票价定价</td><td>每赛季初</td><td>高价短期收入 vs 球迷热情长期</td></tr>
+      <tr><td>球馆升级</td><td>不定期（长期投资）</td><td>大额一次性投入 vs 多季回本周期</td></tr>
+      <tr><td>运营模块投资</td><td>每赛季初</td><td>教练/球探/青训/医疗/商业 各投多少</td></tr>
+      <tr><td>接受奢侈税</td><td>签约时</td><td>超帽签球星换即战力 vs 税费惩罚</td></tr>
+      <tr><td>赞助商续约</td><td>每赛季末</td><td>高要求高收入赞助 vs 低要求保底赞助</td></tr>
+      <tr><td>财务健康 vs 战绩</td><td>持续</td><td>花钱争冠 vs 量入为出可持续</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== §3 球迷热情引擎 ==================== -->
+<section id="s3">
+  <h2><span class="num">3</span>球迷热情引擎</h2>
+  <p>球迷热情（FanPassion）被经济系统多处引用（球票上座率、周边销量、赞助商满意度、球馆效果），但未完整定义。本节补全。</p>
+
+  <h3>3.1 球迷热情值</h3>
+  <p>每支球队有 FanPassion 值（0-100），反映球迷对球队的热情程度：</p>
+  <div class="fan-bar">
+    <div class="fan-seg s1">0-20 冰点</div>
+    <div class="fan-seg s2">21-40 低谷</div>
+    <div class="fan-seg s3">41-60 平稳</div>
+    <div class="fan-seg s4">61-80 热潮</div>
+    <div class="fan-seg s5">81-100 狂热</div>
+  </div>
+
+  <h3>3.2 球迷热情影响因素</h3>
+  <table>
+    <thead><tr><th>因素</th><th>影响</th><th>频率</th></tr></thead>
+    <tbody>
+      <tr><td><b>战绩</b></td><td>连胜 +3/场；连败 -2/场；夺冠 +15（一次性）</td><td>每场</td></tr>
+      <tr><td><b>票价</b></td><td>高价 -1~3/季；低价 +1~2/季</td><td>每季</td></tr>
+      <tr><td><b>球星 Fame</b></td><td>队中有 Fame ≥70 球星 +5/季；球星离队 -5~10</td><td>每季/事件</td></tr>
+      <tr><td><b>球馆档次</b></td><td>Lv2 +1；Lv3 +3；Lv4 +5；Lv5 +8（每季）</td><td>每季</td></tr>
+      <tr><td><b>社区活动</b></td><td>投入预算办活动 +2~5/次</td><td>可选</td></tr>
+      <tr><td><b>丑闻</b></td><td>球员丑闻/更衣室内讧 -5~15</td><td>事件</td></tr>
+      <tr><td><b>王朝</b></td><td>传奇王朝持续期间 +10/季（底蕴）</td><td>每季</td></tr>
+      <tr><td><b>降级</b></td><td>降级 -20（一次性重击）</td><td>事件</td></tr>
+      <tr><td><b>自然衰减</b></td><td>-2/季（若无正向因素）</td><td>每季</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.3 球迷热情对收入的影响</h3>
+  <div class="formula">
+<span class="comment">── 球迷热情对收入的放大/缩减 ──</span>
+
+<span class="var">fanMultiplier</span> <span class="op">=</span> <span class="num">0.5</span> <span class="op">+</span> <span class="var">fanPassion</span> <span class="op">/</span> <span class="num">100</span> <span class="op">*</span> <span class="num">1.0</span>
+<span class="comment">// fanPassion=0 → ×0.5（冰点，收入减半）</span>
+<span class="comment">// fanPassion=50 → ×1.0（平稳，基准）</span>
+<span class="comment">// fanPassion=100 → ×1.5（狂热，收入放大50%）</span>
+
+<span class="var">actualTicketRevenue</span> <span class="op">=</span> <span class="var">baseTicketRevenue</span> <span class="op">*</span> <span class="var">fanMultiplier</span>
+<span class="var">actualMerchRevenue</span>  <span class="op">=</span> <span class="var">baseMerchRevenue</span>  <span class="op">*</span> <span class="var">fanMultiplier</span> <span class="op">*</span> <span class="num">1.2</span>  <span class="comment">// 周边更受热情影响</span>
+<span class="var">sponsorSatisfaction</span> <span class="op">=</span> <span class="var">baseSatisfaction</span> <span class="op">*</span> <span class="var">fanMultiplier</span>
+  </div>
+
+  <h3>3.4 球迷热情的博弈</h3>
+  <div class="note blue"><b>核心博弈</b>：球迷热情是"长期资产"——高价票短期赚钱但热情下降→长期上座率和周边收入缩减。低价票短期少赚但热情上升→长期收入放大。战绩是热情的最大驱动力——连败会让一切恶化（热情↓→上座率↓→收入↓→没钱签好球员→继续输）。这是"赢球循环"与"输球循环"的财务表达。</div>
+</section>
+
+<!-- ==================== §4 球馆升级决策模型 ==================== -->
+<section id="s4">
+  <h2><span class="num">4</span>球馆升级决策模型</h2>
+  <p>经济系统 §7.4 已给出球馆 Lv1-5 等级表。本节定义"何时升级才值得"的决策模型。</p>
+
+  <h3>4.1 球馆等级总览（沿用经济系统 §7.4）</h3>
+  <div class="arena-tiers">
+    <div class="arena-card"><div class="ico">🏚️</div><div class="name">Lv1 社区馆</div><div class="cap">3,000</div><div class="desc">起步；维护 50/季</div></div>
+    <div class="arena-card"><div class="ico">🏢</div><div class="name">Lv2 标准馆</div><div class="cap">6,000</div><div class="desc">升级 500；热情 +1/季</div></div>
+    <div class="arena-card"><div class="ico">🏛️</div><div class="name">Lv3 专业馆</div><div class="cap">10,000</div><div class="desc">升级 1,500；FA 吸引力 +10%</div></div>
+    <div class="arena-card"><div class="ico">🏟️</div><div class="name">Lv4 豪华馆</div><div class="cap">15,000</div><div class="desc">升级 3,000；FA +25%；可冠名</div></div>
+    <div class="arena-card"><div class="ico">🗼</div><div class="name">Lv5 地标馆</div><div class="cap">20,000</div><div class="desc">升级 5,000；FA +40%；冠名溢价</div></div>
+  </div>
+
+  <h3>4.2 升级回本周期计算</h3>
+  <div class="formula">
+<span class="comment">── 球馆升级回本周期 ──</span>
+
+<span class="var">upgradeCost</span>      <span class="op">=</span> <span class="var">targetLevel</span>.upgradeFee
+<span class="var">capacityGain</span>     <span class="op">=</span> <span class="var">targetLevel</span>.capacity <span class="op">-</span> <span class="var">currentLevel</span>.capacity
+<span class="var">extraMaintPerSeason</span> <span class="op">=</span> <span class="var">targetLevel</span>.maint <span class="op">-</span> <span class="var">currentLevel</span>.maint
+
+<span class="comment">// 每季额外球票收入（假设满座 + 当前球迷热情）</span>
+<span class="var">extraTicketPerSeason</span> <span class="op">=</span> <span class="var">capacityGain</span> <span class="op">*</span> <span class="var">avgTicketPrice</span> <span class="op">*</span> <span class="var">homeGames</span> <span class="op">*</span> <span class="var">attendanceRate</span>
+
+<span class="comment">// 每季净增收入 = 额外球票 + 球迷热情增益带来的周边/赞助放大 - 额外维护</span>
+<span class="var">netGainPerSeason</span> <span class="op">=</span> <span class="var">extraTicketPerSeason</span> <span class="op">+</span> <span class="var">fanPassionBonus</span> <span class="op">-</span> <span class="var">extraMaintPerSeason</span>
+
+<span class="var">paybackSeasons</span> <span class="op">=</span> <span class="var">upgradeCost</span> <span class="op">/</span> <span class="var">netGainPerSeason</span>
+
+<span class="comment">// 示例：Lv3→Lv4</span>
+<span class="comment">// upgradeCost=3000, capacityGain=5000, avgTicket=0.5, homeGames=15, attendance=0.8</span>
+<span class="comment">// extraTicket = 5000 × 0.5 × 15 × 0.8 = 30,000... 简化模型</span>
+<span class="comment">// paybackSeasons ≈ 2-3 季（经济系统 §7.4 已述）</span>
+  </div>
+
+  <h3>4.3 升级决策矩阵</h3>
+  <table>
+    <thead><tr><th>球队处境</th><th>是否升级</th><th>理由</th></tr></thead>
+    <tbody>
+      <tr><td>T1 争冠队，球迷热潮，Lv3</td><td><span class="badge green">强烈建议升 Lv4</span></td><td>高上座率+高票价→回本快；FA 吸引力+25% 助签球星；冠名赞助增收</td></tr>
+      <tr><td>T2 冲击队，球迷平稳，Lv2</td><td><span class="badge gold">可升 Lv3</span></td><td>回本 3-4 季；FA +10% 助冲击</td></tr>
+      <tr><td>T3 中游队，球迷低谷，Lv1</td><td><span class="badge red">暂缓</span></td><td>上座率低→回本慢；优先投资青训/球探</td></tr>
+      <tr><td>T4 鱼腩队，球迷冰点，Lv1</td><td><span class="badge red">不升</span></td><td>无人来看球；升级=烧钱；靠青训翻身</td></tr>
+      <tr><td>已 Lv4 的争冠队</td><td><span class="badge gold">看预算升 Lv5</span></td><td>地标馆是终极投资；FA +40% 几乎锁定球星；但 5000 投入需财力支撑</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.4 球馆的非收入效应</h3>
+  <p>球馆不只影响收入，还影响：</p>
+  <ul>
+    <li><b>自由球员吸引力</b>（签约转会 §4.2 DestinationScore）：豪华球馆 +25%，地标馆 +40%——"基建吸引人才"。</li>
+    <li><b>球迷热情</b>（§3.2）：每季被动 +1~8。</li>
+    <li><b>冠名赞助资格</b>（经济系统 §6.3）：Lv4+ 才能申请冠名赞助。</li>
+    <li><b>球衣退役展示</b>（王朝系统 §8）：退役球衣悬挂于球馆，作为文化资产。</li>
+    <li><b>队史名人墙</b>（王朝系统 §8.3）：球馆内展示，提升球市吸引力。</li>
+  </ul>
+</section>
+
+<!-- ==================== §5 收入优化博弈 ==================== -->
+<section id="s5">
+  <h2><span class="num">5</span>收入优化博弈</h2>
+  <p>经济系统 §6 已给出收入公式。本节定义收入优化的策略博弈——不是"收入越多越好"，而是各收入源的取舍。</p>
+
+  <h3>5.1 票价定价博弈</h3>
+  <table>
+    <thead><tr><th>策略</th><th>短期</th><th>长期</th><th>适用</th></tr></thead>
+    <tbody>
+      <tr><td><b>高价票</b></td><td>单场收入高</td><td>球迷热情 -1~3/季→上座率↓→长期收入↓</td><td>争冠队（球迷愿付高价）</td></tr>
+      <tr><td><b>平价票</b></td><td>基准</td><td>球迷热情稳定</td><td>中游队</td></tr>
+      <tr><td><b>低价票</b></td><td>单场收入低</td><td>球迷热情 +1~2/季→上座率↑→长期收入↑</td><td>重建队（培养球迷基础）</td></tr>
+    </tbody>
+  </table>
+  <div class="note gold"><b>博弈核心</b>：高价票在争冠期合理（球迷热情高不怕小幅下降），但在重建期是自杀（本就没人看，高价更赶人走）。票价应随球队周期动态调整——争冠期高价收割，重建期低价养粉。</div>
+
+  <h3>5.2 赞助商续约博弈</h3>
+  <table>
+    <thead><tr><th>赞助商类型</th><th>年收入</th><th>续约条件</th><th>博弈</th></tr></thead>
+    <tbody>
+      <tr><td>冠名赞助（顶级）</td><td>800-1,500</td><td>Fame ≥60 + 顶级联赛 + Lv4 球馆</td><td>高收入但门槛高；降级即失去</td></tr>
+      <tr><td>主赞助商</td><td>400-800</td><td>Fame ≥40 + 次级以上</td><td>中等收入；较稳定</td></tr>
+      <tr><td>普通赞助商</td><td>100-300</td><td>无硬性条件</td><td>保底收入；但金额低</td></tr>
+    </tbody>
+  </table>
+  <p><b>续约博弈</b>：高等级赞助商收入高但续约条件苛刻——降级/战绩下滑可能导致赞助商不续约，收入骤降。经理需在"冲高等级赞助（高收入高风险）"与"保普通赞助（低收入低风险）"间权衡。</p>
+
+  <h3>5.3 周边商品博弈</h3>
+  <ul>
+    <li><b>球星效应</b>：核心球员 Fame ≥70 时周边销量 ×1.5~2.0——球星离队/退役周边销量骤降。</li>
+    <li><b>冠军效应</b>：夺冠赛季周边销量 ×2.0~3.0——冠军周边是爆发性收入。</li>
+    <li><b>商业团队</b>：投资商业团队（经济系统 §7.6）提升周边销量 +10~35%。</li>
+    <li><b>球迷热情</b>：周边销量受 fanMultiplier ×1.2 放大——热情比球票更影响周边。</li>
+  </ul>
+
+  <h3>5.4 转会收入</h3>
+  <ul>
+    <li>卖出球员的转会费/解约金计入转会收入（经济系统 §6.1 占比 5%）。</li>
+    <li>交易特例（签约转会 §11.2）不计入收入（仅配平用）。</li>
+    <li>转会收入波动大——不定期，不可作为预算依赖。</li>
+  </ul>
+</section>
+
+<!-- ==================== §6 重复奢侈税深化 ==================== -->
+<section id="s6">
+  <h2><span class="num">6</span>重复奢侈税深化</h2>
+  <p>经济系统 §5 定义了基础奢侈税。本节深化"重复奢侈税"——连续多年超帽的递进惩罚。</p>
+
+  <h3>6.1 基础奢侈税（回顾）</h3>
+  <ul>
+    <li>薪资超过工资帽的部分，按 1:1 缴纳奢侈税（每超 1 单位薪资，缴 1 单位税）。</li>
+    <li>奢侈税不占薪资空间，但从现金流扣除——直接减少净利润。</li>
+  </ul>
+
+  <h3>6.2 重复奢侈税</h3>
+  <p>连续超帽的球队，奢侈税税率递进上升：</p>
+  <table>
+    <thead><tr><th>连续超帽年数</th><th>税率</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>第 1 年</td><td>1:1</td><td>基础奢侈税</td></tr>
+      <tr><td>第 2 年</td><td>1:1.5</td><td>递进 50%</td></tr>
+      <tr><td>第 3 年</td><td>1:2</td><td>递进 100%</td></tr>
+      <tr><td>第 4 年</td><td>1:2.5</td><td>递进 150%</td></tr>
+      <tr><td>第 5 年+</td><td>1:3</td><td>上限封顶</td></tr>
+    </tbody>
+  </table>
+
+  <h3>6.3 重复奢侈税的博弈</h3>
+  <div class="note red"><b>核心约束</b>：重复奢侈税让"长期烧钱争冠"成本递增——第 1 年超帽缴 1:1 可接受，但第 5 年 1:3 几乎不可持续。这迫使争冠球队在"烧钱期"后必须"降帽喘息"——清空部分高薪合同，回到帽下，重置奢侈税计数器。这模拟现实 NBA 的"避税年"策略，防止超级球队无限堆积。</div>
+
+  <h3>6.4 税款分配</h3>
+  <ul>
+    <li>奢侈税款不消失——分配给帽下球队（"穷人税"返还）。</li>
+    <li>这形成财富再分配：超帽强队补贴帽下弱队，缩小贫富差距。</li>
+    <li>帽下球队每季可获得 50-200 的奢侈税返还（视全联盟超帽总额）。</li>
+  </ul>
+</section>
+
+<!-- ==================== §7 财务公平竞赛 FFP ==================== -->
+<section id="s7">
+  <h2><span class="num">7</span>财务公平竞赛 FFP</h2>
+  <p>经济系统 §8 提及 FFP 风险预警。本节定义完整 FFP 规则与处罚。</p>
+
+  <h3>7.1 FFP 原则</h3>
+  <div class="note green"><b>FFP 核心原则</b>：球队的"足球相关支出"（球员薪资+运营成本）不得超过"足球相关收入"（球票+转播+赞助+周边）的一定比例。防止球队靠外部注资（如富老板注资）无限烧钱，破坏竞争平衡。</div>
+
+  <h3>7.2 FFP 计算</h3>
+  <div class="formula">
+<span class="comment">── FFP 合规判定 ──</span>
+
+<span class="var">footballRevenue</span> <span class="op">=</span> <span class="var">ticket</span> <span class="op">+</span> <span class="var">broadcast</span> <span class="op">+</span> <span class="var">sponsorship</span> <span class="op">+</span> <span class="var">merch</span> <span class="op">+</span> <span class="var">prize</span>
+<span class="var">footballExpense</span> <span class="op">=</span> <span class="var">playerSalaries</span> <span class="op">+</span> <span class="var">staffSalaries</span> <span class="op">+</span> <span class="var">arenaMaint</span> <span class="op">+</span> <span class="var">operations</span>
+
+<span class="var">ffpRatio</span> <span class="op">=</span> <span class="var">footballExpense</span> <span class="op">/</span> <span class="var">footballRevenue</span>
+
+<span class="comment">// 合规阈值</span>
+<span class="var">ffpRatio</span> <span class="op">&lt;=</span> <span class="num">0.9</span>  <span class="op">→</span> <span class="str">"HEALTHY"</span>      <span class="comment">// 健康（支出≤收入90%）</span>
+<span class="var">ffpRatio</span> <span class="op">&lt;=</span> <span class="num">1.0</span>  <span class="op">→</span> <span class="str">"WARNING"</span>      <span class="comment">// 警告（收支平衡）</span>
+<span class="var">ffpRatio</span> <span class="op">&lt;=</span> <span class="num">1.1</span>  <span class="op">→</span> <span class="str">"AT_RISK"</span>      <span class="comment">// 风险（轻度亏损）</span>
+<span class="var">ffpRatio</span> <span class="op">&gt;</span> <span class="num">1.1</span>   <span class="op">→</span> <span class="str">"VIOLATION"</span>    <span class="comment">// 违规（严重亏损）</span>
+  </div>
+
+  <h3>7.3 FFP 处罚</h3>
+  <table>
+    <thead><tr><th>状态</th><th>处罚</th></tr></thead>
+    <tbody>
+      <tr><td><b>HEALTHY</b></td><td>无；可获奢侈税返还（如帽下）</td></tr>
+      <tr><td><b>WARNING</b></td><td>系统预警；无处罚</td></tr>
+      <tr><td><b>AT_RISK</b></td><td>限制：下季转会窗口签约受限（不可签顶薪）；青训学院投入上限</td></tr>
+      <tr><td><b>VIOLATION</b></td><td>处罚：扣联赛积分（-5）；禁止转会窗口签约；严重者降级风险</td></tr>
+    </tbody>
+  </table>
+
+  <h3>7.4 FFP 修复</h3>
+  <ul>
+    <li>违规球队需在 2 季内将 ffpRatio 降至 1.0 以下。</li>
+    <li>修复手段：裁员/买断高薪球员（签约转会 §9）；降低运营投入；提升收入（升级球馆/提升战绩）。</li>
+    <li>持续违规 3 季：强制降级（世界结构 §7）。</li>
+  </ul>
+</section>
+
+<!-- ==================== §8 财务健康评分 ==================== -->
+<section id="s8">
+  <h2><span class="num">8</span>财务健康评分</h2>
+  <p>综合评估球队财务状况的多维评分，给经理一个"我的财务健康吗"的直观指标。</p>
+
+  <h3>8.1 评分维度</h3>
+  <table>
+    <thead><tr><th>维度</th><th>权重</th><th>评分依据</th></tr></thead>
+    <tbody>
+      <tr><td><b>现金流</b></td><td>25%</td><td>当前现金储备 vs 预计支出；是否够撑 1 季</td></tr>
+      <tr><td><b>FFP 合规</b></td><td>25%</td><td>ffpRatio 状态</td></tr>
+      <tr><td><b>薪资结构</b></td><td>20%</td><td>是否有烂合同/超帽/重复奢侈税</td></tr>
+      <tr><td><b>收入稳定性</b></td><td>15%</td><td>赞助商续约风险/球迷热情趋势</td></tr>
+      <tr><td><b>投资回报</b></td><td>15%</td><td>运营模块投入产出比</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8.2 健康等级</h3>
+  <div class="grid">
+    <div class="card" style="border-color:rgba(74,222,128,.3)"><div class="t" style="color:var(--accent2)">A · 健康 (≥80)</div><div class="d">现金流充裕；FFP 合规；薪资结构合理；收入稳定。可大胆投资争冠。</div></div>
+    <div class="card" style="border-color:rgba(96,165,250,.3)"><div class="t" style="color:var(--blue)">B · 良好 (60-79)</div><div class="d">基本健康；个别维度需关注。正常运营。</div></div>
+    <div class="card" style="border-color:rgba(251,191,36,.3)"><div class="t" style="color:var(--gold)">C · 警告 (40-59)</div><div class="d">有风险维度；需主动修复。避免大额签约。</div></div>
+    <div class="card" style="border-color:rgba(239,68,68,.3)"><div class="t" style="color:var(--red)">D · 危险 (&lt;40)</div><div class="d">严重财务问题；FFP 违规风险；需紧急裁员/降本。</div></div>
+  </div>
+
+  <h3>8.3 财务健康预警</h3>
+  <p>当评分降至 C 或 D 时，系统发出预警并建议修复动作：</p>
+  <ul>
+    <li>现金流不足 → "建议裁员释放薪资空间"</li>
+    <li>FFP 风险 → "建议降低运营投入或提升战绩增加收入"</li>
+    <li>烂合同 → "建议买断高薪低能球员（签约转会 §9）"</li>
+    <li>球迷热情低谷 → "建议降低票价/办社区活动"</li>
+  </ul>
+</section>
+
+<!-- ==================== §9 赛季财务规划 ==================== -->
+<section id="s9">
+  <h2><span class="num">9</span>赛季财务规划</h2>
+
+  <h3>9.1 赛季初预算分配</h3>
+  <p>每赛季初经理需做预算分配决策——有限薪资空间如何分配：</p>
+  <div class="flow">
+    <span class="step">薪资空间池</span>
+    <span class="arrow">→</span>
+    <span class="step">球员薪资（主力消耗）</span>
+    <span class="arrow">→</span>
+    <span class="step">运营投入<br>（教练/球探/青训/医疗/商业）</span>
+    <span class="arrow">→</span>
+    <span class="step">球馆维护/升级</span>
+    <span class="arrow">→</span>
+    <span class="step">奢侈税预算（如超帽）</span>
+  </div>
+
+  <h3>9.2 预算分配流派</h3>
+  <table>
+    <thead><tr><th>流派</th><th>球员薪资</th><th>运营投入</th><th>球馆</th><th>特点</th></tr></thead>
+    <tbody>
+      <tr><td><b>球星流</b></td><td>高（顶薪堆球星）</td><td>低（省钱付薪资）</td><td>低</td><td>即战力强；但青训弱、球探弱；超帽风险高</td></tr>
+      <tr><td><b>青训流</b></td><td>低（新秀红利）</td><td>高（青训+球探）</td><td>中</td><td>省钱产出自家核心；3-5 季后爆发；但前期弱</td></tr>
+      <tr><td><b>基建流</b></td><td>中</td><td>中</td><td>高（豪华球馆）</td><td>球馆增收+FA 吸引力；长期稳健；但前期投入大</td></tr>
+      <tr><td><b>均衡流</b></td><td>中</td><td>中</td><td>中</td><td>无短板也无亮点；适合新手</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== §10 与签约转会联动 ==================== -->
+<section id="s10">
+  <h2><span class="num">10</span>与签约转会联动</h2>
+
+  <h3>10.1 薪资空间作为签约约束</h3>
+  <ul>
+    <li>签约转会的所有报价/交易需先通过薪资空间校验（签约转会 §3.2 三查之一）。</li>
+    <li>薪资空间 = 工资帽 - 当前合同薪资 - 运营投入预算 - 奢侈税预估。</li>
+    <li>薪资空间不足 → 报价被系统拒绝（签约转会 §16.1）。</li>
+  </ul>
+
+  <h3>10.2 球馆影响自由球员吸引力</h3>
+  <ul>
+    <li>球馆 Lv3+ → 签约转会 §4.2 DestinationScore +10~40%。</li>
+    <li>"基建吸引人才"——豪华球馆让球星更愿来，弱队可折价签。</li>
+    <li>这是基建流建队的核心逻辑：先建馆再签人。</li>
+  </ul>
+
+  <h3>10.3 重复奢侈税与签约策略</h3>
+  <ul>
+    <li>已连续超帽 3 年的球队，再签顶薪 → 重复奢侈税 1:2 → 财务健康降至 D。</li>
+    <li>系统在签约前预警："此签约将导致重复奢侈税升级，是否继续？"</li>
+    <li>这迫使争冠球队在"烧钱期"与"避税年"间轮换。</li>
+  </ul>
+</section>
+
+<!-- ==================== §11 与训练球探联动 ==================== -->
+<section id="s11">
+  <h2><span class="num">11</span>与训练球探联动</h2>
+
+  <h3>11.1 运营预算作为训练球探约束</h3>
+  <table>
+    <thead><tr><th>运营模块</th><th>财务约束</th><th>联动系统</th></tr></thead>
+    <tbody>
+      <tr><td>教练组</td><td>薪资空间分配给教练薪资</td><td>训练系统 §9（教练组）</td></tr>
+      <tr><td>球探部门</td><td>球探预算 = 球探部门等级产出</td><td>球探系统 §6（预算）</td></tr>
+      <tr><td>青训学院</td><td>青训学院等级维护费</td><td>训练系统 §10（青训学院）</td></tr>
+      <tr><td>医疗团队</td><td>医疗团队等级维护费</td><td>训练系统 §8（伤病）</td></tr>
+      <tr><td>商业团队</td><td>商业团队等级维护费</td><td>本系统 §5.3（周边）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>11.2 投资取舍</h3>
+  <div class="note purple"><b>核心取舍</b>：薪资空间有限——花在球员身上的每一块钱=别处少花一块。球星流把钱花在球员身上但教练/球探/青训弱；青训流把钱花在青训/球探身上但球员薪资低。没有"全都要"——财务是零和博弈。</div>
+</section>
+
+<!-- ==================== §12 与王朝世界联动 ==================== -->
+<section id="s12">
+  <h2><span class="num">12</span>与王朝世界联动</h2>
+
+  <h3>12.1 王朝的财务加成</h3>
+  <ul>
+    <li><b>王朝球迷热情加成</b>（§3.2）：传奇王朝期间球迷热情 +10/季——王朝底蕴持续吸引球迷。</li>
+    <li><b>冠军奖金</b>（经济系统 §6.6）：夺冠 2,000 奖金——争冠的直接财务回报。</li>
+    <li><b>球衣退役/名人墙</b>（王朝系统 §8）：作为球馆文化资产，小幅提升球市吸引力。</li>
+  </ul>
+
+  <h3>12.2 世界结构联动</h3>
+  <ul>
+    <li><b>联赛层级影响收入</b>（经济系统 §5）：T1 转播分成 ×3.0，T4 ×1.0——升级=收入翻倍，这是升降级赌注的财务动力。</li>
+    <li><b>降级重击</b>：降级 → 球迷热情 -20 + 收入骤降 → 财务健康暴跌 → 可能触发 FFP 风险。</li>
+    <li><b>世界迁移</b>：迁移后财务重置——新世界起始薪资空间按联赛层级计算；历史财务档案保留但不影响新世界。</li>
+  </ul>
+
+  <h3>12.3 经理传奇档案的财务维度</h3>
+  <ul>
+    <li>王朝系统 §4.2 的 legacyScore 纳入 financialHealth 维度——财务健康的王朝比"烧钱夺冠后破产"的王朝评分更高。</li>
+    <li>可持续经营是王朝评分的加分项——鼓励"健康夺冠"而非"负债夺冠"。</li>
+  </ul>
+</section>
+
+<!-- ==================== §13 AI 财务决策 ==================== -->
+<section id="s13">
+  <h2><span class="num">13</span>AI 财务决策</h2>
+
+  <h3>13.1 AI 财务策略分化</h3>
+  <table>
+    <thead><tr><th>AI 等级</th><th>财务策略</th><th>球馆</th><th>运营投入</th></tr></thead>
+    <tbody>
+      <tr><td>精英（T1）</td><td>激进争冠；接受奢侈税但控制重复税</td><td>Lv4-5</td><td>全模块高投入</td></tr>
+      <tr><td>强（T2）</td><td>平衡；偶尔超帽</td><td>Lv3-4</td><td>重点投入青训+球探</td></tr>
+      <tr><td>中（T3）</td><td>量入为出；不超帽</td><td>Lv2-3</td><td>均衡低投入</td></tr>
+      <tr><td>弱（T4）</td><td>紧缩；靠青训</td><td>Lv1-2</td><td>仅青训最低投入</td></tr>
+    </tbody>
+  </table>
+
+  <h3>13.2 AI 票价与赞助决策</h3>
+  <div class="formula">
+<span class="keyword">function</span> <span class="fn">aiSetTicketPrice</span>(team):
+  <span class="kw">if</span> (<span class="var">team</span>.fanPassion <span class="op">&gt;</span> <span class="num">70</span> <span class="op">&&</span> <span class="var">team</span>.isContender):
+    <span class="kw">return</span> <span class="str">"HIGH"</span>      <span class="comment">// 争冠+热潮→高价收割</span>
+  <span class="kw">elif</span> (<span class="var">team</span>.fanPassion <span class="op">&lt;</span> <span class="num">30</span>):
+    <span class="kw">return</span> <span class="str">"LOW"</span>       <span class="comment">// 低谷→低价养粉</span>
+  <span class="kw">else</span>:
+    <span class="kw">return</span> <span class="str">"NORMAL"</span>
+  </div>
+</section>
+
+<!-- ==================== §14 异常处理与边界规则 ==================== -->
+<section id="s14">
+  <h2><span class="num">14</span>异常处理与边界规则</h2>
+
+  <h3>14.1 财务异常</h3>
+  <table>
+    <thead><tr><th>异常</th><th>处理</th></tr></thead>
+    <tbody>
+      <tr><td>现金流为负（破产）</td><td>FFP 强制审查；限制签约；要求裁员降本</td></tr>
+      <tr><td>球迷热情归零</td><td>上座率 ×0.3；赞助商可能撤资；需紧急提升战绩/降票价</td></tr>
+      <tr><td>赞助商撤资</td><td>收入骤降；可签保底普通赞助商应急</td></tr>
+      <tr><td>降级连击</td><td>收入连续骤降；FFP 风险；可能进入"死亡螺旋"——需青训翻身</td></tr>
+      <tr><td>球馆升级中途现金流不足</td><td>升级暂停；已投入资金锁定；需筹措资金继续或放弃（损失已投入）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>14.2 跨世界隔离</h3>
+  <ul>
+    <li>财务世界内封闭——A 世界的收入不可转 B 世界。</li>
+    <li>世界迁移时财务重置——新世界按联赛层级重新计算起始收入。</li>
+    <li>经理传奇档案的财务记录跨世界保留（仅档案，不影响新世界数值）。</li>
+  </ul>
+</section>
+
+<!-- ==================== §15 数值附录 ==================== -->
+<section id="s15">
+  <h2><span class="num">15</span>数值附录</h2>
+
+  <h3>15.1 球迷热情参数</h3>
+  <table>
+    <thead><tr><th>因素</th><th>影响</th></tr></thead>
+    <tbody>
+      <tr><td>连胜</td><td>+3/场</td></tr>
+      <tr><td>连败</td><td>-2/场</td></tr>
+      <tr><td>夺冠</td><td>+15（一次性）</td></tr>
+      <tr><td>高价票</td><td>-1~3/季</td></tr>
+      <tr><td>低价票</td><td>+1~2/季</td></tr>
+      <tr><td>球星（Fame≥70）</td><td>+5/季</td></tr>
+      <tr><td>球馆 Lv2/Lv3/Lv4/Lv5</td><td>+1/+3/+5/+8 每季</td></tr>
+      <tr><td>传奇王朝</td><td>+10/季</td></tr>
+      <tr><td>降级</td><td>-20（一次性）</td></tr>
+      <tr><td>自然衰减</td><td>-2/季</td></tr>
+    </tbody>
+  </table>
+
+  <h3>15.2 球迷热情收入乘数</h3>
+  <table>
+    <thead><tr><th>FanPassion</th><th>球票乘数</th><th>周边乘数</th></tr></thead>
+    <tbody>
+      <tr><td>0（冰点）</td><td>×0.5</td><td>×0.6</td></tr>
+      <tr><td>50（平稳）</td><td>×1.0</td><td>×1.2</td></tr>
+      <tr><td>100（狂热）</td><td>×1.5</td><td>×1.8</td></tr>
+    </tbody>
+  </table>
+
+  <h3>15.3 重复奢侈税</h3>
+  <table>
+    <thead><tr><th>连续超帽年数</th><th>税率</th></tr></thead>
+    <tbody>
+      <tr><td>第 1 年</td><td>1:1</td></tr>
+      <tr><td>第 2 年</td><td>1:1.5</td></tr>
+      <tr><td>第 3 年</td><td>1:2</td></tr>
+      <tr><td>第 4 年</td><td>1:2.5</td></tr>
+      <tr><td>第 5 年+</td><td>1:3</td></tr>
+    </tbody>
+  </table>
+
+  <h3>15.4 FFP 阈值</h3>
+  <table>
+    <thead><tr><th>ffpRatio</th><th>状态</th><th>处罚</th></tr></thead>
+    <tbody>
+      <tr><td>≤0.9</td><td>HEALTHY</td><td>无</td></tr>
+      <tr><td>≤1.0</td><td>WARNING</td><td>预警</td></tr>
+      <tr><td>≤1.1</td><td>AT_RISK</td><td>签约受限</td></tr>
+      <tr><td>&gt;1.1</td><td>VIOLATION</td><td>扣分/禁签/降级风险</td></tr>
+    </tbody>
+  </table>
+
+  <h3>15.5 财务健康评分权重</h3>
+  <table>
+    <thead><tr><th>维度</th><th>权重</th></tr></thead>
+    <tbody>
+      <tr><td>现金流</td><td>25%</td></tr>
+      <tr><td>FFP 合规</td><td>25%</td></tr>
+      <tr><td>薪资结构</td><td>20%</td></tr>
+      <tr><td>收入稳定性</td><td>15%</td></tr>
+      <tr><td>投资回报</td><td>15%</td></tr>
+    </tbody>
+  </table>
+
+  <h3>15.6 球馆升级回本</h3>
+  <table>
+    <thead><tr><th>升级</th><th>费用</th><th>约回本季数</th></tr></thead>
+    <tbody>
+      <tr><td>Lv1→Lv2</td><td>500</td><td>1-2 季</td></tr>
+      <tr><td>Lv2→Lv3</td><td>1,500</td><td>2-3 季</td></tr>
+      <tr><td>Lv3→Lv4</td><td>3,000</td><td>2-3 季（争冠队）</td></tr>
+      <tr><td>Lv4→Lv5</td><td>5,000</td><td>3-4 季（顶级球市）</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note green"><b>深化总结</b>：财务与球馆系统补全了经济系统的决策维度——球迷热情引擎让"票价/战绩/球馆"三者动态联动；球馆升级决策模型让"何时升级"成为可计算的长期投资决策；重复奢侈税防止超级球队无限堆积；FFP 约束可持续经营底线；财务健康评分给经理直观的"我的财务健康吗"指标。核心张力是时间——短期收入 vs 长期球迷热情，烧钱争冠 vs 可持续经营。所有数值在 EA 阶段通过灰度参数热更新调优。</div>
+</section>
+
+<footer style="text-align:center;color:var(--ink3);font-size:12px;padding:20px 0 40px;border-top:1px solid var(--line);margin-top:20px">
+  财务与球馆系统设计 v1.0 · Hoops World Online · 2026-09-28<br>
+  经济系统深化文档 · 联动：签约转会·训练·球探·王朝·世界结构
+</footer>
+
+</div>
+</body>
+</html>

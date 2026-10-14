@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HWO 系统调整方案 v2</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    max-width: 960px; margin: 0 auto; padding: 24px; line-height: 1.7;
+    background: #fafafa; color: #222;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { background: #1a1a1a; color: #ddd; }
+    code, pre { background: #2a2a2a !important; color: #ddd; }
+    a { color: #6cb6ff; }
+    table th { background: #2a2a2a; }
+  }
+  h1 { border-bottom: 3px solid #4a90e2; padding-bottom: 8px; color: #4a90e2; }
+  h2 { border-bottom: 1px solid #888; padding-bottom: 6px; margin-top: 36px; color: #2c5282; }
+  @media (prefers-color-scheme: dark) { h2 { color: #6cb6ff; } h1 { color: #6cb6ff; } }
+  h3 { margin-top: 24px; color: #3a3a3a; }
+  @media (prefers-color-scheme: dark) { h3 { color: #bbb; } }
+  code {
+    background: #f0f0f0; padding: 2px 6px; border-radius: 4px;
+    font-family: "SF Mono", Consolas, monospace; font-size: 0.92em;
+  }
+  pre {
+    background: #2d2d2d; color: #f8f8f2; padding: 14px 16px; border-radius: 8px;
+    overflow-x: auto; font-size: 0.85em; line-height: 1.5;
+  }
+  pre code { background: transparent; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+  th, td { border: 1px solid #888; padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { background: #e8e8e8; font-weight: 600; }
+  blockquote {
+    border-left: 4px solid #4a90e2; padding: 4px 16px; margin: 12px 0;
+    background: rgba(74,144,226,0.08); color: #555;
+  }
+  @media (prefers-color-scheme: dark) { blockquote { color: #aaa; } }
+  a { color: #4a90e2; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .toc { background: #f0f4f8; border: 1px solid #cbd5e0; padding: 16px 24px; border-radius: 8px; }
+  @media (prefers-color-scheme: dark) { .toc { background: #242424; border-color: #444; } }
+  .toc ul { padding-left: 20px; margin: 4px 0; }
+  hr { border: none; border-top: 2px dashed #aaa; margin: 32px 0; }
+  ul, ol { padding-left: 24px; }
+  li { margin: 4px 0; }
+  strong { color: #c0392b; }
+  @media (prefers-color-scheme: dark) { strong { color: #f08080; } }
+</style>
+</head>
+<body>
+<h1>HWO 系统调整方案 v2（基于真实参考细节）</h1>
+
+<blockquote>
+<p>已用浏览器抓取 basketpulse.com 与 playrimattack.com 真实页面，本方案的列结构、配色、组件均直接对齐参考站，可落地实施。<br>
+测试账号已就绪：<strong>邮箱 <code>test@hwo.test</code> / 密码 <code>test12345</code></strong>（已绑"天津津门棕熊"队），前端 http://localhost:5173 已验证可登录进入管理页。</p>
+</blockquote>
+
+<div class="toc">
+<h3 style="margin-top:0">目录</h3>
+<ul>
+<li>〇、参考站真实细节</li>
+<li>一、概览模块（去推进一日 / 去 AI 经理 / 去 今日赛程 + 球队资讯）</li>
+<li>二、财务模块（对齐 basketpulse /hk/finances）</li>
+<li>三、董事会模块（赞助商满意度 / 赛季目标 / 董事会提案）</li>
+<li>四、公关部模块（联盟公告 / 讯息 / 媒体中心）</li>
+<li>五、运营中心 - 球迷中心</li>
+<li>六、人事模块（球员名单 / 职员中心 / 核心球员 / 训练中心 / 人才中心 / 交易搜索）</li>
+<li>七、实施顺序（6 批次）</li>
+<li>八、待确认决策点（8 项）</li>
+</ul>
+</div>
+
+<h2>〇、参考站真实细节（已抓取）</h2>
+
+<h3>basketpulse 财务页 <code>/hk/finances</code></h3>
+<ul>
+<li><strong>现金余额</strong>：219,614 Eu 白色大字，置于深蓝色卡片</li>
+<li><strong>配色</strong>：深蓝主背景、白色文字、收入绿色、支出红色</li>
+<li><strong>收支表</strong>：3 列 — 日期 / 描述 / 数量</li>
+<li><strong>时间选择</strong>：顶部"週"选择器，如 <code>週 7 · 賽季112</code></li>
+<li><strong>结构</strong>：余额卡 → 收入分类汇总 → 支出分类汇总 → 流水表</li>
+</ul>
+
+<h3>basketpulse 球员统计页 <code>/hk/Players/statistics</code></h3>
+<ul>
+<li><strong>列顺序</strong>（精确）：姓名 / No. / 分鐘 / 比賽 / 得分 / 2% / 3% / 1% / 籃(攻/防/總/被) / 助攻 / 搶截 / 犯規(被/犯) / 失誤 / 封阻(封/被) / 效率</li>
+<li>命中率以百分比数字展示（保留 HWO 命中率配色：≥50% 绿 / 35-50% 黄 / <35% 红）</li>
+<li>表格底部"合計"行：本队合计 vs 对手合计对比</li>
+<li>深色主题表格</li>
+</ul>
+
+<h3>basketpulse 训练中心 <code>/hk/Training/overview</code></h3>
+<ul>
+<li><strong>顶部球员卡</strong>：姓名、年龄、身高、潜力值</li>
+<li><strong>训练重心选择器</strong>：下拉框（如"籃板"），单球员单能力训练</li>
+<li><strong>主区域</strong>：球员详细训练数据 — RT / 狀態 / 健康 / 各项能力值</li>
+<li>单球员视图（非整队表格）</li>
+</ul>
+
+<h3>basketpulse 球员技能页 <code>/hk/Players/skills</code></h3>
+<ul>
+<li><strong>列顺序</strong>：姓名 / No. / 年齡 / 高 / 位置 / RT / 潛 / 健康 / 彈 / 速 / 壯 / 近 / 中 / 3 / 籃 / 擾 / 防 / 運 / 傳 / 攻 / 經</li>
+<li>能力值用数字+颜色编码（高数值亮色，低数值暗色）</li>
+<li>RT 与潜力（潛）独立成列</li>
+</ul>
+
+<h3>playrimattack 核心球员 <code>/#/core</code></h3>
+<ul>
+<li><strong>顶部横幅</strong>：赛季状态 + 球队信息</li>
+<li><strong>球员卡片</strong>：头像 / 球衣号 / OVR / TRV / 位置 / 身高 / 年龄 / 健康 / 合同 / 特质</li>
+<li><strong>生涯数据表格</strong>：赛季 / GP / MIN / PTS 等列</li>
+<li><strong>27 项能力值分组</strong>：身体 / 投射 / 防守 / 控球 / 心理</li>
+</ul>
+
+<hr>
+
+<h2>一、概览模块</h2>
+
+<h3>1.1 三项调整</h3>
+
+<table>
+<thead><tr><th>调整</th><th>实施</th></tr></thead>
+<tbody>
+<tr><td>去"推进一日"按钮</td><td>后端新增 <code>WorldClockScheduler</code>（NestJS <code>@Cron</code> 或 <code>setInterval</code>），按配置速率（默认 1 秒 = 1 赛季分钟）自动调用现有 <code>season.advanceDay()</code>。前端移除按钮，顶部显示世界时钟（赛季 X 日 · 联赛阶段 · 阶段进度条）。</td></tr>
+<tr><td>去"AI 经理"按钮</td><td>day 切换时由后端 <code>AiManagerService</code> 自动调用（已存在 <code>AiManagerModule</code>），无需用户介入。前端按钮删除。</td></tr>
+<tr><td>去"今日赛程"，加"球队资讯"</td><td>"今日赛程"模块删除，改为 <code>TeamNewsFeed</code> 组件，按时间线展示本队当天发生的事件。</td></tr>
+</tbody>
+</table>
+
+<h3>1.2 球队资讯（TeamNewsFeed）数据来源</h3>
+
+<p>每天 day 切换后由 <code>TeamNewsService</code> 聚合以下事件写入 <code>TeamNews</code> 表，前端按时间倒序展示：</p>
+<ol>
+<li>比赛结果（"第 1 日 95:88 胜 深圳海岸鲨鱼"，正文含 PBP 高光）</li>
+<li>训练成果（"韩一鸣 训练效果 +1.2 弹跳"，链接 TrainingLog）</li>
+<li>伤病/状态变化（疲劳累积、退役）</li>
+<li>转会动态（签约、裁员、交易完成 — 链接 TradeOffer）</li>
+<li>合同状态（续约、到期预警 — 链接 Contract）</li>
+<li>财务变动（大额收支、赞助商变化 — 链接 CashLedger）</li>
+<li>董事会动作（提案通过/否决 — 链接 BoardProposal）</li>
+<li>球迷反馈（情绪波动 — 链接 FanEvent）</li>
+<li>青训学院产出</li>
+<li>设施升级完成</li>
+</ol>
+
+<hr>
+
+<h2>二、财务模块（对齐 basketpulse <code>/hk/finances</code>）</h2>
+
+<h3>2.1 球队现金账户（新增）</h3>
+<pre><code>model TeamCash {
+  id        String   @id @default(cuid())
+  teamId    String   @unique
+  balance   Int      @default(5_000_000)  // 当前余额（元）
+  sponsorTier String @default("C")        // D&lt;C&lt;B&lt;A&lt;S
+  ticketPrice Int    @default(50)         // 票价基准
+  debt      Int      @default(0)          // 负债
+}</code></pre>
+
+<h3>2.2 真实流水（CashLedger）</h3>
+<pre><code>model CashLedger {
+  id        String   @id @default(cuid())
+  teamId    String
+  seasonId  String
+  day       Int
+  category  String   // sponsor | ticket | broadcast | salary | staff | facility | academy | transfer | fine | other
+  subType   String   // main_sponsor / kit_sponsor / home_game / player_salary ...
+  amount    Int      // 正=收入 负=支出
+  refId     String?  // 关联实体 ID
+  note      String?
+}</code></pre>
+
+<p><strong>每日结算</strong>（<code>FinanceService.runDaily(teamId, day)</code>）：</p>
+
+<table>
+<thead><tr><th>分类</th><th>子类</th><th>计算依据</th></tr></thead>
+<tbody>
+<tr><td>sponsor</td><td>main_sponsor</td><td><code>Sponsor.basePerSeason / 赛季天数</code></td></tr>
+<tr><td>sponsor</td><td>kit_sponsor</td><td>同上</td></tr>
+<tr><td>sponsor</td><td>win_bonus</td><td>当日胜场 × <code>Sponsor.bonusPerWin</code></td></tr>
+<tr><td>ticket</td><td>home_game</td><td>主场赛 fanCount × 上座率(fanMorale) × ticketPrice × arenaLv 系数</td></tr>
+<tr><td>ticket</td><td>away_share</td><td>客场赛 主场馆收入 × 10%</td></tr>
+<tr><td>broadcast</td><td>league_share</td><td>赛季固定 + 战绩奖金</td></tr>
+<tr><td>salary</td><td>player_salary</td><td>Σ Player.salary / 赛季天数</td></tr>
+<tr><td>staff</td><td>staff_salary</td><td>Σ Professional 月薪 / 30</td></tr>
+<tr><td>facility</td><td>maintenance</td><td>(trainingHallLv + arenaLv) × 维护基数</td></tr>
+<tr><td>academy</td><td>invest</td><td>升级/产出时入账</td></tr>
+<tr><td>transfer</td><td>fee_in / fee_out</td><td>TradeOffer 现金</td></tr>
+<tr><td>fine</td><td>league_fine</td><td>联盟处罚事件</td></tr>
+</tbody>
+</table>
+
+<h3>2.3 前端财务页布局</h3>
+<pre><code>┌─────────────────────────────────────────────────┐
+│ [深蓝卡片] 当前现金 ¥5,234,890                   │  ← 白色大字
+│ 本日净 +12,300 · 本周净 +84,500 · 本赛季净 +1.2M │
+├─────────────────────────────────────────────────┤
+│ [週选择器] 週 1 · 賽季 1  ◀ ▶                   │  ← basketpulse 风格
+├─────────────────────────────────────────────────┤
+│ 收入分类 (绿色)              支出分类 (红色)     │
+│  主赞助商 +120,000           球员薪资 -180,000   │
+│  装备赞助 +30,000            职员薪资 -45,000    │
+│  主场票务 +85,000            设施维护 -8,000     │
+│  客场分红 +8,500             青训投入 -10,000    │
+│  转播分成 +50,000            ...                 │
+├─────────────────────────────────────────────────┤
+│ 流水表 (3列: 日期 / 描述 / 数量)                 │
+│  Day 1 · 主赞助商分成       +120,000             │
+│  Day 1 · 球员日薪（10人）   -180,000             │
+│  Day 1 · 主场票务(胜)      +85,000              │
+│  ...                                              │
+│ [筛选: 全部 / 收入 / 支出] [导出 CSV]            │
+└─────────────────────────────────────────────────┘</code></pre>
+
+<p>支持三种视图切换：每日 / 每周 / 每赛季（与 basketpulse "週"选择器一致）。</p>
+
+<h3>2.4 钱包中"游戏币"用途澄清</h3>
+
+<p><strong>现状</strong>：<code>User.coins</code> 与 <code>User.credits</code> 两套币。</p>
+<p><strong>澄清</strong>（待用户确认）：</p>
+<ul>
+<li><strong>现金（TeamCash.balance）</strong> — 球队经营币，用于薪资、转会、设施、青训等所有球队运营支出</li>
+<li><strong>游戏币（User.coins）</strong> — 经理个人增值币，仅用于：VIP 订阅、外观购买（球衣/球场地皮/头像框）、加速类增值服务（不影响竞技公平）</li>
+<li><strong>信用点（User.credits）</strong> — 充值币，由真实货币购买，兑换为游戏币或购买稀有外观</li>
+</ul>
+<p>建议将 <code>coins</code> 改名为 <code>managerPoints</code>（经理点数），与球队现金彻底分离。</p>
+
+<h3>2.5 球员合同去掉（待确认）</h3>
+
+<p>两种解读：</p>
+<ul>
+<li><strong>解读 A（推荐）</strong>：财务页不再单列"球员合同"为独立支出项，球员薪资归入 salary；合同管理（续约/裁员/年限）保留在球员名单下"合同管理"Tab</li>
+<li><strong>解读 B</strong>：完全删除合同系统，球员仅保留 salary 字段，无年限/续约/裁员</li>
+</ul>
+<p><strong>默认采用 A</strong>，请确认。</p>
+
+<hr>
+
+<h2>三、董事会模块</h2>
+
+<h3>3.1 赞助商满意度（非假数据，有依据）</h3>
+<pre><code>model Sponsor {
+  id        String   @id @default(cuid())
+  teamId    String
+  type      String   // main | kit | arena | broadcast
+  name      String
+  tier      String   // D | C | B | A | S
+  basePerSeason Int
+  bonusPerWin   Int
+  titleBonus    Int
+  satisfaction  Int   @default(60)  // 0-100
+  expectedWinRate Float @default(0.5)
+  expectedPlayoff Boolean @default(true)
+  contractSeasons Int @default(2)
+  startSeason Int
+  endSeason   Int?
+}</code></pre>
+
+<p><strong>满意度计算公式</strong>（每日结算，所有项均有数据依据）：</p>
+<pre><code>satisfaction = clamp(
+    50                                              // 基准
+  + (近10场胜率 - expectedWinRate) × 100 × 0.4        // 战绩分
+  + (本队 MediaNews 条数 - 联盟均值) × 0.5             // 媒体曝光分
+  + (fanMorale - 50) × 0.3                           // 球迷士气分
+  - 罚款次数(本季) × 10                               // 处罚扣分
+  - 阵容大变动次数(本季) × 5                           // 频繁裁员扣分
+, 0, 100)</code></pre>
+
+<p><strong>档位行为</strong>：</p>
+<ul>
+<li>&lt; 30：合同终止（生成 TeamMessage(sponsor, type=terminated)）</li>
+<li>30-50：警告（生成 TeamMessage(sponsor, type=warning)）</li>
+<li>50-80：正常</li>
+<li>&gt; 80：续约涨薪（自动生成新 Sponsor 记录）</li>
+</ul>
+
+<h3>3.2 赛季目标（有制定依据）</h3>
+<pre><code>model SeasonGoal {
+  id        String   @id @default(cuid())
+  teamId    String
+  seasonId  String
+  expectedWinRate   Float
+  expectedPlayoff   Boolean
+  expectedChampionship Boolean
+  expectedRank      Int?
+  basisNote  String   // 依据说明（自动生成）
+  achievedNote String?
+}</code></pre>
+
+<p><strong>制定依据</strong>（赛季开始时由 SeasonGoalService 自动生成）：</p>
+<ol>
+<li><strong>球队实力评估</strong>：OVR 中位数 + 首发 5 人 OVR 加权 + 球员潜力均值</li>
+<li><strong>上赛季战绩</strong>：胜率、排名、是否季后赛/夺冠</li>
+<li><strong>财务状况</strong>：薪资总额占预算比</li>
+<li><strong>联赛等级</strong>：L1 保级/进季后赛；L2 升级；国际联赛 16 强</li>
+</ol>
+<p><code>basisNote</code> 字段自动生成文本，如：<em>"上赛季胜率 0.42（排名第 12），球队 OVR 中位数 73（联盟第 8），薪资占比 78%（健康），目标设定：胜率 0.50、进季后赛、夺冠否"</em></p>
+
+<h3>3.3 董事会提案（触发依据明确）</h3>
+<pre><code>model BoardProposal {
+  id        String   @id @default(cuid())
+  teamId    String
+  seasonId  String
+  day       Int
+  type      String   // budget_request | facility_upgrade | fire_manager | sign_sponsor | academy_invest
+  payload   Json
+  reason    String   // 触发依据（自动生成）
+  status    String   @default("pending") // pending | approved | rejected | expired
+  votes     Json     @default("[]")
+}</code></pre>
+
+<p><strong>触发条件</strong>（每条 reason 字段说明依据）：</p>
+<table>
+<thead><tr><th>类型</th><th>触发条件</th><th>reason 示例</th></tr></thead>
+<tbody>
+<tr><td>budget_request</td><td>TeamCash.balance &lt; 阈值</td><td>"现金余额 1,200,000 低于安全线 2,000,000，请求追加预算 1,000,000"</td></tr>
+<tr><td>facility_upgrade</td><td>训练馆等级 &lt; 联盟均值 - 1</td><td>"训练馆 Lv1 低于联盟均值 Lv3，建议升级至 Lv3，预算 800,000"</td></tr>
+<tr><td>fire_manager</td><td>近 10 场胜率 &lt; 0.3 或 董事会忠诚度均值 &lt; 30</td><td>"近 10 场胜率 0.20 远低于目标 0.50，董事会忠诚度 25/100，提议解雇经理"</td></tr>
+<tr><td>sign_sponsor</td><td>满意度 &lt; 50 或合同即将到期</td><td>"主赞助商满意度 42/100，建议启动新赞助商洽谈"</td></tr>
+<tr><td>academy_invest</td><td>Academy.lastProdYear &lt; 当前年 - 2</td><td>"青训学院上次产出 2 年前，建议追加投入 500,000"</td></tr>
+</tbody>
+</table>
+
+<hr>
+
+<h2>四、公关部模块</h2>
+
+<h3>4.1 联盟公告（LeagueAnnouncement）</h3>
+<pre><code>model LeagueAnnouncement {
+  id        String   @id @default(cuid())
+  leagueId  String?
+  seasonId  String
+  day       Int
+  category  String   // trade | injury | suspension | milestone | rule_change | schedule_change
+  title     String
+  content   String
+  refId     String?
+}</code></pre>
+<p>每个事件源发生后由 AnnouncementService 自动生成公告，refId 指向原事件。例：交易完成 → "[球队A] 与 [球队B] 完成 [球员X] 交易"，正文列出筹码。</p>
+
+<h3>4.2 讯息（TeamMessage）</h3>
+<pre><code>model TeamMessage {
+  id        String   @id @default(cuid())
+  teamId    String
+  seasonId  String
+  day       Int
+  channel   String   // board | sponsor | player | staff | scout | league
+  type      String   // board_complaint / sponsor_praise / player_request ...
+  title     String
+  content   String
+  refId     String?
+  read      Boolean  @default(false)
+}</code></pre>
+<p>每个频道的事件源：董事会（提案结果、目标达成预警）、赞助商（满意度变化、续约/终止）、球员（续约请求、不满情绪）、职员（合同到期、加薪）、球探（报告完成）、联盟（处罚、规则变更）。</p>
+
+<h3>4.3 媒体中心（MediaNews）</h3>
+<pre><code>model MediaNews {
+  id        String   @id @default(cuid())
+  seasonId  String
+  day       Int
+  source    String   // espn | nba_tv | local_paper | insider
+  category  String   // trade | game | injury | rumor | front_office | fan
+  title     String
+  content   String
+  refId     String?
+  tags      Json     @default("[]")
+}</code></pre>
+<p>4 类媒体源，自动从当天联盟事件提炼新闻：比赛日复盘、交易日流言/达成/评级、伤病日影响分析、里程碑专题。按权重排序，首页 Top 10。支持按 category / source / tags 筛选。</p>
+
+<hr>
+
+<h2>五、运营中心 - 球迷中心（FanCenter）</h2>
+
+<pre><code>model FanCenter {
+  id           String   @id @default(cuid())
+  teamId       String   @unique
+  fanCount    Int      @default(1000)
+  morale      Int      @default(60)   // 0-100
+  loyalty     Int      @default(60)   // 0-100
+  seasonTicketsSold Int @default(0)
+  merchandiseRevenue Int @default(0)
+}
+
+model FanEvent {
+  id        String   @id @default(cuid())
+  teamId    String
+  seasonId  String
+  day       Int
+  type      String   // win | loss | trade | signing | firing | title | scandal
+  impact    Int      // 球迷情绪影响值（+/-）
+  note      String?
+}</code></pre>
+
+<p><strong>球迷数量增长</strong>：初始按城市规模（大市场 10 万、小市场 1 万）；胜率 > 60% 每日 +N，<30% 每日 -N；签约明星 +M，裁员 -m；夺冠一次性 +大额。</p>
+<p><strong>球迷士气计算</strong>：</p>
+<pre><code>morale = clamp(
+    50
+  + 近5场净胜分 × 0.2
+  + (fanLoyalty - 50) × 0.3
+  - 连败场数 × 5
+  + 季后赛席位 ? 5 : 0
+, 0, 100)</code></pre>
+<p><strong>季票销售</strong>：赛季初按 fanCount × 续订率一次性售出，续订率 = f(loyalty, 上赛季战绩)。收入入 CashLedger(ticket, season_ticket)。</p>
+<p><strong>衍生品收入</strong>：每日 fanCount × 购买率 × 客单价，与战绩、明星球员数量相关，入 CashLedger(other, merchandise)。</p>
+
+<hr>
+
+<h2>六、人事模块</h2>
+
+<h3>6.1 球员名单（对齐 basketpulse <code>/hk/Players/skills</code>）</h3>
+
+<p><strong>(1) "球员详情" → "球员列表"</strong></p>
+<ul>
+<li>Tab 重命名</li>
+<li>表格列对齐 basketpulse：姓名 / No. / 年齡 / 高 / 位置 / RT / 潛 / 健康 / 彈 / 速 / 壯 / 近 / 中 / 3 / 籃 / 擾 / 防 / 運 / 傳 / 攻 / 經</li>
+<li>能力值用数字 + 颜色编码（高数值亮色，低数值暗色）</li>
+<li>RT 与潛力独立成列</li>
+<li><strong>操作列</strong>：若该球员无操作项则整列隐藏</li>
+</ul>
+
+<p><strong>(2) 数据统计（对齐 basketpulse <code>/hk/Players/statistics</code>）</strong></p>
+<ul>
+<li>列顺序（精确对齐）：姓名 / No. / 分鐘 / 比賽(GP) / 得分 / 2% / 3% / 1%(罚球) / 籃(攻/防/總/被) / 助攻 / 搶截 / 犯規(被/犯) / 失誤 / 封阻(封/被) / 效率</li>
+<li>命中率保留 HWO 配色：≥50% 绿、35-50% 黄、<35% 红</li>
+<li>表格底部"合計"行：本队合计 vs 对手合计对比（新增）</li>
+<li>数据来源：<code>StatsService.getTeamPlayerSeasonStats</code>（已实现）</li>
+<li>支持按位置/年龄筛选、按列排序、CSV 导出</li>
+</ul>
+
+<p><strong>(3) 合同管理（包含所有球员）</strong></p>
+<ul>
+<li>列出所有球员的合同（不止有操作的球员）</li>
+<li>列：姓名 / 位置 / 年薪 / 总年限 / 剩余年数 / 球员选项 / 球队选项 / 交易否决 / 状态 / 裁员成本 / 操作</li>
+<li>操作：续约 / 裁退（裁员成本 = 剩余年限 × 年薪 × 50%）</li>
+<li>数据来源：<code>ContractService.getTeamContracts</code>（已实现）</li>
+</ul>
+
+<h3>6.2 职员中心（StaffCenter，新增）</h3>
+
+<p>复用既有 <code>Professional</code> 模型（已支持 head_coach / asst_coach / trainer / scout / agent / merchant / arena_ops / reporter / caster / arbiter / union_rep）。</p>
+<ul>
+<li>新增后端 <code>staff</code> 模块：
+  <ul>
+    <li><code>GET /api/staff/team/:teamId</code> → 列出本队所有职员</li>
+    <li><code>POST /api/staff/hire</code> → 雇佣自由职员（需 transfer market 阶段）</li>
+    <li><code>POST /api/staff/:id/fire</code> → 解雇（影响球迷/赞助商满意度）</li>
+  </ul>
+</li>
+<li>职员分类：教练组（head_coach / asst_coach / trainer）、球探（scout）、经纪人（agent）、商务（merchant / arena_ops）、媒体（reporter / caster）、其他（arbiter / union_rep）</li>
+<li>每个职员卡片：姓名 / 职位 / 等级 / 声望 / 雇佣状态 / 月薪 / 技能树</li>
+<li>教练组影响：训练效率（trainer 等级 + 训练馆等级）、阵容 AI 自动决策质量（head_coach 等级）</li>
+</ul>
+
+<h3>6.3 核心球员页面（对齐 playrimattack <code>/#/core</code>）</h3>
+<ul>
+<li>顶部横幅：赛季状态 + 球队信息</li>
+<li><strong>球员卡片</strong>：头像 / 球衣号 / OVR / TRV(trade value) / 位置 / 身高 / 年龄 / 健康 / 合同 / 特质</li>
+<li><strong>生涯数据表格</strong>：赛季 / GP / MIN / PTS / REB / AST / STL / BLK / FG% / 3P% / FT%</li>
+<li><strong>27 项能力值分组展示</strong>（对齐 playrimattack）：
+  <ul>
+    <li>身体：speed / vertical / strength / agility / stamina / lateral / burst / flexibility</li>
+    <li>投射：three / midrange / freeThrow / layup / dunk</li>
+    <li>防守：steal / block / rebounding</li>
+    <li>控球：ballHandle / passing / pickRoll</li>
+    <li>心理：workEthic / pressure / teamwork / leadership / iq</li>
+  </ul>
+</li>
+<li>38 项档案分组展示（已有 PROFILE_GROUPS 定义）</li>
+<li>王朝/传奇标签（DynastyRecord / HallOfFameEntry / EraTag）</li>
+<li>关系网（PlayerRelationship）</li>
+<li>球迷评价（基于 FanEvent 聚合）</li>
+</ul>
+
+<h3>6.4 训练中心（融合 basketpulse 与 HWO 体系）</h3>
+
+<p><strong>设计原则</strong>：不手动加点，每天自动训练，更新结果。训练效果 = f(训练馆等级 + trainer 职员等级 + 球员潜力 + 训练计划重心 + 疲劳)</p>
+
+<pre><code>model TrainingPlan {
+  id        String   @id @default(cuid())
+  teamId    String   @unique
+  focusByPosition Json @default("{}") // { PG: "passing", SG: "three", SF: "midrange", PF: "rebounding", C: "postUp" }
+  teamFocus Json @default("{}")      // 整队能力成长权重
+}
+
+model TrainingLog {
+  id        String   @id @default(cuid())
+  teamId    String
+  seasonId  String
+  day       Int
+  playerId  String
+  abilityKey String
+  beforeVal  Int
+  afterVal   Int
+  gain       Float
+  source     String   // team_training | position_training | individual
+}</code></pre>
+
+<p><strong>页面布局</strong>：</p>
+<pre><code>┌──────────────────────────────────────────────────────────┐
+│ 训练中心                                                  │
+├──────────────────────────────────────────────────────────┤
+│ [摘要条]                                                  │
+│ 训练馆: Lv3 ████████░░  主场馆: Lv2 ██████░░░░            │
+│ 训练师: Mike (Lv4)  助理教练: Tom (Lv3)  主教练: Tom (Lv5)│
+├──────────────────────────────────────────────────────────┤
+│ [今日训练计划] (每天 day 切换前可调 1 次)                 │
+│ 位置训练重心:                                            │
+│   PG = 传球  SG = 三分  SF = 中投  PF = 篮板  C = 低位   │
+│ 整队训练重心 (滑块):                                      │
+│   速度 0.8 / 弹跳 0.6 / 力量 1.0 / 敏捷 0.7 ...           │
+├──────────────────────────────────────────────────────────┤
+│ [球员训练视图] (basketpulse 风格 - 单球员详细)            │
+│ ┌────────────────────────────────────────────────┐        │
+│ │ 球员: 韩一鸣  位置: C  年龄: 24  潜力: 84      │        │
+│ │ RT: 76  狀態: good  健康: 95                  │        │
+│ │ 各项能力 (含训练增量):                         │        │
+│ │   速度 65 (+0.3)  弹跳 72 (+1.2)  力量 78 ... │        │
+│ │ [训练重心下拉: 篮板 ▼]                         │        │
+│ └────────────────────────────────────────────────┘        │
+├──────────────────────────────────────────────────────────┤
+│ [今日训练成果表]                                          │
+│ 球员 | 位置 | 训练项 | 前值 | 后值 | 增量 | 来源          │
+├──────────────────────────────────────────────────────────┤
+│ [本周训练摘要] (柱状图)                                   │
+│ [训练历史日志] (TrainingLog 时间线)                       │
+└──────────────────────────────────────────────────────────┘</code></pre>
+
+<p><strong>训练算法</strong>（每天 day 切换时由 <code>TrainingService.runDaily(teamId)</code> 执行）：</p>
+<pre><code>对每个球员 p:
+  baseGain = (trainingHallLv × 0.1) + (trainerLevel × 0.05)
+  focusBonus = 训练计划命中该球员位置的能力 +1.0 否则 +0.5
+  potentialFactor = (potential - currentAbility) / max(potential - 50, 1)
+  fatigueFactor = (100 - fatigue) / 100
+  gain = baseGain × focusBonus × potentialFactor × fatigueFactor × 随机扰动(0.8~1.2)
+  ability += gain (上限 potential)
+  trainExp += gain × 100
+  fatigue += 出场时间 × 0.5
+  写入 TrainingLog</code></pre>
+
+<h3>6.5 人才中心</h3>
+
+<p><strong>(1) 球探探查选项扩充</strong></p>
+<pre><code>model ScoutMission {
+  id        String   @id @default(cuid())
+  teamId    String
+  scoutId   String
+  targetType String  // player | head_coach | asst_coach | trainer | agent | merchant | reporter | caster | arbiter | union_rep
+  targetRef String?
+  region    String?
+  status    String   @default("pending")
+  report    Json?
+  accuracy  Int?
+}</code></pre>
+<p><strong>探查流程</strong>：用户选择目标类型 + 区域 → 派出球探（消耗工时，每日上限）→ 球探完成返回 ScoutReport，准确度 = f(球探等级 + 目标雾值) → 报告展示在"球探报告"列表。</p>
+
+<p><strong>(2) "自由市场" → "交易市场"，分两阶段</strong></p>
+<pre><code>model TransferMarketPhase {
+  id        String   @id @default(cuid())
+  seasonId  String  @unique
+  phase     String   @default("closed") // closed | free_agency | restricted
+  freeAgencyEndDay Int?     // 自由市场结束日（国际联赛 16 强赛前）
+  restrictedStartDay Int?
+  restrictedEndDay   Int?   // 赛季最后一日
+}</code></pre>
+
+<table>
+<thead><tr><th>阶段</th><th>时间窗口</th><th>行为</th></tr></thead>
+<tbody>
+<tr><td>自由市场 (free_agency)</td><td>赛季开始 → 国际联赛 16 强赛前</td><td>球员/职员即时加入球队</td></tr>
+<tr><td>受限市场 (restricted)</td><td>16 强赛开始 → 赛季最后一日</td><td>球员/职员赛季最后一日统一加入</td></tr>
+</tbody>
+</table>
+
+<p><strong>(3) 交易市场内容</strong>：标签切换 球员 / 主教练 / 助理教练 / 训练师 / 球探 / 其他职员；列表 姓名 / OVR / 年龄 / 报价 / 状态；操作 签约、撤回。</p>
+
+<h3>6.6 交易对方球队选择（搜索方式）</h3>
+<p><strong>现状</strong>：下拉框。<strong>调整</strong>：搜索框。</p>
+<ul>
+<li>新增前端组件 <code>TeamSearchSelect</code></li>
+<li>输入球队名/城市名，实时模糊匹配</li>
+<li>展示搜索结果列表（球队名 + 城市 + 联赛 + OVR + 战绩）</li>
+<li>点击选中填入表单</li>
+<li>支持按 OVR 范围、联赛、战绩筛选</li>
+<li>后端扩展 <code>GET /api/teams?search=xxx</code> 支持模糊搜索</li>
+</ul>
+
+<hr>
+
+<h2>七、实施顺序（6 批次，每批完成等用户测试反馈再进下一批）</h2>
+
+<table>
+<thead><tr><th>批次</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>批次 1</td><td>基础架构（数据模型新增、WorldClockScheduler 自动走时间、球员名单重命名、删除"推进一日"和"AI 经理"按钮）</td></tr>
+<tr><td>批次 2</td><td>财务系统（TeamCash + CashLedger、FinanceService.runDaily、财务页前端对齐 basketpulse、数据统计 Tab 加合計行）</td></tr>
+<tr><td>批次 3</td><td>训练中心 + 职员中心（TrainingPlan + TrainingLog、TrainingService.runDaily、Staff 模块、训练中心前端融合 basketpulse）</td></tr>
+<tr><td>批次 4</td><td>董事会 + 赞助商（Sponsor + BoardDirector + SeasonGoal + BoardProposal、满意度/目标/提案自动生成逻辑、董事会前端）</td></tr>
+<tr><td>批次 5</td><td>公关部 + 运营中心（LeagueAnnouncement + TeamMessage + MediaNews、FanCenter + FanEvent、公关部/球迷中心/媒体中心前端）</td></tr>
+<tr><td>批次 6</td><td>人才市场 + 交易搜索 + 核心球员（ScoutMission 扩职员、TransferMarketPhase 阶段切换、交易市场改造、TeamSearchSelect、核心球员页对齐 playrimattack）</td></tr>
+</tbody>
+</table>
+
+<hr>
+
+<h2>八、待用户确认的关键决策（8 项）</h2>
+
+<ol>
+<li><strong>球员合同去掉</strong>（§2.5）：解读 A 还是 B？（默认 A）</li>
+<li><strong>游戏币用途</strong>（§2.4）：是否将 User.coins 改名"经理点数"，仅用于外观/VIP，与球队现金彻底分离？</li>
+<li><strong>世界时钟速率</strong>：1 秒 : 1 赛季分钟 是否合适？是否需要加速档（2x / 4x）？</li>
+<li><strong>训练计划调整频率</strong>：每天 1 次是否合理？</li>
+<li><strong>受限市场截胡机制</strong>：是否需要"被截胡"逻辑？还是先到先得？</li>
+<li><strong>球队资讯条数上限</strong>：每天 10-20 条是否合适？</li>
+<li><strong>核心球员页面</strong>：38 项档案是否全部展示？还是按权限分级？</li>
+<li><strong>赞助商档位</strong>：S/A/B/C/D 五档是否合理？还是按球队等级自动定档？</li>
+</ol>
+
+<hr>
+
+<h2>九、测试环境说明</h2>
+
+<ul>
+<li>前端 http://localhost:5173 已确认可登录进入管理页</li>
+<li>测试账号：<code>test@hwo.test</code> / <code>test12345</code>（已绑"天津津门棕熊"队）</li>
+<li>后端 http://localhost:3000 已运行</li>
+<li>数据库已 seed 16 支球队 + 球员 + 赛季 2027-2028</li>
+<li>测试期间不会关闭服务器，等待用户通知测试完成后再处理</li>
+</ul>
+<p>如仍打不开页面，可能是浏览器缓存问题，建议：</p>
+<ol>
+<li>硬刷新（Ctrl+Shift+R / Cmd+Shift+R）</li>
+<li>或换无痕模式访问 http://localhost:5173/</li>
+<li>或确认访问的是 localhost:5173 而非其他地址</li>
+</ol>
+
+</body>
+</html>

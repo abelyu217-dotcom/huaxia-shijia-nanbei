@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>球探系统设计 · Hoops World Online</title>
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#141b26; --panel2:#1b2433; --line:#26324a;
+    --ink:#e6edf6; --ink2:#9fb0c7; --ink3:#6b7c97;
+    --accent:#ff6b35; --accent2:#4ade80; --gold:#fbbf24; --red:#ef4444; --blue:#60a5fa; --purple:#a78bfa;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:linear-gradient(180deg,#070a10 0%,#0b0f17 100%);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1020px;margin:0 auto;padding:40px 22px 120px}
+  .hero{
+    position:relative;border:1px solid var(--line);border-radius:18px;padding:42px 34px 30px;
+    background:
+      radial-gradient(800px 280px at 20% -10%, rgba(96,165,250,.16), transparent 60%),
+      radial-gradient(700px 260px at 90% 0%, rgba(167,139,250,.12), transparent 60%),
+      linear-gradient(180deg,#151d2c,#0e1420);
+    overflow:hidden;margin-bottom:30px;
+  }
+  .hero .tag{display:inline-block;font-size:12px;letter-spacing:.16em;color:var(--blue);border:1px solid rgba(96,165,250,.45);padding:4px 10px;border-radius:999px;margin-bottom:18px;text-transform:uppercase}
+  .hero h1{margin:0 0 8px;font-size:32px;letter-spacing:.5px;font-weight:800}
+  .hero h1 .en{color:var(--ink2);font-weight:600;font-size:18px;margin-left:10px}
+  .hero .pitch{color:var(--ink2);font-size:15px;max-width:760px;margin:10px 0 22px}
+  .hero .meta{display:flex;flex-wrap:wrap;gap:10px}
+  .hero .chip{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--ink2)}
+  .hero .chip b{color:var(--ink);font-weight:600}
+  .hero .scope{position:absolute;right:30px;bottom:20px;font-size:70px;opacity:.07;pointer-events:none}
+
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 28px;margin-bottom:22px}
+  .toc h3{margin:0 0 14px;font-size:14px;color:var(--ink2);letter-spacing:.1em;text-transform:uppercase}
+  .toc ol{margin:0;padding-left:22px;columns:2;column-gap:32px}
+  .toc li{margin:5px 0;break-inside:avoid}
+  .toc a{color:var(--ink2)}
+  .toc a:hover{color:var(--blue)}
+  @media (max-width:640px){.toc ol{columns:1}}
+
+  section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin-bottom:22px}
+  section > h2{margin:0 0 16px;font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
+  section > h2 .num{font-size:12px;color:#0b0f17;background:var(--blue);width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;font-weight:800;flex-shrink:0}
+  h3{font-size:16px;margin:22px 0 10px;color:var(--ink)}
+  h4{font-size:14px;margin:18px 0 8px;color:var(--blue);letter-spacing:.04em}
+  p{margin:8px 0}
+  ul,ol{margin:8px 0 8px 4px;padding-left:22px}
+  li{margin:4px 0}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{background:#0d131d;border:1px solid var(--line);padding:2px 6px;border-radius:5px;font-size:13px;color:var(--gold)}
+  strong{color:#fff}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--ink);font-weight:600}
+  tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+
+  .note{border-left:3px solid var(--accent);background:rgba(255,107,53,.06);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;color:var(--ink2)}
+  .note b{color:var(--accent)}
+  .note.green{border-left-color:var(--accent2);background:rgba(74,222,128,.06)}
+  .note.green b{color:var(--accent2)}
+  .note.blue{border-left-color:var(--blue);background:rgba(96,165,250,.06)}
+  .note.blue b{color:var(--blue)}
+  .note.red{border-left-color:var(--red);background:rgba(239,68,68,.06)}
+  .note.red b{color:var(--red)}
+
+  .formula{
+    background:#0d131d;border:1px solid var(--line);border-radius:10px;padding:16px 20px;
+    margin:14px 0;font-family:"SF Mono","Fira Code",Consolas,monospace;font-size:13px;line-height:1.9;
+    overflow-x:auto;white-space:pre;
+  }
+  .formula .var{color:var(--blue)}
+  .formula .fn{color:var(--purple)}
+  .formula .op{color:var(--accent)}
+  .formula .num{color:var(--gold)}
+  .formula .comment{color:var(--ink3);font-style:italic}
+  .formula .str{color:var(--accent2)}
+  .formula .kw{color:var(--accent2);font-weight:bold}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:14px 0}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .card .t{font-weight:700;color:var(--ink);font-size:14px;margin-bottom:6px}
+  .card .d{font-size:13px;color:var(--ink2)}
+  .card .badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:999px;margin-left:6px;vertical-align:middle}
+  .badge.green{background:rgba(74,222,128,.15);color:var(--accent2)}
+  .badge.gold{background:rgba(251,191,36,.15);color:var(--gold)}
+  .badge.red{background:rgba(239,68,68,.15);color:var(--red)}
+  .badge.blue{background:rgba(96,165,250,.15);color:var(--blue)}
+  .badge.purple{background:rgba(167,139,250,.15);color:var(--purple)}
+
+  .flow{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:14px 0;font-size:13px}
+  .flow .step{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 14px;color:var(--ink)}
+  .flow .arrow{color:var(--blue);font-weight:bold}
+
+  .fog-bar{display:flex;align-items:center;gap:8px;margin:6px 0}
+  .fog-bar .label{width:120px;font-size:12px;color:var(--ink2);text-align:right;flex-shrink:0}
+  .fog-bar .bar{flex:1;height:14px;background:#0d131d;border:1px solid var(--line);border-radius:7px;position:relative;overflow:hidden}
+  .fog-bar .center{position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--gold);transform:translateX(-50%);z-index:2}
+  .fog-bar .range{position:absolute;top:1px;bottom:1px;border-radius:6px;opacity:.85}
+  .fog-bar .est{position:absolute;top:-2px;width:10px;height:18px;background:var(--ink);border-radius:2px;transform:translateX(-50%);z-index:3}
+  .fog-bar .val{width:90px;font-size:11px;color:var(--ink2);font-family:monospace;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ==================== HERO ==================== -->
+<div class="hero">
+  <span class="tag">System Design · Scouting</span>
+  <h1>球探系统 <span class="en">Scouting System</span></h1>
+  <p class="pitch">球员获取链路的信息引擎。用"迷雾（fog）—预算—任务—报告"四要素，把"签约/选秀/青训淘苗"从无脑点选变成有风险的信息博弈。球探不是"看了就准"的透视眼，而是投入预算、消耗时间、按等级与专长产出不确定收窄的侦察行动。球探职业人（三身份）与球探系统深度耦合，构成去中心化的情报供给侧。</p>
+  <div class="meta">
+    <span class="chip"><b>优先级</b> P0</span>
+    <span class="chip"><b>依赖</b> 球员成长线 · 三身份系统 · 世界与联赛结构 · 经济系统</span>
+    <span class="chip"><b>下游</b> 选秀系统 · 签约/转会 · 青训学院</span>
+    <span class="chip"><b>版本</b> v1.0</span>
+  </div>
+  <span class="scope">🔭</span>
+</div>
+
+<!-- ==================== TOC ==================== -->
+<div class="toc">
+  <h3>目录 · Table of Contents</h3>
+  <ol>
+    <li><a href="#s1">设计原则</a></li>
+    <li><a href="#s2">系统总览与架构</a></li>
+    <li><a href="#s3">迷雾 fog 系统</a></li>
+    <li><a href="#s4">球探任务体系</a></li>
+    <li><a href="#s5">球探报告</a></li>
+    <li><a href="#s6">球探预算</a></li>
+    <li><a href="#s7">球探职业人与雇佣</a></li>
+    <li><a href="#s8">Watchlist 长期跟踪</a></li>
+    <li><a href="#s9">探针系统</a></li>
+    <li><a href="#s10">青训淘苗</a></li>
+    <li><a href="#s11">选秀探查</a></li>
+    <li><a href="#s12">自由球员与对手探查</a></li>
+    <li><a href="#s13">对阵亲历</a></li>
+    <li><a href="#s14">球探与世界时钟</a></li>
+    <li><a href="#s15">报告衰减与失效</a></li>
+    <li><a href="#s16">AI 球探决策</a></li>
+    <li><a href="#s17">异常处理与边界规则</a></li>
+    <li><a href="#s18">数值附录</a></li>
+  </ol>
+</div>
+
+<!-- ==================== §1 设计原则 ==================== -->
+<section id="s1">
+  <h2><span class="num">1</span>设计原则</h2>
+
+  <div class="note blue"><b>核心定位</b>：球探系统是球员获取链路的"信息引擎"。它不直接产出球员，而是产出<b>关于球员的不确定信息</b>（迷雾收窄报告），让签约/选秀/青训淘苗成为"基于不完全信息的博弈"，而非"看数值点选"。</div>
+
+  <div class="grid">
+    <div class="card"><div class="t">① 信息即风险 <span class="badge blue">核心</span></div><div class="d">所有未探查球员的能力/ Peak 都是带 ±误差的估值。球探报告收窄误差区间，但永远无法精确到真实值（除非对阵亲历）。签约=赌 fog 内某点。</div></div>
+    <div class="card"><div class="t">② 预算即稀缺 <span class="badge gold">约束</span></div><div class="d">球探预算有限，探查高层级赛事/远距离目标更贵。经理必须在"广撒网"与"深挖重点"间分配。</div></div>
+    <div class="card"><div class="t">③ 时间即成本 <span class="badge red">博弈</span></div><div class="d">球探任务耗时（1-7 日），派出后不可中途改任务。机会成本：探 A 就探不了 B。</div></div>
+    <div class="card"><div class="t">④ 职业人即供给侧 <span class="badge purple">经济</span></div><div class="d">球探是三身份中的职业人之一。玩家可自任球探为他队服务赚薪，也可雇佣他人球探。去中心化情报市场。</div></div>
+  </div>
+
+  <h3>1.1 不做什么</h3>
+  <ul>
+    <li><b>不做透视眼</b>：球探报告永远收窄 fog 但不消除 fog。真实 Peak/能力只有服务端知道，签约前永远有不确定性。</li>
+    <li><b>不做免费情报</b>：所有探查消耗预算与时间。无"自动全可见"模式（除对阵亲历的有限收窄）。</li>
+    <li><b>不做永久准确</b>：报告有时效，球员能力变化后旧报告衰减（§15）。球探是持续投入，非一劳永逸。</li>
+    <li><b>不做跨世界探查</b>：球探只能探查本世界内球员池（世界结构 §3 球员池封闭原则）。</li>
+  </ul>
+</section>
+
+<!-- ==================== §2 系统总览与架构 ==================== -->
+<section id="s2">
+  <h2><span class="num">2</span>系统总览与架构</h2>
+
+  <h3>2.1 球探系统在球员获取链路中的位置</h3>
+  <div class="flow">
+    <span class="step">世界生成球员池<br>（FA/选秀/青训）</span>
+    <span class="arrow">→</span>
+    <span class="step">球探探查<br>（消耗预算+时间）</span>
+    <span class="arrow">→</span>
+    <span class="step">迷雾收窄报告<br>（±误差区间）</span>
+    <span class="arrow">→</span>
+    <span class="step">经理决策<br>（签约/选秀/淘苗）</span>
+    <span class="arrow">→</span>
+    <span class="step">真实值揭晓<br>（签约后/对阵后）</span>
+  </div>
+  <p>球探系统是"球员池→经理决策"之间的信息过滤层。没有球探，经理看到的只是粗估 ±20 的大 fog；球探投入越多，fog 越窄，决策风险越低，但预算与时间有限。</p>
+
+  <h3>2.2 四层架构</h3>
+  <table>
+    <thead><tr><th>层</th><th>名称</th><th>职责</th></tr></thead>
+    <tbody>
+      <tr><td><b>L1</b></td><td>任务层 Task Layer</td><td>经理指派球探任务（目标球员/赛事层级/任务类型）；球探职业人接受雇佣</td></tr>
+      <tr><td><b>L2</b></td><td>结算层 Settlement Layer</td><td>任务到期结算：roll 收窄幅度、生成 ScoutReport、扣预算、扣球探体力。纯函数 + 确定性 PRNG</td></tr>
+      <tr><td><b>L3</b></td><td>报告层 Report Layer</td><td>ScoutReport 存档、衰减、叠加；Watchlist 自动跟踪</td></tr>
+      <tr><td><b>L4</b></td><td>揭晓层 Reveal Layer</td><td>签约/选秀/对阵亲历时，按规则揭晓真实值并校验历史报告准确度</td></tr>
+    </tbody>
+  </table>
+
+  <h3>2.3 核心数据结构</h3>
+  <div class="formula">
+<span class="comment">── 球探任务（经理指派） ──</span>
+
+<span class="var">ScoutTask</span> <span class="op">=</span> {
+  taskId:     <span class="var">u64</span>,
+  teamId:     <span class="var">TeamId</span>,
+  scoutId:    <span class="var">ProHandleId</span>,        <span class="comment">// 球探职业人（自雇或雇佣）</span>
+  taskType:   <span class="var">ScoutTaskType</span>,     <span class="comment">// 球员探查/赛事现场/区域扫描/跟踪确认</span>
+  target:     <span class="var">ScoutTarget</span>,       <span class="comment">// 目标球员/赛事层级/地理区域</span>
+  budgetCost: <span class="var">u32</span>,               <span class="comment">// 预算消耗</span>
+  duration:   <span class="var">u8</span>,                <span class="comment">// 任务日数 1-7</span>
+  startDay:   <span class="var">u8</span>,                <span class="comment">赛<span class="comment">季日</span></span>
+  status:     <span class="str">"running"</span> | <span class="str">"done"</span> | <span class="str">"aborted"</span>,
+}
+
+<span class="comment">── 球探报告（任务结算产出） ──</span>
+
+<span class="var">ScoutReport</span> <span class="op">=</span> {
+  reportId:   <span class="var">u64</span>,
+  teamId:     <span class="var">TeamId</span>,
+  playerId:   <span class="var">PlayerId</span>,
+  scoutId:    <span class="var">ProHandleId</span>,
+  generatedDay:<span class="var">u8</span>,
+  abilityFog: <span class="var">Map</span>&lt;<span class="var">AbilityKey</span>, (<span class="var">est</span>, <span class="var">range</span>)&gt;,  <span class="comment">// 各能力估值与±区间</span>
+  peakFog:    (<span class="var">est</span>, <span class="var">range</span>),            <span class="comment">// Peak 估值与区间</span>
+  traitHints: [<span class="var">TraitHint</span>],            <span class="comment">// 特质线索（可能不全/不准）</span>
+  narrative:  <span class="var">string</span>,              <span class="comment">// 球探评语叙事</span>
+  confidence: <span class="var">f32</span>,                <span class="comment">// 报告置信度 0-1</span>
+  freshness:  <span class="var">f32</span>,                <span class="comment">// 新鲜度 1.0→衰减（§15）</span>
+}
+  </div>
+</section>
+
+<!-- ==================== §3 迷雾 fog 系统 ==================== -->
+<section id="s3">
+  <h2><span class="num">3</span>迷雾 fog 系统</h2>
+  <p>fog 是球探系统的核心机制——所有未签约球员的能力与 Peak 对经理呈现为带 ±误差的估值区间，而非真实值。</p>
+
+  <h3>3.1 fog 的来源</h3>
+  <table>
+    <thead><tr><th>来源</th><th>初始 fog</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><b>世界生成</b></td><td>±20（全能力）</td><td>球员生成时 fog 基线。任何经理第一次看到都是 ±20</td></tr>
+      <tr><td><b>赛事可见度</b></td><td>±15 ~ ±8</td><td>球员参加高层级赛事后，所有经理的基础 fog 自动收窄（成长线 §5 球探可见度）</td></tr>
+      <tr><td><b>球探报告</b></td><td>按等级收窄</td><td>主动探查的主要收窄途径</td></tr>
+      <tr><td><b>Watchlist</b></td><td>缓慢自动收窄</td><td>长期跟踪的被动收窄（§8）</td></tr>
+      <tr><td><b>对阵亲历</b></td><td>±3</td><td>交手后对该球员的有限收窄（§13）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.2 fog 的可视化</h3>
+  <p>经理在球员卡片上看到的不是单一数值，而是估值 ± 区间的条形：</p>
+  <div class="fog-bar">
+    <span class="label">三分 ThreePT</span>
+    <div class="bar">
+      <div class="center"></div>
+      <div class="range" style="left:30%;width:40%;background:rgba(239,68,68,.4)"></div>
+      <div class="est" style="left:50%"></div>
+    </div>
+    <span class="val">68 ±20（未探）</span>
+  </div>
+  <div class="fog-bar">
+    <span class="label">三分 ThreePT</span>
+    <div class="bar">
+      <div class="center"></div>
+      <div class="range" style="left:38%;width:24%;background:rgba(251,191,36,.5)"></div>
+      <div class="est" style="left:50%"></div>
+    </div>
+    <span class="val">68 ±12（1次探）</span>
+  </div>
+  <div class="fog-bar">
+    <span class="label">三分 ThreePT</span>
+    <div class="bar">
+      <div class="center"></div>
+      <div class="range" style="left:44%;width:12%;background:rgba(74,222,128,.5)"></div>
+      <div class="est" style="left:50%"></div>
+    </div>
+    <span class="val">68 ±6（3次探）</span>
+  </div>
+  <p>金色竖线为估值点（est），色带为 ±区间。区间越窄，色带越绿越窄。经理永远不知道真实值在区间内何处。</p>
+
+  <h3>3.3 fog 收窄计算</h3>
+  <div class="formula">
+<span class="comment">── 单次球探任务的 fog 收窄 ──</span>
+
+<span class="var">fogNarrow</span> <span class="op">=</span> <span class="fn">baseNarrow</span>(<span class="var">targetAge</span>)
+            <span class="op">+</span> <span class="fn">skillRoll</span>(<span class="var">scouting</span>) <span class="op">*</span> <span class="num">0.6</span>
+            <span class="op">+</span> <span class="var">scoutLevel</span> <span class="op">*</span> <span class="num">0.4</span>
+            <span class="op">-</span> <span class="var">distancePenalty</span>
+            <span class="op">-</span> <span class="var">tournamentLevelPenalty</span>
+
+<span class="comment">// baseNarrow 按年龄（年轻苗子更难看清）</span>
+<span class="fn">baseNarrow</span>(age):
+  8-12  <span class="op">→</span> <span class="num">2.0</span>   <span class="comment">// 童子期：潜力远，难看清</span>
+  13-15 <span class="op">→</span> <span class="num">3.0</span>   <span class="comment">// 少年期：逐渐清晰</span>
+  16-18 <span class="op">→</span> <span class="num">4.0</span>   <span class="comment">// 青年期：接近选秀，较清晰</span>
+  19-25 <span class="op">→</span> <span class="num">5.0</span>   <span class="comment">// 成人期：数据样本足，最清晰</span>
+  26+   <span class="op">→</span> <span class="num">4.5</span>   <span class="comment">// 老将：衰退轨迹有不确定性</span>
+
+<span class="comment">// 收窄后新 fog</span>
+<span class="var">newFog</span> <span class="op">=</span> <span class="fn">max</span>(<span class="var">fogFloor</span>, <span class="var">currentFog</span> <span class="op">-</span> <span class="var">fogNarrow</span>)
+<span class="comment">// fogFloor = 2（永远保留 ±2 不可消除，除非对阵亲历）</span>
+  </div>
+
+  <h3>3.4 fog 的不对称性</h3>
+  <div class="note"><b>设计要点</b>：fog 收窄是"双向收窄"——区间从两端同时缩小，估值点（est）可能微移但不会跳变。这避免"探了反而更糊涂"。但 <b>Peak 的 fog 比能力 fog 更难收窄</b>（Peak 隐藏更深），需要专项"潜力探查"任务（§4）且 fogFloor 更高（±5）。这让"赌天花板"永远是高风险决策。</div>
+</section>
+
+<!-- ==================== §4 球探任务体系 ==================== -->
+<section id="s4">
+  <h2><span class="num">4</span>球探任务体系</h2>
+
+  <h3>4.1 四大任务类型</h3>
+  <table>
+    <thead><tr><th>任务类型</th><th>目标</th><th>产出</th><th>耗时</th><th>预算</th></tr></thead>
+    <tbody>
+      <tr><td><b>球员探查</b><br>Player Scout</td><td>指定 1 名球员</td><td>该球员全能力 fog 收窄 + 特质线索</td><td>2-3 日</td><td>中</td></tr>
+      <tr><td><b>潜力探查</b><br>Potential Scout</td><td>指定 1 名球员的 Peak</td><td>Peak fog 收窄（比能力 fog 难收窄）</td><td>3-5 日</td><td>高</td></tr>
+      <tr><td><b>赛事现场</b><br>Tournament Watch</td><td>指定赛事层级（如"全国 U17"）</td><td>该赛事所有参赛苗子的 fog 各收窄一点 + 发现新苗子</td><td>5-7 日</td><td>高</td></tr>
+      <tr><td><b>区域扫描</b><br>Region Scan</td><td>指定地理区域</td><td>区域内未知苗子发现 + 粗略 fog</td><td>5-7 日</td><td>中</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.2 任务详情：球员探查</h3>
+  <ul>
+    <li><b>目标</b>：经理指定 1 名已知球员（青训预备名单/选秀池/自由球员池/对手名单）。</li>
+    <li><b>产出</b>：该球员全部能力 fog 各收窄 fogNarrow；30% 概率获得 1 条特质线索（TraitHint）。</li>
+    <li><b>耗时</b>：2-3 日（取决于距离）。</li>
+    <li><b>预算</b>：基础 50 + 距离系数。</li>
+    <li><b>限制</b>：同一球员 7 日内重复探查收益递减（每次 fogNarrow ×0.7）。</li>
+  </ul>
+
+  <h3>4.3 任务详情：潜力探查</h3>
+  <ul>
+    <li><b>目标</b>：指定 1 名球员，专攻 Peak fog。</li>
+    <li><b>产出</b>：Peak fog 收窄（baseNarrow ×0.6，且 fogFloor = ±5 而非 ±2）。</li>
+    <li><b>耗时</b>：3-5 日（比球员探查久）。</li>
+    <li><b>预算</b>：基础 80 + 距离系数。</li>
+    <li><b>设计意图</b>：Peak 是最关键也最隐藏的信息。潜力探查是"赌天花板"流派的必备投入，但即便多次探查也无法消除 ±5 的核心不确定性。</li>
+  </ul>
+
+  <h3>4.4 任务详情：赛事现场</h3>
+  <ul>
+    <li><b>目标</b>：指定业余金字塔赛事层级（成长线 §5：城市/省/国家/洲际/国际）。</li>
+    <li><b>产出</b>：该赛事所有参赛苗子 fog 各收窄 fogNarrow ×0.4（广撒网，单兵收窄弱）；有概率发现新苗子加入预备名单。</li>
+    <li><b>耗时</b>：5-7 日（覆盖整个赛事周期）。</li>
+    <li><b>预算</b>：高层级赛事更贵（城市 80 → 国际 300）。</li>
+    <li><b>发现新苗子</b>：赛事现场有概率发现原本不在预备名单的苗子，加入后可后续深探。</li>
+  </ul>
+
+  <h3>4.5 任务详情：区域扫描</h3>
+  <ul>
+    <li><b>目标</b>：指定地理区域（如"华东区""华南区"）。</li>
+    <li><b>产出</b>：区域内 3-8 名未知苗子发现 + 粗略 fog（±15）；不深探单个。</li>
+    <li><b>耗时</b>：5-7 日。</li>
+    <li><b>预算</b>：基础 120。</li>
+    <li><b>用途</b>：赛季初广撒网发现淘苗目标，再针对重点苗子深探。</li>
+  </ul>
+</section>
+
+<!-- ==================== §5 球探报告 ==================== -->
+<section id="s5">
+  <h2><span class="num">5</span>球探报告</h2>
+
+  <h3>5.1 报告内容</h3>
+  <p>每次球探任务结算产出一份 ScoutReport，包含：</p>
+  <table>
+    <thead><tr><th>字段</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><b>abilityFog</b></td><td>各能力的 (est, range) 估值区间。球员探查产出全能力；赛事现场仅产出部分能力</td></tr>
+      <tr><td><b>peakFog</b></td><td>Peak 的 (est, range)。仅潜力探查产出；其他任务不更新 Peak fog</td></tr>
+      <tr><td><b>traitHints</b></td><td>特质线索列表。每条线索有置信度（30%-80%），可能存在误报</td></tr>
+      <tr><td><b>narrative</b></td><td>球探评语叙事（如"投射手感柔和但防守端横移偏慢"），定性补充</td></tr>
+      <tr><td><b>confidence</b></td><td>报告整体置信度 0-1。受球探等级、任务类型、距离影响</td></tr>
+      <tr><td><b>freshness</b></td><td>新鲜度 1.0 起步，随时间衰减（§15）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.2 报告叠加规则</h3>
+  <p>同一球员被多次探查时，报告叠加而非覆盖——取各报告收窄后的<b>最窄区间</b>，但 est 加权平均：</p>
+  <div class="formula">
+<span class="comment">── 多报告叠加 ──</span>
+
+<span class="var">mergedRange</span> <span class="op">=</span> <span class="fn">min</span>(<span class="var">allReports</span>.range)           <span class="comment">// 取最窄</span>
+<span class="var">mergedEst</span>    <span class="op">=</span> <span class="fn">weightedAvg</span>(<span class="var">allReports</span>.est, <span class="var">confidence</span>)  <span class="comment">// 按置信度加权</span>
+<span class="var">mergedConfidence</span> <span class="op">=</span> <span class="num">1</span> <span class="op">-</span> <span class="fn">product</span>(<span class="num">1</span><span class="op">-</span><span class="var">r</span>.confidence <span class="kw">for</span> <span class="var">r</span> <span class="kw">in</span> <span class="var">allReports</span>)  <span class="comment">// 置信度叠加</span>
+
+<span class="comment">// 但 Peak fog 不叠加收窄——每次潜力探查独立收窄，取最窄</span>
+<span class="comment">// 且 Peak 的 fogFloor = ±5 永远保留</span>
+  </div>
+
+  <h3>5.3 特质线索 TraitHint</h3>
+  <p>特质线索是不确定的——球探可能看错：</p>
+  <table>
+    <thead><tr><th>线索置信度</th><th>含义</th><th>误报率</th></tr></thead>
+    <tbody>
+      <tr><td>80%</td><td>球探很确定</td><td>20% 可能是错的</td></tr>
+      <tr><td>50%</td><td>球探有印象</td><td>50% 可能是错的</td></tr>
+      <tr><td>30%</td><td>球探隐约觉得</td><td>70% 可能是错的</td></tr>
+    </tbody>
+  </table>
+  <div class="note"><b>设计意图</b>：特质线索让球探报告不只是数字区间，还有"软情报"。但软情报有误报率——经理需判断哪些线索可信。特质揭晓（成长线 §4.2）在赛事中触发，揭晓后校验历史 traitHint 准确度，反馈给球探职业声望。</div>
+
+  <h3>5.4 球探评语叙事</h3>
+  <p>评语基于 fog 数据生成定性描述，增添沉浸感与决策线索：</p>
+  <div class="grid">
+    <div class="card"><div class="t">高 fog 收窄+高置信</div><div class="d">"投射能力已确认属上乘，三分估值 72±4，可放心培养"</div></div>
+    <div class="card"><div class="t">Peak fog 仍宽</div><div class="d">"潜力上限仍有较大不确定性（±8），建议继续跟踪或谨慎评估"</div></div>
+    <div class="card"><div class="t">特质线索低置信</div><div class="d">"球探隐约察觉该球员有大心脏特质，但样本不足，需更多观察"</div></div>
+    <div class="card"><div class="t">衰退轨迹苗子</div><div class="d">"26 岁但速度 fog 下沿偏低，需警惕早期衰退"</div></div>
+  </div>
+</section>
+
+<!-- ==================== §6 球探预算 ==================== -->
+<section id="s6">
+  <h2><span class="num">6</span>球探预算</h2>
+
+  <h3>6.1 预算来源</h3>
+  <table>
+    <thead><tr><th>来源</th><th>量级</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><b>球队基础预算</b></td><td>300/赛季</td><td>每赛季初分配，所有球队均有</td></tr>
+      <tr><td><b>世界等级加成</b></td><td>+100~300</td><td>T1 球队球探预算更高（世界结构 §8）</td></tr>
+      <tr><td><b>经理声望加成</b></td><td>+50~200</td><td>高声望经理获得额外球探资源</td></tr>
+      <tr><td><b>专项投入</b></td><td>灵活</td><td>经理可从总预算中额外拨给球探（经济系统）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>6.2 预算消耗</h3>
+  <div class="formula">
+<span class="comment">── 任务预算消耗 ──</span>
+
+<span class="var">budgetCost</span> <span class="op">=</span> <span class="var">baseCost</span>[taskType]
+            <span class="op">*</span> <span class="var">distanceMod</span>           <span class="comment">// 距离系数 1.0-2.0</span>
+            <span class="op">*</span> <span class="var">tournamentMod</span>        <span class="comment">// 高层级赛事更贵 1.0-3.0</span>
+            <span class="op">+</span> <span class="var">scoutSalary</span>           <span class="comment">// 雇佣球探的当日薪资（自雇则免）</span>
+
+<span class="comment">// baseCost</span>
+球员探查: <span class="num">50</span>
+潜力探查: <span class="num">80</span>
+赛事现场: <span class="num">80</span>(城市) ~ <span class="num">300</span>(国际)
+区域扫描: <span class="num">120</span>
+  </div>
+
+  <h3>6.3 预算管理策略</h3>
+  <div class="note blue"><b>预算稀缺性</b>：一个赛季总预算约 500-800，而一次国际赛事现场就要 300。经理必须在"广撒网发现苗子"与"深挖重点目标"间分配。选秀前集中投入探查顺位目标，日常保留少量预算跟踪自家青训苗子。预算不可透支。</div>
+</section>
+
+<!-- ==================== §7 球探职业人与雇佣 ==================== -->
+<section id="s7">
+  <h2><span class="num">7</span>球探职业人与雇佣</h2>
+  <p>球探是三身份系统（§5.1）中的职业人之一。玩家可自任球探为他队服务，也可雇佣他人球探。</p>
+
+  <h3>7.1 球探的三个技能分支</h3>
+  <p>球探职业线有 3 条技能分支（三身份 §6.2），技能点分配决定探查倾向：</p>
+  <table>
+    <thead><tr><th>分支</th><th>影响</th><th>适合流派</th></tr></thead>
+    <tbody>
+      <tr><td><b>苗子探查</b><br>Youth Scouting</td><td>青训苗子（8-18 岁）探查 fogNarrow +20%；童子/少年期 baseNarrow 加成</td><td>长线建队、青训流</td></tr>
+      <tr><td><b>职业评估</b><br>Pro Evaluation</td><td>成人球员（19+）探查 fogNarrow +20%；自由球员/对手探查加成</td><td>即战型、转会流</td></tr>
+      <tr><td><b>情报网络</b><br>Intel Network</td><td>区域扫描/赛事现场发现新苗子概率 +30%；特质线索置信度 +15%</td><td>广撒网发现流</td></tr>
+    </tbody>
+  </table>
+
+  <h3>7.2 雇佣模式</h3>
+  <table>
+    <thead><tr><th>模式</th><th>说明</th><th>成本</th></tr></thead>
+    <tbody>
+      <tr><td><b>自任球探</b></td><td>玩家以自己的职业人·球探身份为本队探查</td><td>免薪资；但占用职业人时间（不能同时为他队服务赚薪）</td></tr>
+      <tr><td><b>雇佣玩家球探</b></td><td>在职员市场雇佣其他玩家的球探职业人</td><td>按等级付薪（经济系统）；可指定任务</td></tr>
+      <tr><td><b>NPC 球探</b></td><td>雇佣游戏预设的 NPC 球探（等级较低）</td><td>固定薪资；产出质量较低</td></tr>
+    </tbody>
+  </table>
+
+  <h3>7.3 球探等级与产出</h3>
+  <table>
+    <thead><tr><th>等级</th><th>title</th><th>skillRoll 加成</th><th>lvl 加成</th><th>特质线索概率</th></tr></thead>
+    <tbody>
+      <tr><td>1-3</td><td>新手-熟练</td><td>0.3-0.5</td><td>+0.4-1.2</td><td>20%</td></tr>
+      <tr><td>4-6</td><td>资深-专家</td><td>0.5-0.7</td><td>+1.6-2.4</td><td>30%</td></tr>
+      <tr><td>7-8</td><td>大师</td><td>0.7-0.85</td><td>+2.8-3.2</td><td>40%</td></tr>
+      <tr><td>9-10</td><td>传奇</td><td>0.85-1.0</td><td>+3.6-4.0</td><td>50%</td></tr>
+    </tbody>
+  </table>
+
+  <h3>7.4 球探声望反馈</h3>
+  <p>球探报告的准确度反哺球探职业声望（三身份 §11）：</p>
+  <ul>
+    <li><b>报告准确</b>（揭晓后真实值落在 fog 区间内）：职业声望 +5/份。</li>
+    <li><b>报告失准</b>（真实值落在 fog 区间外）：职业声望 -3/份。</li>
+    <li><b>特质线索正确</b>：声望 +10/条。</li>
+    <li><b>特质线索误报</b>：声望 -5/条。</li>
+    <li>声望影响球探可应聘的高级岗位与雇佣薪资。</li>
+  </ul>
+</section>
+
+<!-- ==================== §8 Watchlist 长期跟踪 ==================== -->
+<section id="s8">
+  <h2><span class="num">8</span>Watchlist 长期跟踪</h2>
+  <p>Watchlist 是被动跟踪机制——将球员加入关注名单后，系统自动缓慢收窄 fog，无需主动派任务。</p>
+
+  <h3>8.1 Watchlist 机制</h3>
+  <div class="formula">
+<span class="comment">── Watchlist 自动收窄 ──</span>
+
+<span class="comment">// 每日 16:00 翻天时结算</span>
+<span class="keyword">if</span> (<span class="var">player</span> <span class="kw">in</span> <span class="var">team</span>.watchlist):
+    <span class="var">autoNarrow</span> <span class="op">=</span> <span class="num">0.5</span> <span class="op">*</span> <span class="var">scoutLevelMod</span>     <span class="comment">// 取决于队内球探等级</span>
+    <span class="var">player</span>.fog <span class="op">=</span> <span class="fn">max</span>(<span class="var">fogFloor</span>, <span class="var">player</span>.fog <span class="op">-</span> <span class="var">autoNarrow</span>)
+
+<span class="comment">// Watchlist 容量限制</span>
+<span class="var">watchlistCap</span> <span class="op">=</span> <span class="num">20</span> <span class="op">+</span> <span class="var">scoutLevel</span> <span class="op">*</span> <span class="num">5</span>   <span class="comment">// 球探等级越高，可跟踪越多</span>
+  </div>
+
+  <h3>8.2 Watchlist vs 主动探查</h3>
+  <table>
+    <thead><tr><th>维度</th><th>Watchlist</th><th>主动探查</th></tr></thead>
+    <tbody>
+      <tr><td>收窄速度</td><td>慢（0.5/日）</td><td>快（2-5/任务）</td></tr>
+      <tr><td>预算消耗</td><td>0</td><td>有</td></tr>
+      <tr><td>时间消耗</td><td>0（后台自动）</td><td>占用球探 2-7 日</td></tr>
+      <tr><td>覆盖广度</td><td>可达 20-50 人</td><td>单次 1 人/1 赛事</td></tr>
+      <tr><td>特质线索</td><td>无</td><td>有概率</td></tr>
+      <tr><td>Peak fog</td><td>不收窄</td><td>潜力探查可收窄</td></tr>
+    </tbody>
+  </table>
+  <div class="note green"><b>策略组合</b>：Watchlist 适合"长期观察多个潜力股"，主动探查适合"选秀/签约前对重点目标深挖"。成熟经理会先用 Watchlist 广撒网，再用主动探查集中火力。</div>
+</section>
+
+<!-- ==================== §9 探针系统 ==================== -->
+<section id="s9">
+  <h2><span class="num">9</span>探针系统</h2>
+  <p>探针是球探系统的"高精度工具"——消耗稀缺资源换取单次高精度收窄。</p>
+
+  <h3>9.1 探针类型</h3>
+  <table>
+    <thead><tr><th>探针</th><th>效果</th><th>获取</th><th>限制</th></tr></thead>
+    <tbody>
+      <tr><td><b>试训邀请</b></td><td>邀请球员来队试训 1 日，全能力 fog 一次性收窄 ±6</td><td>消耗预算 100 + 球员好感</td><td>仅自由球员/选秀前；球员可拒绝</td></tr>
+      <tr><td><b>医疗体检</b></td><td>体检报告：Durability 真实值 ±2、伤病隐患线索</td><td>消耗预算 150 + 医疗组等级≥3</td><td>仅签约前；球员须同意</td></tr>
+      <tr><td><b>心理评估</b></td><td>MentalFortitude / ClutchIQ 真实值 ±3、心理特质线索</td><td>消耗预算 120 + 心理咨询师</td><td>签约/选秀前</td></tr>
+      <tr><td><b>数据挖掘</b></td><td>挖掘球员历史赛事数据，收窄已衰退老将的轨迹 fog</td><td>消耗预算 80 + 情报网络技能</td><td>仅 26+ 老将</td></tr>
+    </tbody>
+  </table>
+
+  <h3>9.2 探针的特殊性</h3>
+  <ul>
+    <li><b>探针可触及 fogFloor 以下</b>：试训/体检/心理评估的收窄可突破 ±2 的常规 fogFloor，最低至 ±1。这是探针的核心价值。</li>
+    <li><b>探针不可重复</b>：同一球员同种探针仅可使用 1 次（避免无限刷精度）。</li>
+    <li><b>探针需球员同意</b>：试训/体检/心理评估需球员好感达标或合同条款配合，不可强制。</li>
+    <li><b>选秀前窗口</b>：选秀前 7 日开放"联合试训"探针窗口，所有选秀池球员可集体浅探（fog 各收窄 ±3）。</li>
+  </ul>
+</section>
+
+<!-- ==================== §10 青训淘苗 ==================== -->
+<section id="s10">
+  <h2><span class="num">10</span>青训淘苗</h2>
+  <p>青训淘苗是球探系统在青训苗子池（youthAcademyPool）的应用——发现 8-12 岁童子期苗子并纳入青训体系。</p>
+
+  <h3>10.1 淘苗流程</h3>
+  <div class="flow">
+    <span class="step">区域扫描/赛事现场</span>
+    <span class="arrow">→</span>
+    <span class="step">发现未知苗子<br>（粗略 fog ±15）</span>
+    <span class="arrow">→</span>
+    <span class="step">球员探查深挖<br>（收窄 fog）</span>
+    <span class="arrow">→</span>
+    <span class="step">潜力探查 Peak</span>
+    <span class="arrow">→</span>
+    <span class="step">纳入青训预备名单</span>
+    <span class="arrow">→</span>
+    <span class="step">青训学院培养</span>
+  </div>
+
+  <h3>10.2 淘苗的特殊性</h3>
+  <ul>
+    <li><b>童子期 fog 最宽</b>：8-12 岁苗子 baseNarrow 仅 2.0，且初始 fog ±20。看清童子期苗子最难。</li>
+    <li><b>Peak fog 尤甚</b>：童子期潜力探查 fogFloor = ±8（比成人 ±5 更宽）。赌童子期天花板是最高风险决策。</li>
+    <li><b>苗子竞争</b>：高质量苗子（S/A 档）会被多队球探发现，纳入预备名单有竞争——先到先得或好感竞争。</li>
+    <li><b>错过窗口惩罚</b>：童子期未纳入青训体系的苗子，Trainability 上限锁定 0.7（成长线 §4.1）。球探发现后不纳入=浪费。</li>
+  </ul>
+
+  <h3>10.3 淘苗决策博弈</h3>
+  <div class="note red"><b>核心博弈</b>：童子期 fog 极宽，经理是"花大量预算深探一个 ±15 的苗子"，还是"广撒网浅探多个 ±18 的苗子"再择优深探？前者赌单个天花板，后者分散风险但每个都不够清。这是青训流建队的核心决策循环。</div>
+</section>
+
+<!-- ==================== §11 选秀探查 ==================== -->
+<section id="s11">
+  <h2><span class="num">11</span>选秀探查</h2>
+  <p>选秀是球探投入的高峰期——选秀池（draftPool）在赛季末生成，经理有约 7 日窗口集中探查。</p>
+
+  <h3>11.1 选秀探查窗口</h3>
+  <table>
+    <thead><tr><th>阶段</th><th>时间</th><th>可用探查</th></tr></thead>
+    <tbody>
+      <tr><td><b>选秀池生成</b></td><td>赛季末 DAY 4</td><td>选秀池 ~60 人公布，初始 fog ±15（已有赛事可见度收窄）</td></tr>
+      <tr><td><b>联合试训</b></td><td>DAY 5-6</td><td>集体浅探：所有选秀池球员 fog 各收窄 ±3（免费，每队 1 次）</td></tr>
+      <tr><td><b>单独探查</b></td><td>DAY 5-10</td><td>针对顺位目标球员探查/潜力探查/探针</td></tr>
+      <tr><td><b>选秀夜</b></td><td>DAY 11</td><td>探查截止；按战绩倒序选秀</td></tr>
+    </tbody>
+  </table>
+
+  <h3>11.2 选秀探查策略</h3>
+  <ul>
+    <li><b>顺位锁定</b>：经理知道自己选秀顺位（战绩倒序），只探查顺位附近的目标。</li>
+    <li><b>集中投入</b>：选秀前探查预算集中消耗——一次选秀探查投入可能占赛季预算 40%。</li>
+    <li><b>信息不对称</b>：其他经理也在探查，但各自探查结果私有。某球员被多队看好时，选秀顺位竞争上升。</li>
+    <li><b> fog 揭晓</b>：选秀签约后，球员真实值部分揭晓（能力值 ±2，Peak 仍 ±5 直到生涯展开）。</li>
+  </ul>
+</section>
+
+<!-- ==================== §12 自由球员与对手探查 ==================== -->
+<section id="s12">
+  <h2><span class="num">12</span>自由球员与对手探查</h2>
+
+  <h3>12.1 自由球员探查</h3>
+  <ul>
+    <li><b>目标</b>：自由球员池（freeAgentPool）中的球员。</li>
+    <li><b>动机</b>：签约前评估是否值得合同，避免签下 fog 内低点球员。</li>
+    <li><b>特点</b>：自由球员多为成人（19+），fog 相对易收窄；但有"衰退轨迹"风险（26+ 老将）。</li>
+    <li><b>探针配合</b>：签约前可使用试训邀请 + 医疗体检 + 心理评估三件套，将风险降至最低。</li>
+  </ul>
+
+  <h3>12.2 对手探查</h3>
+  <ul>
+    <li><b>目标</b>：其他球队名单内球员（非本队）。</li>
+    <li><b>动机</b>：赛前了解对手核心球员状态；转会窗评估交易目标。</li>
+    <li><b>限制</b>：对手名单球员 fog 收窄更难（distancePenalty 高，且球员在他人队内不配合试训/体检）。</li>
+    <li><b>产出</b>：赛前对手探查报告可帮助战术针对性布置（战术系统条件规则可用 fog 数据）。</li>
+  </ul>
+
+  <h3>12.3 对手探查的反制</h3>
+  <ul>
+    <li><b>信息保密</b>：经理可设置队内球员为"保密状态"，提高对手探查的 distancePenalty ×1.5。</li>
+    <li><b>反球探</b>：雇佣情报网络分支球探可发现"谁在探查我方球员"，获得对手意图线索。</li>
+    <li><b>假情报</b>（高阶）：高等级情报网络球探有概率向对手投放虚假特质线索（误报率提升）。</li>
+  </ul>
+</section>
+
+<!-- ==================== §13 对阵亲历 ==================== -->
+<section id="s13">
+  <h2><span class="num">13</span>对阵亲历</h2>
+  <p>对阵亲历是 fog 收窄的免费途径——与某球员交手后，基于其实际表现收窄 fog。</p>
+
+  <h3>13.1 对阵收窄机制</h3>
+  <div class="formula">
+<span class="comment">── 对阵亲历 fog 收窄 ──</span>
+
+<span class="keyword">after</span> <span class="var">game</span> <span class="kw">where</span> <span class="var">player</span> <span class="kw">played against</span> <span class="var">myTeam</span>:
+    <span class="var">observedAbilities</span> <span class="op">=</span> <span class="fn">inferFromStats</span>(<span class="var">player</span>.gameStats)
+    <span class="comment">// 如：三分 5/8 → ThreePT fog 收窄 ±3</span>
+    <span class="comment">// 如：0 抢断 4 失误 → Defense/Handling fog 收窄 ±2</span>
+
+    <span class="keyword">for</span> <span class="var">ability</span> <span class="kw">in</span> <span class="var">observedAbilities</span>:
+        <span class="var">player</span>.fog[ability] <span class="op">=</span> <span class="fn">max</span>(<span class="num">3</span>, <span class="var">player</span>.fog[ability] <span class="op">-</span> <span class="num">3</span>)
+        <span class="comment">// fogFloor = 3（对阵亲历比球探报告更准但仍非真实值）</span>
+
+    <span class="comment">// Peak fog 不收窄（单场表现不揭示天花板）</span>
+  </div>
+
+  <h3>13.2 对阵亲历的特点</h3>
+  <ul>
+    <li><b>免费</b>：不消耗预算与球探时间。</li>
+    <li><b>仅赛中能力</b>：只收窄该场表现相关能力（如得分手探查不到防守）。</li>
+    <li><b>样本偏差</b>：单场表现有随机性，对阵亲历可能收窄到"表现值"而非"真实值"。</li>
+    <li><b>累积</b>：多次交手累积收窄，长期对手的 fog 可收窄至 ±3（接近真实）。</li>
+  </ul>
+</section>
+
+<!-- ==================== §14 球探与世界时钟 ==================== -->
+<section id="s14">
+  <h2><span class="num">14</span>球探与世界时钟</h2>
+
+  <h3>14.1 球探相关时钟节点</h3>
+  <table>
+    <thead><tr><th>时间</th><th>节点</th><th>球探相关行为</th></tr></thead>
+    <tbody>
+      <tr><td>全天</td><td>任务指派</td><td>经理可指派球探任务（需预算与球探空闲）</td></tr>
+      <tr><td>09:30</td><td>提交截止</td><td>当日新指派任务锁定</td></tr>
+      <tr><td>10:00</td><td>任务结算</td><td>到期任务结算：产出 ScoutReport、扣预算、扣球探体力</td></tr>
+      <tr><td>16:00</td><td>翻天</td><td>Watchlist 自动收窄结算；球探报告 freshness 衰减；球探报告翻页</td></tr>
+    </tbody>
+  </table>
+
+  <h3>14.2 任务计时</h3>
+  <ul>
+    <li>任务以"赛季日"为单位计时（1-7 日）。</li>
+    <li>任务在指派当日 10:00 开始计时，duration 日后的 10:00 结算。</li>
+    <li>任务期间球探不可接新任务（占用）；经理可中途取消（预算不退、无产出）。</li>
+    <li>休赛日任务照常计时；全明星休赛期任务暂停。</li>
+  </ul>
+</section>
+
+<!-- ==================== §15 报告衰减与失效 ==================== -->
+<section id="s15">
+  <h2><span class="num">15</span>报告衰减与失效</h2>
+  <p>球探报告不是永久的——球员能力会变化，旧报告逐渐失准。</p>
+
+  <h3>15.1 freshness 衰减</h3>
+  <div class="formula">
+<span class="comment">── 报告新鲜度衰减 ──</span>
+
+<span class="comment">// 每日 16:00 翻天时</span>
+<span class="var">report</span>.freshness <span class="op">=</span> <span class="var">report</span>.freshness <span class="op">*</span> <span class="num">0.97</span>   <span class="comment">// 每日衰减3%</span>
+
+<span class="comment">// freshness 影响报告可信度</span>
+<span class="var">effectiveConfidence</span> <span class="op">=</span> <span class="var">report</span>.confidence <span class="op">*</span> <span class="var">report</span>.freshness
+
+<span class="comment">// 球员能力变化时加速衰减</span>
+<span class="keyword">if</span> (<span class="var">player</span>.abilityChanged <span class="op">&gt;</span> <span class="num">2</span>):
+    <span class="var">report</span>.freshness <span class="op">*=</span> <span class="num">0.85</span>   <span class="comment">// 能力变化大的球员报告更快失准</span>
+  </div>
+
+  <h3>15.2 报告失效</h3>
+  <table>
+    <thead><tr><th>freshness</th><th>状态</th><th>表现</th></tr></thead>
+    <tbody>
+      <tr><td>1.0-0.8</td><td>新鲜</td><td>正常显示 fog 区间</td></tr>
+      <tr><td>0.79-0.5</td><td>陈旧</td><td>fog 区间标注"陈旧"，建议重新探查</td></tr>
+      <tr><td>0.49-0.2</td><td>过时</td><td>fog 区间标注"过时"，区间视觉扩大 1.5 倍</td></tr>
+      <tr><td>&lt;0.2</td><td>失效</td><td>报告归档，不再提供 fog 收窄；球员回到基础 fog</td></tr>
+    </tbody>
+  </table>
+
+  <h3>15.3 重新探查</h3>
+  <ul>
+    <li>对报告过时/失效的球员重新探查，新报告覆盖旧报告的衰减状态。</li>
+    <li>重新探查的 fogNarrow 基于当前 fog（已因衰减扩大），可能"探了还是宽"——需投入足够次数。</li>
+    <li>Watchlist 跟踪的球员 freshness 衰减更慢（×0.99 而非 ×0.97）。</li>
+  </ul>
+</section>
+
+<!-- ==================== §16 AI 球探决策 ==================== -->
+<section id="s16">
+  <h2><span class="num">16</span>AI 球探决策</h2>
+
+  <h3>16.1 AI 球探行为</h3>
+  <div class="formula">
+<span class="comment">── AI 球探决策逻辑 ──</span>
+
+<span class="keyword">function</span> <span class="fn">aiScoutDecide</span>(team):
+  <span class="comment">// 1. 赛季阶段</span>
+  <span class="keyword">if</span> (<span class="fn">isDraftPrep</span>(season)):
+      <span class="keyword">return</span> <span class="fn">scoutDraftTargets</span>(team)     <span class="comment">// 选秀前集中探查</span>
+
+  <span class="keyword">if</span> (<span class="fn">isTradeWindow</span>(season)):
+      <span class="keyword">return</span> <span class="fn">scoutTradeTargets</span>(team)     <span class="comment">// 转会窗探查目标</span>
+
+  <span class="comment">// 2. 青训流 AI</span>
+  <span class="keyword">if</span> (<span class="fn">isDevelopmentTeam</span>(team)):
+      <span class="keyword">return</span> <span class="fn">scoutYouthTalent</span>(team)     <span class="comment">// 区域扫描+苗子探查</span>
+
+  <span class="comment">// 3. 默认：Watchlist 维护 + 偶尔深探</span>
+  <span class="keyword">return</span> <span class="fn">maintainWatchlist</span>(team)
+  </div>
+
+  <h3>16.2 AI 等级与球探投入</h3>
+  <table>
+    <thead><tr><th>AI 等级</th><th>球探预算分配</th><th>探查深度</th></tr></thead>
+    <tbody>
+      <tr><td><b>弱</b>（T4）</td><td>基础预算；多为区域扫描</td><td>浅探为主，fog 较宽</td></tr>
+      <tr><td><b>中</b>（T3）</td><td>基础+少量专项；选秀前集中</td><td>重点目标深探</td></tr>
+      <tr><td><b>强</b>（T2）</td><td>专项投入高；雇佣高级球探</td><td>多目标深探+探针</td></tr>
+      <tr><td><b>精英</b>（T1）</td><td>预算充足；球探等级高</td><td>全面深探+对手反制</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== §17 异常处理与边界规则 ==================== -->
+<section id="s17">
+  <h2><span class="num">17</span>异常处理与边界规则</h2>
+
+  <h3>17.1 球探状态异常</h3>
+  <table>
+    <thead><tr><th>异常</th><th>处理</th></tr></thead>
+    <tbody>
+      <tr><td>球探被解雇/转职</td><td>进行中任务中断，预算不退，部分产出（按时长比例）</td></tr>
+      <tr><td>目标球员被交易/退役</td><td>任务自动中止，预算退 50%</td></tr>
+      <tr><td>目标球员离开世界</td><td>任务中止，预算全额退</td></tr>
+      <tr><td>预算不足</td><td>任务指派被拒；进行中任务不受影响</td></tr>
+      <tr><td>球探体力耗尽</td><td>任务产出质量下降（fogNarrow ×0.5），建议轮休</td></tr>
+    </tbody>
+  </table>
+
+  <h3>17.2 揭晓规则</h3>
+  <ul>
+    <li><b>签约揭晓</b>：球员签约本队后，能力值 fog 收窄至 ±2（仍非真实值，需训练/比赛逐步揭晓）。</li>
+    <li><b>选秀揭晓</b>：同签约。</li>
+    <li><b>对阵揭晓</b>：交手后按 §13 收窄。</li>
+    <li><b>真实值</b>：永远只有服务端持有。球员能力变化（训练/伤病/年龄）不影响已揭晓 fog 的范围，但 est 会随真实值漂移而微调。</li>
+  </ul>
+
+  <h3>17.3 信息隔离</h3>
+  <ul>
+    <li><b>报告私有</b>：各队球探报告互相不可见，确保信息不对称。</li>
+    <li><b>Watchlist 私有</b>：各队关注名单不可见。</li>
+    <li><b>预算私有</b>：各队球探预算余额不可见。</li>
+    <li><b>反制线索可见</b>：反球探可发现"谁在探我方球员"，但不知道探查内容。</li>
+  </ul>
+</section>
+
+<!-- ==================== §18 数值附录 ==================== -->
+<section id="s18">
+  <h2><span class="num">18</span>数值附录</h2>
+
+  <h3>18.1 fog 基础参数</h3>
+  <table>
+    <thead><tr><th>参数</th><th>值</th></tr></thead>
+    <tbody>
+      <tr><td>初始 fog（世界生成）</td><td>±20（全能力）</td></tr>
+      <tr><td>赛事可见度收窄后基础 fog</td><td>±15（城市）~ ±8（国际）</td></tr>
+      <tr><td>常规 fogFloor</td><td>±2（球探报告不可突破）</td></tr>
+      <tr><td>对阵亲历 fogFloor</td><td>±3</td></tr>
+      <tr><td>探针 fogFloor</td><td>±1（可突破常规下限）</td></tr>
+      <tr><td>Peak fogFloor（潜力探查）</td><td>±5</td></tr>
+      <tr><td>童子期 Peak fogFloor</td><td>±8</td></tr>
+      <tr><td>签约后能力 fog</td><td>±2</td></tr>
+    </tbody>
+  </table>
+
+  <h3>18.2 baseNarrow 按年龄</h3>
+  <table>
+    <thead><tr><th>年龄</th><th>baseNarrow</th></tr></thead>
+    <tbody>
+      <tr><td>8-12（童子）</td><td>2.0</td></tr>
+      <tr><td>13-15（少年）</td><td>3.0</td></tr>
+      <tr><td>16-18（青年）</td><td>4.0</td></tr>
+      <tr><td>19-25（成人）</td><td>5.0</td></tr>
+      <tr><td>26+（老将）</td><td>4.5</td></tr>
+    </tbody>
+  </table>
+
+  <h3>18.3 任务参数</h3>
+  <table>
+    <thead><tr><th>任务</th><th>耗时</th><th>基础预算</th><th>fogNarrow 系数</th></tr></thead>
+    <tbody>
+      <tr><td>球员探查</td><td>2-3 日</td><td>50</td><td>×1.0</td></tr>
+      <tr><td>潜力探查</td><td>3-5 日</td><td>80</td><td>×0.6（Peak 专用）</td></tr>
+      <tr><td>赛事现场</td><td>5-7 日</td><td>80-300</td><td>×0.4（多目标）</td></tr>
+      <tr><td>区域扫描</td><td>5-7 日</td><td>120</td><td>发现用，粗略 fog</td></tr>
+    </tbody>
+  </table>
+
+  <h3>18.4 重复探查递减</h3>
+  <table>
+    <thead><tr><th>同球员 7 日内探查次数</th><th>fogNarrow 系数</th></tr></thead>
+    <tbody>
+      <tr><td>第 1 次</td><td>×1.0</td></tr>
+      <tr><td>第 2 次</td><td>×0.7</td></tr>
+      <tr><td>第 3 次</td><td>×0.5</td></tr>
+      <tr><td>第 4+ 次</td><td>×0.3</td></tr>
+    </tbody>
+  </table>
+
+  <h3>18.5 探针参数</h3>
+  <table>
+    <thead><tr><th>探针</th><th>预算</th><th>收窄</th><th>限制</th></tr></thead>
+    <tbody>
+      <tr><td>试训邀请</td><td>100</td><td>全能力 ±6</td><td>1 次/球员；需好感</td></tr>
+      <tr><td>医疗体检</td><td>150</td><td>Durability ±2</td><td>1 次/球员；医疗组≥Lv3</td></tr>
+      <tr><td>心理评估</td><td>120</td><td>MF/ClutchIQ ±3</td><td>1 次/球员；需心理咨询师</td></tr>
+      <tr><td>数据挖掘</td><td>80</td><td>衰退轨迹 fog</td><td>仅 26+ 老将</td></tr>
+      <tr><td>联合试训（选秀前）</td><td>免费</td><td>全选秀池 ±3</td><td>每队 1 次</td></tr>
+    </tbody>
+  </table>
+
+  <h3>18.6 预算与 Watchlist</h3>
+  <table>
+    <thead><tr><th>参数</th><th>值</th></tr></thead>
+    <tbody>
+      <tr><td>球队基础球探预算</td><td>300/赛季</td></tr>
+      <tr><td>世界等级加成</td><td>+100(T4) ~ +300(T1)</td></tr>
+      <tr><td>经理声望加成</td><td>+50 ~ +200</td></tr>
+      <tr><td>Watchlist 容量</td><td>20 + 球探等级 × 5</td></tr>
+      <tr><td>Watchlist 自动收窄</td><td>0.5/日 × 球探等级修正</td></tr>
+      <tr><td>Watchlist freshness 衰减</td><td>×0.99/日（比普通报告慢）</td></tr>
+      <tr><td>普通报告 freshness 衰减</td><td>×0.97/日</td></tr>
+    </tbody>
+  </table>
+
+  <h3>18.7 球探声望反馈</h3>
+  <table>
+    <thead><tr><th>事件</th><th>声望变化</th></tr></thead>
+    <tbody>
+      <tr><td>报告准确（真实值在 fog 内）</td><td>+5</td></tr>
+      <tr><td>报告失准（真实值在 fog 外）</td><td>-3</td></tr>
+      <tr><td>特质线索正确</td><td>+10</td></tr>
+      <tr><td>特质线索误报</td><td>-5</td></tr>
+      <tr><td>发现 S 档苗子（后续证实）</td><td>+20（一次性大奖）</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note green"><b>数值总览</b>：球探系统的数值设计确保"信息是有成本的不完全博弈"——fog 永远不归零、预算永远不够全探、报告永远会衰减。童子期 fog 最宽（赌天花板风险最高），成人期最清晰但仍非真实值。探针可触及 fogFloor 以下但不可重复。所有数值在 EA 阶段通过灰度参数热更新调优。</div>
+</section>
+
+</div>
+</body>
+</html>

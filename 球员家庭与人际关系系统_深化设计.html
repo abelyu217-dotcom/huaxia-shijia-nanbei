@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>球员家庭与人际关系系统 · 深化设计 v2 · Hoops World Online</title>
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#141b26; --panel2:#1b2433; --line:#26324a;
+    --ink:#e6edf6; --ink2:#9fb0c7; --ink3:#6b7c97;
+    --accent:#ff6b35; --accent2:#4ade80; --gold:#fbbf24; --red:#ef4444; --blue:#60a5fa; --purple:#a78bfa; --cyan:#22d3ee; --pink:#f472b6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:linear-gradient(180deg,#070a10 0%,#0b0f17 100%);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 22px 120px}
+  .hero{
+    position:relative;border:1px solid var(--line);border-radius:18px;padding:42px 34px 30px;
+    background:
+      radial-gradient(800px 280px at 20% -10%, rgba(244,114,182,.18), transparent 60%),
+      radial-gradient(700px 260px at 90% 0%, rgba(167,139,250,.12), transparent 60%),
+      linear-gradient(180deg,#151d2c,#0e1420);
+    overflow:hidden;margin-bottom:30px;
+  }
+  .hero .tag{display:inline-block;font-size:12px;letter-spacing:.16em;color:var(--pink);border:1px solid rgba(244,114,182,.45);padding:4px 10px;border-radius:999px;margin-bottom:18px;text-transform:uppercase}
+  .hero h1{margin:0 0 8px;font-size:32px;letter-spacing:.5px;font-weight:800}
+  .hero h1 .en{color:var(--ink2);font-weight:600;font-size:18px;margin-left:10px}
+  .hero .pitch{color:var(--ink2);font-size:15px;max-width:820px;margin:10px 0 22px}
+  .hero .meta{display:flex;flex-wrap:wrap;gap:10px}
+  .hero .chip{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--ink2)}
+  .hero .chip b{color:var(--ink);font-weight:600}
+  .hero .fam{position:absolute;right:34px;bottom:18px;font-size:68px;opacity:.08;pointer-events:none}
+
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 28px;margin-bottom:22px}
+  .toc h3{margin:0 0 14px;font-size:14px;color:var(--ink2);letter-spacing:.1em;text-transform:uppercase}
+  .toc ol{margin:0;padding-left:22px;columns:2;column-gap:32px}
+  .toc li{margin:5px 0;break-inside:avoid}
+  .toc a{color:var(--ink2)}
+  .toc a:hover{color:var(--pink)}
+  @media (max-width:640px){.toc ol{columns:1}}
+
+  section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin-bottom:22px}
+  section > h2{margin:0 0 16px;font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
+  section > h2 .num{font-size:12px;color:#0b0f17;background:var(--pink);width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;font-weight:800;flex-shrink:0}
+  section > h2 .new{font-size:10px;color:var(--gold);border:1px solid rgba(251,191,36,.4);padding:2px 8px;border-radius:999px;margin-left:8px;letter-spacing:.08em}
+  h3{font-size:16px;margin:22px 0 10px;color:var(--ink)}
+  h4{font-size:14px;margin:18px 0 8px;color:var(--pink);letter-spacing:.04em}
+  p{margin:8px 0}
+  ul,ol{margin:8px 0 8px 4px;padding-left:22px}
+  li{margin:4px 0}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{background:#0d131d;border:1px solid var(--line);padding:2px 6px;border-radius:5px;font-size:13px;color:var(--gold);font-family:"SF Mono","Fira Code",Consolas,monospace}
+  strong{color:#fff}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px}
+  th,td{padding:9px 11px;text-align:left;border:1px solid var(--line);vertical-align:top}
+  th{background:var(--panel2);color:var(--ink);font-weight:600}
+  tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+
+  .note{border-left:3px solid var(--accent);background:rgba(255,107,53,.06);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;color:var(--ink2)}
+  .note b{color:var(--accent)}
+  .note.green{border-left-color:var(--accent2);background:rgba(74,222,128,.06)}
+  .note.green b{color:var(--accent2)}
+  .note.blue{border-left-color:var(--blue);background:rgba(96,165,250,.06)}
+  .note.blue b{color:var(--blue)}
+  .note.red{border-left-color:var(--red);background:rgba(239,68,68,.06)}
+  .note.red b{color:var(--red)}
+  .note.gold{border-left-color:var(--gold);background:rgba(251,191,36,.06)}
+  .note.gold b{color:var(--gold)}
+  .note.purple{border-left-color:var(--purple);background:rgba(167,139,250,.06)}
+  .note.purple b{color:var(--purple)}
+  .note.pink{border-left-color:var(--pink);background:rgba(244,114,182,.06)}
+  .note.pink b{color:var(--pink)}
+
+  .formula{background:#0d131d;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;font-family:"SF Mono","Fira Code",Consolas,monospace;font-size:13px;overflow-x:auto;line-height:1.9;white-space:pre}
+  .formula .var{color:var(--blue)}
+  .formula .op{color:var(--accent)}
+  .formula .fn{color:var(--purple)}
+  .formula .num{color:var(--gold)}
+  .formula .comment{color:var(--ink3);font-style:italic}
+  .formula .str{color:var(--accent2)}
+  .formula .kw{color:var(--accent2);font-weight:bold}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:14px 0}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .card .t{font-weight:700;color:var(--ink);font-size:14px;margin-bottom:6px}
+  .card .d{font-size:13px;color:var(--ink2)}
+  .badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:999px;font-weight:700;letter-spacing:.04em;vertical-align:middle}
+  .badge.green{background:rgba(74,222,128,.15);color:var(--accent2)}
+  .badge.gold{background:rgba(251,191,36,.15);color:var(--gold)}
+  .badge.red{background:rgba(239,68,68,.15);color:var(--red)}
+  .badge.blue{background:rgba(96,165,250,.15);color:var(--blue)}
+  .badge.purple{background:rgba(167,139,250,.15);color:var(--purple)}
+  .badge.pink{background:rgba(244,114,182,.15);color:var(--pink)}
+  .badge.cyan{background:rgba(34,211,238,.15);color:var(--cyan)}
+
+  .flow{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:14px 0;font-size:13px}
+  .flow .step{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 14px;color:var(--ink)}
+  .flow .arrow{color:var(--pink);font-weight:bold}
+
+  .gen-track{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:16px 0}
+  .gen-step{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px 8px;text-align:center;font-size:11.5px}
+  .gen-step .age{font-size:13px;font-weight:800;color:var(--pink);display:block;margin-bottom:3px}
+  .gen-step .ev{color:var(--ink2);line-height:1.4}
+  .gen-step.now{border-color:var(--pink);background:rgba(244,114,182,.08)}
+  @media(max-width:760px){.gen-track{grid-template-columns:repeat(2,1fr)}}
+
+  .sib-matrix{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:14px 0}
+  .sib-card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .sib-card .ico{font-size:24px;margin-bottom:6px}
+  .sib-card .t{font-weight:700;color:var(--ink);font-size:14px;margin-bottom:4px}
+  .sib-card .d{font-size:12.5px;color:var(--ink2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ==================== HERO ==================== -->
+<div class="hero">
+  <span class="tag">Deepening · v2.0</span>
+  <h1>球员家庭与人际关系系统 <span class="en">Deepening Design</span></h1>
+  <p class="pitch">本文档是 v1.0（《球员家庭与人际关系系统设计》）的深化补充。聚焦 v1 标注为"简化/框架/不开放"的模块，补全血脉传承二代球员养成闭环、私人训练师互动深度、媒体关系采访玩法、兄弟姐妹同联赛动态；并新增与近期设计系统（签约转会·球探·选秀·三身份·世界结构·训练）的交叉联动规则。v1 已完整章节（家庭背景、化学反应引擎、师徒、宿敌、经纪人）不在此重复。</p>
+  <div class="meta">
+    <span class="chip"><b>基础文档</b> 球员家庭与人际关系系统设计 v1.0</span>
+    <span class="chip"><b>深化模块</b> 二代球员 · 私人训练师 · 媒体关系 · 兄弟姐妹 · 跨系统联动</span>
+    <span class="chip"><b>版本</b> v2.0</span>
+  </div>
+  <span class="fam">👪</span>
+</div>
+
+<!-- ==================== TOC ==================== -->
+<div class="toc">
+  <h3>目录 · Deepening Table of Contents</h3>
+  <ol>
+    <li><a href="#s1">深化方向与原则</a></li>
+    <li><a href="#s2">血脉传承二代球员闭环</a></li>
+    <li><a href="#s3">私人训练师系统深化</a></li>
+    <li><a href="#s4">媒体关系与采访玩法</a></li>
+    <li><a href="#s5">兄弟姐妹同联赛</a></li>
+    <li><a href="#s6">关系与签约转会联动</a></li>
+    <li><a href="#s7">关系与球探选秀联动</a></li>
+    <li><a href="#s8">关系与三身份系统联动</a></li>
+    <li><a href="#s9">关系与世界结构联动</a></li>
+    <li><a href="#s10">关系与训练系统联动</a></li>
+    <li><a href="#s11">关系网络可视化与经理操作</a></li>
+    <li><a href="#s12">关系事件链与叙事生成</a></li>
+    <li><a href="#s13">数值附录（深化部分）</a></li>
+  </ol>
+</div>
+
+<!-- ==================== §1 深化方向与原则 ==================== -->
+<section id="s1">
+  <h2><span class="num">1</span>深化方向与原则</h2>
+
+  <div class="note pink"><b>深化定位</b>：v1.0 已建立家庭与人际关系的完整骨架（13 章节）。本文档不做重复，而是补全 v1 自身标注的待深化项，并填补 v1 设计时尚未存在的系统交叉点——随着球探、选秀、签约转会、三身份、世界结构、训练六大系统陆续完成，关系系统与它们的联动规则需明确定义。</div>
+
+  <h3>1.1 v1 待深化项对照</h3>
+  <table>
+    <thead><tr><th>v1 状态</th><th>模块</th><th>本文档章节</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge" style="background:rgba(107,124,151,.15);color:var(--ink3)">框架</span></td><td>血脉传承（二代球员）</td><td>§2 补全养成闭环</td></tr>
+      <tr><td><span class="badge" style="background:rgba(107,124,151,.15);color:var(--ink3)">简化</span></td><td>私人训练师</td><td>§3 补全互动深度</td></tr>
+      <tr><td><span class="badge" style="background:rgba(107,124,151,.15);color:var(--ink3)">简化</span></td><td>媒体关系</td><td>§4 补全采访玩法</td></tr>
+      <tr><td><span class="badge red">不开放</span></td><td>兄弟姐妹同联赛</td><td>§5 评估并开放</td></tr>
+    </tbody>
+  </table>
+
+  <h3>1.2 新增跨系统联动</h3>
+  <table>
+    <thead><tr><th>联动系统</th><th>本文档章节</th><th>核心问题</th></tr></thead>
+    <tbody>
+      <tr><td>签约与转会</td><td>§6</td><td>家庭因素如何影响心仪目的地？交易否决权与家庭？新援 chem 冲击深化？</td></tr>
+      <tr><td>球探与选秀</td><td>§7</td><td>家庭背景影响 fog？二代球员球探特殊性？星二代选秀行情？</td></tr>
+      <tr><td>三身份系统</td><td>§8</td><td>化身家庭关系？职业人家庭？跨身份人脉复用？</td></tr>
+      <tr><td>世界与联赛</td><td>§9</td><td>世界迁移对家庭的影响？跨世界家庭隔离？兄弟姐妹跨世界？</td></tr>
+      <tr><td>训练系统</td><td>§10</td><td>家庭事件影响训练响应？私人训练师与训练侧重？teaching 训练日？</td></tr>
+    </tbody>
+  </table>
+
+  <h3>1.3 深化原则</h3>
+  <div class="grid">
+    <div class="card"><div class="t">① 闭环优于碎片 <span class="badge pink">完整</span></div><div class="d">二代球员必须从出生到退役形成完整可玩闭环，而非零散事件。</div></div>
+    <div class="card"><div class="t">② 联动而非耦合 <span class="badge blue">解耦</span></div><div class="d">跨系统联动是"读取对方输出/写入修正"，而非嵌入对方逻辑。保持系统独立性。</div></div>
+    <div class="card"><div class="t">③ 情感可感知 <span class="badge gold">体验</span></div><div class="d">深化项必须让玩家"感受到"——关系网络可视化、采访选项反馈、兄弟对决叙事，都要有可感知的表达。</div></div>
+    <div class="card"><div class="t">④ 不喧宾夺主 <span class="badge green">边界</span></div><div class="d">关系系统是比赛 sim 的修正层与生涯叙事的编织层，不取代核心比赛/建队玩法。深化不增加强制操作负担。</div></div>
+  </div>
+</section>
+
+<!-- ==================== §2 血脉传承二代球员闭环 ==================== -->
+<section id="s2">
+  <h2><span class="num">2</span>血脉传承二代球员闭环 <span class="new">补全</span></h2>
+  <p>v1 §12 仅给出天赋/性格/时代标签继承的框架。本节补全从"出生→童子→青训→选秀→生涯→再传承"的完整可玩闭环。</p>
+
+  <h3>2.1 二代球员全生命周期轨道</h3>
+  <div class="gen-track">
+    <div class="gen-step"><span class="age">出生</span><span class="ev">父母任一方为现役球员时触发；登记入家庭树</span></div>
+    <div class="gen-step"><span class="age">0-7</span><span class="ev">幼年期：不可操作；每年一次"成长快照"事件</span></div>
+    <div class="gen-step now"><span class="age">8-12</span><span class="ev">童子期入口：可选入青训预备名单；fog ±20</span></div>
+    <div class="gen-step"><span class="age">13-15</span><span class="ev">少年期：青训学院培养；特质开始觉醒</span></div>
+    <div class="gen-step"><span class="age">16-18</span><span class="ev">青年期：业余金字塔参赛；选秀行情积累</span></div>
+    <div class="gen-step"><span class="age">19+</span><span class="ev">参选/签约；生涯展开；可再生育下一代</span></div>
+    <div class="gen-step"><span class="age">退役</span><span class="ev">若有适龄子女→再触发传承；闭环</span></div>
+  </div>
+
+  <h3>2.2 出生与登记</h3>
+  <ul>
+    <li><b>触发</b>：现役球员（含玩家化身）与配偶/伴侣关系稳定 ≥1 年后，有概率生育子女（每年 8% 概率，可被家庭事件加速）。</li>
+    <li><b>登记</b>：子女出生即登记入球员家庭树，标记为"潜在二代球员"。</li>
+    <li><b>性别</b>：随机；男女均可成为二代球员（无性别限制）。</li>
+    <li><b>数量</b>：一对伴侣最多 3 名子女（防资源膨胀）。</li>
+  </ul>
+
+  <h3>2.3 幼年期（0-7 岁）成长快照</h3>
+  <p>幼年期不可操作，但每年生成一次"成长快照"事件，为后续天赋揭示埋下伏笔：</p>
+  <table>
+    <thead><tr><th>年龄</th><th>快照事件</th><th>预示</th></tr></thead>
+    <tbody>
+      <tr><td>3 岁</td><td>"第一次拍球"——父母是球员的子女有 70% 触发</td><td>运动天赋倾向（不揭示数值）</td></tr>
+      <tr><td>5 岁</td><td>"跟着爸爸/妈妈去球馆"——沉浸式叙事</td><td>球感与兴趣方向（投射/组织/防守倾向暗示）</td></tr>
+      <tr><td>7 岁</td><td>"第一场少年赛"——表现快照</td><td>位置倾向暗示；身体素质初估（仍是叙事，非数值）</td></tr>
+    </tbody>
+  </table>
+  <div class="note pink"><b>设计意图</b>：幼年期快照是纯叙事层——不产出数值，只产出情感与期待。让玩家对"我的球员的孩子将来会怎样"产生牵挂，是二代球员闭环的情感锚点。</div>
+
+  <h3>2.4 童子期入口（8-12 岁）天赋揭示</h3>
+  <p>8 岁起子女进入童子期，天赋开始具象化（但仍带 fog）：</p>
+  <div class="formula">
+<span class="comment">── 二代球员天赋继承（深化 v1 §12.1） ──</span>
+
+<span class="var">childPeak</span> <span class="op">=</span> (<span class="var">parentA</span>.peak <span class="op">+</span> <span class="var">parentB</span>.peak) <span class="op">/</span> <span class="num">2</span> <span class="op">*</span> <span class="num">0.6</span>
+          <span class="op">+</span> <span class="fn">rand</span>(<span class="var">seed</span>) <span class="op">*</span> <span class="num">30</span> <span class="op">-</span> <span class="num">15</span>      <span class="comment">// 随机 ±15</span>
+          <span class="op">+</span> <span class="var">sportsFamilyBonus</span>                 <span class="comment">// 体育世家 +8</span>
+          <span class="op">+</span> <span class="var">lineageStackBonus</span>                 <span class="comment">// 三代以上体育世家叠加</span>
+
+<span class="comment">// lineageStackBonus：若祖辈也是球员，逐代 +3（最多 +9）</span>
+<span class="comment">// 这是"体育世家"长期投入的回报——但随机 ±15 仍可能出庸才</span>
+
+<span class="comment">// 初始 fog 仍为 ±20（与普通苗子一致），需球探逐步揭示</span>
+<span class="comment">// 但二代球员有"血缘可见度"加成：父母所在队球探 fog 收窄 ×1.3</span>
+  </div>
+
+  <h3>2.5 青训学院培养（13-18 岁）</h3>
+  <ul>
+    <li><b>纳入青训</b>：8 岁起可纳入自家青训预备名单（成长线 §9 青训学院）；父母所在队有优先纳入权。</li>
+    <li><b>训练侧重继承</b>：父母退役时的训练侧重偏好部分继承（×0.5），体现"家学渊源"。</li>
+    <li><b>teaching 加成</b>：若父母退役后留在队内任教练/顾问，子女的 teaching 训练响应 ×1.2（"父亲亲手指导"）。</li>
+    <li><b>心理压力</b>：星二代（父母 Fame ≥70）有额外心理压力——ClutchIQ 成长慢 ×0.9，但 MentalFortitude 成长快 ×1.1（压力淬炼）。</li>
+  </ul>
+
+  <h3>2.6 参选与星二代行情</h3>
+  <table>
+    <thead><tr><th>因素</th><th>对选秀行情影响</th></tr></thead>
+    <tbody>
+      <tr><td>父母 Fame</td><td>Fame ≥70 → 行情 +5~10（媒体关注加成）；但 fog 更受关注（多队探查）</td></tr>
+      <tr><td>体育世家</td><td>行情 +3（"将门虎子"叙事加成）</td></tr>
+      <tr><td>父母执教</td><td>若父母任教练，行情 +2（"从小耳濡目染"）</td></tr>
+      <tr><td>反叛性格</td><td>行情 -5（"不想活在父亲阴影下"叙事，但 Peak 可能更高——破而后立）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>2.7 生涯与再传承</h3>
+  <ul>
+    <li><b>生涯展开</b>：二代球员进入职业后，与普通球员无异——可签约、交易、受伤、成长、衰退、退役。</li>
+    <li><b>家庭关系延续</b>：与父母的关系持续影响心理（父母现场观战 +5 心理；父母批评 -10 心理）。</li>
+    <li><b>再生育</b>：二代球员退役前若生育子女，触发第三代——"三代体育世家"lineageStackBonus 达上限 +9。</li>
+    <li><b>闭环</b>：退役→若有适龄子女→再传承→子女成长→参选→生涯→再传承。这是 HWO 最长的留存钩子。</li>
+  </ul>
+
+  <div class="note gold"><b>闭环价值</b>：二代球员闭环让"一生王朝"从口号变成可玩机制。玩家养的球星退役后，其子代可继续培养——这种跨代情感投入是 HWO 区别于一次性经理游戏的核心。但随机 ±15 与 fog 确保不会"名将必出名将"，保持博弈性。</div>
+</section>
+
+<!-- ==================== §3 私人训练师系统深化 ==================== -->
+<section id="s3">
+  <h2><span class="num">3</span>私人训练师系统深化 <span class="new">补全</span></h2>
+  <p>v1 §8 将私人训练师列为外部关系但仅简化处理。本节补全其作为三身份"职业人"分支的互动深度与训练联动。</p>
+
+  <h3>3.1 私人训练师的定位</h3>
+  <ul>
+    <li><b>职业人分支</b>：私人训练师是三身份系统（§5.2 技术线）中的职业人之一，与球探、教练、医疗师并列。</li>
+    <li><b>雇佣关系</b>：球员（含化身）可自费雇佣私人训练师，提供训练系统之外的额外加成。</li>
+    <li><b>专长分支</b>：投射训练师 / 力量训练师 / 技术训练师 / 康复训练师 / 心理训练师，每类影响不同能力。</li>
+  </ul>
+
+  <h3>3.2 训练师技能与产出</h3>
+  <table>
+    <thead><tr><th>训练师类型</th><th>影响能力</th><th>加成机制</th></tr></thead>
+    <tbody>
+      <tr><td><b>投射训练师</b></td><td>ThreePT / MidRange</td><td>训练响应率 +0.05~0.15；专项训练（投射）效果 ×1.3</td></tr>
+      <tr><td><b>力量训练师</b></td><td>Strength / Inside / Rebound</td><td>力量类训练响应 +0.05~0.12；Durability 成长 +0.02</td></tr>
+      <tr><td><b>技术训练师</b></td><td>Handling / Passing / PostUp</td><td>技术类训练响应 +0.05~0.12；特质觉醒概率 +5%</td></tr>
+      <tr><td><b>康复训练师</b></td><td>Condition 恢复 / 伤愈</td><td>Condition 恢复 ×1.2；伤病恢复时间 -20%；过劳伤风险 -15%</td></tr>
+      <tr><td><b>心理训练师</b></td><td>MentalFortitude / ClutchIQ</td><td>心理训练响应 +0.08~0.15；clutch 样本积累 ×1.2</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.3 训练师等级与雇佣</h3>
+  <table>
+    <thead><tr><th>等级</th><th>title</th><th>加成强度</th><th>雇佣成本（年薪）</th></tr></thead>
+    <tbody>
+      <tr><td>1-3</td><td>新手-熟练</td><td>×0.6~0.8</td><td>30-60/季</td></tr>
+      <tr><td>4-6</td><td>资深-专家</td><td>×0.8~1.0</td><td>80-150/季</td></tr>
+      <tr><td>7-8</td><td>大师</td><td>×1.0~1.2</td><td>180-280/季</td></tr>
+      <tr><td>9-10</td><td>传奇</td><td>×1.2~1.4</td><td>300+/季</td></tr>
+    </tbody>
+  </table>
+  <p><b>雇佣方</b>：球员自费（从薪资中支出）；或球队代付（作为合同福利条款）。化身雇佣自己的训练师职业人可免薪。</p>
+
+  <h3>3.4 训练师与训练系统联动</h3>
+  <div class="formula">
+<span class="comment">── 训练师加成注入训练系统（训练系统 §6 效果计算） ──</span>
+
+<span class="comment">// 训练师加成作为 Modifier 注入</span>
+<span class="var">effectiveTrainability</span> <span class="op">=</span> <span class="var">baseTrainability</span>
+                       <span class="op">+</span> <span class="var">teamCoachBonus</span>          <span class="comment">// 球队教练组（训练系统 §9）</span>
+                       <span class="op">+</span> <span class="var">personalTrainerBonus</span>    <span class="comment">// 私人训练师（本节）</span>
+                       <span class="op">+</span> <span class="var">mentorBonus</span>              <span class="comment">// 师徒（v1 §6）</span>
+
+<span class="comment">// 私人训练师还影响专项训练侧重</span>
+<span class="keyword">if</span> (<span class="var">trainer</span>.type <span class="op">==</span> <span class="str">"shooting"</span> <span class="op">&&</span> <span class="var">plan</span>.focus <span class="op">==</span> <span class="str">"shooting"</span>):
+    <span class="var">specialtyEffect</span> <span class="op">*=</span> <span class="num">1.3</span>     <span class="comment">// 专长匹配时额外加成</span>
+  </div>
+
+  <h3>3.5 训练师声望反馈</h3>
+  <p>训练师声望与其训练的球员成长挂钩（三身份 §11 声望系统）：</p>
+  <ul>
+    <li>训练的球员能力提升 ≥5：训练师声望 +8/次。</li>
+    <li>训练的球员觉醒特质：声望 +15。</li>
+    <li>训练的球员入选全明星：声望 +30（一次性大奖）。</li>
+    <li>训练的球员因伤下滑（非康复训练师）：声望 -5。</li>
+  </ul>
+</section>
+
+<!-- ==================== §4 媒体关系与采访玩法 ==================== -->
+<section id="s4">
+  <h2><span class="num">4</span>媒体关系与采访玩法 <span class="new">补全</span></h2>
+  <p>v1 §8 将媒体关系列为简化。本节补全采访玩法——让媒体不只是叙事背景，而是可操作的公关博弈。</p>
+
+  <h3>4.1 媒体关系值</h3>
+  <p>每名球员与媒体有"媒体关系值"（MediaRapport，-100~+100），影响舆论与心理：</p>
+  <table>
+    <thead><tr><th>区间</th><th>状态</th><th>效果</th></tr></thead>
+    <tbody>
+      <tr><td>+60~+100</td><td>媒体宠儿</td><td>Fame 增长 ×1.3；心理 +5（持续）；负面事件被淡化</td></tr>
+      <tr><td>+20~+59</td><td>关系良好</td><td>Fame 增长 ×1.1；正常报道</td></tr>
+      <tr><td>-19~+19</td><td>中立</td><td>正常报道</td></tr>
+      <tr><td>-59~-20</td><td>关系紧张</td><td>负面报道概率 +30%；Fame 增长 ×0.9</td></tr>
+      <tr><td>-100~-60</td><td>媒体公敌</td><td>负面报道频繁；心理 -10（持续）；赞助商流失</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.2 采访玩法</h3>
+  <p>赛后/赛前/全明星/重大事件后，媒体可能向球员发起采访。采访以多选题形式呈现，每个选项影响不同维度：</p>
+  <div class="grid">
+    <div class="card"><div class="t">赛后采访 <span class="badge blue">高频</span></div><div class="d">每场赛后 30% 概率触发；3-4 个选项；影响 MediaRapport / 心理 / 队友 Bond</div></div>
+    <div class="card"><div class="t">赛前采访 <span class="badge gold">中频</span></div><div class="d">关键比赛前触发；可选"低调/挑衅/自信"三种基调；影响对手宿敌值与自身心理</div></div>
+    <div class="card"><div class="t">危机公关 <span class="badge red">低频</span></div><div class="d">负面事件（连败/丑闻/冲突）后触发；选对可挽回，选错加剧</div></div>
+    <div class="card"><div class="t">全明星采访 <span class="badge purple">赛季</span></div><div class="d">全明星周触发；高曝光；选对 Fame 大涨</div></div>
+  </div>
+
+  <h3>4.3 采访选项示例（赛后）</h3>
+  <table>
+    <thead><tr><th>选项</th><th>MediaRapport</th><th>心理</th><th>队友 Bond</th><th>适用场景</th></tr></thead>
+    <tbody>
+      <tr><td>"功劳归队友，他们今晚太棒了"</td><td>+8</td><td>+3</td><td>+5（被提及者）</td><td>团队胜利后</td></tr>
+      <tr><td>"我今天就是投进了该投的球"</td><td>+3</td><td>+5</td><td>0</td><td>个人爆发后</td></tr>
+      <tr><td>"教练的战术安排很关键"</td><td>+5</td><td>+2</td><td>0</td><td>教练声望高时</td></tr>
+      <tr><td>"对手防守太松了，我也没想到"</td><td>-5</td><td>+3</td><td>0</td><td>大胜后（慎用，得罪对手）</td></tr>
+      <tr><td>"别问我，去问那些没防住的人"</td><td>-15</td><td>+8</td><td>-3（队友被甩锅）</td><td>输球后（甩锅，短期心理+但长期负面）</td></tr>
+      <tr><td>"拒绝采访"</td><td>-10</td><td>0</td><td>0</td><td>任何时候（保守选项）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.4 采访策略博弈</h3>
+  <div class="note blue"><b>核心博弈</b>：采访选项不是"选好的就行"——"功劳归队友"提升 Bond 但 Fame 增长慢；"我今天投进了"Fame 涨快但显得自大。甩锅选项短期心理+但长期 Bond 媒体双输。球员性格也影响：随和型选"功劳归队友"效果 ×1.3，自大型选则 ×0.7（显得不真诚）。这让采访成为有策略的公关博弈。</div>
+
+  <h3>4.5 媒体事件与舆论</h3>
+  <ul>
+    <li><b>交易传闻</b>：签约转会窗口期媒体生成交易传闻；球员被卷入传闻时心理 -5（不安）。</li>
+    <li><b>伤病报道</b>：球员受伤后媒体报道；MediaRapport 高的球员获"祝福潮"，心理 +3；低的获"质疑潮"，心理 -5。</li>
+    <li><b>纪录追踪</b>：球员接近纪录时媒体造势；心理 +5 但 clutch 压力 +10%（"万众瞩目"）。</li>
+  </ul>
+</section>
+
+<!-- ==================== §5 兄弟姐妹同联赛 ==================== -->
+<section id="s5">
+  <h2><span class="num">5</span>兄弟姐妹同联赛 <span class="new">开放</span></h2>
+  <p>v1 评估为"不开放"。经评估，开放兄弟姐妹同联赛能显著增强叙事深度与关系系统复杂度，但需约束防资源膨胀。</p>
+
+  <h3>5.1 开放条件</h3>
+  <ul>
+    <li><b>仅二代球员</b>：兄弟姐妹动态仅对"同一球员的子女"开放（二代球员间互为兄弟姐妹）。普通球员不生成兄弟姐妹。</li>
+    <li><b>数量约束</b>：一对伴侣最多 3 名子女（§2.2），即最多 3 兄弟姐妹同联赛。</li>
+    <li><b>年龄差</b>：兄弟姐妹年龄差 ≥2 岁（生育冷却），确保不同届选秀。</li>
+  </ul>
+
+  <h3>5.2 兄弟姐妹关系类型</h3>
+  <div class="sib-matrix">
+    <div class="sib-card"><div class="ico">🤝</div><div class="t">手足情深</div><div class="d">Bond 默认 70（高于普通队友）；同队时 chem 加成 ×1.5；互相传球 +10%</div></div>
+    <div class="sib-card"><div class="ico">⚔️</div><div class="t">兄弟对决</div><div class="d">分属不同队对阵时，双方 clutch +15（"在哥哥面前证明自己"）；宿敌值自动 +20</div></div>
+    <div class="sib-card"><div class="ico">😤</div><div class="t">影子竞争</div><div class="d">若兄/姐是球星，弟/妹有"活在阴影下"压力；Peak 可能更高（破而后立）但心理 -5（持续）</div></div>
+    <div class="sib-card"><div class="ico">🛡️</div><div class="t">长兄如父</div><div class="d">年龄差 ≥5 岁时触发；长兄对幼弟/妹有 teaching 效果（×0.6，弱于正式师徒）</div></div>
+    <div class="sib-card"><div class="ico">💔</div><div class="t">反目成仇</div><div class="d">罕见事件：兄弟姐妹因转会/争执决裂；Bond 暴跌至 -40；对决时 clutch +25 但犯规 +20%</div></div>
+    <div class="sib-card"><div class="ico">📜</div><div class="t">同队争冠</div><div class="d">兄弟姐妹同队并夺冠：Fame 双倍加成；"兄弟冠军"时代标签（王朝叙事）</div></div>
+  </div>
+
+  <h3>5.3 兄弟姐妹对签约转会的影响</h3>
+  <ul>
+    <li><b>心仪目的地</b>：自由球员签约时，若兄弟姐妹在某队，DestinationScore +20%（"想和哥哥一起打球"）。</li>
+    <li><b>交易否决</b>：含兄弟姐妹的球员被交易到兄弟姐妹敌对球队时，否决概率 +30%。</li>
+    <li><b>兄弟打包</b>：交易中可"兄弟打包"——但薪资平衡更难，且系统复核更严。</li>
+  </ul>
+
+  <h3>5.4 兄弟姐妹叙事生成</h3>
+  <div class="note pink"><b>叙事高潮</b>："兄弟对决"是 HWO 最具戏剧性的叙事场景——兄弟分属争冠对手，总决赛相遇，父母坐在观众席……系统自动生成此类叙事线，无需手动触发。这是关系系统"自动编织故事"能力的集中体现。</div>
+</section>
+
+<!-- ==================== §6 关系与签约转会联动 ==================== -->
+<section id="s6">
+  <h2><span class="num">6</span>关系与签约转会联动 <span class="new">联动</span></h2>
+  <p>签约转会系统（§4 球员决策模型 AcceptChance）与关系系统的联动规则。</p>
+
+  <h3>6.1 家庭因素影响心仪目的地</h3>
+  <p>DestinationScore（签约转会 §4.2）新增家庭因素维度：</p>
+  <table>
+    <thead><tr><th>家庭因素</th><th>DestinationScore 影响</th></tr></thead>
+    <tbody>
+      <tr><td>配偶/子女在家乡</td><td>家乡球队 +15%（"想离家近"）</td></tr>
+      <tr><td>子女在某队青训</td><td>该队 +20%（"为孩子的培养环境"）</td></tr>
+      <tr><td>父母在某队任教</td><td>该队 +12%（"父子同队"叙事吸引力）</td></tr>
+      <tr><td>兄弟姐妹在某队</td><td>该队 +20%（§5.3）</td></tr>
+      <tr><td>前队友在某队</td><td>该队 +5%（"想和老搭档重聚"）</td></tr>
+      <tr><td>宿敌在某队</td><td>该队 -15%（"绝不去那"）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>6.2 交易否决权与家庭</h3>
+  <ul>
+    <li>含否决权球员被交易时，可基于家庭因素否决（如"子女在本地读书，不想搬家"）。</li>
+    <li>无否决权球员被交易到不利家庭目的地时，心理 -15（被动接受但不满），可能触发更衣室事件。</li>
+    <li>交易到兄弟姐妹敌对队时，否决概率 +30%（§5.3）。</li>
+  </ul>
+
+  <h3>6.3 新援加盟 chem 冲击深化</h3>
+  <p>签约转会 §13 定义了新援加盟 chem -0.15。关系系统深化其与关系网络的交互：</p>
+  <div class="formula">
+<span class="comment">── 新援加盟 chem 冲击（深化） ──</span>
+
+<span class="var">chemImpact</span> <span class="op">=</span> <span class="num">-0.15</span>                       <span class="comment">// 基础冲击</span>
+            <span class="op">*</span> <span class="var">strangerFactor</span>            <span class="comment">// 队中有前队友 ×0.7（冲击小）</span>
+            <span class="op">*</span> <span class="var">personalityFit</span>            <span class="comment">// 性格匹配度（v1 §5）</span>
+            <span class="op">+</span> <span class="var">familyBonus</span>               <span class="comment">// 队中有家人 ×0.5（冲击极小）</span>
+
+<span class="comment">// 例：新援与队中前队友重逢 → chemImpact = -0.15 × 0.7 = -0.105</span>
+<span class="comment">// 例：新援是队中球员的兄弟 → chemImpact = -0.15 × 0.5 = -0.075</span>
+<span class="comment">// 例：新援与队中宿敌 → chemImpact = -0.15 × 1.8 = -0.27（冲击放大）</span>
+  </div>
+
+  <h3>6.4 续约与忠诚度联动</h3>
+  <ul>
+    <li>LoyaltyFactor（签约转会 §4.1）与家庭稳定性挂钩：有配偶子女且在本地安家的球员，LoyaltyFactor 额外 ×1.1。</li>
+    <li>家庭危机期（v1 §9 家庭危机事件）的球员续约接受率 -15%（心态不稳，想换环境）。</li>
+  </ul>
+</section>
+
+<!-- ==================== §7 关系与球探选秀联动 ==================== -->
+<section id="s7">
+  <h2><span class="num">7</span>关系与球探选秀联动 <span class="new">联动</span></h2>
+
+  <h3>7.1 家庭背景与 fog</h3>
+  <ul>
+    <li><b>普通苗子</b>：家庭背景不影响 fog（球探系统 §3.1）。</li>
+    <li><b>二代球员</b>：父母所在队球探有"血缘可见度"加成——fog 收窄 ×1.3（"父亲最了解儿子"）。</li>
+    <li><b>师徒传承苗子</b>：师父所在队球探对该苗子 fog 收窄 ×1.1（"教过的孩子"）。</li>
+    <li><b>反制</b>：其他队球探对二代球员 fog 收窄无加成，且星二代被多队探查热度高（行情 +5~10，但 fog 收窄更分散）。</li>
+  </ul>
+
+  <h3>7.2 二代球员选秀特殊性</h3>
+  <table>
+    <thead><tr><th>特殊性</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>行情加成</td><td>父母 Fame ≥70 → 行情 +5~10（§2.6）</td></tr>
+      <tr><td>多队探查</td><td>星二代被多队球探关注，fog 收窄分散（父母队有优势）</td></tr>
+      <tr><td>反叛性格</td><td>"不想活在父亲阴影下"叙事；行情 -5 但 Peak 可能更高</td></tr>
+      <tr><td>父母队优先</td><td>若父母队持高顺位，血缘可见度优势放大</td></tr>
+      <tr><td>兄弟同届</td><td>罕见（年龄差 ≥2）；若同届，兄弟行情互相影响（"双星兄弟"叙事加成）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>7.3 选秀叙事与家庭</h3>
+  <ul>
+    <li><b>"子承父业"叙事</b>：二代球员被父母原队选中 → 生成"传承"叙事；Fame +10 一次性。</li>
+    <li><b>"离家证明自己"叙事</b>：二代球员被其他队选中 → 生成"独立"叙事；心理 +5（"终于走出阴影"）。</li>
+    <li><b>选秀现场家庭反应</b>：选秀夜生成家庭反应事件（父母观战、兄弟姐妹祝贺/嫉妒）。</li>
+  </ul>
+</section>
+
+<!-- ==================== §8 关系与三身份系统联动 ==================== -->
+<section id="s8">
+  <h2><span class="num">8</span>关系与三身份系统联动 <span class="new">联动</span></h2>
+
+  <h3>8.1 化身家庭关系</h3>
+  <ul>
+    <li><b>化身可结婚生育</b>：玩家以球员化身身份生涯时，可建立家庭（结婚、生育子女），子女可成为二代球员（§2）。</li>
+    <li><b>化身家庭影响</b>：化身的家庭事件同样影响心理/训练响应/续约意愿——与 NPC 球员规则一致。</li>
+    <li><b>跨身份家庭</b>：化身家庭关系存入 Account.contacts（三身份 §2），经理身份可见"我的化身有家庭"。</li>
+  </ul>
+
+  <h3>8.2 跨身份人脉复用</h3>
+  <p>三身份系统的 ContactGraph（§2）存储跨身份人脉。关系系统的人脉可复用：</p>
+  <table>
+    <thead><tr><th>关系来源</th><th>跨身份复用</th></tr></thead>
+    <tbody>
+      <tr><td>化身的前队友</td><td>经理身份签约时，前队友所在队 DestinationScore +5%</td></tr>
+      <tr><td>化身的师徒</td><td>经理身份签约该师父任教的队时 +8%</td></tr>
+      <tr><td>职业人（经纪人）的客户</td><td>经理身份签约该经纪人的其他客户时，谈判更顺畅</td></tr>
+      <tr><td>化身的宿敌</td><td>经理身份交易/对阵时，情报略有优势（"我了解他"）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8.3 反套利延伸</h3>
+  <ul>
+    <li>经理不能给化身子女开后门签约（三身份 §10 反套利 FLAG_REVIEW）。</li>
+    <li>化身子女青训纳入需经仲裁审查（防自我交易）。</li>
+    <li>化身家庭成员的交易/签约涉及本账号时转交他人仲裁（REASSIGN）。</li>
+  </ul>
+</section>
+
+<!-- ==================== §9 关系与世界结构联动 ==================== -->
+<section id="s9">
+  <h2><span class="num">9</span>关系与世界结构联动 <span class="new">联动</span></h2>
+
+  <h3>9.1 跨世界家庭隔离</h3>
+  <ul>
+    <li><b>家庭不跨世界</b>：家庭关系世界内封闭。世界迁移（世界结构 §11）时，球员家庭随之迁移，但不与新世界球员建立关系。</li>
+    <li><b>兄弟姐妹不跨世界</b>：兄弟姐妹必须同世界（同一父母所生）。</li>
+    <li><b>世界迁移对家庭的影响</b>：迁移后配偶/子女跟随；但前队友/师徒/宿敌关系标记"远"（Bond 衰减 ×2）。</li>
+  </ul>
+
+  <h3>9.2 世界生成时的家庭初始化</h3>
+  <ul>
+    <li>世界生成时（世界结构 §9），老将 NPC 球员有概率已携带家庭（配偶 + 1-2 名子女）。</li>
+    <li>这些子女作为"已存在的二代苗子"在青训池中，可被球探发现。</li>
+    <li>这为新世界提供"现成的传承线"——不是所有二代球员都从零开始。</li>
+  </ul>
+
+  <h3>9.3 联赛层级与关系密度</h3>
+  <table>
+    <thead><tr><th>联赛层级</th><th>关系密度</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>T1 顶级</td><td>高</td><td>球星集中；宿敌/师徒/前队友关系密集；媒体关注高</td></tr>
+      <tr><td>T4 入门</td><td>低</td><td>新经理/新球员多；关系网络稀疏；媒体关注低</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== §10 关系与训练系统联动 ==================== -->
+<section id="s10">
+  <h2><span class="num">10</span>关系与训练系统联动 <span class="new">联动</span></h2>
+
+  <h3>10.1 家庭事件影响训练响应</h3>
+  <table>
+    <thead><tr><th>家庭事件</th><th>训练响应影响</th><th>持续</th></tr></thead>
+    <tbody>
+      <tr><td>子女出生</td><td>Trainability ×0.8（初为人父精力分散）</td><td>2 周</td></tr>
+      <tr><td>家庭支持事件</td><td>Trainability ×1.1（心情好训练投入）</td><td>2 周</td></tr>
+      <tr><td>家庭危机事件</td><td>Trainability ×0.7（心不在焉）</td><td>1-3 周</td></tr>
+      <tr><td>离婚/分手</td><td>Trainability ×0.6；伤病风险 +15%</td><td>4 周</td></tr>
+    </tbody>
+  </table>
+
+  <h3>10.2 师徒与 teaching 训练日</h3>
+  <ul>
+    <li>训练系统 §13.4 的 teaching 训练日：老将可指定带练新秀，效果 ×1.5。</li>
+    <li>师徒关系（v1 §6）的师徒对在 teaching 训练日效果额外 ×1.2（叠加）。</li>
+    <li>父母任教时，子女的 teaching 训练日效果 ×1.2（§2.5）。</li>
+  </ul>
+
+  <h3>10.3 私人训练师与训练侧重</h3>
+  <ul>
+    <li>私人训练师专长（§3.2）与训练计划侧重匹配时，专项训练效果 ×1.3。</li>
+    <li>不匹配时无额外加成（但不惩罚）。</li>
+    <li>康复训练师在 rest 日额外提升 Condition 恢复 ×1.2。</li>
+  </ul>
+
+  <h3>10.4 化学反应与团队训练</h3>
+  <ul>
+    <li>训练系统 §14 团队训练驱动 chem 成长——本系统确认联动规则。</li>
+    <li>团队训练中 Bond ≥60 的搭档同组训练，chem 成长 ×1.3。</li>
+    <li>Bond ≤-20 的两人同组训练，chem 下降（"训练中起冲突"事件概率 +20%）。</li>
+  </ul>
+</section>
+
+<!-- ==================== §11 关系网络可视化与经理操作 ==================== -->
+<section id="s11">
+  <h2><span class="num">11</span>关系网络可视化与经理操作 <span class="new">新增</span></h2>
+
+  <h3>11.1 关系网络图</h3>
+  <p>经理在"球队管理"中可查看关系网络图——以球员为节点，关系为连线的力导向图：</p>
+  <ul>
+    <li><b>节点</b>：球员；颜色按位置；大小按能力。</li>
+    <li><b>连线</b>：绿色=Bond 正（粗细按强度）；红色=Bond 负；蓝色=师徒；金色=家庭；紫色=宿敌。</li>
+    <li><b>筛选</b>：可按关系类型筛选（仅看宿敌/仅看师徒/仅看家庭）。</li>
+    <li><b>预警</b>：Bond ≤-20 的连线高亮闪烁（"更衣室隐患"）。</li>
+  </ul>
+
+  <h3>11.2 经理可操作的关系干预</h3>
+  <table>
+    <thead><tr><th>操作</th><th>效果</th><th>限制</th></tr></thead>
+    <tbody>
+      <tr><td><b>团队建设活动</b></td><td>全队 Bond +3~8；消耗预算</td><td>每月 1 次</td></tr>
+      <tr><td><b>单独谈话</b></td><td> targeted 球员心理 +5~10；缓和冲突</td><td>每球员每周 1 次</td></tr>
+      <tr><td><b>安排师徒</b></td><td>提升师徒关系建立概率 +20%</td><td>需满足师徒条件（v1 §6.1）</td></tr>
+      <tr><td><b>家庭日</b></td><td>邀请家属观战；目标球员心理 +10</td><td>每月 1 次；需球员有家庭</td></tr>
+      <tr><td><b>媒体公关</b></td><td>安排采访/公关活动；MediaRapport +5~10</td><td>每月 2 次</td></tr>
+      <tr><td><b>交易离队</b></td><td>送走更衣室毒药；全队 Bond +5（解除毒药）</td><td>需交易窗口开放</td></tr>
+    </tbody>
+  </table>
+
+  <h3>11.3 关系预警系统</h3>
+  <div class="note red"><b>预警机制</b>：当关系网络出现"高危结构"时，系统向经理发出预警——如"XX 与 XX 关系恶化至 -25，更衣室冲突风险高"、"XX 因家庭危机训练响应下降，建议谈话"。预警让经理主动管理关系，而非被动承受后果。</div>
+</section>
+
+<!-- ==================== §12 关系事件链与叙事生成 ==================== -->
+<section id="s12">
+  <h2><span class="num">12</span>关系事件链与叙事生成 <span class="new">深化</span></h2>
+  <p>v1 §9 定义了关系事件。本节深化"事件链"——多个事件按因果串联，形成叙事弧线。</p>
+
+  <h3>12.1 事件链机制</h3>
+  <div class="flow">
+    <span class="step">触发事件</span>
+    <span class="arrow">→</span>
+    <span class="step">分支选择/自动演化</span>
+    <span class="arrow">→</span>
+    <span class="step">后果事件</span>
+    <span class="arrow">→</span>
+    <span class="step">长期影响</span>
+    <span class="arrow">→</span>
+    <span class="step">叙事弧线收束</span>
+  </div>
+
+  <h3>12.2 事件链示例：师徒决裂</h3>
+  <table>
+    <thead><tr><th>阶段</th><th>事件</th><th>条件</th><th>后果</th></tr></thead>
+    <tbody>
+      <tr><td>① 裂痕</td><td>学徒能力超过师父（ability ≥师父）</td><td>师徒关系值 ≥60</td><td>师父心理 -5（被超越的不甘）；学徒心理 +5</td></tr>
+      <tr><td>② 分歧</td><td>关键球处理争议</td><td>①后 2-4 周</td><td>师徒 Bond -10；旁观队友分阵营</td></tr>
+      <tr><td>③ 决裂</td><td>师徒公开冲突</td><td>②后未干预</td><td>师徒关系终止；双方 Bond -30；全队 chem -8</td></tr>
+      <tr><td>④ 余波</td><td>一方被交易/退役</td><td>③后 1-2 赛季</td><td>叙事收束："曾经亲如父子，如今形同陌路"</td></tr>
+    </tbody>
+  </table>
+
+  <h3>12.3 事件链示例：兄弟冠军路</h3>
+  <table>
+    <thead><tr><th>阶段</th><th>事件</th><th>条件</th><th>后果</th></tr></thead>
+    <tbody>
+      <tr><td>① 重聚</td><td>兄弟姐妹同队（转会/签约）</td><td>§5.3 心仪目的地</td><td>Bond +20；chem +5；"兄弟重聚"叙事</td></tr>
+      <tr><td>② 磨合</td><td>兄弟同场建立"手足情深"chem</td><td>同场 ≥20 场</td><td>互相传球 +10%；关键回合 mutual assist +15%</td></tr>
+      <tr><td>③ 冲刺</td><td>季后赛兄弟联手</td><td>进入季后赛</td><td>双方 clutch +10；"兄弟冠军路"叙事造势</td></tr>
+      <tr><td>④ 圆梦</td><td>夺冠</td><td>季后赛夺冠</td><td>Fame 双倍；"兄弟冠军"时代标签；父母观战叙事</td></tr>
+    </tbody>
+  </table>
+
+  <h3>12.4 叙事自动生成原则</h3>
+  <div class="grid">
+    <div class="card"><div class="t">① 因果驱动 <span class="badge pink">逻辑</span></div><div class="d">叙事由事件链因果生成，非随机。每个叙事节点都有前置条件与后果。</div></div>
+    <div class="card"><div class="t">② 关系为锚 <span class="badge blue">情感</span></div><div class="d">所有叙事以关系为情感锚点——师徒、兄弟、宿敌、家庭。</div></div>
+    <div class="card"><div class="t">③ 不可强制 <span class="badge green">涌现</span></div><div class="d">叙事链自然涌现，不需玩家手动触发。但经理干预可影响走向。</div></div>
+    <div class="card"><div class="t">④ 留痕档案 <span class="badge gold">传承</span></div><div class="d">完成的叙事链存入球员/球队档案，成为时代标签与传承素材。</div></div>
+  </div>
+</section>
+
+<!-- ==================== §13 数值附录（深化部分） ==================== -->
+<section id="s13">
+  <h2><span class="num">13</span>数值附录（深化部分）</h2>
+
+  <h3>13.1 二代球员天赋继承</h3>
+  <table>
+    <thead><tr><th>参数</th><th>值</th></tr></thead>
+    <tbody>
+      <tr><td>Peak 继承系数</td><td>父母均值 ×0.6</td></tr>
+      <tr><td>随机扰动</td><td>±15</td></tr>
+      <tr><td>体育世家加成</td><td>+8</td></tr>
+      <tr><td>三代体育世家叠加</td><td>逐代 +3（上限 +9）</td></tr>
+      <tr><td>血缘可见度（父母队球探）</td><td>fog 收窄 ×1.3</td></tr>
+      <tr><td>星二代心理压力</td><td>ClutchIQ ×0.9；MF ×1.1</td></tr>
+      <tr><td>父母任教 teaching 加成</td><td>×1.2</td></tr>
+      <tr><td>子女数量上限</td><td>3/伴侣</td></tr>
+      <tr><td>生育概率</td><td>8%/年（关系稳定 ≥1 年）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>13.2 私人训练师</h3>
+  <table>
+    <thead><tr><th>类型</th><th>训练响应加成</th><th>专项加成</th><th>年薪（专家级）</th></tr></thead>
+    <tbody>
+      <tr><td>投射训练师</td><td>+0.05~0.15</td><td>投射专项 ×1.3</td><td>80-150</td></tr>
+      <tr><td>力量训练师</td><td>+0.05~0.12</td><td>力量专项 ×1.3</td><td>80-150</td></tr>
+      <tr><td>技术训练师</td><td>+0.05~0.12</td><td>技术专项 ×1.3；特质觉醒 +5%</td><td>80-150</td></tr>
+      <tr><td>康复训练师</td><td>—</td><td>Condition ×1.2；伤愈 -20%；过劳伤 -15%</td><td>80-150</td></tr>
+      <tr><td>心理训练师</td><td>+0.08~0.15</td><td>心理专项 ×1.3；clutch 样本 ×1.2</td><td>80-150</td></tr>
+    </tbody>
+  </table>
+
+  <h3>13.3 媒体关系</h3>
+  <table>
+    <thead><tr><th>MediaRapport 区间</th><th>Fame 增长</th><th>心理</th></tr></thead>
+    <tbody>
+      <tr><td>+60~+100（宠儿）</td><td>×1.3</td><td>+5（持续）</td></tr>
+      <tr><td>+20~+59（良好）</td><td>×1.1</td><td>0</td></tr>
+      <tr><td>-19~+19（中立）</td><td>×1.0</td><td>0</td></tr>
+      <tr><td>-59~-20（紧张）</td><td>×0.9</td><td>0</td></tr>
+      <tr><td>-100~-60（公敌）</td><td>×0.7</td><td>-10（持续）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>13.4 兄弟姐妹</h3>
+  <table>
+    <thead><tr><th>参数</th><th>值</th></tr></thead>
+    <tbody>
+      <tr><td>手足默认 Bond</td><td>70</td></tr>
+      <tr><td>同队 chem 加成</td><td>×1.5</td></tr>
+      <tr><td>兄弟对决 clutch</td><td>+15</td></tr>
+      <tr><td>兄弟对决宿敌值</td><td>自动 +20</td></tr>
+      <tr><td>长兄如父 teaching</td><td>×0.6（年龄差 ≥5）</td></tr>
+      <tr><td>签约心仪目的地（兄弟在同队）</td><td>DestinationScore +20%</td></tr>
+      <tr><td>反目 Bond</td><td>-40</td></tr>
+    </tbody>
+  </table>
+
+  <h3>13.5 联动参数汇总</h3>
+  <table>
+    <thead><tr><th>联动</th><th>参数</th><th>值</th></tr></thead>
+    <tbody>
+      <tr><td rowspan="4">签约转会</td><td>子女在某队青训</td><td>DestinationScore +20%</td></tr>
+      <tr><td>前队友在某队</td><td>+5%</td></tr>
+      <tr><td>宿敌在某队</td><td>-15%</td></tr>
+      <tr><td>新援与队中前队友</td><td>chem 冲击 ×0.7</td></tr>
+      <tr><td rowspan="3">球探选秀</td><td>二代球员血缘可见度</td><td>fog ×1.3（父母队）</td></tr>
+      <tr><td>星二代行情加成</td><td>+5~10</td></tr>
+      <tr><td>师徒苗子可见度</td><td>fog ×1.1（师父队）</td></tr>
+      <tr><td rowspan="3">训练</td><td>子女出生 Trainability</td><td>×0.8（2 周）</td></tr>
+      <tr><td>师徒 teaching 训练日</td><td>×1.2（叠加）</td></tr>
+      <tr><td>Bond ≥60 同组训练 chem</td><td>×1.3</td></tr>
+    </tbody>
+  </table>
+
+  <h3>13.6 经理关系干预</h3>
+  <table>
+    <thead><tr><th>操作</th><th>效果</th><th>频次</th></tr></thead>
+    <tbody>
+      <tr><td>团队建设活动</td><td>全队 Bond +3~8</td><td>每月 1 次</td></tr>
+      <tr><td>单独谈话</td><td>心理 +5~10</td><td>每球员每周 1 次</td></tr>
+      <tr><td>家庭日</td><td>心理 +10</td><td>每月 1 次</td></tr>
+      <tr><td>媒体公关</td><td>MediaRapport +5~10</td><td>每月 2 次</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note pink"><b>深化总结</b>：v2.0 补全了 v1 标注的四项待深化模块（二代球员闭环、私人训练师、媒体关系、兄弟姐妹），并定义了与近期五大系统的联动规则。二代球员闭环是 HWO 最长留存钩子；私人训练师补全职业人技术线；媒体采访增添公关博弈；兄弟姐妹同联赛解锁最具戏剧性的叙事场景。所有联动遵循"读取输出/写入修正"的解耦原则，保持系统独立性。数值在 EA 阶段通过灰度参数热更新调优。</div>
+</section>
+
+<footer style="text-align:center;color:var(--ink3);font-size:12px;padding:20px 0 40px;border-top:1px solid var(--line);margin-top:20px">
+  球员家庭与人际关系系统 · 深化设计 v2.0 · Hoops World Online · 2026-09-28<br>
+  基础文档：球员家庭与人际关系系统设计 v1.0 · 关联：签约转会·球探·选秀·三身份·世界结构·训练
+</footer>
+
+</div>
+</body>
+</html>

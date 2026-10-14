@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>世界与联赛结构设计 · Hoops World Online</title>
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#141b26; --panel2:#1b2433; --line:#26324a;
+    --ink:#e6edf6; --ink2:#9fb0c7; --ink3:#6b7c97;
+    --accent:#22d3ee; --accent2:#4ade80; --gold:#fbbf24; --red:#ef4444; --blue:#60a5fa; --purple:#a78bfa; --cyan:#22d3ee; --orange:#ff6b35;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:linear-gradient(180deg,#070a10 0%,#0b0f17 100%);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 22px 120px}
+  .hero{
+    position:relative;border:1px solid var(--line);border-radius:18px;padding:42px 34px 30px;
+    background:
+      radial-gradient(800px 280px at 20% -10%, rgba(34,211,238,.15), transparent 60%),
+      radial-gradient(700px 260px at 90% 0%, rgba(251,191,36,.10), transparent 60%),
+      linear-gradient(180deg,#151d2c,#0e1420);
+    overflow:hidden;margin-bottom:30px;
+  }
+  .hero .tag{display:inline-block;font-size:12px;letter-spacing:.16em;color:var(--cyan);border:1px solid rgba(34,211,238,.4);padding:4px 10px;border-radius:999px;margin-bottom:18px;text-transform:uppercase}
+  .hero h1{margin:0 0 8px;font-size:32px;letter-spacing:.5px;font-weight:800}
+  .hero h1 .en{color:var(--ink2);font-weight:600;font-size:18px;margin-left:10px}
+  .hero .pitch{color:var(--ink2);font-size:15px;max-width:820px;margin:10px 0 22px}
+  .hero .meta{display:flex;flex-wrap:wrap;gap:10px}
+  .hero .chip{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--ink2)}
+  .hero .chip b{color:var(--ink);font-weight:600}
+  .hero .globe{position:absolute;right:-50px;bottom:-50px;width:200px;height:200px;border:2px solid rgba(34,211,238,.15);border-radius:50%;pointer-events:none}
+  .hero .globe::before{content:"";position:absolute;inset:24px;border:2px solid rgba(34,211,238,.1);border-radius:50%}
+  .hero .globe::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;background:rgba(34,211,238,.1);transform:translateX(-50%)}
+
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 28px;margin-bottom:22px}
+  .toc h3{margin:0 0 14px;font-size:14px;color:var(--ink2);letter-spacing:.1em;text-transform:uppercase}
+  .toc ol{margin:0;padding-left:22px;columns:2;column-gap:32px}
+  .toc li{margin:5px 0;break-inside:avoid}
+  .toc a{color:var(--ink2)}
+  .toc a:hover{color:var(--cyan)}
+  @media (max-width:640px){.toc ol{columns:1}}
+
+  section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin-bottom:22px}
+  section > h2{margin:0 0 16px;font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
+  section > h2 .num{font-size:12px;color:#0b0f17;background:var(--cyan);width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;font-weight:800;flex-shrink:0}
+  h3{font-size:16px;margin:22px 0 10px;color:var(--ink)}
+  h4{font-size:14px;margin:18px 0 8px;color:var(--accent2);letter-spacing:.04em}
+  h5{font-size:13px;margin:14px 0 6px;color:var(--gold);letter-spacing:.03em}
+  p{margin:8px 0}
+  ul,ol{margin:8px 0 8px 4px;padding-left:22px}
+  li{margin:4px 0}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{background:#0d131d;border:1px solid var(--line);padding:2px 6px;border-radius:5px;font-size:13px;color:var(--gold);font-family:"SF Mono","Fira Code",Consolas,monospace}
+  strong{color:#fff}
+  .note{border-left:3px solid var(--accent);background:rgba(34,211,238,.06);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;color:var(--ink2)}
+  .note b{color:var(--cyan)}
+  .note.green{border-left-color:var(--accent2);background:rgba(74,222,128,.06)}
+  .note.green b{color:var(--accent2)}
+  .note.blue{border-left-color:var(--blue);background:rgba(96,165,250,.06)}
+  .note.blue b{color:var(--blue)}
+  .note.red{border-left-color:var(--red);background:rgba(239,68,68,.06)}
+  .note.red b{color:var(--red)}
+  .note.gold{border-left-color:var(--gold);background:rgba(251,191,36,.06)}
+  .note.gold b{color:var(--gold)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px}
+  th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--cyan);font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;background:rgba(255,255,255,.02)}
+  td b{color:var(--ink)}
+  tr:hover td{background:rgba(255,255,255,.02)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:14px 0}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:16px}
+  .card .t{font-weight:700;margin-bottom:6px;color:var(--ink)}
+  .card .d{font-size:13px;color:var(--ink2)}
+  .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;letter-spacing:.04em}
+  .badge.green{background:rgba(74,222,128,.15);color:var(--accent2);border:1px solid rgba(74,222,128,.3)}
+  .badge.blue{background:rgba(96,165,250,.15);color:var(--blue);border:1px solid rgba(96,165,250,.3)}
+  .badge.gold{background:rgba(251,191,36,.15);color:var(--gold);border:1px solid rgba(251,191,36,.3)}
+  .badge.red{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+  .badge.cyan{background:rgba(34,211,238,.15);color:var(--cyan);border:1px solid rgba(34,211,238,.3)}
+  .badge.purple{background:rgba(167,139,250,.15);color:var(--purple);border:1px solid rgba(167,139,250,.3)}
+
+  /* Formula box */
+  .formula{background:#0d131d;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;font-family:"SF Mono","Fira Code",Consolas,monospace;font-size:12.5px;color:var(--gold);overflow-x:auto;line-height:1.8;white-space:pre}
+  .formula .var{color:var(--blue)}
+  .formula .op{color:var(--ink2)}
+  .formula .fn{color:var(--accent2)}
+  .formula .num{color:var(--accent)}
+  .formula .comment{color:var(--ink3);font-style:italic}
+  .formula .str{color:var(--cyan)}
+  .formula .kw{color:var(--purple)}
+
+  /* Pyramid visual */
+  .pyramid{margin:18px 0;text-align:center}
+  .py-row{display:flex;justify-content:center;gap:6px;margin:3px 0}
+  .py-block{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:8px 14px;font-size:12px;font-weight:600;min-width:80px;text-align:center}
+  .py-block.t1{background:rgba(251,191,36,.15);color:var(--gold);border-color:rgba(251,191,36,.3)}
+  .py-block.t2{background:rgba(96,165,250,.12);color:var(--blue);border-color:rgba(96,165,250,.3)}
+  .py-block.t3{background:rgba(74,222,128,.1);color:var(--accent2);border-color:rgba(74,222,128,.3)}
+  .py-block.t4{background:rgba(167,139,250,.1);color:var(--purple);border-color:rgba(167,139,250,.3)}
+  .py-label{font-size:11px;color:var(--ink3);margin-top:2px}
+
+  /* Timeline */
+  .phase-bar{display:flex;gap:0;margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+  .phase-seg{flex:1;padding:10px 8px;text-align:center;font-size:12px;font-weight:600;position:relative}
+  .phase-seg.p1{background:rgba(74,222,128,.1);color:var(--accent2)}
+  .phase-seg.p2{background:rgba(96,165,250,.1);color:var(--blue)}
+  .phase-seg.p3{background:rgba(251,191,36,.1);color:var(--gold)}
+  .phase-seg.p4{background:rgba(34,211,238,.1);color:var(--cyan)}
+  .phase-seg.p5{background:rgba(255,107,53,.1);color:var(--orange)}
+  .phase-seg small{display:block;font-weight:400;color:var(--ink3);font-size:11px;margin-top:2px}
+
+  /* Flow steps */
+  .flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:0;margin:16px 0}
+  .flow .step{flex:1;min-width:130px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;position:relative;font-size:12.5px}
+  .flow .step:not(:last-child){margin-right:18px}
+  .flow .step:not(:last-child)::after{content:"→";position:absolute;right:-16px;top:50%;transform:translateY(-50%);color:var(--cyan);font-size:18px;font-weight:700}
+  .flow .step .s-num{font-size:11px;color:var(--cyan);font-weight:700;letter-spacing:.06em}
+  .flow .step .s-t{font-weight:700;color:var(--ink);margin:2px 0 4px}
+  .flow .step .s-d{color:var(--ink2);font-size:11.5px}
+
+  /* Clock */
+  .clock-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:16px 0}
+  .clock-item{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px;text-align:center}
+  .clock-item .c-time{font-size:20px;font-weight:800;color:var(--cyan);font-family:"SF Mono","Fira Code",Consolas,monospace}
+  .clock-item .c-name{font-size:13px;font-weight:600;color:var(--ink);margin:4px 0}
+  .clock-item .c-desc{font-size:11.5px;color:var(--ink2)}
+
+  /* Bracket */
+  .bracket{margin:16px 0;padding:16px;background:var(--panel2);border:1px solid var(--line);border-radius:12px}
+  .bracket .br-round{font-size:12px;color:var(--cyan);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+  .bracket .br-matches{display:flex;flex-wrap:wrap;gap:8px}
+  .bracket .br-match{background:#0d131d;border:1px solid var(--line);border-radius:6px;padding:6px 12px;font-size:12px;color:var(--ink2)}
+  .bracket .br-match b{color:var(--ink)}
+
+  footer{text-align:center;color:var(--ink2);font-size:13px;margin-top:30px;border-top:1px solid var(--line);padding-top:18px}
+  @media (max-width:640px){
+    .wrap{padding:22px 14px 80px}
+    .hero{padding:30px 20px}
+    .hero h1{font-size:26px}
+    section{padding:20px 16px}
+    .flow{flex-direction:column}
+    .flow .step:not(:last-child){margin-right:0;margin-bottom:18px}
+    .flow .step:not(:last-child)::after{right:50%;top:auto;bottom:-14px;transform:translateX(50%) rotate(90deg)}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ==================== HERO ==================== -->
+  <div class="hero">
+    <span class="tag">System Design Document · v1.0</span>
+    <h1>世界与联赛结构设计 <span class="en">World & League Structure · HWO</span></h1>
+    <p class="pitch">本作作为多人在线游戏的"世界骨架"——决定玩家如何被组织、如何对抗、如何流动。每个世界是独立生态系统，自含联赛金字塔、共享球员池、独立经济与排名。世界之间不流通，保证公平与经济体量可控。本系统定义世界模型、联赛金字塔、全球时钟、赛程对阵、升降级、赛季交接、AI 经理填充、世界生成与扩容的完整规格。</p>
+    <div class="meta">
+      <span class="chip"><b>文档版本</b> · v1.0</span>
+      <span class="chip"><b>关联文档</b> · 策划方案 §4 / 经济系统 §1-2 / 三身份 §9 / Sim Engine</span>
+      <span class="chip"><b>里程碑</b> · M0-M1 核心依赖</span>
+      <span class="chip"><b>设计原则</b> · 世界封闭 · 金字塔流动 · 全球同步</span>
+    </div>
+    <div class="globe"></div>
+  </div>
+
+  <!-- ==================== TOC ==================== -->
+  <div class="toc">
+    <h3>目录</h3>
+    <ol>
+      <li><a href="#s1">世界模型与数据结构</a></li>
+      <li><a href="#s2">联赛金字塔</a></li>
+      <li><a href="#s3">全球时钟与异步结算</a></li>
+      <li><a href="#s4">赛程与对阵生成</a></li>
+      <li><a href="#s5">升降级系统</a></li>
+      <li><a href="#s6">赛季交接流程</a></li>
+      <li><a href="#s7">AI 经理填充</a></li>
+      <li><a href="#s8">世界生成与扩容</a></li>
+      <li><a href="#s9">季后赛体系</a></li>
+      <li><a href="#s10">德比、关键战与赛事高亮</a></li>
+      <li><a href="#s11">世界迁移</a></li>
+      <li><a href="#s12">经济与排名的封闭性</a></li>
+      <li><a href="#s13">AI 经理决策模型</a></li>
+      <li><a href="#s14">异常处理与边界情况</a></li>
+      <li><a href="#s15">数值附录</a></li>
+    </ol>
+  </div>
+
+  <!-- ==================== §1 世界模型与数据结构 ==================== -->
+  <section id="s1">
+    <h2><span class="num">1</span>世界模型与数据结构</h2>
+    <div class="note"><b>世界 = 一个独立生态系统</b>。玩家注册时选择或被分配到一个世界。每个世界自含完整联赛金字塔、共享球员池（自由球员 + 选秀池 + 青训苗子池）、独立经济与排名。世界之间球员不流通（保证公平与经济体量可控）。</div>
+
+    <h3>1.1 世界数据结构</h3>
+    <div class="formula">
+<span class="var">World</span> <span class="op">=</span> {
+  worldId:          <span class="kw">u16</span>,              <span class="comment">// 世界唯一标识</span>
+  name:             <span class="kw">string</span>,           <span class="comment">// 世界名（如"东亚 01"）</span>
+  language:         <span class="kw">string</span>,           <span class="comment">// 主语言（zh-CN / ja / ko 等）</span>
+  timezone:         <span class="kw">string</span>,           <span class="comment">// 主时区（Asia/Shanghai 等）</span>
+  createdAt:        <span class="kw">Timestamp</span>,
+  currentSeason:    <span class="kw">u8</span>,                <span class="comment">// 当前赛季序号</span>
+  currentPhase:     <span class="kw">SeasonPhase</span>,      <span class="comment">// 赛季阶段（见 §6）</span>
+  currentDay:       <span class="kw">u8</span>,                <span class="comment">// 当前赛季日（1-180）</span>
+
+  <span class="comment">// —— 联赛结构 ——</span>
+  pyramid:          [<span class="kw">League</span>],         <span class="comment">// 联赛金字塔（§2）</span>
+
+  <span class="comment">// —— 共享池 ——</span>
+  freeAgentPool:    [<span class="kw">PlayerId</span>],       <span class="comment">// 自由球员池</span>
+  draftPool:        [<span class="kw">PlayerId</span>],       <span class="comment">// 选秀池（赛季末生成）</span>
+  youthAcademyPool: [<span class="kw">PlayerId</span>],       <span class="comment">// 青训苗子池</span>
+
+  <span class="comment">// —— 经济与排名 ——</span>
+  economy:          <span class="kw">WorldEconomy</span>,     <span class="comment">// 世界级经济指标（经济系统 §9）</span>
+  ranking:          [<span class="kw">RankEntry</span>],      <span class="comment">// 世界排名（三身份 §11）</span>
+
+  <span class="comment">// —— 容量与状态 ——</span>
+  capacity:         <span class="kw">u16</span>,              <span class="comment">// 最大球队数（256-512）</span>
+  activeTeams:      <span class="kw">u16</span>,              <span class="comment">// 当前球队数（含 AI）</span>
+  humanManagers:    <span class="kw">u16</span>,              <span class="comment">// 真人经理数</span>
+  status:           <span class="kw">WorldStatus</span>,      <span class="comment">// seeding | active | locked | merging</span>
+}
+    </div>
+
+    <h3>1.2 世界容量与状态</h3>
+    <table>
+      <thead><tr><th>状态</th><th>说明</th><th>准入</th></tr></thead>
+      <tbody>
+        <tr><td><b>seeding</b></td><td>新世界初始化中，生成 AI 球队/球员/赛程</td><td>不可注册</td></tr>
+        <tr><td><b>active</b></td><td>正常运营，接受新玩家注册</td><td>可注册</td></tr>
+        <tr><td><b>locked</b></td><td>容量接近上限，停止注册引导至新世界</td><td>不可注册</td></tr>
+        <tr><td><b>merging</b></td><td>低活跃世界合并（罕见，需官方运营触发）</td><td>受限</td></tr>
+      </tbody>
+    </table>
+    <ul>
+      <li><b>世界容量</b>：每世界约 256–512 支球队（16 队/组 × 多组多级），随玩家增长开新世界。</li>
+      <li><b>新世界触发</b>：当现存世界 humanManagers / capacity > 80% 时，自动开新世界并引导新玩家。</li>
+      <li><b>世界选择</b>：按语言/时区/活跃度推荐；玩家可手动选择（但有冷却，见 §11）。</li>
+    </ul>
+
+    <h3>1.3 球队数据结构</h3>
+    <div class="formula">
+<span class="var">Team</span> <span class="op">=</span> {
+  teamId:        <span class="kw">u32</span>,
+  worldId:       <span class="kw">u16</span>,
+  name:          <span class="kw">string</span>,            <span class="comment">// 球队名</span>
+  city:          <span class="kw">string</span>,            <span class="comment">// 所在城市（影响德比，§10）</span>
+  leagueId:      <span class="kw">u16</span>,               <span class="comment">// 所属联赛</span>
+  groupId:       <span class="kw">u8</span>,                <span class="comment">// 组内编号</span>
+
+  managerId:     <span class="kw">u64?</span>,             <span class="comment">// 执教经理（null = AI 经理）</span>
+  isAI:          <span class="kw">bool</span>,
+
+  roster:        [<span class="kw">PlayerId</span>; 12-15], <span class="comment">// 名单</span>
+  staff:         [<span class="kw">StaffId</span>],        <span class="comment">// 职员组（三身份 §7）</span>
+  tactics:       [<span class="kw">TacticSave</span>],     <span class="comment">// 战术存档</span>
+
+  <span class="comment">// —— 财务与设施 ——</span>
+  finance:       <span class="kw">TeamFinance</span>,       <span class="comment">// 经济系统 §8</span>
+  arena:         <span class="kw">Arena</span>,             <span class="comment">// 球馆（经济系统 §7.4）</span>
+  academy:       <span class="kw">Academy?</span>,          <span class="comment">// 青训学院（可选）</span>
+
+  <span class="comment">// —— 赛绩 ——</span>
+  seasonRecord:  <span class="kw">Record</span>,            <span class="comment">// 当季战绩</span>
+  history:       [<span class="kw">SeasonRecord</span>],   <span class="comment">// 跨季履历</span>
+  championships: <span class="kw">u8</span>,                <span class="comment">// 冠军戒指数</span>
+}
+    </div>
+    <div class="note blue"><b>AI 经理填充</b>：未被人接管的球队由 AI 经理经营，阵容/战术/交易拟真，随真实玩家增加逐步替换。AI 经理的决策模型见 §7、§13。</div>
+  </section>
+
+  <!-- ==================== §2 联赛金字塔 ==================== -->
+  <section id="s2">
+    <h2><span class="num">2</span>联赛金字塔</h2>
+    <p>每个世界自含<b>四级联赛金字塔</b>，从顶级到入门级逐层扩容。升降级让球队在层级间流动，构成"流动的生态"而非"静态的分区"。</p>
+
+    <h3>2.1 四级金字塔结构</h3>
+    <div class="pyramid">
+      <div class="py-row"><div class="py-block t1">顶级联赛</div></div>
+      <div class="py-label">1 组 16 队 · 世界之巅 · 争夺冠军戒指</div>
+      <div class="py-row"><div class="py-block t2">次级 A</div><div class="py-block t2">次级 B</div></div>
+      <div class="py-label">2 组各 16 队 · 冲击顶级</div>
+      <div class="py-row"><div class="py-block t3">三级 1</div><div class="py-block t3">三级 2</div><div class="py-block t3">三级 3</div><div class="py-block t3">三级 4</div></div>
+      <div class="py-label">4 组各 16 队 · 中坚层</div>
+      <div class="py-row"><div class="py-block t4">入门 1</div><div class="py-block t4">入门 2</div><div class="py-block t4">入门 3</div><div class="py-block t4">入门 4</div><div class="py-block t4">入门 5</div><div class="py-block t4">入门 6</div></div>
+      <div class="py-label">多组 16 队 · 新经理起点</div>
+    </div>
+
+    <h3>2.2 联赛层级规格</h3>
+    <table>
+      <thead><tr><th>层级</th><th>规模</th><th>组数</th><th>每组队数</th><th>定位</th><th>升降级</th></tr></thead>
+      <tbody>
+        <tr><td><b>顶级联赛</b> <span class="badge gold">T1</span></td><td>16 队</td><td>1</td><td>16</td><td>世界之巅，争夺冠军戒指</td><td>末 3 名降级</td></tr>
+        <tr><td><b>次级联赛</b> <span class="badge blue">T2</span></td><td>32 队</td><td>2</td><td>16</td><td>冲击顶级</td><td>各组前 2 升级 / 末 3 降级</td></tr>
+        <tr><td><b>第三级</b> <span class="badge green">T3</span></td><td>64 队</td><td>4</td><td>16</td><td>中坚层</td><td>同规则</td></tr>
+        <tr><td><b>入门级</b> <span class="badge purple">T4</span></td><td>96-256 队</td><td>6-16</td><td>16</td><td>新经理起点</td><td>前 2 升级</td></tr>
+      </tbody>
+    </table>
+    <div class="note"><b>入门级弹性扩容</b>：入门级组数随世界活跃度弹性调整（6-16 组），容纳新玩家涌入。高级别固定组数，保证稀缺性与竞争强度。新世界初期可仅开 T1-T3 + 少量 T4 组，随人口增长逐步开新 T4 组。</div>
+
+    <h3>2.3 联赛数据结构</h3>
+    <div class="formula">
+<span class="var">League</span> <span class="op">=</span> {
+  leagueId:    <span class="kw">u16</span>,
+  worldId:     <span class="kw">u16</span>,
+  tier:        <span class="kw">u8</span>,              <span class="comment">// 1=顶级, 2=次级, 3=三级, 4=入门</span>
+  groupId:     <span class="kw">u8</span>,              <span class="comment">// 组内编号（同 tier 多组时）</span>
+  name:        <span class="kw">string</span>,         <span class="comment">// 联赛名（如"顶级联赛 A 组"）</span>
+  teams:       [<span class="kw">TeamId</span>; 16],   <span class="comment">// 16 支球队</span>
+
+  <span class="comment">// —— 赛程与排名 ——</span>
+  schedule:    [<span class="kw">MatchDay</span>],     <span class="comment">// 赛程（§4）</span>
+  standings:   [<span class="kw">StandingEntry</span>],<span class="comment">// 实时积分榜</span>
+
+  <span class="comment">// —— 升降级槽位 ——</span>
+  promoSlots:  <span class="kw">u8</span>,              <span class="comment">// 升级名额</span>
+  relegSlots:  <span class="kw">u8</span>,              <span class="comment">// 降级名额</span>
+}
+
+<span class="var">StandingEntry</span> <span class="op">=</span> {
+  teamId:      <span class="kw">u32</span>,
+  wins:        <span class="kw">u8</span>,
+  losses:      <span class="kw">u8</span>,
+  winPct:      <span class="kw">f32</span>,
+  streak:      <span class="kw">i8</span>,            <span class="comment">// 连胜(+) / 连负(-)</span>
+  pointsFor:   <span class="kw">u16</span>,           <span class="comment">// 总得分</span>
+  pointsAgainst:<span class="kw">u16</span>,          <span class="comment">// 总失分</span>
+  rank:        <span class="kw">u8</span>,            <span class="comment">// 组内排名</span>
+}
+    </div>
+
+    <h3>2.4 新经理起点分配</h3>
+    <ul>
+      <li><b>默认</b>：新注册经理分配到<b>入门级某组 AI 球队</b>，从底层开始攀登。</li>
+      <li><b>付费选择</b>：可付费（Credits）选择中游球队（T3-T4 中排名 6-12 的 AI 球队），跳过底层磨练。</li>
+      <li><b>禁止顶级</b>：不可付费选择顶级或次级球队，保护生态（防止人民币玩家直接入住豪门）。</li>
+      <li><b>分配算法</b>：优先分配到 humanManagers 最少的 T4 组，平衡各组人口。</li>
+    </ul>
+  </section>
+
+  <!-- ==================== §3 全球时钟与异步结算 ==================== -->
+  <section id="s3">
+    <h2><span class="num">3</span>全球时钟与异步结算</h2>
+    <div class="note blue"><b>所有世界同步</b>：比赛结算、翻天、提交截止在同一全球节点进行。这保证选秀/自由市场/升降级跨世界同步，简化运营与版本管理。</div>
+
+    <h3>3.1 每日时钟节点</h3>
+    <div class="clock-grid">
+      <div class="clock-item"><div class="c-time">09:30</div><div class="c-name">提交截止</div><div class="c-desc">截止次日安排（阵容/战术/训练），过后该日不可改</div></div>
+      <div class="clock-item"><div class="c-time">10:00</div><div class="c-name">比赛结算</div><div class="c-desc">所有世界同时 sim 当日全部对阵，产出 PBP/Box Score</div></div>
+      <div class="clock-item"><div class="c-time">16:00</div><div class="c-name">翻天</div><div class="c-desc">资源/状态/球探报告翻页；Condition 恢复；新事件触发</div></div>
+    </div>
+
+    <h3>3.2 时区适配</h3>
+    <p>全球时钟以 <b>UTC+8（亚洲/上海）</b>为基准。各世界虽标注主时区，但结算节点统一按 UTC+8 执行，保证跨时区玩家同步体验。</p>
+    <table>
+      <thead><tr><th>世界主时区</th><th>结算当地时区</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>Asia/Shanghai (UTC+8)</td><td>10:00 当日</td><td>标准基准，亚洲玩家主要时段</td></tr>
+        <tr><td>Asia/Tokyo (UTC+9)</td><td>11:00 当日</td><td>日本玩家</td></tr>
+        <tr><td>America/Los_Angeles (UTC-8)</td><td>18:00 前日</td><td>北美西海岸（跨日）</td></tr>
+        <tr><td>Europe/London (UTC+0)</td><td>02:00 当日</td><td>欧洲玩家（凌晨，少量世界）</td></tr>
+      </tbody>
+    </table>
+    <div class="note"><b>设计取舍</b>：本作主打亚洲市场（策划方案 §1.1），以 UTC+8 为基准最自然。非亚时区世界数量少，跨日结算对北美/欧洲玩家略有不便，但保证全球同步的运营简化收益大于时区便利损失。</div>
+
+    <h3>3.3 结算流水线</h3>
+    <div class="formula">
+<span class="comment">// 每日 10:00 UTC+8 触发</span>
+<span class="kw">function</span> <span class="fn">dailySettle</span>(worlds) {
+  <span class="kw">for</span> world <span class="kw">in</span> worlds.<span class="fn">parallel</span>() {        <span class="comment">// 所有世界并行结算</span>
+    matches = world.<span class="fn">getTodayMatches</span>()
+    <span class="kw">for</span> match <span class="kw">in</span> matches {
+      result = <span class="fn">simulateMatch</span>(match)      <span class="comment">// Sim Engine 纯函数</span>
+      <span class="fn">applyResult</span>(match, result)         <span class="comment">// 更新战绩/数据/Condition</span>
+      <span class="fn">pushPBP</span>(match, result)              <span class="comment">// 推送 PBP 给订阅者</span>
+    }
+    <span class="fn">updateStandings</span>(world)                <span class="comment">// 更新积分榜</span>
+    <span class="fn">checkMilestones</span>(world)               <span class="comment">// 触发关键战/事件</span>
+  }
+}
+
+<span class="comment">// 每日 16:00 UTC+8 触发</span>
+<span class="kw">function</span> <span class="fn">dailyFlip</span>(worlds) {
+  <span class="kw">for</span> world <span class="kw">in</span> worlds.<span class="fn">parallel</span>() {
+    <span class="fn">recoverCondition</span>(world)              <span class="comment">// Condition 恢复</span>
+    <span class="fn">rollEvents</span>(world)                    <span class="comment">// 触发随机事件</span>
+    <span class="fn">refreshScoutReports</span>(world)          <span class="comment">// 球探报告翻页</span>
+    <span class="fn">tickContracts</span>(world)                <span class="comment">// 合同天数递减</span>
+  }
+}
+    </div>
+
+    <h3>3.4 离线代管与补结算</h3>
+    <ul>
+      <li><b>离线代管</b>：玩家未在 09:30 截止前提交安排时，按上次存档 + AI 默认决策执行（战术系统 §14）。</li>
+      <li><b>补结算</b>：若结算时系统故障导致某世界未结算，在故障恢复后立即补结算，使用当日种子保证结果一致。</li>
+      <li><b>不可回滚</b>：结算结果一旦产出并推送，不可回滚（除非查实作弊，由仲裁人裁决）。</li>
+    </ul>
+  </section>
+
+  <!-- ==================== §4 赛程与对阵生成 ==================== -->
+  <section id="s4">
+    <h2><span class="num">4</span>赛程与对阵生成</h2>
+
+    <h3>4.1 赛程结构</h3>
+    <p>每组 16 队，常规赛约 30 场/队，赛季约 60-70 天（每日 1 赛或隔日 1 赛）。</p>
+    <table>
+      <thead><tr><th>赛段</th><th>对阵方式</th><th>场次/队</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><b>组内主循环</b></td><td>双循环（主客场各 1）</td><td>30</td><td>组内 15 队对手 × 2</td></tr>
+        <tr><td><b>跨组交叉</b></td><td>同 tier 跨组单循环</td><td>3-5</td><td>增加对阵多样性</td></tr>
+        <tr><td><b>常规赛合计</b></td><td>—</td><td>~30</td><td>约 60 天赛季</td></tr>
+        <tr><td><b>季后赛</b></td><td>组内 top 8 单淘汰</td><td>3-5</td><td>BO1 / 决赛 BO3（§9）</td></tr>
+      </tbody>
+    </table>
+
+    <h3>4.2 赛程生成算法</h3>
+    <div class="formula">
+<span class="kw">function</span> <span class="fn">generateSchedule</span>(league) -> [MatchDay] {
+  teams = league.teams                       <span class="comment">// 16 队</span>
+  <span class="comment">// 使用 Round-Robin Scheduling 生成双循环</span>
+  rounds = <span class="fn">circleMethod</span>(teams)             <span class="comment">// 圆圈法，15 轮 × 2 (主客)</span>
+
+  <span class="comment">// 插入跨组交叉赛（随机 3-5 场，分布均匀）</span>
+  crossOpps = <span class="fn">pickCrossGroup</span>(league, count=<span class="num">4</span>)
+  rounds = <span class="fn">interleave</span>(rounds, crossOpps)
+
+  <span class="comment">// 约束校验</span>
+  <span class="fn">assert</span>(<span class="fn">noThreeConsecutiveHome</span>(rounds))  <span class="comment">// 无连续 3 主场</span>
+  <span class="fn">assert</span>(<span class="fn">noThreeConsecutiveAway</span>(rounds)) <span class="comment">// 无连续 3 客场</span>
+  <span class="fn">assert</span>(<span class="fn">derbySpacing</span>(rounds, league))     <span class="comment">// 德比不背靠背</span>
+
+  <span class="kw">return</span> <span class="fn">assignDates</span>(rounds, league.world.seasonStart)
+}
+    </div>
+    <div class="note"><b>圆圈法 Round-Robin</b>：固定 1 队，其余 15 队绕圆轮转，每轮配对。双循环 = 正向 15 轮 + 反向 15 轮（主客互换）。算法确定性强，保证赛程公平。</div>
+
+    <h3>4.3 赛程约束规则</h3>
+    <table>
+      <thead><tr><th>约束</th><th>规则</th><th>理由</th></tr></thead>
+      <tbody>
+        <tr><td><b>连续主场/客场</b></td><td>不超过连续 3 场</td><td>避免赛程失衡</td></tr>
+        <tr><td><b>德比间距</b></td><td>同城市德比至少间隔 10 场</td><td>避免德比密集疲劳</td></tr>
+        <tr><td><b>背靠背</b></td><td>同组背靠背不超过 2 次/季</td><td>体力公平</td></tr>
+        <tr><td><b>赛季末</b></td><td>最后 5 场不全是强队/弱队</td><td>避免排名操纵</td></tr>
+        <tr><td><b>跨组交叉</b></td><td>按上赛季排名配对（强对强、弱对弱）</td><td>增加竞争性</td></tr>
+      </tbody>
+    </table>
+
+    <h3>4.4 对阵日分配</h3>
+    <p>每组每日分配 <b>8 场对阵</b>（16 队 / 2）。赛季日历按"比赛日 - 休息日"交替编排：</p>
+    <ul>
+      <li><b>比赛日</b>：当日有对阵的球队参赛，无对阵球队休息。</li>
+      <li><b>休息日</b>：Condition 恢复 + 训练 + 球探任务执行。</li>
+      <li><b>全休日</b>：每周 1 天全联赛休赛（如周日），用于世界事件/选秀/转会窗口。</li>
+    </ul>
+  </section>
+
+  <!-- ==================== §5 升降级系统 ==================== -->
+  <section id="s5">
+    <h2><span class="num">5</span>升降级系统</h2>
+    <p>升降级让球队在金字塔层级间流动，是"流动生态"的核心驱动。赛季末按规则执行，构成晋升与降级的赌注。</p>
+
+    <h3>5.1 升降级规则矩阵</h3>
+    <table>
+      <thead><tr><th>层级</th><th>升级名额</th><th>降级名额</th><th>规则说明</th></tr></thead>
+      <tbody>
+        <tr><td><b>顶级联赛</b> T1</td><td>—</td><td>末 3 名降级</td><td>无上级可升；末 3 名降入次级</td></tr>
+        <tr><td><b>次级联赛</b> T2</td><td>各组前 2 升级</td><td>末 3 名降级</td><td>2 组 × 2 = 4 队升 T1；末 3 × 2 组 = 6 队降 T3</td></tr>
+        <tr><td><b>第三级</b> T3</td><td>各组前 2 升级</td><td>末 3 名降级</td><td>4 组 × 2 = 8 队升 T2；末 3 × 4 组 = 12 队降 T4</td></tr>
+        <tr><td><b>入门级</b> T4</td><td>各组前 2 升级</td><td>—</td><td>无下级可降；前 2 升 T3，保持向上流动</td></tr>
+      </tbody>
+    </table>
+    <div class="note gold"><b>名额平衡</b>：升降级名额严格配平——T1 降 3 = T2 升 3（另 1 队从 T2 冠军决赛产生占位补充）；T2 降 6 = T3 升 6；T3 降 12 = T4 升 12。确保金字塔容量稳定。</div>
+
+    <h3>5.2 升降级判定流程</h3>
+    <div class="flow">
+      <div class="step"><div class="s-num">STEP 1</div><div class="s-t">常规赛结束</div><div class="s-d">按胜率排名确定组内名次</div></div>
+      <div class="step"><div class="s-num">STEP 2</div><div class="s-t">季后赛决出冠军</div><div class="s-d">top 8 单淘汰，影响种子但不改变升降级</div></div>
+      <div class="step"><div class="s-num">STEP 3</div><div class="s-t">执行升降级</div><div class="s-d">按规则矩阵填入上/下级联赛空位</div></div>
+      <div class="step"><div class="s-num">STEP 4</div><div class="s-t">重排组别</div><div class="s-d">升降级球队分配到目标层级的具体组</div></div>
+    </div>
+
+    <h3>5.3 升降级的连带影响</h3>
+    <table>
+      <thead><tr><th>影响维度</th><th>升级</th><th>降级</th></tr></thead>
+      <tbody>
+        <tr><td><b>财务</b></td><td>基础配额↑ + 转播分成↑（经济系统 §2.3）</td><td>基础配额↓ + 转播分成↓</td></tr>
+        <tr><td><b>球员</b></td><td>更有吸引力签约优质球员（Fame 加成）</td><td>主力可能要求离队（降级条款）</td></tr>
+        <tr><td><b>球探</b></td><td>球探预算↑（高层级球探资源多）</td><td>球探预算↓</td></tr>
+        <tr><td><b>声望</b></td><td>经理声望+（三身份 §11）</td><td>经理声望−（轻微）</td></tr>
+        <tr><td><b>球迷</b></td><td>上座率↑ + 赞助↑</td><td>上座率↓ + 赞助↓</td></tr>
+      </tbody>
+    </table>
+    <div class="note red"><b>降级条款</b>：部分球员合同含"降级解约条款"——球队降级时球员可触发离队（成为自由球员）。这增加了降级的惩罚深度，防止降级球队轻松卷土重来。条款在签约时由经纪人协商（三身份 §5.2）。</div>
+  </section>
+
+  <!-- ==================== §6 赛季交接流程 ==================== -->
+  <section id="s6">
+    <h2><span class="num">6</span>赛季交接流程</h2>
+    <p>赛季从常规赛 → 季后赛 → 升降级 → 休赛期 → 新赛季，构成完整年度循环。休赛期是世界级事件密集期。</p>
+
+    <h3>6.1 赛季阶段</h3>
+    <div class="phase-bar">
+      <div class="phase-seg p1">常规赛<small>~60 天</small></div>
+      <div class="phase-seg p2">季后赛<small>~10 天</small></div>
+      <div class="phase-seg p3">升降级<small>1 天</small></div>
+      <div class="phase-seg p4">休赛期<small>~14 天</small></div>
+      <div class="phase-seg p5">新赛季<small>重排赛程</small></div>
+    </div>
+
+    <h3>6.2 休赛期流程（世界级事件密集）</h3>
+    <div class="flow">
+      <div class="step"><div class="s-num">DAY 1</div><div class="s-t">赛季结算</div><div class="s-d">发奖金/折旧/排名更新/冠军戒指</div></div>
+      <div class="step"><div class="s-num">DAY 2-3</div><div class="s-t">退役与合同到期</div><div class="s-d">老将退役进名人堂；到期合同球员进自由市场</div></div>
+      <div class="step"><div class="s-num">DAY 4-5</div><div class="s-t">选秀</div><div class="s-d">选秀池 sim 生成；按战绩倒序选秀（§选秀系统）</div></div>
+      <div class="step"><div class="s-num">DAY 6-10</div><div class="s-t">自由市场</div><div class="s-d">竞价签约自由球员（经济系统 §4.2）</div></div>
+      <div class="step"><div class="s-num">DAY 11-12</div><div class="s-t">青训提拔</div><div class="s-d">青训苗子达龄提拔进名单（成长线）</div></div>
+      <div class="step"><div class="s-num">DAY 13-14</div><div class="s-t">季前热身</div><div class="s-d">2-3 场热身赛 sim，不计战绩</div></div>
+    </div>
+
+    <h3>6.3 赛季交接数据迁移</h3>
+    <table>
+      <thead><tr><th>数据</th><th>处理</th></tr></thead>
+      <tbody>
+        <tr><td><b>战绩</b></td><td>归档入 history；新赛季清零</td></tr>
+        <tr><td><b>球员数据</b></td><td>生涯累计；当季数据归档</td></tr>
+        <tr><td><b>Condition</b></td><td>休赛期完全恢复至 100</td></tr>
+        <tr><td><b>合同</b></td><td>年限 -1；到期合同进入自由市场</td></tr>
+        <tr><td><b>薪资空间</b></td><td>结余折旧 40% 后结转（经济系统 §2.2）</td></tr>
+        <tr><td><b>球探报告</b></td><td>归档；新季重新探查</td></tr>
+        <tr><td><b>青训苗子</b></td><td>年龄 +1；达龄者提拔/参选</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ==================== §7 AI 经理填充 ==================== -->
+  <section id="s7">
+    <h2><span class="num">7</span>AI 经理填充</h2>
+    <p>未被人接管的球队由 AI 经理经营。AI 经理需拟真决策，保证世界初期竞争性与经济循环不断档。随真实玩家增加逐步替换 AI 球队。</p>
+
+    <h3>7.1 AI 经理生成</h3>
+    <ul>
+      <li><b>生成时机</b>：世界 seeding 时批量生成 AI 球队；新赛季若 AI 球队降级产生的空位也由 AI 填充。</li>
+      <li><b>能力分布</b>：按金字塔层级分配 AI 球队实力——T1 球队平均 OVR 85+，T4 球队平均 OVR 65-70。保证升降级有"实力差"驱动。</li>
+      <li><b>阵容生成</b>：服务端按位置/能力/年龄分布生成虚构球员（策划方案 §5.4），无真实球员版权风险。</li>
+      <li><b>性格倾向</b>：每个 AI 经理有随机"性格"（保守/激进/培养型/赢在当下型），影响交易与轮换偏好。</li>
+    </ul>
+
+    <h3>7.2 AI 球队实力梯度</h3>
+    <table>
+      <thead><tr><th>层级</th><th>平均 OVR</th><th>球星数</th><th>薪资使用</th><th>战术复杂度</th></tr></thead>
+      <tbody>
+        <tr><td><b>T1 顶级</b></td><td>85-92</td><td>2-3 名 90+</td><td>接近工资帽/轻微超帽</td><td>高级战术 + 条件规则</td></tr>
+        <tr><td><b>T2 次级</b></td><td>78-85</td><td>1-2 名 85+</td><td>工资帽 80-95%</td><td>中级战术</td></tr>
+        <tr><td><b>T3 三级</b></td><td>70-78</td><td>0-1 名 80+</td><td>工资帽 60-80%</td><td>基础战术</td></tr>
+        <tr><td><b>T4 入门</b></td><td>62-70</td><td>0</td><td>工资帽 40-60%</td><td>基础战术</td></tr>
+      </tbody>
+    </table>
+
+    <h3>7.3 AI 经理替换</h3>
+    <div class="note green"><b>真人优先</b>：当真人玩家申请接管某 AI 球队时，AI 经理被替换为真人。接管规则按 §2.4 新经理起点分配。优先替换 T4 球队，保护高级别 AI 球队的拟真竞争。</div>
+    <ul>
+      <li><b>替换顺序</b>：T4 > T3 > T2 > T1（从底层替换，保高层 AI）。</li>
+      <li><b>AI 球队保护</b>：T1 球队即使无人接管也保持 AI 经营，作为"boss 级"对手维持顶级竞争。</li>
+      <li><b>玩家放弃球队</b>：玩家离线超 1 赛季或主动放弃，球队转回 AI 经营。</li>
+    </ul>
+  </section>
+
+  <!-- ==================== §8 世界生成与扩容 ==================== -->
+  <section id="s8">
+    <h2><span class="num">8</span>世界生成与扩容</h2>
+
+    <h3>8.1 新世界生成流程</h3>
+    <div class="flow">
+      <div class="step"><div class="s-num">STEP 1</div><div class="s-t">初始化世界</div><div class="s-d">创建 World 对象，设置语言/时区/容量</div></div>
+      <div class="step"><div class="s-num">STEP 2</div><div class="s-t">生成联赛金字塔</div><div class="s-d">T1(1组)+T2(2组)+T3(4组)+T4(6组) = 14组 × 16 = 224 队</div></div>
+      <div class="step"><div class="s-num">STEP 3</div><div class="s-t">生成 AI 球队与球员</div><div class="s-d">按 §7 实力梯度生成 224 队阵容（~3000 球员）</div></div>
+      <div class="step"><div class="s-num">STEP 4</div><div class="s-t">生成共享池</div><div class="s-d">自由球员池(~200) + 青训苗子池(~500)</div></div>
+      <div class="step"><div class="s-num">STEP 5</div><div class="s-t">生成赛程</div><div class="s-d">为每组生成常规赛程（§4）</div></div>
+      <div class="step"><div class="s-num">STEP 6</div><div class="s-t">开放注册</div><div class="s-d">状态转 active，引导新玩家入驻</div></div>
+    </div>
+
+    <h3>8.2 世界扩容策略</h3>
+    <table>
+      <thead><tr><th>触发条件</th><th>扩容动作</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>humanManagers/capacity > 80%</td><td>开新世界</td><td>引导新玩家到新世界，避免老世界过载</td></tr>
+        <tr><td>T4 组均满且排队</td><td>开新 T4 组</td><td>在现有世界内增加入门级容量</td></tr>
+        <tr><td>某 T4 组 humanManagers < 30%</td><td>合并 T4 组</td><td>合并低活跃组，释放 AI 球队</td></tr>
+        <tr><td>全世界 humanManagers < 20%（持续 2 季）</td><td>标记 merging</td><td>低活跃世界合并，迁移玩家</td></tr>
+      </tbody>
+    </table>
+
+    <h3>8.3 世界合并（罕见）</h3>
+    <div class="note red"><b>世界合并是重度操作</b>，仅在全世界持续低活跃时由官方运营触发。合并涉及球员池/经济/排名的重整，需谨慎处理球员去重与资产折算。默认不合并，宁可维持低活跃世界（AI 经理填充保证可玩性）。</div>
+    <ul>
+      <li><b>合并流程</b>：选两个低活跃世界 → 球员池合并去重 → 球队按 OVR 重排入新金字塔 → 资产按比例折算 → 玩家迁移通知。</li>
+      <li><b>玩家补偿</b>：被合并世界玩家获 Credits 补偿 + 优先选球队权。</li>
+    </ul>
+  </section>
+
+  <!-- ==================== §9 季后赛体系 ==================== -->
+  <section id="s9">
+    <h2><span class="num">9</span>季后赛体系</h2>
+    <p>常规赛结束后，每组 top 8 进入季后赛单淘汰，决出组冠军。季后赛不改变升降级（按常规赛排名），但影响冠军戒指与声望。</p>
+
+    <h3>9.1 季后赛对阵图</h3>
+    <div class="bracket">
+      <div class="br-round">首轮（1/4决赛）BO1</div>
+      <div class="br-matches">
+        <span class="br-match"><b>1</b> vs <b>8</b></span>
+        <span class="br-match"><b>4</b> vs <b>5</b></span>
+        <span class="br-match"><b>3</b> vs <b>6</b></span>
+        <span class="br-match"><b>2</b> vs <b>7</b></span>
+      </div>
+    </div>
+    <div class="bracket">
+      <div class="br-round">半决赛 BO1</div>
+      <div class="br-matches">
+        <span class="br-match">胜者(1/8) vs 胜者(4/5)</span>
+        <span class="br-match">胜者(3/6) vs 胜者(2/7)</span>
+      </div>
+    </div>
+    <div class="bracket">
+      <div class="br-round">决赛 BO3</div>
+      <div class="br-matches">
+        <span class="br-match">半决赛胜者 vs 半决赛胜者（BO3）</span>
+      </div>
+    </div>
+
+    <h3>9.2 季后赛规则</h3>
+    <table>
+      <thead><tr><th>规则</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><b>种子排名</b></td><td>按常规赛胜率，1 号种子 vs 8 号种子等</td></tr>
+        <tr><td><b>主场优势</b></td><td>高种子主场；BO3 决赛 2-1 主场分配（高种子 2 主）</td></tr>
+        <tr><td><b>赛制</b></td><td>首轮/半决赛 BO1（单场淘汰）；决赛 BO3（三局两胜）</td></tr>
+        <tr><td><b>休赛</b></td><td>每轮间隔 1 休赛日，Condition 部分恢复</td></tr>
+        <tr><td><b>不影响升降级</b></td><td>升降级按常规赛排名，季后赛仅决冠军</td></tr>
+      </tbody>
+    </table>
+    <div class="note gold"><b>设计意图</b>：季后赛是"荣誉战"非"生存战"。BO1 增加爆冷可能（单场 anything happens），BO3 决赛保证冠军含金量。冠军获戒指 + 声望 + 奖金 + 球迷狂欢事件。</div>
+
+    <h3>9.3 跨组冠军赛（顶级联赛专属）</h3>
+    <p>顶级联赛仅 1 组，组冠军即世界冠军。次级及以下每组独立季后赛，各组冠军独立。顶级联赛冠军获<b>世界冠军戒指</b>，是本作最高荣誉。</p>
+  </section>
+
+  <!-- ==================== §10 德比、关键战与赛事高亮 ==================== -->
+  <section id="s10">
+    <h2><span class="num">10</span>德比、关键战与赛事高亮</h2>
+    <p>并非所有比赛同等重要。德比、升降级生死战、冠军战等关键战获高亮处理，进入"赛事快报"，影响 PBP 推送优先级与球迷事件。</p>
+
+    <h3>10.1 关键战类型</h3>
+    <table>
+      <thead><tr><th>类型</th><th>触发条件</th><th>特殊处理</th></tr></thead>
+      <tbody>
+        <tr><td><b>同城德比</b></td><td>同 city 的两队对阵</td><td>上座率 ×1.3；球迷事件；PBP 高亮</td></tr>
+        <tr><td><b>升降级生死战</b></td><td>赛季末涉及升降级名额的直接对阵</td><td>赛事快报头条；Clutch 系数 ×1.1</td></tr>
+        <tr><td><b>冠军战</b></td><td>季后赛决赛 / 顶级联赛榜首战</td><td>全服推送；冠军戒指判定</td></tr>
+        <tr><td><b>宿敌战</b></td><td>跨赛季累计胜负接近的两队</td><td>叙事高亮；球员情绪加成</td></tr>
+        <tr><td><b>连胜/连负决战</b></td><td>一方 10+ 连胜或连负时的对阵</td><td>叙事高亮；streak 事件</td></tr>
+      </tbody>
+    </table>
+
+    <h3>10.2 赛事快报生成</h3>
+    <p>关键战由 Sim Engine §17 赛事快报系统生成叙事文本，推送至全服或相关玩家。快报包含：比赛摘要 + 关键回合 PBP + 球员高光 + 叙事钩子（如"XX 终结 YY 的 12 连胜"）。</p>
+
+    <h3>10.3 宿敌系统</h3>
+    <div class="note blue"><b>宿敌动态生成</b>：两队跨赛季累计对阵胜负差 ≤ 2 场时标记为"宿敌"。宿敌战触发额外叙事与球迷情绪，是长期叙事钩子的来源。宿敌关系跨赛季持续，直到胜负差拉开。</div>
+  </section>
+
+  <!-- ==================== §11 世界迁移 ==================== -->
+  <section id="s11">
+    <h2><span class="num">11</span>世界迁移</h2>
+    <p>玩家可付费迁移世界（带球队/化身/职业人）。迁移受冷却与限制，避免经济套利。</p>
+
+    <h3>11.1 迁移规则</h3>
+    <table>
+      <thead><tr><th>规则</th><th>限制</th><th>理由</th></tr></thead>
+      <tbody>
+        <tr><td><b>冷却</b></td><td>3 赛季 1 次</td><td>防止频繁迁移套利</td></tr>
+        <tr><td><b>时机</b></td><td>仅休赛期可迁移</td><td>避免赛季中打乱赛程</td></tr>
+        <tr><td><b>费用</b></td><td>Credits（高费用）</td><td>商业化收入 + 抑制滥用</td></tr>
+        <tr><td><b>目标限制</b></td><td>不可迁入 locked 世界</td><td>避免目标世界过载</td></tr>
+        <tr><td><b>球队处理</b></td><td>原球队转 AI；目标世界分配新 AI 球队</td><td>不携带球员（防阵容套利）</td></tr>
+        <tr><td><b>化身处理</b></td><td>化身随玩家迁移到目标世界球员池</td><td>化身是玩家"养一个自己"，应跟随</td></tr>
+        <tr><td><b>职业人处理</b></td><td>职业人身份与技能随迁；雇佣关系解除</td><td>需在目标世界重新应聘</td></tr>
+        <tr><td><b> Credits 处理</b></td><td>携带上限 50%，超出折算为声望</td><td>防跨世界货币套利</td></tr>
+      </tbody>
+    </table>
+    <div class="note red"><b>核心反套利</b>：球队不携带球员（防把强队带到弱世界碾压）；Credits 携带上限 50%（防货币套利）；化身可随迁（化身是养成情感，非套利工具，且化身实力受 Peak 限制）。</div>
+  </section>
+
+  <!-- ==================== §12 经济与排名的封闭性 ==================== -->
+  <section id="s12">
+    <h2><span class="num">12</span>经济与排名的封闭性</h2>
+    <div class="note blue"><b>世界内封闭</b>：球员/货币/资源不跨世界流通。每个世界是独立经济体与排名池。封闭性是公平与经济体量可控的基础。</div>
+
+    <h3>12.1 经济封闭性</h3>
+    <ul>
+      <li><b>球员池封闭</b>：自由球员/选秀池/青训苗子池均世界内封闭，不跨世界流通（经济系统 §1.4）。</li>
+      <li><b>货币封闭</b>：Credits 不跨世界转移（迁移携带上限 50% 折算，§11）。</li>
+      <li><b>薪资空间封闭</b>：各世界独立薪资空间池，工资帽按世界经济体量调校。</li>
+      <li><b>天然通缩</b>：赛季结算消耗 + 球员退役流出 > 新秀注入，经济有轻微通缩倾向，防止薪资空间无限膨胀（经济系统 §1.4）。</li>
+    </ul>
+
+    <h3>12.2 排名封闭性</h3>
+    <ul>
+      <li><b>世界排名</b>：三身份声望积分汇总（三身份 §11），世界内排名。</li>
+      <li><b>跨世界不可比</b>：不同世界经济体量/人口/赛季数不同，声望积分不跨世界比较。</li>
+      <li><b>全服荣誉</b>：冠军戒指/名人堂是跨世界可见的"荣誉"（非数值排名），允许全服展示。</li>
+    </ul>
+
+    <h3>12.3 跨世界共享的内容</h3>
+    <table>
+      <thead><tr><th>内容</th><th>是否跨世界</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>球员</td><td>❌ 不共享</td><td>各世界独立球员池</td></tr>
+        <tr><td>Credits</td><td>❌ 不共享</td><td>各世界独立经济</td></tr>
+        <tr><td>声望积分</td><td>❌ 不共享</td><td>各世界独立排名</td></tr>
+        <tr><td>冠军戒指</td><td>✅ 全服展示</td><td>荣誉性，无数值影响</td></tr>
+        <tr><td>名人堂</td><td>✅ 全服可见</td><td>退役化身跨存档展示</td></tr>
+        <tr><td>战术存档</td><td>✅ 可携带</td><td>战术是玩家知识，非经济资产</td></tr>
+        <tr><td>VIP/Cosmetic</td><td>✅ 账号级</td><td>外观/便捷性，不涉经济</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ==================== §13 AI 经理决策模型 ==================== -->
+  <section id="s13">
+    <h2><span class="num">13</span>AI 经理决策模型</h2>
+    <p>AI 经理需在阵容/战术/交易/选秀/合同等维度拟真决策。本节定义决策模型；详细数值见战术系统 §14、经济系统 §10。</p>
+
+    <h3>13.1 决策维度</h3>
+    <table>
+      <thead><tr><th>维度</th><th>AI 决策依据</th><th>频率</th></tr></thead>
+      <tbody>
+        <tr><td><b>战术</b></td><td>按阵容优势 + 对手特点选预设/调整（战术系统 §14）</td><td>每场</td></tr>
+        <tr><td><b>轮换</b></td><td>按 Condition/犯规/对位自动换人（Sim Engine §14）</td><td>每场</td></tr>
+        <tr><td><b>训练</b></td><td>按球员短板/年龄/阶段侧重训练（成长线）</td><td>每日</td></tr>
+        <tr><td><b>交易</b></td><td>按需求缺口 + 球员价值 + fog 评估（经济系统 §10）</td><td>休赛期/截止日</td></tr>
+        <tr><td><b>选秀</b></td><td>按需求位置 + fog 报告 + 选秀权价值</td><td>休赛期</td></tr>
+        <tr><td><b>合同</b></td><td>按球员价值/年龄/薪资空间决定续约/放走</td><td>休赛期</td></tr>
+      </tbody>
+    </table>
+
+    <h3>13.2 AI 性格类型</h3>
+    <table>
+      <thead><tr><th>性格</th><th>交易偏好</th><th>轮换偏好</th><th>建队倾向</th></tr></thead>
+      <tbody>
+        <tr><td><b>赢在当下型</b></td><td>换即战力、出选秀权/新秀</td><td>重用主力、短轮换</td><td>老将+球星，冲击窗口</td></tr>
+        <tr><td><b>培养型</b></td><td>囤新秀/选秀权、放老将</td><td>给年轻人时间、长轮换</td><td>年轻核心，长期建设</td></tr>
+        <tr><td><b>保守型</b></td><td>少交易、维持稳定</td><td>稳定轮换</td><td>均衡阵容，中游求稳</td></tr>
+        <tr><td><b>激进型</b></td><td>频繁交易、博高风险</td><td>激进轮换、实验阵容</td><td>大进大出，高风险高回报</td></tr>
+      </tbody>
+    </table>
+
+    <h3>13.3 AI 决策"聪明度"分级</h3>
+    <p>AI 经理按层级有"聪明度"分级，高级别 AI 决策更优（战术系统 §14.2）：</p>
+    <ul>
+      <li><b>T1 AI</b>：高级战术 + 条件规则 + 精准交易评估（接近优秀真人经理）。</li>
+      <li><b>T2 AI</b>：中级战术 + 合理交易评估。</li>
+      <li><b>T3-T4 AI</b>：基础战术 + 简单交易评估（有明显可利用弱点）。</li>
+    </ul>
+    <div class="note green"><b>设计意图</b>：AI 聪明度分级让低级别 AI 有"可利用弱点"，新手玩家能从 T4 升 T3 中获得成就感；高级别 AI 提供真正挑战，保证顶级联赛竞争强度。</div>
+  </section>
+
+  <!-- ==================== §14 异常处理与边界情况 ==================== -->
+  <section id="s14">
+    <h2><span class="num">14</span>异常处理与边界情况</h2>
+
+    <h3>14.1 球队人数不足</h3>
+    <ul>
+      <li><b>触发</b>：球队因交易/伤病/退役导致可用球员 < 8 人（无法凑齐 5 首发 + 3 替补）。</li>
+      <li><b>处理</b>：系统从自由球员池自动签入最低 OVR 球员补足至 8 人（应急签约，薪资按底薪）。</li>
+      <li><b>惩罚</b>：连续 3 场人数不足，经理声望扣分（管理不善）。</li>
+    </ul>
+
+    <h3>14.2 经理长期离线</h3>
+    <ul>
+      <li><b>1 赛季离线</b>：球队由 AI 按上次存档代管（战术系统 §14）。</li>
+      <li><b>2 赛季离线</b>：标记"休眠"，球队进入接管池供新玩家申请接管。</li>
+      <li><b>3 赛季离线</b>：球队正式转回 AI 经营，原经理回归后需重新申请接管（按 §2.4 分配）。</li>
+    </ul>
+
+    <h3>14.3 升降级空位不平衡</h3>
+    <ul>
+      <li><b>触发</b>：因合并/扩容/球队放弃导致升降级名额不配平。</li>
+      <li><b>处理</b>：空位由 AI 球队填充（生成新 AI 球队补入目标层级）；多余名额递延至下季。</li>
+    </ul>
+
+    <h3>14.4 结算故障</h3>
+    <ul>
+      <li><b>部分世界故障</b>：故障世界标记"待结算"，恢复后补结算（用当日种子保证一致）。</li>
+      <li><b>全服故障</b>：回滚至故障前状态，修复后统一补结算，全服补偿 Credits。</li>
+      <li><b>作弊查实</b>：由仲裁人（三身份 §5.4）裁决，可回滚特定比赛结果。</li>
+    </ul>
+
+    <h3>14.5 赛季中途加入</h3>
+    <ul>
+      <li><b>新玩家注册</b>：赛季中途注册的玩家接管 T4 AI 球队，该队当季战绩保留（不重置），从加入日起按 AI 存档 + 玩家调整继续。</li>
+      <li><b>公平性</b>：新玩家不参与当季升降级（即使战绩够升级也保留原级），下季正常参与。避免赛季中途接管强队白嫖升级。</li>
+    </ul>
+  </section>
+
+  <!-- ==================== §15 数值附录 ==================== -->
+  <section id="s15">
+    <h2><span class="num">15</span>数值附录</h2>
+
+    <h3>15.1 世界容量与人口表</h3>
+    <table>
+      <thead><tr><th>世界状态</th><th>humanManagers</th><th>activeTeams</th><th>操作</th></tr></thead>
+      <tbody>
+        <tr><td>seeding</td><td>0</td><td>224（全 AI）</td><td>初始化</td></tr>
+        <tr><td>active（低活跃）</td><td>1-100</td><td>224</td><td>正常运营</td></tr>
+        <tr><td>active（中活跃）</td><td>100-300</td><td>224-320</td><td>开新 T4 组</td></tr>
+        <tr><td>active（高活跃）</td><td>300-400</td><td>320-512</td><td>引导至新世界</td></tr>
+        <tr><td>locked</td><td>>400</td><td>~512</td><td>停止注册</td></tr>
+      </tbody>
+    </table>
+
+    <h3>15.2 联赛层级规格表</h3>
+    <table>
+      <thead><tr><th>层级</th><th>组数</th><th>每组队数</th><th>总球队</th><th>升级</th><th>降级</th><th>OVR</th></tr></thead>
+      <tbody>
+        <tr><td>T1 顶级</td><td>1</td><td>16</td><td>16</td><td>—</td><td>3</td><td>85-92</td></tr>
+        <tr><td>T2 次级</td><td>2</td><td>16</td><td>32</td><td>4</td><td>6</td><td>78-85</td></tr>
+        <tr><td>T3 三级</td><td>4</td><td>16</td><td>64</td><td>8</td><td>12</td><td>70-78</td></tr>
+        <tr><td>T4 入门</td><td>6-16</td><td>16</td><td>96-256</td><td>12+</td><td>—</td><td>62-70</td></tr>
+      </tbody>
+    </table>
+
+    <h3>15.3 全球时钟表</h3>
+    <table>
+      <thead><tr><th>时间（UTC+8）</th><th>事件</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>09:30</td><td>提交截止</td><td>截止次日安排</td></tr>
+        <tr><td>10:00</td><td>比赛结算</td><td>所有世界并行 sim</td></tr>
+        <tr><td>16:00</td><td>翻天</td><td>Condition 恢复 / 事件 / 报告翻页</td></tr>
+        <tr><td>每周日</td><td>全休日</td><td>全联赛休赛，世界事件窗口</td></tr>
+      </tbody>
+    </table>
+
+    <h3>15.4 赛程规格表</h3>
+    <table>
+      <thead><tr><th>项</th><th>数值</th></tr></thead>
+      <tbody>
+        <tr><td>每组球队数</td><td>16</td></tr>
+        <tr><td>常规赛场次/队</td><td>~30（双循环 30 + 跨组 3-5，取 30）</td></tr>
+        <tr><td>赛季天数</td><td>~60（常规赛）+ 10（季后赛）+ 14（休赛）= ~84 天</td></tr>
+        <tr><td>每组每日对阵</td><td>8 场</td></tr>
+        <tr><td>连续主/客场上限</td><td>3 场</td></tr>
+        <tr><td>德比最小间距</td><td>10 场</td></tr>
+        <tr><td>背靠背上限/季</td><td>2 次</td></tr>
+      </tbody>
+    </table>
+
+    <h3>15.5 升降级名额表</h3>
+    <table>
+      <thead><tr><th>层级</th><th>升级名额</th><th>降级名额</th><th>配平说明</th></tr></thead>
+      <tbody>
+        <tr><td>T1</td><td>0</td><td>3</td><td>降 3 入 T2</td></tr>
+        <tr><td>T2</td><td>4（2组×2）</td><td>6（2组×3）</td><td>升 4 入 T1（3+1 决赛占位）；降 6 入 T3</td></tr>
+        <tr><td>T3</td><td>8（4组×2）</td><td>12（4组×3）</td><td>升 8 入 T2（6+2 决赛占位）；降 12 入 T4</td></tr>
+        <tr><td>T4</td><td>12+（弹性）</td><td>0</td><td>升 12 入 T3；无降级</td></tr>
+      </tbody>
+    </table>
+
+    <h3>15.6 世界迁移限制表</h3>
+    <table>
+      <thead><tr><th>项</th><th>限制</th></tr></thead>
+      <tbody>
+        <tr><td>冷却</td><td>3 赛季</td></tr>
+        <tr><td>时机</td><td>仅休赛期</td></tr>
+        <tr><td>球队球员</td><td>不携带（原队转 AI，目标世界分配新 AI 队）</td></tr>
+        <tr><td>化身</td><td>随迁（进入目标世界球员池）</td></tr>
+        <tr><td>职业人</td><td>身份/技能随迁；雇佣关系解除</td></tr>
+        <tr><td>Credits 携带</td><td>上限 50%，超出折算声望</td></tr>
+        <tr><td>战术存档</td><td>可携带</td></tr>
+        <tr><td>目标限制</td><td>不可迁入 locked 世界</td></tr>
+      </tbody>
+    </table>
+
+    <h3>15.7 关键战修正表</h3>
+    <table>
+      <thead><tr><th>关键战类型</th><th>上座率修正</th><th>PBP 优先级</th><th>其他</th></tr></thead>
+      <tbody>
+        <tr><td>同城德比</td><td>×1.3</td><td>高</td><td>球迷事件</td></tr>
+        <tr><td>升降级生死战</td><td>×1.2</td><td>最高</td><td>Clutch ×1.1</td></tr>
+        <tr><td>冠军战</td><td>×1.4</td><td>全服推送</td><td>冠军戒指判定</td></tr>
+        <tr><td>宿敌战</td><td>×1.15</td><td>高</td><td>球员情绪加成</td></tr>
+        <tr><td>连胜/连负决战</td><td>×1.1</td><td>中高</td><td>streak 事件</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    篮球经理世界 Hoops World Online · 关联策划方案 §4 / 经济系统 §1-2 / 三身份 §9 / Sim Engine / 战术系统 §14
+  </footer>
+
+</div>
+</body>
+</html>

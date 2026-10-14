@@ -1,0 +1,45 @@
+# HWO CI 流水线
+# 参见：技术架构文档 §12.2
+#
+# 流程：Lint+TypeCheck → Unit Test → sim 确定性测试 → Build
+# sim 确定性测试失败 → 阻断部署（保证 sim 不会被意外破坏）
+
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.5.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: hwo/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: hwo
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check & lint
+        working-directory: hwo
+        run: pnpm -r run lint
+
+      - name: Unit tests (含 sim 确定性测试)
+        working-directory: hwo
+        run: pnpm -r run test
+
+      - name: Build all packages
+        working-directory: hwo
+        run: pnpm -r run build

@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>王朝与传承系统设计 · Hoops World Online</title>
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#141b26; --panel2:#1b2433; --line:#26324a;
+    --ink:#e6edf6; --ink2:#9fb0c7; --ink3:#6b7c97;
+    --accent:#ff6b35; --accent2:#4ade80; --gold:#fbbf24; --red:#ef4444; --blue:#60a5fa; --purple:#a78bfa; --cyan:#22d3ee;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:linear-gradient(180deg,#070a10 0%,#0b0f17 100%);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 22px 120px}
+  .hero{
+    position:relative;border:1px solid var(--line);border-radius:18px;padding:42px 34px 30px;
+    background:
+      radial-gradient(800px 280px at 20% -10%, rgba(251,191,36,.18), transparent 60%),
+      radial-gradient(700px 260px at 90% 0%, rgba(167,139,250,.12), transparent 60%),
+      linear-gradient(180deg,#151d2c,#0e1420);
+    overflow:hidden;margin-bottom:30px;
+  }
+  .hero .tag{display:inline-block;font-size:12px;letter-spacing:.16em;color:var(--gold);border:1px solid rgba(251,191,36,.45);padding:4px 10px;border-radius:999px;margin-bottom:18px;text-transform:uppercase}
+  .hero h1{margin:0 0 8px;font-size:32px;letter-spacing:.5px;font-weight:800}
+  .hero h1 .en{color:var(--ink2);font-weight:600;font-size:18px;margin-left:10px}
+  .hero .pitch{color:var(--ink2);font-size:15px;max-width:840px;margin:10px 0 22px}
+  .hero .meta{display:flex;flex-wrap:wrap;gap:10px}
+  .hero .chip{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--ink2)}
+  .hero .chip b{color:var(--ink);font-weight:600}
+  .hero .crown{position:absolute;right:34px;bottom:18px;font-size:68px;opacity:.08;pointer-events:none}
+
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 28px;margin-bottom:22px}
+  .toc h3{margin:0 0 14px;font-size:14px;color:var(--ink2);letter-spacing:.1em;text-transform:uppercase}
+  .toc ol{margin:0;padding-left:22px;columns:2;column-gap:32px}
+  .toc li{margin:5px 0;break-inside:avoid}
+  .toc a{color:var(--ink2)}
+  .toc a:hover{color:var(--gold)}
+  @media (max-width:640px){.toc ol{columns:1}}
+
+  section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin-bottom:22px}
+  section > h2{margin:0 0 16px;font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
+  section > h2 .num{font-size:12px;color:#0b0f17;background:var(--gold);width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;font-weight:800;flex-shrink:0}
+  h3{font-size:16px;margin:22px 0 10px;color:var(--ink)}
+  h4{font-size:14px;margin:18px 0 8px;color:var(--gold);letter-spacing:.04em}
+  p{margin:8px 0}
+  ul,ol{margin:8px 0 8px 4px;padding-left:22px}
+  li{margin:4px 0}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{background:#0d131d;border:1px solid var(--line);padding:2px 6px;border-radius:5px;font-size:13px;color:var(--gold);font-family:"SF Mono","Fira Code",Consolas,monospace}
+  strong{color:#fff}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px}
+  th,td{padding:9px 11px;text-align:left;border:1px solid var(--line);vertical-align:top}
+  th{background:var(--panel2);color:var(--ink);font-weight:600}
+  tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+
+  .note{border-left:3px solid var(--accent);background:rgba(255,107,53,.06);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;color:var(--ink2)}
+  .note b{color:var(--accent)}
+  .note.green{border-left-color:var(--accent2);background:rgba(74,222,128,.06)}
+  .note.green b{color:var(--accent2)}
+  .note.blue{border-left-color:var(--blue);background:rgba(96,165,250,.06)}
+  .note.blue b{color:var(--blue)}
+  .note.red{border-left-color:var(--red);background:rgba(239,68,68,.06)}
+  .note.red b{color:var(--red)}
+  .note.gold{border-left-color:var(--gold);background:rgba(251,191,36,.06)}
+  .note.gold b{color:var(--gold)}
+  .note.purple{border-left-color:var(--purple);background:rgba(167,139,250,.06)}
+  .note.purple b{color:var(--purple)}
+
+  .formula{background:#0d131d;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;font-family:"SF Mono","Fira Code",Consolas,monospace;font-size:13px;overflow-x:auto;line-height:1.9;white-space:pre}
+  .formula .var{color:var(--blue)}
+  .formula .op{color:var(--accent)}
+  .formula .fn{color:var(--purple)}
+  .formula .num{color:var(--gold)}
+  .formula .comment{color:var(--ink3);font-style:italic}
+  .formula .str{color:var(--accent2)}
+  .formula .kw{color:var(--accent2);font-weight:bold}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:14px 0}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .card .t{font-weight:700;color:var(--ink);font-size:14px;margin-bottom:6px}
+  .card .d{font-size:13px;color:var(--ink2)}
+  .badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:999px;font-weight:700;letter-spacing:.04em;vertical-align:middle}
+  .badge.green{background:rgba(74,222,128,.15);color:var(--accent2)}
+  .badge.gold{background:rgba(251,191,36,.15);color:var(--gold)}
+  .badge.red{background:rgba(239,68,68,.15);color:var(--red)}
+  .badge.blue{background:rgba(96,165,250,.15);color:var(--blue)}
+  .badge.purple{background:rgba(167,139,250,.15);color:var(--purple)}
+
+  .flow{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:14px 0;font-size:13px}
+  .flow .step{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 14px;color:var(--ink)}
+  .flow .arrow{color:var(--gold);font-weight:bold}
+
+  .timeline{position:relative;padding-left:30px;margin:16px 0}
+  .timeline::before{content:"";position:absolute;left:10px;top:0;bottom:0;width:2px;background:var(--line)}
+  .tl-step{position:relative;margin-bottom:18px;padding-left:8px}
+  .tl-step::before{content:"";position:absolute;left:-25px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--gold);border:2px solid var(--panel)}
+  .tl-step .tl-day{font-size:12px;color:var(--gold);font-weight:600}
+  .tl-step .tl-title{font-weight:700;color:var(--ink);margin:2px 0 4px}
+  .tl-step .tl-desc{font-size:13px;color:var(--ink2)}
+
+  .dynasty-tiers{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:16px 0}
+  .tier-card{border-radius:10px;padding:16px 14px;text-align:center;border:1px solid var(--line)}
+  .tier-card .ico{font-size:28px;margin-bottom:6px}
+  .tier-card .name{font-weight:800;font-size:15px;margin-bottom:4px}
+  .tier-card .desc{font-size:12px;color:var(--ink2);line-height:1.5}
+  .tier-1{background:linear-gradient(180deg,rgba(251,191,36,.12),rgba(251,191,36,.03));border-color:rgba(251,191,36,.3)}
+  .tier-1 .name{color:var(--gold)}
+  .tier-2{background:linear-gradient(180deg,rgba(192,192,192,.1),rgba(192,192,192,.02));border-color:rgba(192,192,192,.25)}
+  .tier-2 .name{color:#d4d4d8}
+  .tier-3{background:linear-gradient(180deg,rgba(205,127,50,.1),rgba(205,127,50,.02));border-color:rgba(205,127,50,.25)}
+  .tier-3 .name{color:#cd7f32}
+  .tier-4{background:linear-gradient(180deg,rgba(107,124,151,.08),transparent);border-color:var(--line)}
+  .tier-4 .name{color:var(--ink2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ==================== HERO ==================== -->
+<div class="hero">
+  <span class="tag">System Design · Dynasty & Legacy</span>
+  <h1>王朝与传承系统 <span class="en">Dynasty & Legacy System</span></h1>
+  <p class="pitch">整个游戏设计的"收束系统"。将球员退役→时代标签→传承遗产→名人堂→二代球员→跨代叙事串联为完整闭环。前面所有系统的长线价值——成长线的传承、关系系统的跨代、三身份的名人堂、世界结构的年代循环——都经由本系统汇聚为"一个经理一生打造的篮球王朝"。王朝不是赢一次冠军，而是让你的印记留在世界的历史档案里，跨越代际。</p>
+  <div class="meta">
+    <span class="chip"><b>优先级</b> P0 · 收束系统</span>
+    <span class="chip"><b>依赖</b> 成长线·关系系统·三身份·世界结构·经济系统</span>
+    <span class="chip"><b>定位</b> 长期留存钩子 · 跨代情感 · 世界历史</span>
+    <span class="chip"><b>版本</b> v1.0</span>
+  </div>
+  <span class="crown">👑</span>
+</div>
+
+<!-- ==================== TOC ==================== -->
+<div class="toc">
+  <h3>目录 · Table of Contents</h3>
+  <ol>
+    <li><a href="#s1">设计原则与定位</a></li>
+    <li><a href="#s2">系统总览与架构</a></li>
+    <li><a href="#s3">时代标签系统</a></li>
+    <li><a href="#s4">球队王朝判定</a></li>
+    <li><a href="#s5">球员传承遗产</a></li>
+    <li><a href="#s6">名人堂</a></li>
+    <li><a href="#s7">退役球员转岗</a></li>
+    <li><a href="#s8">球衣退役与队史纪念</a></li>
+    <li><a href="#s9">跨代传承闭环</a></li>
+    <li><a href="#s10">世界年代史</a></li>
+    <li><a href="#s11">经理传奇档案</a></li>
+    <li><a href="#s12">传承奖励与解锁</a></li>
+    <li><a href="#s13">王朝叙事自动生成</a></li>
+    <li><a href="#s14">AI 王朝行为</a></li>
+    <li><a href="#s15">异常处理与边界规则</a></li>
+    <li><a href="#s16">数值附录</a></li>
+  </ol>
+</div>
+
+<!-- ==================== §1 设计原则与定位 ==================== -->
+<section id="s1">
+  <h2><span class="num">1</span>设计原则与定位</h2>
+
+  <div class="note gold"><b>核心定位</b>：王朝与传承系统是 HWO 的"收束系统"。前面的系统各自解决"怎么比赛、怎么建队、怎么获取球员、怎么训练、怎么流动"——本系统解决"这一切的意义是什么"。它把单赛季的胜负、单名球员的生涯、单支球队的兴衰，汇聚为跨越代际的世界历史，让玩家的每一个决策都有长线回响。</div>
+
+  <div class="grid">
+    <div class="card"><div class="t">① 收束而非新增 <span class="badge gold">聚合</span></div><div class="d">本系统不新增核心玩法循环，而是聚合已有系统的长线产出——成长线的传承、关系系统的跨代、三身份的名人堂、世界结构的年代循环——把它们编织为可感知的"王朝叙事"。</div></div>
+    <div class="card"><div class="t">② 跨代情感 <span class="badge purple">留存</span></div><div class="d">王朝的价值不在单次夺冠，而在"我打造的球队十年后还在影响联赛""我培养的球星退役后他的儿子又来了"。跨代情感是 HWO 区别于一次性经理游戏的核心留存钩子。</div></div>
+    <div class="card"><div class="t">③ 留痕可追溯 <span class="badge blue">档案</span></div><div class="d">所有王朝成就、时代标签、传承遗产永久存入世界历史档案。即使球员退役、球队降级、经理退游，历史不可篡改。这是"我来过，我征服过"的证据。</div></div>
+    <div class="card"><div class="t">④ 涌现而非强求 <span class="badge green">自然</span></div><div class="d">王朝不靠任务清单驱动，而是从比赛结果、球员生涯、球队兴衰中自然涌现。系统只负责"识别并记录"，不强制玩家追求王朝。</div></div>
+  </div>
+
+  <h3>1.1 与各系统的收束关系</h3>
+  <table>
+    <thead><tr><th>上游系统</th><th>提供什么</th><th>本系统做什么</th></tr></thead>
+    <tbody>
+      <tr><td>成长线 §10</td><td>球员传承遗产框架</td><td>§5 深化传承遗产的触发、分配、效果</td></tr>
+      <tr><td>关系系统 §2/§12</td><td>二代球员闭环、跨代继承</td><td>§9 定义王朝视角的跨代传承闭环</td></tr>
+      <tr><td>三身份 §3.6</td><td>名人堂概念</td><td>§6 补全名人堂入选标准、殿堂结构、权益</td></tr>
+      <tr><td>世界结构 §6</td><td>赛季年代循环</td><td>§10 定义世界年代史的编纂与查询</td></tr>
+      <tr><td>经济系统</td><td>球队财务、球馆</td><td>§4 王朝判定纳入财务健康维度</td></tr>
+      <tr><td>Sim Engine</td><td>比赛结果、Box Score</td><td>§3 时代标签从比赛数据中提取</td></tr>
+    </tbody>
+  </table>
+
+  <h3>1.2 不做什么</h3>
+  <ul>
+    <li><b>不做强制任务</b>：王朝不是成就清单——不要求"赢 5 次冠军才能解锁"。王朝是自然涌现并被记录的结果。</li>
+    <li><b>不做数值碾压</b>：传承遗产是"小幅加成+叙事钩子"，不是"二代球员碾压一代"。随机性确保不会"名将必出名将"。</li>
+    <li><b>不做跨世界传承</b>：传承世界内封闭。世界迁移时传承档案跟随，但不影响新世界。</li>
+    <li><b>不做付费传承</b>：传承不可付费购买或加速。它是时间与决策的回报。</li>
+  </ul>
+</section>
+
+<!-- ==================== §2 系统总览与架构 ==================== -->
+<section id="s2">
+  <h2><span class="num">2</span>系统总览与架构</h2>
+
+  <h3>2.1 三层架构</h3>
+  <table>
+    <thead><tr><th>层</th><th>名称</th><th>职责</th></tr></thead>
+    <tbody>
+      <tr><td><b>L1</b></td><td>采集层 Capture</td><td>从 Sim Engine/成长线/经济系统采集赛季数据：比赛结果、球员表现、财务、化学反应</td></tr>
+      <tr><td><b>L2</b></td><td>判定层 Verdict</td><td>判定时代标签、王朝等级、传承资格、名人堂入选；生成传承遗产</td></tr>
+      <tr><td><b>L3</b></td><td>档案层 Archive</td><td>写入世界年代史、球队档案、球员档案、经理档案；永久存储、可查询</td></tr>
+    </tbody>
+  </table>
+
+  <h3>2.2 赛季末收束流程</h3>
+  <div class="timeline">
+    <div class="tl-step">
+      <div class="tl-day">赛季末 DAY 178</div>
+      <div class="tl-title">数据采集</div>
+      <div class="tl-desc">采集本赛季全部比赛数据、球员表现、财务报表、化学反应快照</div>
+    </div>
+    <div class="tl-step">
+      <div class="tl-day">DAY 179</div>
+      <div class="tl-title">时代标签判定</div>
+      <div class="tl-desc">为球员/球队/赛季生成时代标签（§3）；判定球队王朝等级（§4）</div>
+    </div>
+    <div class="tl-step">
+      <div class="tl-day">DAY 180</div>
+      <div class="tl-title">退役处理</div>
+      <div class="tl-desc">触发退役球员的传承遗产分配（§5）；名人堂入选判定（§6）；转岗处理（§7）</div>
+    </div>
+    <div class="tl-step">
+      <div class="tl-day">赛季间</div>
+      <div class="tl-title">档案编纂</div>
+      <div class="tl-desc">写入世界年代史（§10）；更新球队/经理档案；生成王朝叙事（§13）</div>
+    </div>
+    <div class="tl-step">
+      <div class="tl-day">新赛季 DAY 1</div>
+      <div class="tl-title">传承生效</div>
+      <div class="tl-desc">传承遗产在新赛季生效；二代球员进入青训/选秀池；球衣退役仪式</div>
+    </div>
+  </div>
+
+  <h3>2.3 核心数据结构</h3>
+  <div class="formula">
+<span class="comment">── 时代标签 ──</span>
+
+<span class="var">EraTag</span> <span class="op">=</span> {
+  tagId:     <span class="var">u32</span>,
+  type:      <span class="str">"player"</span>|<span class="str">"team"</span>|<span class="str">"season"</span>,
+  refId:     <span class="var">PlayerId</span>|<span class="var">TeamId</span>|<span class="var">SeasonId</span>,
+  label:     <span class="var">string</span>,          <span class="comment">// 如"三分之王""铁血防守队""惊天冷门赛季"</span>
+  season:    <span class="var">u8</span>,              <span class="comment">// 生成赛季</span>
+  weight:    <span class="var">f32</span>,             <span class="comment">// 权重（影响传承强度）</span>
+  narrative: <span class="var">string</span>,          <span class="comment">// 叙事文本</span>
+}
+
+<span class="comment">── 王朝档案 ──</span>
+
+<span class="var">DynastyRecord</span> <span class="op">=</span> {
+  teamId:      <span class="var">TeamId</span>,
+  tier:        <span class="str">"legendary"</span>|<span class="str">"golden"</span>|<span class="str">"silver"</span>|<span class="str">"rising"</span>,
+  startSeason: <span class="var">u8</span>,
+  endSeason:   <span class="var">u8</span>?,             <span class="comment">// null=仍在延续</span>
+  titles:      <span class="var">u8</span>,              <span class="comment">冠军数</span>
+  runnerUps:   <span class="var">u8</span>,              <span class="comment">亚军数</span>
+  signature:   [<span class="var">EraTag</span>],        <span class="comment">// 王朝标志性标签</span>
+  legacyScore: <span class="var">f32</span>,            <span class="comment">// 王朝综合评分</span>
+}
+
+<span class="comment">── 传承遗产 ──</span>
+
+<span class="var">Legacy</span> <span class="op">=</span> {
+  legacyId:   <span class="var">u64</span>,
+  fromPlayer: <span class="var">PlayerId</span>,       <span class="comment">传承源（退役球员）</span>
+  toTargets:  [<span class="var">LegacyTarget</span>], <span class="comment">传承目标（子女/师徒/球队）</span>
+  type:       <span class="var">LegacyType</span>,     <span class="comment">血脉/师承/精神/纪录</span>
+  effects:    [<span class="var">LegacyEffect</span>], <span class="comment">加成效果</span>
+  season:     <span class="var">u8</span>,             <span class="comment">生效赛季</span>
+}
+  </div>
+</section>
+
+<!-- ==================== §3 时代标签系统 ==================== -->
+<section id="s3">
+  <h2><span class="num">3</span>时代标签系统</h2>
+  <p>时代标签是从比赛数据与生涯表现中提取的"时代印记"——它不是数值，而是叙事标签，记录"这个球员/这支球队/这个赛季代表了什么"。</p>
+
+  <h3>3.1 球员时代标签</h3>
+  <table>
+    <thead><tr><th>类别</th><th>标签示例</th><th>触发条件</th><th>权重</th></tr></thead>
+    <tbody>
+      <tr><td rowspan="3"><b>得分类</b></td><td>三分之王</td><td>单季三分命中数联盟第1</td><td>1.0</td></tr>
+      <tr><td>得分机器</td><td>单季场均得分联盟前3</td><td>1.0</td></tr>
+      <tr><td>关键先生</td><td>单季 clutch 命中数联盟第1</td><td>1.2</td></tr>
+      <tr><td rowspan="3"><b>防守类</b></td><td>铁闸</td><td>单季防守效率联盟前3</td><td>1.0</td></tr>
+      <tr><td>盖帽王</td><td>单季盖帽联盟第1</td><td>0.8</td></tr>
+      <tr><td>防守大脑</td><td>单季 helpDef 触发联盟前3</td><td>1.0</td></tr>
+      <tr><td rowspan="3"><b>组织类</b></td><td>助攻王</td><td>单季助攻联盟第1</td><td>1.0</td></tr>
+      <tr><td>球场指挥官</td><td>单季 AST/TO 比联盟前3</td><td>1.1</td></tr>
+      <tr><td>双核引擎</td><td>单季得分+助攻均前10</td><td>1.3</td></tr>
+      <tr><td rowspan="2"><b>精神类</b></td><td>大心脏</td><td>季后赛 clutch 命中率 ≥50%</td><td>1.5</td></tr>
+      <tr><td>铁人</td><td>连续 5 季出场 ≥80 场</td><td>1.0</td></tr>
+      <tr><td rowspan="2"><b>生涯类</b></td><td>常青树</td><td>生涯 ≥15 季且末季能力 ≥60</td><td>1.3</td></tr>
+      <tr><td>一人一城</td><td>生涯全部效力于同一球队</td><td>1.5</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.2 球队时代标签</h3>
+  <table>
+    <thead><tr><th>标签</th><th>触发条件</th><th>权重</th></tr></thead>
+    <tbody>
+      <tr><td>铁血防守队</td><td>单季防守效率联盟第1</td><td>1.0</td></tr>
+      <tr><td>跑轰大队</td><td>单季节奏联盟前3+三分出手前3</td><td>1.0</td></tr>
+      <tr><td>黑马</td><td>从 T2 以下升入 T1 并进季后赛</td><td>1.3</td></tr>
+      <tr><td>卫冕冠军</td><td>连续 ≥2 季夺冠</td><td>1.5</td></tr>
+      <tr><td>青训工厂</td><td>单季自家青训出品 ≥3 人进轮换</td><td>1.2</td></tr>
+      <tr><td>球星坟墓</td><td>连续 3 季有球星下滑/受伤</td><td>0.8（负面）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.3 赛季时代标签</h3>
+  <p>赛季级标签标记"这个赛季发生了什么"：</p>
+  <ul>
+    <li><b>惊天冷门赛季</b>：季后赛出现 ≥2 次 lowSeed 击败 highSeed。</li>
+    <li><b>得分爆炸赛季</b>：联盟场均得分创历史新高。</li>
+    <li><b>新王登基赛季</b>：新夺冠球队（此前无冠）。</li>
+    <li><b>王朝终结赛季</b>：连冠被终结。</li>
+    <li><b>选秀大年</b>：该届选秀出现 ≥3 名未来全明星。</li>
+  </ul>
+
+  <h3>3.4 标签的累积与权重</h3>
+  <div class="formula">
+<span class="comment">── 球员生涯标签累积 ──</span>
+
+<span class="var">playerLegacyScore</span> <span class="op">=</span> <span class="fn">sum</span>(<span class="var">tag</span>.weight <span class="kw">for</span> <span class="var">tag</span> <span class="kw">in</span> <span class="var">player</span>.eraTags)
+                    <span class="op">+</span> <span class="var">titles</span> <span class="op">*</span> <span class="num">3</span>              <span class="comment">// 冠军加成</span>
+                    <span class="op">+</span> <span class="var">finalMVPs</span> <span class="op">*</span> <span class="num">2</span>         <span class="comment">// FMVP 加成</span>
+                    <span class="op">+</span> <span class="var">careerPeakAvg</span> <span class="op">*</span> <span class="num">0.05</span>  <span class="comment">// 巅峰期均能</span>
+
+<span class="comment">// legacyScore 影响名人堂入选（§6）与传承强度（§5）</span>
+  </div>
+</section>
+
+<!-- ==================== §4 球队王朝判定 ==================== -->
+<section id="s4">
+  <h2><span class="num">4</span>球队王朝判定</h2>
+  <p>王朝是球队层面的"时代印记"——一支球队在一段时间内统治联赛，即为王朝。</p>
+
+  <h3>4.1 王朝等级</h3>
+  <div class="dynasty-tiers">
+    <div class="tier-card tier-1"><div class="ico">👑</div><div class="name">传奇王朝</div><div class="desc">≥3 冠 且 连续 ≥4 季进决赛<br>世界历史留名</div></div>
+    <div class="tier-card tier-2"><div class="ico">🥇</div><div class="name">黄金王朝</div><div class="desc">≥2 冠 且 连续 ≥3 季进季后赛<br>联赛标志性球队</div></div>
+    <div class="tier-card tier-3"><div class="ico">🥈</div><div class="name">白银王朝</div><div class="desc">≥1 冠 且 连续 ≥2 季进季后赛<br>强队雏形</div></div>
+    <div class="tier-card tier-4"><div class="ico">📈</div><div class="name">崛起中</div><div class="desc">单季进季后赛<br>王朝前夜</div></div>
+  </div>
+
+  <h3>4.2 王朝综合评分</h3>
+  <div class="formula">
+<span class="var">legacyScore</span> <span class="op">=</span> <span class="var">titles</span> <span class="op">*</span> <span class="num">10</span>
+              <span class="op">+</span> <span class="var">runnerUps</span> <span class="op">*</span> <span class="num">4</span>
+              <span class="op">+</span> <span class="var">playoffAppearances</span> <span class="op">*</span> <span class="num">2</span>
+              <span class="op">+</span> <span class="var">signatureTags</span>.<span class="fn">sum</span>(<span class="var">w</span>) <span class="op">*</span> <span class="num">1.5</span>
+              <span class="op">+</span> <span class="var">financialHealth</span> <span class="op">*</span> <span class="num">0.1</span>     <span class="comment">// 财务健康加成</span>
+              <span class="op">+</span> <span class="var">youthOutput</span> <span class="op">*</span> <span class="num">2</span>          <span class="comment">// 青训产出加成</span>
+              <span class="op">-</span> <span class="var">scandals</span> <span class="op">*</span> <span class="num">3</span>             <span class="comment">// 丑闻扣分</span>
+  </div>
+
+  <h3>4.3 王朝的兴衰</h3>
+  <div class="flow">
+    <span class="step">崛起</span>
+    <span class="arrow">→</span>
+    <span class="step">白银王朝</span>
+    <span class="arrow">→</span>
+    <span class="step">黄金王朝</span>
+    <span class="arrow">→</span>
+    <span class="step">传奇王朝</span>
+    <span class="arrow">→</span>
+    <span class="step">衰退</span>
+    <span class="arrow">→</span>
+    <span class="step">王朝终结</span>
+  </div>
+  <ul>
+    <li><b>王朝延续条件</b>：每季末重新判定。连续 2 季未进季后赛 → 王朝降级；连续 3 季未进季后赛 → 王朝终结。</li>
+    <li><b>王朝终结标签</b>：终结时生成"XX 王朝终结"赛季标签，记入历史。</li>
+    <li><b>王朝复兴</b>：终结后若再次满足白银以上条件，标记"王朝复兴"（罕见叙事）。</li>
+  </ul>
+</section>
+
+<!-- ==================== §5 球员传承遗产 ==================== -->
+<section id="s5">
+  <h2><span class="num">5</span>球员传承遗产</h2>
+  <p>深化成长线 §10 的传承遗产框架。球员退役时，其生涯积累以"传承遗产"形式传递给后人。</p>
+
+  <h3>5.1 传承类型</h3>
+  <table>
+    <thead><tr><th>类型</th><th>传承目标</th><th>传承内容</th><th>触发条件</th></tr></thead>
+    <tbody>
+      <tr><td><b>血脉传承</b></td><td>子女（二代球员）</td><td>Peak 继承、特质倾向、训练侧重偏好</td><td>有适龄子女（关系系统 §2）</td></tr>
+      <tr><td><b>师承传承</b></td><td>指定徒弟</td><td>技术熟练度加成、特质觉醒概率</td><td>有师徒关系（关系系统 v1 §6）</td></tr>
+      <tr><td><b>精神传承</b></td><td>全队/接班人</td><td>MentalFortitude 加成、时代标签继承</td><td>legacyScore ≥15</td></tr>
+      <tr><td><b>纪录传承</b></td><td>队史档案</td><td>队史纪录写入；后人破纪录触发叙事</td><td>持有队史纪录</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.2 血脉传承深化</h3>
+  <p>关系系统 §2.4 已定义二代球员天赋继承公式。本节定义退役时的"血脉传承"触发：</p>
+  <div class="formula">
+<span class="comment">── 退役血脉传承触发 ──</span>
+
+<span class="keyword">function</span> <span class="fn">triggerBloodlineLegacy</span>(retiringPlayer):
+  <span class="var">children</span> <span class="op">=</span> <span class="fn">getChildren</span>(<span class="var">retiringPlayer</span>)
+
+  <span class="kw">for</span> <span class="var">child</span> <span class="kw">in</span> <span class="var">children</span>:
+    <span class="comment">// 传承强度按父/母 legacyScore</span>
+    <span class="var">legacyStrength</span> <span class="op">=</span> <span class="fn">clamp</span>(<span class="var">retiringPlayer</span>.legacyScore <span class="op">/</span> <span class="num">30</span>, <span class="num">0.5</span>, <span class="num">2.0</span>)
+
+    <span class="comment">// 子女已存在的 Peak 基础值 + 血脉传承加成</span>
+    <span class="var">child</span>.peak <span class="op">+=</span> <span class="var">legacyStrength</span> <span class="op">*</span> <span class="num">3</span>      <span class="comment">// 最高 +6</span>
+
+    <span class="comment">// 特质倾向继承（非直接获得，是觉醒概率提升）</span>
+    <span class="kw">if</span> (<span class="var">retiringPlayer</span>.<span class="fn">hasTrait</span>(<span class="str">"clutch_killer"</span>)):
+        <span class="var">child</span>.traitAwakenBonus[<span class="str">"clutch_killer"</span>] <span class="op">+=</span> <span class="num">0.1</span> <span class="op">*</span> <span class="var">legacyStrength</span>
+
+    <span class="comment">// 训练侧重偏好继承（关系系统 §2.5 已部分定义）</span>
+    <span class="var">child</span>.inheritedFocus <span class="op">=</span> <span class="var">retiringPlayer</span>.careerFocus
+
+  <div class="comment">── 精神传承（全队/接班人） ──</div>
+
+<span class="keyword">function</span> <span class="fn">triggerSpiritLegacy</span>(retiringPlayer, team):
+  <span class="kw">if</span> (<span class="var">retiringPlayer</span>.legacyScore <span class="op">&lt;</span> <span class="num">15</span>): <span class="kw">return</span>     <span class="comment">// 不够格</span>
+
+  <span class="comment">// 接班人：同位置能力最高的年轻球员</span>
+  <span class="var">successor</span> <span class="op">=</span> <span class="fn">findSuccessor</span>(<span class="var">team</span>, <span class="var">retiringPlayer</span>.position)
+
+  <span class="kw">if</span> (<span class="var">successor</span>):
+    <span class="var">successor</span>.mentalFortitude <span class="op">+=</span> <span class="num">3</span>       <span class="comment">// 精神传承</span>
+    <span class="var">successor</span>.eraTags.<span class="fn">append</span>(<span class="str">"XX的接班人"</span>)
+
+  <span class="comment">// 全队精神传承（王朝核心退役）</span>
+  <span class="kw">if</span> (<span class="var">retiringPlayer</span>.legacyScore <span class="op">&gt;=</span> <span class="num">30</span>):
+    <span class="kw">for</span> <span class="var">p</span> <span class="kw">in</span> <span class="var">team</span>.players:
+        <span class="var">p</span>.mentalFortitude <span class="op">+=</span> <span class="num">1</span>            <span class="comment">// 全队小幅精神加成</span>
+    <span class="var">team</span>.eraTags.<span class="fn">append</span>(<span class="str">"后XX时代"</span>)
+  </div>
+
+  <h3>5.3 师承传承</h3>
+  <ul>
+    <li><b>触发</b>：退役球员有明确师徒关系（关系系统 v1 §6）的徒弟。</li>
+    <li><b>效果</b>：徒弟获得师父的"技术熟练度"加成——师父精通的技术（熟练度 ≥80），徒弟训练响应 +0.05~0.10。</li>
+    <li><b>特质觉醒</b>：师父拥有的特质，徒弟觉醒概率 +5~15%（按 legacyScore）。</li>
+    <li><b>叙事</b>：生成"师承一脉"标签——"XX 的技术传给了 YY"。</li>
+  </ul>
+</section>
+
+<!-- ==================== §6 名人堂 ==================== -->
+<section id="s6">
+  <h2><span class="num">6</span>名人堂</h2>
+  <p>补全三身份 §3.6 的名人堂概念。名人堂是世界级的荣誉殿堂，退役球员的最高荣誉。</p>
+
+  <h3>6.1 入选标准</h3>
+  <table>
+    <thead><tr><th>层级</th><th>名称</th><th>条件</th><th>权益</th></tr></thead>
+    <tbody>
+      <tr><td><b>第一档</b></td><td>传奇名人堂</td><td>legacyScore ≥50 且 ≥3 冠</td><td>世界级铜像；名字载入世界年代史首页；子女血脉传承 ×1.5</td></tr>
+      <tr><td><b>第二档</b></td><td>名人堂</td><td>legacyScore ≥30 且 ≥1 冠</td><td>世界级牌匾；子女血脉传承 ×1.2</td></tr>
+      <tr><td><b>第三档</b></td><td>荣誉堂</td><td>legacyScore ≥20</td><td>球队级荣誉；子女血脉传承 ×1.0</td></tr>
+    </tbody>
+  </table>
+
+  <h3>6.2 入选流程</h3>
+  <div class="flow">
+    <span class="step">球员退役</span>
+    <span class="arrow">→</span>
+    <span class="step">legacyScore 计算</span>
+    <span class="arrow">→</span>
+    <span class="step">入选判定</span>
+    <span class="arrow">→</span>
+    <span class="step">入选仪式（新赛季首场）</span>
+    <span class="arrow">→</span>
+    <span class="step">档案永久写入</span>
+  </div>
+
+  <h3>6.3 名人堂权益</h3>
+  <ul>
+    <li><b>血脉传承强化</b>：名人堂球员的子女天赋继承系数提升（×1.2~1.5）。</li>
+    <li><b>球衣退役</b>：名人堂球员的球衣号码在该队退役（§8）。</li>
+    <li><b>世界年代史</b>：名字载入世界年代史，永久可查询。</li>
+    <li><b>转岗优先</b>：名人堂球员退役后转任教练/球探/管理层时，起始等级更高（§7）。</li>
+    <li><b>叙事资源</b>：成为后世叙事的引用素材——"下一个 XX""XX 再现"。</li>
+  </ul>
+
+  <div class="note gold"><b>设计意图</b>：名人堂是"我来过，我征服过"的终极证明。它让球员生涯的意义超越单次夺冠——一名球员退役后，他的名字永远留在世界历史中，他的血脉可能产生下一代球星，他的精神传承给接班人。这是 HWO 最深的情感锚点。</div>
+</section>
+
+<!-- ==================== §7 退役球员转岗 ==================== -->
+<section id="s7">
+  <h2><span class="num">7</span>退役球员转岗</h2>
+  <p>退役不是终点——优秀球员退役后可转任教练/球探/管理层/青训导师，以职业人身份延续生涯。</p>
+
+  <h3>7.1 转岗类型</h3>
+  <table>
+    <thead><tr><th>转岗</th><th>起始等级</th><th>核心技能继承</th><th>适用</th></tr></thead>
+    <tbody>
+      <tr><td><b>教练</b></td><td>按 legacyScore：名人堂→Lv4，荣誉堂→Lv2</td><td>teaching 能力（训练系统 §9）；战术理解（战术系统）</td><td>高 IQ 球员</td></tr>
+      <tr><td><b>球探</b></td><td>按 legacyScore 起始等级</td><td>位置经验（同位置探查 fog ×1.1）</td><td>经验丰富的老将</td></tr>
+      <tr><td><b>青训导师</b></td><td>按 teaching 倾向</td><td>teaching 训练日效果（训练系统 §13）</td><td>有师徒关系的球员</td></tr>
+      <tr><td><b>管理层</b></td><td>按 legacyScore + 经济素养</td><td>签约谈判加成；薪资空间规划</td><td>高 Fame 球员</td></tr>
+      <tr><td><b>媒体人</b></td><td>按 MediaRapport</td><td>媒体事件生成；舆论影响</td><td>媒体关系好的球员</td></tr>
+    </tbody>
+  </table>
+
+  <h3>7.2 转岗与三身份系统联动</h3>
+  <ul>
+    <li>退役球员转岗后成为三身份系统的"职业人"（三身份 §5）。</li>
+    <li>若退役球员是玩家化身，玩家可选择该化身转岗为何种职业人——化身的职业人身份可被经理身份雇佣。</li>
+    <li><b>反套利</b>：经理不可直接雇佣自己化身转岗的职业人担任要职（三身份 §10 反套利）。</li>
+  </ul>
+
+  <h3>7.3 教练传承</h3>
+  <p>名人堂球员转任教练后，其球员时代的时代标签部分转化为"教练风格标签"：</p>
+  <ul>
+    <li>"三分之王" → "投射体系教练"（球队三分出手 +10%）</li>
+    <li>"铁闸" → "防守型教练"（球队防守效率 +5%）</li>
+    <li>"大心脏" → "clutch 教练"（球队 clutch 表现 +10%）</li>
+  </ul>
+  <p>这让退役球星的"篮球哲学"以教练身份延续——又一个跨代传承的维度。</p>
+</section>
+
+<!-- ==================== §8 球衣退役与队史纪念 ==================== -->
+<section id="s8">
+  <h2><span class="num">8</span>球衣退役与队史纪念</h2>
+
+  <h3>8.1 球衣退役</h3>
+  <ul>
+    <li><b>条件</b>：名人堂球员 + 效力该队 ≥5 季。</li>
+    <li><b>效果</b>：该号码在该队永久退役，不可被新球员选用。</li>
+    <li><b>仪式</b>：新赛季首场主场比赛前举行球衣退役仪式——心理 +10 全队；Fame +5 退役球员。</li>
+    <li><b>球馆展示</b>：退役球衣悬挂于球馆（经济系统 §8 球馆），作为球馆文化资产，小幅提升球市吸引力。</li>
+  </ul>
+
+  <h3>8.2 队史纪录</h3>
+  <table>
+    <thead><tr><th>纪录类型</th><th>记录内容</th><th>破纪录触发</th></tr></thead>
+    <tbody>
+      <tr><td>队史得分王</td><td>效力期间总得分</td><td>破纪录时生成"超越传奇"叙事</td></tr>
+      <tr><td>队史助攻王</td><td>效力期间总助攻</td><td>同上</td></tr>
+      <tr><td>队史篮板王</td><td>效力期间总篮板</td><td>同上</td></tr>
+      <tr><td>队史三分王</td><td>效力期间总三分</td><td>同上</td></tr>
+      <tr><td>单场纪录</td><td>单场得分/助攻/篮板</td><td>破纪录时生成"神迹再现"叙事</td></tr>
+      <tr><td>连冠纪录</td><td>连续夺冠次数</td><td>追平/超越时生成"比肩传奇"叙事</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8.3 队史名人墙</h3>
+  <ul>
+    <li>球队球馆内设"队史名人墙"，展示该队所有名人堂/荣誉堂球员。</li>
+    <li>名人墙是球馆文化资产，提升球市吸引力与球员心仪目的地（签约转会 §4.2 DestinationScore）。</li>
+    <li>新援加盟时，名人墙展示作为签约叙事素材。</li>
+  </ul>
+</section>
+
+<!-- ==================== §9 跨代传承闭环 ==================== -->
+<section id="s9">
+  <h2><span class="num">9</span>跨代传承闭环</h2>
+  <p>整合成长线 §10、关系系统 §2/§12、本系统 §5/§6/§7，定义王朝视角的完整跨代闭环。</p>
+
+  <h3>9.1 闭环全貌</h3>
+  <div class="flow">
+    <span class="step">一代球星崛起</span>
+    <span class="arrow">→</span>
+    <span class="step">建功立业（时代标签累积）</span>
+    <span class="arrow">→</span>
+    <span class="step">退役（传承遗产触发）</span>
+    <span class="arrow">→</span>
+    <span class="step">名人堂入选</span>
+    <span class="arrow">→</span>
+    <span class="step">血脉传承（子女加成）</span>
+    <span class="arrow">→</span>
+    <span class="step">师承传承（徒弟加成）</span>
+    <span class="arrow">→</span>
+    <span class="step">转岗（教练/球探/导师）</span>
+    <span class="arrow">→</span>
+    <span class="step">二代球员成长</span>
+    <span class="arrow">→</span>
+    <span class="step">二代建功立业</span>
+    <span class="arrow">→</span>
+    <span class="step">再传承（第三代）</span>
+  </div>
+
+  <h3>9.2 传承衰减与随机性</h3>
+  <div class="note red"><b>关键设计</b>：传承会衰减且含随机性，确保不会"名将必出名将"无限滚雪球。一代 legacyScore 50 → 子女 Peak 加成 +6，但随机 ±15 仍可能出庸才。三代后传承加成衰减至 ×0.5。这让王朝自然兴衰——没有永远的王者，只有新的挑战者。</div>
+
+  <h3>9.3 王朝传承的特殊机制</h3>
+  <table>
+    <thead><tr><th>机制</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><b>王朝遗产</b></td><td>传奇王朝终结后，球队获得"王朝遗产"标签——青训产出 ×1.2 持续 3 季（底蕴犹存）</td></tr>
+      <tr><td><b>王朝诅咒</b></td><td>罕见负面：王朝终结后球队连续低谷，新援心理 -5（"王朝阴影压人"）</td></tr>
+      <tr><td><b>王朝复兴</b></td><td>王朝终结后再次崛起——叙事高潮"复兴王朝"</td></tr>
+      <tr><td><b>跨代对决</b></td><td>二代球员对阵父母原队时，clutch +10（"在父亲打过的地方证明自己"）</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== §10 世界年代史 ==================== -->
+<section id="s10">
+  <h2><span class="num">10</span>世界年代史</h2>
+  <p>世界结构 §6 定义了赛季年代循环。本系统定义"世界年代史"——每个世界的永久历史档案。</p>
+
+  <h3>10.1 年代史结构</h3>
+  <div class="formula">
+<span class="var">WorldChronicle</span> <span class="op">=</span> {
+  worldId:    <span class="var">u16</span>,
+  seasons:    [<span class="var">SeasonRecord</span>],    <span class="comment">// 按赛季排列</span>
+  dynasties:  [<span class="var">DynastyRecord</span>],   <span class="comment">// 所有王朝记录</span>
+  hallOfFame: [<span class="var">HOFEntry</span>],       <span class="comment">// 名人堂名单</span>
+  records:    <span class="var">WorldRecords</span>,      <span class="comment">// 世界纪录</span>
+  legends:    [<span class="var">LegendEntry</span>],    <span class="comment">// 传奇经理/球员</span>
+}
+
+<span class="var">SeasonRecord</span> <span class="op">=</span> {
+  season:     <span class="var">u8</span>,
+  champion:   <span class="var">TeamId</span>,
+  runnerUp:   <span class="var">TeamId</span>,
+  finalsMVP:  <span class="var">PlayerId</span>,
+  seasonMVP:  <span class="var">PlayerId</span>,
+  eraTags:    [<span class="var">EraTag</span>],         <span class="comment">// 赛季标签</span>
+  headline:   <span class="var">string</span>,           <span class="comment">// 赛季头条叙事</span>
+  notableDebuts:[<span class="var">PlayerId</span>],     <span class="comment">// 新秀首秀</span>
+  notableRetirements:[<span class="var">PlayerId</span>], <span class="comment">退役名单</span>
+}
+  </div>
+
+  <h3>10.2 年代史查询</h3>
+  <ul>
+    <li><b>赛季查询</b>：任意赛季的冠军/MVP/标签/头条。</li>
+    <li><b>球队查询</b>：某队全部历史——王朝、名人堂、退役球衣、队史纪录。</li>
+    <li><b>球员查询</b>：某球员全部生涯——时代标签、传承遗产、名人堂。</li>
+    <li><b>经理查询</b>：某经理全部执教史——王朝、胜场、传承。</li>
+    <li><b>纪录查询</b>：世界纪录（单场/单季/生涯）。</li>
+  </ul>
+
+  <h3>10.3 年代史首页</h3>
+  <p>每个世界的年代史首页展示"传奇殿堂"：</p>
+  <ul>
+    <li><b>传奇王朝 TOP5</b>：legacyScore 最高的 5 个王朝。</li>
+    <li><b>名人堂第一档</b>：所有传奇名人堂球员。</li>
+    <li><b>传奇经理</b>：legacyScore 最高的经理（§11）。</li>
+    <li><b>世纪之星</b>：每 10 赛季评选一次的世界最佳球员。</li>
+  </ul>
+</section>
+
+<!-- ==================== §11 经理传奇档案 ==================== -->
+<section id="s11">
+  <h2><span class="num">11</span>经理传奇档案</h2>
+  <p>球员有名人堂，经理有"传奇档案"——记录经理一生的执教成就。</p>
+
+  <h3>11.1 经理 legacyScore</h3>
+  <div class="formula">
+<span class="var">managerLegacyScore</span> <span class="op">=</span> <span class="var">titles</span> <span class="op">*</span> <span class="num">15</span>
+                      <span class="op">+</span> <span class="var">runnerUps</span> <span class="op">*</span> <span class="num">6</span>
+                      <span class="op">+</span> <span class="var">playoffAppearances</span> <span class="op">*</span> <span class="num">3</span>
+                      <span class="op">+</span> <span class="var">dynastiesBuilt</span> <span class="op">*</span> <span class="num">10</span>     <span class="comment">// 打造的王朝数</span>
+                      <span class="op">+</span> <span class="var">playersDevelopedToHOF</span> <span class="op">*</span> <span class="num">8</span>  <span class="comment">// 培养的名人堂球员数</span>
+                      <span class="op">+</span> <span class="var">youthAcademyGraduates</span> <span class="op">*</span> <span class="num">2</span> <span class="comment">// 青训出品数</span>
+                      <span class="op">+</span> <span class="var">seasonsManaged</span> <span class="op">*</span> <span class="num">1</span>      <span class="comment">// 执教年限</span>
+  </div>
+
+  <h3>11.2 经理传奇等级</h3>
+  <table>
+    <thead><tr><th>等级</th><th>名称</th><th>条件</th><th>权益</th></tr></thead>
+    <tbody>
+      <tr><td>👑</td><td>传奇经理</td><td>legacyScore ≥100</td><td>世界年代史首页留名；新世界起始声望 +20</td></tr>
+      <tr><td>⭐</td><td>名帅</td><td>legacyScore ≥60</td><td>年代史收录；新世界起始声望 +10</td></tr>
+      <tr><td>📊</td><td>资深经理</td><td>legacyScore ≥30</td><td>年代史收录</td></tr>
+    </tbody>
+  </table>
+
+  <h3>11.3 经理退游与传承</h3>
+  <ul>
+    <li><b>退游</b>：经理退游时档案存入年代史，永久可查询。</li>
+    <li><b>新世界传承</b>：传奇经理在新世界开局时获得起始声望加成——这是"前世积累"的回报。</li>
+    <li><b>不传承数值</b>：不传承球队/球员/薪资——每世界独立。只传承声望与档案。</li>
+  </ul>
+</section>
+
+<!-- ==================== §12 传承奖励与解锁 ==================== -->
+<section id="s12">
+  <h2><span class="num">12</span>传承奖励与解锁</h2>
+
+  <h3>12.1 传承奖励原则</h3>
+  <div class="note green"><b>原则</b>：传承奖励是"小幅加成+叙事钩子"，不是数值碾压。目的是让长线玩家有回报感，而非让新玩家无法追赶。所有传承加成可被随机性抵消。</div>
+
+  <h3>12.2 解锁内容</h3>
+  <table>
+    <thead><tr><th>成就</th><th>解锁</th></tr></thead>
+    <tbody>
+      <tr><td>首个冠军</td><td>冠军戒指展示（球馆）；"冠军教头"经理标签</td></tr>
+      <tr><td>传奇王朝</td><td>王朝铜像（球馆）；"王朝缔造者"经理标签</td></tr>
+      <tr><td>培养名人堂球员</td><td>"名帅"标签；青训学院 +1 等级上限</td></tr>
+      <tr><td>二代球员进全明星</td><td>"虎父无犬子"叙事标签；血脉传承 ×1.1</td></tr>
+      <tr><td>一人一城球员退役</td><td>球衣退役；"忠诚"队史标签</td></tr>
+      <tr><td>传奇经理</td><td>新世界起始声望 +20；年代史首页留名</td></tr>
+    </tbody>
+  </table>
+
+  <h3>12.3 不解锁什么</h3>
+  <ul>
+    <li><b>不解锁数值优势</b>：不解锁更高工资帽、更多选秀权、更强球员——保持竞技公平。</li>
+    <li><b>不解锁付费内容</b>：传承是时间回报，非付费门槛。</li>
+    <li><b>不解锁跨世界优势</b>：传承世界内封闭，不污染新世界经济。</li>
+  </ul>
+</section>
+
+<!-- ==================== §13 王朝叙事自动生成 ==================== -->
+<section id="s13">
+  <h2><span class="num">13</span>王朝叙事自动生成</h2>
+  <p>深化关系系统 §12 的事件链机制。王朝叙事是"大时间尺度"的叙事弧线。</p>
+
+  <h3>13.1 叙事弧线类型</h3>
+  <table>
+    <thead><tr><th>弧线</th><th>触发</th><th>叙事节点</th></tr></thead>
+    <tbody>
+      <tr><td><b>崛起弧</b></td><td>T4 球队首进季后赛</td><td>低谷→重建→选秀淘金→崛起→首进季后赛</td></tr>
+      <tr><td><b>王朝弧</b></td><td>首冠</td><td>崛起→核心成型→首冠→卫冕→王朝</td></tr>
+      <tr><td><b>衰落弧</b></td><td>王朝终结</td><td>核心老化→战绩下滑→王朝终结→重建</td></tr>
+      <tr><td><b>复兴弧</b></td><td>王朝终结后再次夺冠</td><td>衰落→蛰伏→二代崛起→复兴</td></tr>
+      <tr><td><b>传承弧</b></td><td>二代球员进全明星</td><td>一代退役→二代成长→二代建功→"将门虎子"</td></tr>
+      <tr><td><b>宿敌弧</b></td><td>两队连续季后赛相遇</td><td>首次相遇→互有胜负→宿敌成型→史诗对决</td></tr>
+    </tbody>
+  </table>
+
+  <h3>13.2 叙事生成原则</h3>
+  <ul>
+    <li><b>数据驱动</b>：叙事从比赛数据与生涯事件中提取，非虚构。</li>
+    <li><b>关系锚定</b>：所有叙事以球员/球队关系为情感锚点。</li>
+    <li><b>留痕档案</b>：完成的叙事弧线存入年代史，成为世界历史的一部分。</li>
+    <li><b>引用前史</b>：新生代叙事可引用历史——"下一个 XX""比肩 XX 王朝"。</li>
+  </ul>
+</section>
+
+<!-- ==================== §14 AI 王朝行为 ==================== -->
+<section id="s14">
+  <h2><span class="num">14</span>AI 王朝行为</h2>
+
+  <h3>14.1 AI 球队的王朝周期</h3>
+  <p>AI 球队按"崛起→巅峰→衰落→重建"周期运作，模拟真实联赛的王朝更替：</p>
+  <table>
+    <thead><tr><th>阶段</th><th>AI 行为</th><th>持续</th></tr></thead>
+    <tbody>
+      <tr><td><b>重建期</b></td><td>交易老将换选秀权；囤薪资空间；青训投入</td><td>3-5 季</td></tr>
+      <tr><td><b>崛起期</b></td><td>新秀成熟；针对性签约补强；冲击季后赛</td><td>2-3 季</td></tr>
+      <tr><td><b>巅峰期</b></td><td>顶薪续核心；交易补最后拼图；冲击冠军</td><td>3-5 季</td></tr>
+      <tr><td><b>衰落期</b></td><td>核心老化；薪资锁死；战绩下滑</td><td>2-3 季</td></tr>
+    </tbody>
+  </table>
+
+  <h3>14.2 AI 等级与王朝能力</h3>
+  <ul>
+    <li><b>精英 AI（T1）</b>：能维持长期王朝（5-8 季）；善用伯德条款续核心；精明交易。</li>
+    <li><b>强 AI（T2）</b>：能打造短期王朝（2-4 季）；偶有失误。</li>
+    <li><b>中 AI（T3）</b>：难以形成王朝；偶尔黑马。</li>
+    <li><b>弱 AI（T4）</b>：常年鱼腩；偶尔崛起。</li>
+  </ul>
+</section>
+
+<!-- ==================== §15 异常处理与边界规则 ==================== -->
+<section id="s15">
+  <h2><span class="num">15</span>异常处理与边界规则</h2>
+
+  <h3>15.1 退役异常</h3>
+  <table>
+    <thead><tr><th>异常</th><th>处理</th></tr></thead>
+    <tbody>
+      <tr><td>球员无子女退役</td><td>无血脉传承；仅有师承/精神/纪录传承</td></tr>
+      <tr><td>球员无师徒退役</td><td>无师承传承</td></tr>
+      <tr><td>球员 legacyScore 不足</td><td>无精神传承；不入选名人堂</td></tr>
+      <tr><td>球员因伤提前退役</td><td>传承遗产按已积累 legacyScore 计算（可能较低）</td></tr>
+      <tr><td>多人同年退役</td><td>按 legacyScore 排序依次处理；互不影响</td></tr>
+    </tbody>
+  </table>
+
+  <h3>15.2 王朝异常</h3>
+  <table>
+    <thead><tr><th>异常</th><th>处理</th></tr></thead>
+    <tbody>
+      <tr><td>球队降级（世界结构 §7）</td><td>王朝自动终结；记入"降级终结"标签</td></tr>
+      <tr><td>球队迁移（世界结构 §11）</td><td>王朝档案跟随；但新世界不继承王朝等级</td></tr>
+      <tr><td>经理退游</td><td>球队王朝延续（AI 接手）；经理档案存入年代史</td></tr>
+      <tr><td>世界合并（世界结构 §9）</td><td>各世界年代史独立保留；不合并</td></tr>
+    </tbody>
+  </table>
+
+  <h3>15.3 跨世界隔离</h3>
+  <ul>
+    <li>传承世界内封闭——二代球员、师承传承、精神传承均不跨世界。</li>
+    <li>世界迁移时，传承档案跟随但不影响新世界。</li>
+    <li>名人堂世界内独立——A 世界的名人堂在 B 世界无效。</li>
+    <li>唯一跨世界传承：经理传奇档案→新世界起始声望加成（§11.3）。</li>
+  </ul>
+</section>
+
+<!-- ==================== §16 数值附录 ==================== -->
+<section id="s16">
+  <h2><span class="num">16</span>数值附录</h2>
+
+  <h3>16.1 时代标签权重</h3>
+  <table>
+    <thead><tr><th>标签类型</th><th>权重范围</th></tr></thead>
+    <tbody>
+      <tr><td>常规标签（得分王/助攻王等）</td><td>0.8-1.0</td></tr>
+      <tr><td>复合标签（双核引擎/大心脏）</td><td>1.1-1.5</td></tr>
+      <tr><td>生涯标签（常青树/一人一城）</td><td>1.3-1.5</td></tr>
+      <tr><td>负面标签（球星坟墓）</td><td>0.8</td></tr>
+    </tbody>
+  </table>
+
+  <h3>16.2 王朝判定参数</h3>
+  <table>
+    <thead><tr><th>等级</th><th>冠军</th><th>连续季后赛</th><th>legacyScore</th></tr></thead>
+    <tbody>
+      <tr><td>传奇王朝</td><td>≥3</td><td>≥4 季进决赛</td><td>≥80</td></tr>
+      <tr><td>黄金王朝</td><td>≥2</td><td>≥3 季进季后赛</td><td>≥50</td></tr>
+      <tr><td>白银王朝</td><td>≥1</td><td>≥2 季进季后赛</td><td>≥25</td></tr>
+      <tr><td>崛起中</td><td>0</td><td>1 季进季后赛</td><td>≥10</td></tr>
+    </tbody>
+  </table>
+
+  <h3>16.3 名人堂入选</h3>
+  <table>
+    <thead><tr><th>层级</th><th>legacyScore</th><th>冠军</th><th>血脉传承系数</th></tr></thead>
+    <tbody>
+      <tr><td>传奇名人堂</td><td>≥50</td><td>≥3</td><td>×1.5</td></tr>
+      <tr><td>名人堂</td><td>≥30</td><td>≥1</td><td>×1.2</td></tr>
+      <tr><td>荣誉堂</td><td>≥20</td><td>0</td><td>×1.0</td></tr>
+    </tbody>
+  </table>
+
+  <h3>16.4 传承遗产参数</h3>
+  <table>
+    <thead><tr><th>传承类型</th><th>效果</th><th>衰减</th></tr></thead>
+    <tbody>
+      <tr><td>血脉传承 Peak 加成</td><td>legacyStrength × 3（最高 +6）</td><td>三代后 ×0.5</td></tr>
+      <tr><td>血脉传承特质觉醒</td><td>+0.1 × legacyStrength</td><td>三代后 ×0.5</td></tr>
+      <tr><td>师承传承训练响应</td><td>+0.05~0.10</td><td>不衰减（一次性）</td></tr>
+      <tr><td>师承传承特质觉醒</td><td>+5~15%</td><td>不衰减</td></tr>
+      <tr><td>精神传承 MF（接班人）</td><td>+3</td><td>不衰减</td></tr>
+      <tr><td>精神传承 MF（全队）</td><td>+1（legacyScore ≥30）</td><td>不衰减</td></tr>
+    </tbody>
+  </table>
+
+  <h3>16.5 经理 legacyScore</h3>
+  <table>
+    <thead><tr><th>项目</th><th>分值</th></tr></thead>
+    <tbody>
+      <tr><td>冠军</td><td>×15</td></tr>
+      <tr><td>亚军</td><td>×6</td></tr>
+      <tr><td>季后赛</td><td>×3</td></tr>
+      <tr><td>打造王朝</td><td>×10</td></tr>
+      <tr><td>培养名人堂球员</td><td>×8</td></tr>
+      <tr><td>青训出品</td><td>×2</td></tr>
+      <tr><td>执教年限</td><td>×1</td></tr>
+    </tbody>
+  </table>
+
+  <h3>16.6 王朝特殊机制</h3>
+  <table>
+    <thead><tr><th>机制</th><th>效果</th><th>持续</th></tr></thead>
+    <tbody>
+      <tr><td>王朝遗产</td><td>青训产出 ×1.2</td><td>3 季</td></tr>
+      <tr><td>王朝诅咒</td><td>新援心理 -5</td><td>2 季</td></tr>
+      <tr><td>跨代对决</td><td>clutch +10</td><td>单场</td></tr>
+      <tr><td>球衣退役</td><td>全队心理 +10；Fame +5</td><td>一次性</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note gold"><b>收束总结</b>：王朝与传承系统是 HWO 的"意义系统"。它让单赛季的胜负、单名球员的生涯、单支球队的兴衰，汇聚为跨越代际的世界历史。传承会衰减、含随机性，确保王朝自然兴衰——没有永远的王者，只有新的挑战者。这是 HWO 区别于一次性经理游戏的核心：你打造的王朝会留在世界的历史档案里，你的球星退役后他的儿子可能再来，你的执教生涯结束后你的名字永远在年代史中。所有数值在 EA 阶段通过灰度参数热更新调优。</div>
+</section>
+
+<footer style="text-align:center;color:var(--ink3);font-size:12px;padding:20px 0 40px;border-top:1px solid var(--line);margin-top:20px">
+  王朝与传承系统设计 v1.0 · Hoops World Online · 2026-09-28<br>
+  收束系统 · 聚合：成长线·关系系统·三身份·世界结构·经济系统·Sim Engine
+</footer>
+
+</div>
+</body>
+</html>
