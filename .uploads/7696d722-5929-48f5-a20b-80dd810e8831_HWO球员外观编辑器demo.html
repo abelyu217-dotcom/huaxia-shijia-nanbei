@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>HWO 球员外观编辑器 - facesjs</title>
+<style>
+  body { margin: 0; background: #1a1a2e; color: #eee; font-family: -apple-system, "Microsoft YaHei", sans-serif; display: flex; flex-direction: column; align-items: center; padding: 15px; }
+  h1 { color: #f39c12; font-size: 16px; margin: 0 0 12px 0; }
+  .main { display: flex; gap: 15px; align-items: flex-start; }
+  .preview-box { background: #fff; border-radius: 8px; padding: 10px; }
+  #face-preview { width: 240px; height: 360px; }
+  #face-preview svg { width: 100%; height: 360px; }
+  .panel { width: 320px; max-height: 750px; overflow-y: auto; }
+  .group { background: #16213e; border-radius: 6px; padding: 8px; margin-bottom: 6px; }
+  .group h3 { margin: 0 0 6px 0; font-size: 11px; color: #fbbf24; }
+  .row { display: flex; gap: 4px; flex-wrap: wrap; }
+  .btn { min-width: 30px; height: 24px; border-radius: 4px; border: 2px solid transparent; cursor: pointer; background: #2a3a5e; color: #fff; font-size: 10px; padding: 0 6px; }
+  .btn.selected { border-color: #f39c12; background: #3a5a8e; }
+  .sw { width: 24px; height: 24px; border-radius: 4px; cursor: pointer; border: 2px solid transparent; }
+  .sw.selected { border-color: #f39c12; }
+  .actions { margin-top: 10px; display: flex; gap: 8px; }
+  input[type=range] { width: 100%; }
+  select { width: 100%; background: #2a3a5e; color: #fff; border: none; padding: 4px; border-radius: 4px; font-size: 11px; }
+</style>
+</head>
+<body>
+
+<h1>🏀 HWO 球员外观编辑器（facesjs 5.0.3）</h1>
+<div class="main">
+  <div class="preview-box">
+    <div id="face-preview"></div>
+  </div>
+  <div class="panel" id="panel"></div>
+</div>
+<div class="actions">
+  <button class="btn" onclick="randomFace()">随机生成</button>
+  <button class="btn" onclick="copyData()">复制数据</button>
+</div>
+
+<script type="module">
+import { display, generate, svgsIndex } from 'https://esm.sh/facesjs@5.0.3';
+
+window.face = null;
+window.display = display;
+window.generate = generate;
+window.svgsIndex = svgsIndex;
+
+var SKIN_COLORS = ['#fedac7', '#f5d5b8', '#eab88a', '#d4986a', '#a86b3a', '#7a4a22', '#5c3a1e'];
+var HAIR_COLORS = ['#1a1a1a', '#2d1810', '#5c3a1e', '#8b5a2b', '#c9a876', '#e8e0d0', '#8b0000', '#2d4a6b', '#b8b8b8'];
+var JERSEY_COLORS = ['#0c2340', '#c8102e', '#1d428a', '#2c5234', '#3d3d3d', '#6b2d5c', '#d4a017', '#ffffff'];
+
+// 生成数字 id 数组
+function rangeIds(n) {
+  var arr = [];
+  for (var i = 0; i < n; i++) arr.push(String(i));
+  return arr;
+}
+
+var HAIR_IDS = rangeIds(51);
+var FACIAL_HAIR_IDS = rangeIds(83);
+var EYE_IDS = rangeIds(35);
+var EYEBROW_IDS = rangeIds(30);
+var NOSE_IDS = rangeIds(17);
+var MOUTH_IDS = rangeIds(17);
+var HEAD_IDS = rangeIds(21);
+var GLASSES_IDS = rangeIds(7);
+var ACCESSORIES_IDS = rangeIds(8);
+var BODY_IDS = rangeIds(5);
+var EAR_IDS = rangeIds(3);
+var JERSEY_IDS = rangeIds(18);
+var EYELINE_IDS = rangeIds(7);
+var SMILELINE_IDS = rangeIds(5);
+var MISCLINE_IDS = rangeIds(11);
+var HAIRBG_IDS = rangeIds(8);
+
+function render() {
+  if (!window.face) return;
+  display('face-preview', window.face);
+  buildPanel();
+}
+
+window.randomFace = function() {
+  window.face = generate();
+  render();
+};
+
+function buildPanel() {
+  var f = window.face;
+  var p = document.getElementById('panel');
+  var h = '';
+  
+  // 肤色
+  h += '<div class="group"><h3>肤色</h3><div class="row">';
+  SKIN_COLORS.forEach(function(c) {
+    h += '<div class="sw' + (f.body.color===c?' selected':'') + '" style="background:' + c + '" onclick="setSkin(\'' + c + '\')"></div>';
+  });
+  h += '</div></div>';
+  
+  // 胖瘦
+  h += '<div class="group"><h3>胖瘦: ' + f.fatness.toFixed(2) + '</h3><input type="range" min="0" max="1" step="0.05" value="' + f.fatness + '" oninput="setFatness(parseFloat(this.value))"></div>';
+  
+  // 体型
+  h += '<div class="group"><h3>体型: ' + f.body.id + '</h3><select onchange="setBody(this.value)">';
+  BODY_IDS.forEach(function(id) {
+    h += '<option value="' + id + '"' + (f.body.id===id?' selected':'') + '>body ' + id + '</option>';
+  });
+  h += '</select></div>';
+  
+  // 头型
+  h += '<div class="group"><h3>头型: ' + f.head.id + '</h3><select onchange="setHead(this.value)">';
+  HEAD_IDS.forEach(function(id) {
+    h += '<option value="' + id + '"' + (f.head.id===id?' selected':'') + '>head ' + id + '</option>';
+  });
+  h += '</select></div>';
+  
+  // 发型
+  h += '<div class="group"><h3>发型: ' + f.hair.id + '</h3><select onchange="setHair(this.value)">';
+  HAIR_IDS.forEach(function(id) {
+    h += '<option value="' + id + '"' + (f.hair.id===id?' selected':'') + '>hair ' + id + '</option>';
+  });
+  h += '</select></div>';
+  
+  // 发色
+  h += '<div class="group"><h3>发色</h3><div class="row">';
+  HAIR_COLORS.forEach(function(c) {
+    h += '<div class="sw' + (f.hair.color===c?' selected':'') + '" style="background:' + c + '" onclick="setHairColor(\'' + c + '\')"></div>';
+  });
+  h += '</div></div>';
+  
+  // 眼睛
+  h += '<div class="group"><h3>眼睛: ' + f.eye.id + '</h3><select onchange="setEye(this.value)">';
+  EYE_IDS.forEach(function(id) {
+    h += '<option value="' + id + '"' + (f.eye.id===id?' selected':'') + '>eye ' + id + '</option>';
+  });
+  h += '</select></div>';
+  
+  // 眉毛
+  h += '<div class="group"><h3>眉毛: ' + f.eyebrow.id + '</h3><select onchange="setEyebrow(this.value)">';
+  EYEBROW_IDS.forEach(function(id) {
+    h += '<option value="' + id + '"' + (f.eyebrow.id===id?' selected':'') + '>brow ' + id + '</option>';
+  });
+  h += '</select></div>';
+  
+  // 鼻子
+  h += '<div class="group"><h3>鼻子: ' + f.nose.id + '</h3><select onchange="setNose(this.value)">';
+  NOSE_IDS.forEach(function(id) {
+    h += '<option value="' + id + '"' + (f.nose.id===id?' selected':'') + '>nose ' + id + '</option>';
+  });
+  h += '</select></div>';
+  
+  // 嘴巴
+  h += '<div class="group"><h3>嘴巴: ' + f.mouth.id + '</h3><select onchange="setMouth(this.value)">';
+  MOUTH_IDS.forEach(function(id) {
+    h += '<option value="' + id + '"' + (f.mouth.id===id?' selected':'') + '>mouth ' + id + '</option>';
+  });
+  h += '</select></div>';
+  
+  // 胡须
+  h += '<div class="group"><h3>胡须: ' + f.facialHair.id + '</h3><select onchange="setFacialHair(this.value)">';
+  FACIAL_HAIR_IDS.forEach(function(id) {
+    h += '<option value="' + id + '"' + (f.facialHair.id===id?' selected':'') + '>beard ' + id + '</option>';
+  });
+  h += '</select></div>';
+  
+  // 眼镜
+  h += '<div class="group"><h3>眼镜: ' + f.glasses.id + '</h3><select onchange="setGlasses(this.value)">';
+  GLASSES_IDS.forEach(function(id) {
+    h += '<option value="' + id + '"' + (f.glasses.id===id?' selected':'') + '>glasses ' + id + '</option>';
+  });
+  h += '</select></div>';
+  
+  // 配饰
+  h += '<div class="group"><h3>配饰: ' + f.accessories.id + '</h3><select onchange="setAccessories(this.value)">';
+  ACCESSORIES_IDS.forEach(function(id) {
+    h += '<option value="' + id + '"' + (f.accessories.id===id?' selected':'') + '>acc ' + id + '</option>';
+  });
+  h += '</select></div>';
+  
+  // 球衣
+  h += '<div class="group"><h3>球衣: ' + (f.jersey.id || f.jersey) + '</h3><select onchange="setJersey(this.value)">';
+  JERSEY_IDS.forEach(function(id) {
+    var jid = f.jersey.id || f.jersey;
+    h += '<option value="' + id + '"' + (jid===id?' selected':'') + '>jersey ' + id + '</option>';
+  });
+  h += '</select></div>';
+  
+  // 球衣主色
+  h += '<div class="group"><h3>球衣主色</h3><div class="row">';
+  JERSEY_COLORS.forEach(function(c) {
+    h += '<div class="sw' + (f.teamColors[0]===c?' selected':'') + '" style="background:' + c + '" onclick="setJerseyColor(\'' + c + '\')"></div>';
+  });
+  h += '</div></div>';
+  
+  p.innerHTML = h;
+}
+
+window.setSkin = function(c) { window.face.body.color = c; render(); };
+window.setFatness = function(v) { window.face.fatness = v; render(); };
+window.setBody = function(id) { window.face.body.id = id; render(); };
+window.setHead = function(id) { window.face.head.id = id; render(); };
+window.setHair = function(id) { window.face.hair.id = id; render(); };
+window.setHairColor = function(c) { window.face.hair.color = c; render(); };
+window.setEye = function(id) { window.face.eye.id = id; render(); };
+window.setEyebrow = function(id) { window.face.eyebrow.id = id; render(); };
+window.setNose = function(id) { window.face.nose.id = id; render(); };
+window.setMouth = function(id) { window.face.mouth.id = id; render(); };
+window.setFacialHair = function(id) { window.face.facialHair.id = id; render(); };
+window.setGlasses = function(id) { window.face.glasses.id = id; render(); };
+window.setAccessories = function(id) { window.face.accessories.id = id; render(); };
+window.setJersey = function(id) { 
+  if (window.face.jersey && typeof window.face.jersey === 'object') window.face.jersey.id = id;
+  else window.face.jersey = { id: id };
+  render(); 
+};
+window.setJerseyColor = function(c) { window.face.teamColors[0] = c; render(); };
+
+window.copyData = function() {
+  navigator.clipboard.writeText(JSON.stringify(window.face, null, 2));
+  alert('已复制面部数据到剪贴板');
+};
+
+// 初始化
+window.randomFace();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>HWO 留存与数据观测看板（预览）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .header h1 { font-size: 20px; color: #f0f6fc; }
+    .header .actions { display: flex; gap: 8px; }
+    .header input {
+      padding: 8px 12px;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #c9d1d9;
+      font-size: 13px;
+      width: 320px;
+    }
+    .header button {
+      padding: 8px 16px;
+      background: #238636;
+      color: #fff;
+      border: 1px solid #238636;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .header button:hover { background: #2ea043; }
+    .header button.secondary { background: #21262d; border-color: #30363d; }
+    .header button.secondary:hover { background: #30363d; }
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .stat-card .label { font-size: 12px; color: #8b949e; text-transform: uppercase; margin-bottom: 8px; }
+    .stat-card .value { font-size: 32px; font-weight: 600; color: #f0f6fc; }
+    .stat-card .delta { font-size: 12px; margin-top: 4px; }
+    .stat-card .delta.up { color: #3fb950; }
+    .stat-card .delta.down { color: #f85149; }
+    .chart-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .chart-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .chart-card .title { font-size: 14px; color: #f0f6fc; margin-bottom: 12px; font-weight: 600; }
+    .chart-card canvas { max-height: 280px; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .events-list {
+      max-height: 280px;
+      overflow-y: auto;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 12px;
+    }
+    .events-list .event {
+      padding: 6px 8px;
+      border-bottom: 1px solid #21262d;
+      display: flex;
+      justify-content: space-between;
+    }
+    .events-list .event .cat {
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+    }
+    .events-list .event .cat.auth { background: #1f6feb33; color: #58a6ff; }
+    .events-list .event .cat.game { background: #23863633; color: #3fb950; }
+    .events-list .event .cat.commerce { background: #8957e533; color: #bc8cff; }
+    .events-list .event .cat.retention { background: #d2992233; color: #e3b341; }
+    .events-list .event .cat.system { background: #6e768133; color: #8b949e; }
+    .footer {
+      text-align: center;
+      padding: 12px;
+      color: #6e7681;
+      font-size: 11px;
+      margin-top: 20px;
+    }
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #f0f6fc;
+      font-size: 13px;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .toast.show { opacity: 1; }
+    .toast.error { border-color: #f85149; }
+    .toast.success { border-color: #3fb950; }
+    @media (max-width: 900px) {
+      .stats-row { grid-template-columns: 1fr; }
+      .two-col { grid-template-columns: 1fr; }
+      .header { flex-direction: column; gap: 12px; }
+      .header input { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>HWO 留存与数据观测看板</h1>
+    <div class="actions">
+      <input id="token" placeholder="Bearer token（登录 /api/auth/login 获取）" />
+      <button id="refresh">刷新数据</button>
+      <button id="mock" class="secondary">加载示例数据</button>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="label">DAU 日活</div>
+      <div class="value" id="dau">—</div>
+      <div class="delta" id="dau-delta"></div>
+    </div>
+    <div class="stat-card">
+      <div class="label">WAU 周活</div>
+      <div class="value" id="wau">—</div>
+      <div class="delta" id="wau-delta"></div>
+    </div>
+    <div class="stat-card">
+      <div class="label">MAU 月活</div>
+      <div class="value" id="mau">—</div>
+      <div class="delta" id="mau-delta"></div>
+    </div>
+  </div>
+
+  <div class="chart-row">
+    <div class="chart-card">
+      <div class="title">留存漏斗 D1 / D7 / D30（最近 14 天 cohort）</div>
+      <canvas id="retentionChart"></canvas>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="chart-card">
+      <div class="title">付费用户 + 金额（最近 30 天）</div>
+      <canvas id="paidChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="title">事件流（按分类）</div>
+      <div class="events-list" id="eventsList">
+        <div style="padding:20px;text-align:center;color:#6e7681">点击"刷新数据"加载</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    HWO M5 §6.3 · 数据源：/api/analytics/* · 等价 Grafana 看板 packages/api/ops/grafana-hwo-retention.json
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const API_BASE = window.location.origin.startsWith("http://localhost:5173")
+      ? "http://localhost:3000"
+      : "";
+    let retentionChart = null;
+    let paidChart = null;
+
+    function toast(msg, type = "info") {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.className = "toast show " + type;
+      setTimeout(() => (el.className = "toast"), 2400);
+    }
+
+    function authHeaders() {
+      const t = document.getElementById("token").value.trim();
+      return t ? { Authorization: t.startsWith("Bearer ") ? t : `Bearer ${t}` } : {};
+    }
+
+    async function fetchJson(path) {
+      const res = await fetch(`${API_BASE}${path}`, { headers: { ...authHeaders(), "Content-Type": "application/json" } });
+      if (!res.ok) throw new Error(`${path}: ${res.status}`);
+      return res.json();
+    }
+
+    function renderDau(d) {
+      document.getElementById("dau").textContent = d.dau ?? "—";
+      document.getElementById("wau").textContent = d.wau ?? "—";
+      document.getElementById("mau").textContent = d.mau ?? "—";
+      const pd = document.getElementById("dau-delta");
+      pd.className = "delta " + (d.paidUsers > 0 ? "up" : "");
+      pd.textContent = `付费用户 ${d.paidUsers ?? 0} · 行为数 ${d.totalActions ?? 0}`;
+    }
+
+    function renderRetention(series) {
+      const labels = series.map((s) => s.date.slice(0, 10));
+      const d1 = series.map((s) => +(s.rate * 100).toFixed(1));
+      const ctx = document.getElementById("retentionChart").getContext("2d");
+      if (retentionChart) retentionChart.destroy();
+      retentionChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "D1 留存率 (%)",
+            data: d1,
+            borderColor: "#58a6ff",
+            backgroundColor: "rgba(88,166,252,0.1)",
+            fill: true,
+            tension: 0.3,
+            pointRadius: 4,
+          }],
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: "#c9d1d9" } } },
+          scales: {
+            x: { ticks: { color: "#8b949e" }, grid: { color: "#21262d" } },
+            y: { ticks: { color: "#8b949e", callback: (v) => v + "%" }, grid: { color: "#21262d" }, min: 0 },
+          },
+        },
+      });
+    }
+
+    function renderPaid(events) {
+      // 从 commerce 事件聚合成每日付费
+      const byDay = {};
+      events.filter((e) => e.category === "commerce").forEach((e) => {
+        const day = e.occurredAt.slice(0, 10);
+        if (!byDay[day]) byDay[day] = { users: 0, amount: 0 };
+        byDay[day].users += 1;
+        byDay[day].amount += (e.properties?.amount ?? 0) / 100;
+      });
+      const labels = Object.keys(byDay).sort();
+      const users = labels.map((d) => byDay[d].users);
+      const amount = labels.map((d) => byDay[d].amount);
+      const ctx = document.getElementById("paidChart").getContext("2d");
+      if (paidChart) paidChart.destroy();
+      paidChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [
+            { label: "付费用户数", data: users, backgroundColor: "#bc8cff", yAxisID: "y" },
+            { label: "付费金额 (USD)", data: amount, backgroundColor: "#3fb950", yAxisID: "y1" },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: "#c9d1d9" } } },
+          scales: {
+            x: { ticks: { color: "#8b949e" }, grid: { color: "#21262d" } },
+            y: { ticks: { color: "#8b949e" }, grid: { color: "#21262d" }, position: "left" },
+            y1: { ticks: { color: "#8b949e" }, grid: { drawOnChartArea: false }, position: "right" },
+          },
+        },
+      });
+    }
+
+    function renderEvents(events) {
+      const list = document.getElementById("eventsList");
+      if (events.length === 0) {
+        list.innerHTML = '<div style="padding:20px;text-align:center;color:#6e7681">暂无事件</div>';
+        return;
+      }
+      list.innerHTML = events.slice(0, 50).map((e) => `
+        <div class="event">
+          <span>${e.event}</span>
+          <span class="cat ${e.category}">${e.category}</span>
+          <span style="color:#6e7681">${e.occurredAt.slice(0, 19).replace("T", " ")}</span>
+        </div>
+      `).join("");
+    }
+
+    async function refreshAll() {
+      try {
+        const [dau, series, events] = await Promise.all([
+          fetchJson("/api/analytics/dau"),
+          fetchJson("/api/analytics/retention/series?days=14&type=d1"),
+          fetchJson("/api/analytics/events?limit=200"),
+        ]);
+        renderDau(dau);
+        renderRetention(series);
+        renderPaid(events);
+        renderEvents(events);
+        toast("数据已刷新", "success");
+      } catch (err) {
+        toast(`加载失败: ${err.message}`, "error");
+      }
+    }
+
+    function loadMock() {
+      const today = new Date();
+      const days = Array.from({ length: 14 }, (_, i) => {
+        const d = new Date(today);
+        d.setDate(d.getDate() - (13 - i));
+        return d.toISOString().slice(0, 10);
+      });
+      const series = days.map((date) => ({
+        date,
+        rate: 0.35 + Math.random() * 0.4,
+        cohortSize: 80 + Math.floor(Math.random() * 60),
+      }));
+      const events = [];
+      const cats = ["auth", "game", "commerce", "retention", "system"];
+      const evNames = { auth: ["login", "register"], game: ["sim_match", "lineup_edit"], commerce: ["payment_paid", "vip_subscribe"], retention: ["daily_checkin", "tutorial_complete"], system: ["season_advance"] };
+      for (let i = 0; i < 30; i++) {
+        const cat = cats[Math.floor(Math.random() * cats.length)];
+        const names = evNames[cat];
+        events.push({
+          event: names[Math.floor(Math.random() * names.length)],
+          category: cat,
+          occurredAt: new Date(today.getTime() - Math.random() * 86400000 * 30).toISOString(),
+          properties: cat === "commerce" ? { amount: 600 + Math.floor(Math.random() * 5400) } : {},
+        });
+      }
+      renderDau({ dau: 156, wau: 423, mau: 1280, paidUsers: 12, totalActions: 1340 });
+      renderRetention(series);
+      renderPaid(events);
+      renderEvents(events);
+      toast("已加载示例数据", "success");
+    }
+
+    document.getElementById("refresh").addEventListener("click", refreshAll);
+    document.getElementById("mock").addEventListener("click", loadMock);
+    // 初始加载示例数据
+    loadMock();
+  </script>
+</body>
+</html>

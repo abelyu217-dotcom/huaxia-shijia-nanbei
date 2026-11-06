@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>HWO 完整策划方案 v1.0（可落地执行）</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; max-width: 1200px; margin: 0 auto; padding: 32px 40px; background: #0f1419; color: #e0e0e0; line-height: 1.7; font-size: 14px; }
+  h1 { color: #fff; font-size: 26px; border-bottom: 3px solid #c0392b; padding-bottom: 10px; }
+  h2 { color: #f39c12; font-size: 18px; margin-top: 36px; border-left: 4px solid #f39c12; padding-left: 12px; }
+  h3 { color: #60a5fa; font-size: 15px; margin-top: 24px; }
+  h4 { color: #a78bfa; font-size: 13px; margin-top: 16px; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; background: #1a1f2e; font-size: 12px; }
+  th, td { border: 1px solid #2a3040; padding: 6px 10px; text-align: left; }
+  th { background: #2c3e50; color: #fff; text-align: center; }
+  .dim { color: #fbbf24; font-weight: 700; }
+  .good { color: #4ade80; }
+  .bad { color: #f87171; }
+  .note { background: #1a1f2e; padding: 12px 16px; border-radius: 4px; margin: 12px 0; border-left: 3px solid #f39c12; }
+  .formula { background: #1a2a3a; padding: 10px 14px; border-radius: 4px; font-family: monospace; color: #60a5fa; margin: 8px 0; font-size: 12px; }
+  .toc { background: #1a1f2e; padding: 16px 20px; border-radius: 6px; margin: 20px 0; }
+  .toc a { color: #60a5fa; text-decoration: none; }
+  .toc ul { margin: 4px 0; padding-left: 20px; }
+</style>
+</head>
+<body>
+
+<h1>HWO 完整策划方案 v1.0</h1>
+<p><b>游戏名</b>：HWO (Hoops World Online) ｜ <b>类型</b>：多人在线网页篮球经理 ｜ <b>平台</b>：Web（响应式）｜ <b>赛季长度</b>：63 现实天</p>
+
+<div class="toc">
+<b>目录</b>
+<ul>
+<li><a href="#s1">1. 设计首页</a></li>
+<li><a href="#s2">2. 世界设定</a></li>
+<li><a href="#s3">3. 联赛系统</a></li>
+<li><a href="#s4">4. 球员属性系统</a></li>
+<li><a href="#s5">5. 成长与年龄系统</a></li>
+<li><a href="#s6">6. 球探与 Fog of War</a></li>
+<li><a href="#s7">7. 家族系统</a></li>
+<li><a href="#s8">8. 经济系统</a></li>
+<li><a href="#s9">9. 赛季日历</a></li>
+<li><a href="#s10">10. 事件时间表</a></li>
+<li><a href="#s11">11. 三身份系统</a></li>
+<li><a href="#s12">12. 商业化设计</a></li>
+<li><a href="#s13">13. 首个可玩范围</a></li>
+</ul>
+</div>
+
+<h2 id="s1">1. 设计首页</h2>
+
+<h3>1.1 定位</h3>
+<p>对于<b>深度篮球策略玩家</b>（厌倦了卡牌数值碾压、追求真实模拟和长线经营），HWO 是一款多人在线网页篮球经理游戏；相较 BasketPulse（2008 年老牌欧洲 F2P）和 JBL（1998 年 28 年运营），它通过<b>三身份打通（经理+球员+11职业）+ 家族代际传承 + 五国差异化规则</b>提供更深层的策略维度和社交粘性。</p>
+
+<h3>1.2 目标玩家</h3>
+<table>
+<tr><th>画像</th><th>占比</th><th>核心需求</th></tr>
+<tr><td>深度模拟爱好者</td><td>40%</td><td>真实数据、战术深度、长期经营</td></tr>
+<tr><td>社交/联盟玩家</td><td>30%</td><td>与朋友竞争、联邦选举、交易谈判</td></tr>
+<tr><td>收集/养成玩家</td><td>20%</td><td>培养明星球员、家族传承、选秀建队</td></tr>
+<tr><td>休闲上线玩家</td><td>10%</td><td>每天 5 分钟看结果，不强制在线</td></tr>
+</table>
+
+<h3>1.3 核心循环</h3>
+<div class="formula">
+每日上线 → 查看战报 → 调整战术/轮换 → 签人/交易 → 看训练成长 → 模拟明天
+　　　　　　↓
+赛季推进 → 季后赛 → 颁奖 → 选秀 → 自由市场 → 新赛季
+　　　　　　↓
+长线：家族代际 → 后裔传承 → 王朝叙事
+</div>
+
+<h3>1.4 设计支柱</h3>
+<table>
+<tr><th>支柱</th><th>含义</th></tr>
+<tr><td>真实模拟</td><td>比赛由属性驱动，不是随机数；球员有疲劳、伤病、状态</td></tr>
+<tr><td>信息不对称</td><td>球探系统制造 fog，你看到的不是全部真相</td></tr>
+<tr><td>长线叙事</td><td>家族传承、球员代际、联盟历史——玩 10 年还有新故事</td></tr>
+<tr><td>社交竞争</td><td>联邦选举、交易谈判、国家队征召、八卦公示</td></tr>
+<tr><td>时间友好</td><td>所有比赛异步模拟，不强制在线时间</td></tr>
+</table>
+
+<h2 id="s2">2. 世界设定</h2>
+
+<h3>2.1 国家三层架构</h3>
+<table>
+<tr><th>层级</th><th>数量</th><th>玩家可见内容</th><th>联赛规模</th></tr>
+<tr><td>核心国</td><td>首发 5 → 终态 40-50</td><td>完整可玩：L1/L2/L3 全级 + 杯赛</td><td>每级 12 队</td></tr>
+<tr><td>卫星国</td><td>60-80</td><td>国家队赛事、青年联赛、国际联赛资格</td><td>1 级 NPC 联赛（只产赛果与人才）</td></tr>
+<tr><td>背景国</td><td>其余全部</td><td>仅世界杯/奥运会名单出现</td><td>无（纯人才池）</td></tr>
+</table>
+
+<h3>2.2 首发 5 国差异化规则</h3>
+<table>
+<tr><th>国家</th><th>工资帽</th><th>外援限制</th><th>经济系数</th><th>特色</th></tr>
+<tr><td>中国 CN</td><td>软工资帽</td><td>2 名外援</td><td>1.0</td><td>庞大人才池、青训土壤高</td></tr>
+<tr><td>美国 US</td><td>硬工资帽</td><td>无外援（全本土）</td><td>1.5</td><td>商业价值最高、人才密度最高</td></tr>
+<tr><td>欧洲 EU</td><td>财政公平法案</td><td>无限制</td><td>0.9</td><td>国际联赛席位最多</td></tr>
+<tr><td>日本 JP</td><td>软工资帽</td><td>1 名外援</td><td>0.8</td><td>篮球人口小但忠诚度高</td></tr>
+<tr><td>拉美 LA</td><td>无工资帽</td><td>无限制</td><td>0.8</td><td>天才辈出但财政不稳</td></tr>
+</table>
+
+<h3>2.3 国家五维属性（1~10）</h3>
+<table>
+<tr><th>维度</th><th>影响</th></tr>
+<tr><td>篮球热度</td><td>联赛上座/收视收入、青训报名人数</td></tr>
+<tr><td>人口基数</td><td>人才池总量、每赛季新秀产出数量</td></tr>
+<tr><td>经济水平</td><td>工资帽系数、赞助单价、球馆成本</td></tr>
+<tr><td>青训土壤</td><td>新秀初始能力分布、隐藏属性均值</td></tr>
+<tr><td>商业价值</td><td>国际联赛席位分配权重、国家队分红</td></tr>
+</table>
+
+<h2 id="s3">3. 联赛系统</h2>
+
+<h3>3.1 国内联赛（三角形层级）</h3>
+<table>
+<tr><th>项目</th><th>规则</th></tr>
+<tr><td>结构</td><td>三角形层级，每级联赛有 2 个下级联赛（1.1 → 2.1/2.2 → 3.1/3.2...）</td></tr>
+<tr><td>每级队伍</td><td>12 队</td></tr>
+<tr><td>常规赛</td><td>2 组×6 队，双循环，每组前 4 进季后赛</td></tr>
+<tr><td>季后赛</td><td>1v4、2v3 交叉配对，抢 2 胜；半决赛/决赛同</td></tr>
+<tr><td>降级附加赛</td><td>每组最后 2 名打 9-12 名排位赛（抢 2 胜）</td></tr>
+<tr><td>升级</td><td>冠军自动升级；第 2 名与上级第 9/10 名打过渡赛</td></tr>
+<tr><td>外援限制</td><td>单场最多注册 6 名外援（国内联赛）</td></tr>
+<tr><td>积分</td><td>胜 2 / 负 1 / 技术负 0；同分比相互战绩净胜分</td></tr>
+</table>
+
+<h3>3.2 国际联赛（32 队三阶段）</h3>
+<table>
+<tr><th>阶段</th><th>规则</th></tr>
+<tr><td>第一阶段</td><td>32 队分 4 组×8 队，双循环 14 轮，每组前 4 进 TOP 16</td></tr>
+<tr><td>TOP 16</td><td>16 队分 2 组×8 队，单循环 7 轮，每组前 4 进季后赛</td></tr>
+<tr><td>LAST 16</td><td>后 4 名竞争 17-32 名排位</td></tr>
+<tr><td>季后赛</td><td>8 队单败淘汰，抢 2 胜</td></tr>
+<tr><td>决赛</td><td>抢 3 胜（含铜牌赛）</td></tr>
+<tr><td>升降级</td><td>前 3 名升级；后 6 名（27-32）降级</td></tr>
+<tr><td>外援</td><td>无限制</td></tr>
+</table>
+
+<h3>3.3 青年赛（U16-18 高中）</h3>
+<ul>
+<li>每天都有比赛，铺满 Day 2-55</li>
+<li>常规赛 54 轮，每天一场</li>
+<li>常规赛结束后 Day 56 全明星，Day 57-60 季后赛</li>
+<li>对接选秀：毕业自动进入选秀池；神童可提前参选</li>
+</ul>
+
+<h3>3.4 少年赛（U12-15）</h3>
+<ul>
+<li>每天都有比赛，铺满 Day 2-55</li>
+<li>产出「苗子卡」：只显示 1-2 个特质标签，无数值</li>
+<li>不设降级、不产正式球员档案、不允许交易</li>
+<li>隐私红线：U12 不出现真实感数值、不允许付费加速</li>
+</ul>
+
+<h3>3.5 国家队赛事</h3>
+<table>
+<tr><th>赛事</th><th>周期</th><th>参赛资格</th></tr>
+<tr><td>世界杯</td><td>每 4 赛季一届</td><td>32 队，世界排名 + 落选赛</td></tr>
+<tr><td>洲际杯</td><td>每 2 赛季一届</td><td>16-24 队/区</td></tr>
+<tr><td>奥运会</td><td>每 8 赛季一届</td><td>12 队</td></tr>
+</table>
+
+<h2 id="s4">4. 球员属性系统</h2>
+
+<h3>4.1 五层架构（共 38 项）</h3>
+<table>
+<tr><th>层级</th><th>数量</th><th>属性</th><th>18 岁后是否变化</th></tr>
+<tr><td class="dim">静态体测</td><td>7</td><td>身高、臂展、骨架、手长、跟腱、站立摸高、体重</td><td>否（定型）</td></tr>
+<tr><td class="dim">动态运动</td><td>8</td><td>速度、弹跳、力量、敏捷、耐力、横向移动、垂直爆发、柔韧性</td><td>是（29 岁后衰退）</td></tr>
+<tr><td class="dim">技术</td><td>14</td><td>三分、中投、罚球、上篮、扣篮、传球、控球、篮板、抢断、盖帽、低位、面框、挡拆、背身</td><td>是（33 岁后才掉）</td></tr>
+<tr><td class="dim">心智</td><td>5</td><td>敬业度、抗压、团队、领导力、篮球智商</td><td>是（终身成长）</td></tr>
+<tr><td class="dim">隐藏</td><td>4</td><td>伤病倾向、成长潜力、性格特质、忠诚度</td><td>是（潜力随年龄衰减）</td></tr>
+</table>
+
+<h3>4.2 位置权重（OVR 计算）</h3>
+<table>
+<tr><th>位置</th><th>核心属性权重</th></tr>
+<tr><td>PG 控卫</td><td>控球 20%、传球 20%、速度 15%、篮球智商 15%、三分 10%、抢断 10%、其他 10%</td></tr>
+<tr><td>SG 分卫</td><td>三分 20%、中投 15%、扣篮 15%、速度 15%、控球 10%、其他 25%</td></tr>
+<tr><td>SF 小前</td><td>面框 15%、力量 15%、篮板 15%、抢断 10%、其他 45%</td></tr>
+<tr><td>PF 大前</td><td>篮板 20%、力量 20%、低位 15%、盖帽 10%、中投 10%、其他 25%</td></tr>
+<tr><td>C 中锋</td><td>篮板 25%、盖帽 20%、力量 20%、低位 15%、身高 10%、其他 10%</td></tr>
+</table>
+
+<h2 id="s5">5. 成长与年龄系统</h2>
+
+<h3>5.1 四类属性年龄曲线</h3>
+<table>
+<tr><th>属性类型</th><th>成长期</th><th>巅峰期</th><th>衰退期</th></tr>
+<tr><td>动态运动</td><td>18-24 岁快速涨</td><td>25-28 岁巅峰</td><td>29 岁开始掉</td></tr>
+<tr><td>进攻技术</td><td>18-26 岁涨</td><td>27-32 岁巅峰</td><td>33 岁开始掉</td></tr>
+<tr><td>防守技术</td><td>20-28 岁涨</td><td>29-32 岁巅峰</td><td>33 岁开始掉</td></tr>
+<tr><td>心智</td><td>终身缓慢涨</td><td>30 岁后持续涨</td><td>不衰退</td></tr>
+</table>
+
+<h3>5.2 成长公式</h3>
+<div class="formula">
+每赛季成长点数 = 年龄系数 × 成长型 × 敬业度 × 训练师效率 × 出场时间系数
+
+年龄系数：18-24 岁 = 1.5，25-28 岁 = 0.5，29+ 岁 = -0.3（衰退）
+成长型：A+ = 1.3，A = 1.1，B = 1.0，C = 0.8，D = 0.5
+敬业度：1-10，系数 = 0.5 + 敬业度 × 0.1
+训练师效率：1-10，系数 = 0.5 + 训练师 × 0.1
+出场时间：场均 30+ 分钟 = 1.2，20-30 = 1.0，10-20 = 0.8，&lt;10 = 0.5
+</div>
+
+<h3>5.3 职业天赋维度对接</h3>
+<p>家族「职业天赋」属性直接加成成长系数：<br>
+成长系数最终 = 基础成长系数 × (1 + (家族职业天赋 - 5) × 0.05)</p>
+
+<h2 id="s6">6. 球探与 Fog of War</h2>
+
+<h3>6.1 三级球探系统</h3>
+<table>
+<tr><th>球探等级</th><th>可见信息</th><th>不可见</th></tr>
+<tr><td>Lv.1 初级球探</td><td>静态体测（身高/臂展等）、位置标签、大致 OVR 区间</td><td>具体数值、隐藏属性、潜力</td></tr>
+<tr><td>Lv.2 中级球探</td><td>动态运动 8 项数值、技术前 5 项数值、潜力等级（A+/A/B/C/D）</td><td>剩余 9 项技术、心智、隐藏属性</td></tr>
+<tr><td>Lv.3 高级球探</td><td>全部 38 项数值（±2 误差）、隐藏属性可见</td><td>无（接近真实）</td></tr>
+</table>
+
+<h3>6.2 球探系统性偏差</h3>
+<p>每个球探有自己的偏差倾向：</p>
+<ul>
+<li>东方球探：高估内线 +3，低估外线 -2</li>
+<li>欧洲球探：高估技术 +2，低估运动能力 -2</li>
+<li>美国球探：高估运动能力 +3，低估篮球智商 -2</li>
+<li>南美球探：低估敬业度 -3，高估天赋 +2</li>
+</ul>
+
+<h3>6.3 青年赛 fog 矩阵</h3>
+<table>
+<tr><th>阶段</th><th>可见信息</th></tr>
+<tr><td>U12 苗子卡</td><td>2 个特质标签（如「长臂」「球感」），无数值</td></tr>
+<tr><td>高中 U16-18</td><td>体测数据可见，技术/运动数值为「???」或区间</td></tr>
+<tr><td>大学 U19-22</td><td>随年级递减 fog：大一≈高中，大四≈职业球探 Lv.2</td></tr>
+</table>
+
+<h2 id="s7">7. 家族系统</h2>
+
+<h3>7.1 核心定位</h3>
+<p>每个玩家 = 一个家族。Avatar 是脸，家族是命。家族给玩家一条超越单赛季成败的代际长线。</p>
+
+<h3>7.2 六维属性（1~10）</h3>
+<table>
+<tr><th>维度</th><th>定义</th><th>游戏内作用</th></tr>
+<tr><td class="dim">财务</td><td>理财与资本运作能力</td><td>奢侈税折扣、合同结构解锁</td></tr>
+<tr><td class="dim">产业</td><td>实业类型与规模</td><td>每赛季被动收入、球馆建设减免</td></tr>
+<tr><td class="dim">职业天赋</td><td>家族成员天赋倾向</td><td>三身份成长速率、后代天赋池</td></tr>
+<tr><td class="dim">资金</td><td>初始现金与流动资金</td><td>开局可支配现金、前期容错</td></tr>
+<tr><td class="dim">商业影响力</td><td>商界人脉与品牌议价</td><td>赞助单价与数量、球馆冠名</td></tr>
+<tr><td class="dim">篮坛影响力</td><td>篮球圈人脉与声望</td><td>自由球员招募、fog 收窄、选举票权</td></tr>
+</table>
+
+<h3>7.3 12 种家族类型</h3>
+<table>
+<tr><th>#</th><th>类型</th><th>特殊天赋</th><th>隐性代价</th></tr>
+<tr><td>1</td><td>篮球名门</td><td>后代天赋池 +1 项</td><td>连败声望跌速 ×1.5</td></tr>
+<tr><td>2</td><td>体育世家</td><td>青训营容量 +20%</td><td>产业收入上限 -20%</td></tr>
+<tr><td>3</td><td>商业巨贾</td><td>赞助槽位 +2</td><td>自由球员招募信任 -15%</td></tr>
+<tr><td>4</td><td>实业家族</td><td>球馆建设成本 -25%</td><td>奢侈税罚款 +10%</td></tr>
+<tr><td>5</td><td>金融家族</td><td>合同结构全解锁</td><td>每赛季金融风波事件</td></tr>
+<tr><td>6</td><td>媒体家族</td><td>票房/转播收入 +15%</td><td>更衣室内讧概率 +10%</td></tr>
+<tr><td>7</td><td>娱乐明星</td><td>主场上座 +12%</td><td>关键战球员分心概率 +8%</td></tr>
+<tr><td>8</td><td>学术世家</td><td>球探报告精度 +1 档</td><td>初始资金低，自由市场捡漏</td></tr>
+<tr><td>9</td><td>海外侨商</td><td>国际苗子引进 +25%</td><td>国内联邦票权 -1 档</td></tr>
+<tr><td>10</td><td>新贵创业</td><td>每赛季「风口」事件</td><td>连败触发抛售传闻</td></tr>
+<tr><td>11</td><td>工薪家族</td><td>职员薪资 -15%</td><td>买不起顶级球探</td></tr>
+<tr><td>12</td><td>寒门草根</td><td>职业天赋成长上限 +2</td><td>开局资金仅够 1 赛季运营</td></tr>
+</table>
+
+<h3>7.4 生成规则</h3>
+<div class="formula">
+1. 类型随机（按权重 roll，不可重 roll）
+2. 六维在区间内各自独立 roll
+3. 总和恒定保护：六维总和强制落在 [30, 38]，出界等比缩放
+</div>
+
+<h3>7.5 代际传承</h3>
+<p>化身退役时培养下一代话事人：</p>
+<ul>
+<li>六维继承：后代 = 父辈 × 0.8，然后 roll 修正（±0~2）</li>
+<li>天赋池：后代初始天赋 = 家族职业天赋 + 父辈成就加成</li>
+<li>富不过三代：连续两代经营得当可抵消衰减，连续失败加速衰退</li>
+</ul>
+
+<h3>7.6 联姻系统</h3>
+<table>
+<tr><th>项目</th><th>规则</th></tr>
+<tr><td>前置条件</td><td>双方运营满 1 赛季；篮坛影响力 ≥3；无未结财政违规</td></tr>
+<tr><td>效果</td><td>产业取均值；共享 1 个赞助槽；天赋池并集；交易免关联方溢价</td></tr>
+<tr><td>限制</td><td>每家族同时仅 1 段联姻；解除后 1 赛季冷却期</td></tr>
+<tr><td>防滥用</td><td>关联账号检测；不提供场上属性加成；全服公示</td></tr>
+</table>
+
+<h2 id="s8">8. 经济系统</h2>
+
+<h3>8.1 收入来源</h3>
+<table>
+<tr><th>来源</th><th>说明</th></tr>
+<tr><td>比赛日收入</td><td>门票 + 周边 + 转播（主场上座率决定）</td></tr>
+<tr><td>赞助合同</td><td>数量 = 2 + floor(商业影响力/3)，单价随商业影响力浮动</td></tr>
+<tr><td>联赛分红</td><td>按排名分配，冠军最多</td></tr>
+<tr><td>国际联赛分红</td><td>参赛即有，走得越远越多</td></tr>
+<tr><td>产业被动收入</td><td>产业 × 50 万/赛季</td></tr>
+</table>
+
+<h3>8.2 支出项</h3>
+<table>
+<tr><th>支出</th><th>说明</th></tr>
+<tr><td>球员工资</td><td>按合同支付，周结（周日 09:15）</td></tr>
+<tr><td>职员薪资</td><td>教练/球探/训练师，工薪家族 -15%</td></tr>
+<tr><td>球馆维护</td><td>按球馆等级</td></tr>
+<tr><td>奢侈税</td><td>超过工资帽缴纳，财务维度有折扣</td></tr>
+</table>
+
+<h3>8.3 工资帽规则（五国差异）</h3>
+<table>
+<tr><th>国家</th><th>工资帽类型</th><th>规则</th></tr>
+<tr><td>CN</td><td>软帽</td><td>超帽可签人，但交奢侈税</td></tr>
+<tr><td>US</td><td>硬帽</td><td>超帽不可签人</td></tr>
+<tr><td>EU</td><td>财政公平</td><td>收支平衡审查，赤字罚款</td></tr>
+<tr><td>JP</td><td>软帽</td><td>同 CN</td></tr>
+<tr><td>LA</td><td>无帽</td><td>随便花，但破产风险高</td></tr>
+</table>
+
+<h2 id="s9">9. 赛季日历</h2>
+
+<h3>9.1 五线并行结构</h3>
+<table>
+<tr><th>线</th><th>内容</th><th>节奏</th><th>起止</th></tr>
+<tr><td>线 1 俱乐部</td><td>国内联赛 + 国际联赛交叉</td><td>国内周二/四/六，国际周三/日</td><td>Day 2-63</td></tr>
+<tr><td>线 2 全明星</td><td>国内全明星 + 国际全明星 + 青年/少年全明星</td><td>一次性事件</td><td>Day 27 / Day 57</td></tr>
+<tr><td>线 3 国家队</td><td>两个窗口 × 3 天</td><td>窗口制</td><td>Day 24-26 / Day 44-46</td></tr>
+<tr><td>线 4 青年赛</td><td>高中 U16-18</td><td>每天都有</td><td>Day 2-61</td></tr>
+<tr><td>线 5 少年赛</td><td>少年 U12-15</td><td>每天都有</td><td>Day 2-55</td></tr>
+</table>
+
+<h3>9.2 关键节点</h3>
+<table>
+<tr><th>Day</th><th>事件</th></tr>
+<tr><td>1</td><td>赛季开幕 + 自由市场开放</td></tr>
+<tr><td>3</td><td>老球员退役决定</td></tr>
+<tr><td>18</td><td>租借截止</td></tr>
+<tr><td>23</td><td>国内常规赛收官 + 交易截止</td></tr>
+<tr><td>27</td><td>国内全明星赛</td></tr>
+<tr><td>35</td><td>国内冠军诞生</td></tr>
+<tr><td>56</td><td>国际第一阶段收官</td></tr>
+<tr><td>57</td><td>国际+青年+少年全明星</td></tr>
+<tr><td>60</td><td>国内联赛颁奖</td></tr>
+<tr><td>62</td><td>青年联赛颁奖 + 赛季末市场开放</td></tr>
+<tr><td>63</td><td>国际颁奖 + 升降级 + 赛季结束</td></tr>
+</table>
+
+<h2 id="s10">10. 事件时间表</h2>
+
+<h3>10.1 每日固定事件（UTC+8）</h3>
+<table>
+<tr><th>时间</th><th>事件</th><th>频率</th></tr>
+<tr><td>00:15</td><td>伤愈恢复 + 工资帽更新</td><td>每天</td></tr>
+<tr><td>02:00</td><td>赞助刷新 + 比赛排期</td><td>每天</td></tr>
+<tr><td>09:15</td><td>周财务结算（工资/赞助）</td><td>周日</td></tr>
+<tr><td>12:15</td><td>最佳球员榜单更新</td><td>周四</td></tr>
+<tr><td>18:00</td><td>比赛批量模拟</td><td>比赛日</td></tr>
+<tr><td>19:00</td><td>比赛结果发布</td><td>比赛日</td></tr>
+<tr><td>22:30</td><td>伤病判定</td><td>每天</td></tr>
+<tr><td>23:00</td><td>训练跑批</td><td>每天</td></tr>
+</table>
+
+<h3>10.2 收官日结算链（Day 63）</h3>
+<div class="formula">
+00:45 国际联赛奖金发放
+09:45 租借球员归还母队
+10:15 赛季末市场购入球员过户
+16:00 bot 队/清算队降级
+20:00 新赛季赞助合同生效
+全天 升降级执行
+</div>
+
+<h2 id="s11">11. 三身份系统</h2>
+
+<h3>11.1 三种身份</h3>
+<table>
+<tr><th>身份</th><th>说明</th></tr>
+<tr><td>经理</td><td>经营俱乐部：签人、交易、战术、阵容</td></tr>
+<tr><td>Avatar 球员</td><td>家族当代话事人，自己下场打球</td></tr>
+<tr><td>职员</td><td>11 种职业可选：球探/助教/主帅/训练师/经纪人/商人/球馆运营/记者/解说员/仲裁人/工会代表</td></tr>
+</table>
+
+<h3>11.2 三身份利益冲突</h3>
+<p>同时担任经理和 Avatar 球员时：</p>
+<ul>
+<li>Avatar 自己签自己：工资由系统按 OVR 定价，不可溢价</li>
+<li>Avatar 自己交易自己：交易需另一家俱乐部报价，不可强行</li>
+<li>职员身份与经理身份冲突时：不可同时担任同一俱乐部的主帅和经理</li>
+</ul>
+
+<h2 id="s12">12. 商业化设计</h2>
+
+<h3>12.1 商业模式</h3>
+<table>
+<tr><th>模式</th><th>说明</th></tr>
+<tr><td>F2P 基础</td><td>完整游戏免费玩，核心玩法不卖</td></tr>
+<tr><td>Premium 订阅</td><td>月费/年费，解锁便利功能（更多球探、更多战术存档、自动训练）</td></tr>
+<tr><td>外观付费</td><td>族徽、族谱皮肤、Avatar 服装</td></tr>
+</table>
+
+<h3>12.2 付费红线（不可碰）</h3>
+<ul>
+<li>不卖比赛结果</li>
+<li>不卖信息优势（不可付费解锁 fog）</li>
+<li>家族属性不可直购、不可付费重 roll</li>
+<li>U12 少年赛不可付费加速</li>
+<li>不做抽卡/开包</li>
+</ul>
+
+<h2 id="s13">13. 首个可玩范围</h2>
+
+<h3>13.1 P0（首发必须有）</h3>
+<table>
+<tr><th>系统</th><th>范围</th></tr>
+<tr><td>国内联赛</td><td>1 国 × L1/L2 = 24 队，完整赛季</td></tr>
+<tr><td>球员属性</td><td>38 项完整属性 + OVR 计算</td></tr>
+<tr><td>成长系统</td><td>年龄曲线 + 训练成长</td></tr>
+<tr><td>家族系统</td><td>12 类型六维 + 生成</td></tr>
+<tr><td>赛季日历</td><td>63 天完整排期</td></tr>
+<tr><td>比赛模拟</td><td>2D 文字直播 + 技术统计</td></tr>
+</table>
+
+<h3>13.2 P1（首发后 3 个月）</h3>
+<ul>
+<li>国际联赛（32 队）</li>
+<li>球探 fog 系统（3 级球探）</li>
+<li>青年赛（高中）</li>
+<li>自由市场 + 交易</li>
+<li>Premium 订阅</li>
+</ul>
+
+<h3>13.3 P2（首发后 6 个月）</h3>
+<ul>
+<li>国家队赛事</li>
+<li>少年赛（U12）</li>
+<li>联姻系统</li>
+<li>代际传承</li>
+<li>联邦选举</li>
+<li>第二国解锁</li>
+</ul>
+
+<h3>13.4 非目标（不做）</h3>
+<ul>
+<li>3D 画面/实时比赛</li>
+<li>手机 App（先 Web）</li>
+<li>联机对战（异步模拟）</li>
+<li>抽卡/开包</li>
+<li>PvP 实时对战</li>
+</ul>
+
+<div class="note" style="margin-top: 40px;">
+<b>文档版本</b>：v1.0 ｜ <b>日期</b>：2026-10-02 ｜ <b>基于</b>：v3.0 扩展篇 + 竞品对比 + 属性系统 demo + 赛程排期 v5.0 + 家族系统工程化版
+</div>
+
+</body>
+</html>
+<!-- （注：内容由AI生成） -->

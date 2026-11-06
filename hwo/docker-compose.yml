@@ -1,0 +1,81 @@
+# HWO 开发环境 docker-compose
+# 一条命令起全套基础设施：docker compose up -d
+# 参见：技术架构文档 §9.1
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hwo-postgres
+    environment:
+      POSTGRES_USER: hwo
+      POSTGRES_PASSWORD: hwo_dev
+      POSTGRES_DB: hwo
+    ports:
+      - "5432:5432"
+    volumes:
+      - hwo-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hwo"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: hwo-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - hwo-redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: hwo-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: hwo
+      MINIO_ROOT_PASSWORD: hwo_dev
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - hwo-miniodata:/data
+
+  # M5 §6.3 留存与数据观测看板
+  # 启动后访问 http://localhost:3001（admin/hwo_dev）
+  # 数据源：PostgreSQL（hwo_pg），看板 JSON 在 packages/api/ops/grafana-hwo-retention.json
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: hwo-grafana
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      GF_SECURITY_ADMIN_USER: hwo
+      GF_SECURITY_ADMIN_PASSWORD: hwo_dev
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      # 自动配置 PostgreSQL 数据源（uid=hwo_pg，对应看板 JSON 引用）
+      GF_DATASOURCES_POSTGRES_HOST: postgres:5432
+      GF_DATASOURCES_POSTGRES_USER: hwo
+      GF_DATASOURCES_POSTGRES_PASSWORD: hwo_dev
+      GF_DATASOURCES_POSTGRES_DB: hwo
+      GF_DATASOURCES_POSTGRES_SSLMODE: disable
+    ports:
+      - "3001:3000"
+    volumes:
+      # 自动配置：数据源 + 看板 provisioning
+      - ./packages/api/ops/grafana-provisioning:/etc/grafana/provisioning:ro
+      # 看板 JSON 放在 provisioning/dashboards 目录下，自动加载
+      - ./packages/api/ops/grafana-hwo-retention.json:/etc/grafana/provisioning/dashboards/hwo-retention.json:ro
+      - hwo-grafanadata:/var/lib/grafana
+
+volumes:
+  hwo-pgdata:
+  hwo-redisdata:
+  hwo-miniodata:
+  hwo-grafanadata:

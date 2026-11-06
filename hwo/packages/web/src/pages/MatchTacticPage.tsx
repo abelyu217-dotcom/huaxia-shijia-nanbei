@@ -1,0 +1,757 @@
+/**
+ * MatchTacticPage — 单场战术设定页
+ *
+ * 参考 Rim Attack 每场比赛独立战术设定流程：
+ *   - 比赛信息面板：当前对阵 / 日期 / 主客场标识
+ *   - 我方战术面板：查看并切换球队战术预设（进攻侧重 / 防守侧重）
+ *   - 对手分析面板：解析对手进攻侧重 / 防守侧重 / 出手倾向
+ *   - 反制策略面板：根据对手战术推荐反制预设与说明
+ *   - 战术板预览：复用 TacticBoard 可视化站位
+ *
+ * 对接：
+ *   GET  /api/season/schedule            → 定位比赛
+ *   GET  /api/tactics/presets            → 可选战术列表
+ *   GET  /api/tactics/team/:teamId       → 我方 / 对手战术
+ *   PUT  /api/tactics/team/:teamId       → 切换战术预设
+ *   GET  /api/tactics/counter/:presetId  → 反制建议
+ */
+
+import { useEffect, useState } from "react";
+import {
+  fetchCounterTactic,
+  fetchSchedule,
+  fetchTeamTactic,
+  fetchTacticPresets,
+  putTeamTactic,
+} from "../api";
+import type {
+  CounterTacticResult,
+  ScheduleDay,
+  ScheduleMatch,
+  TacticPreset,
+  TeamTactic,
+} from "../types";
+import {
+  DEFENSE_LABEL,
+  OFFENSE_LABEL,
+  TACTIC_CATEGORY_LABEL,
+  TACTIC_CATEGORY_ORDER,
+  TEMPO_LABEL,
+} from "../lib";
+import { useAuth } from "../auth/AuthContext";
+import { TacticBoard } from "../components/TacticBoard";
+import { LineupEditor } from "../components/LineupEditor";
+import { TacticEditor } from "../components/TacticEditor";
+
+interface Props {
+  matchId?: string;
+  teamId?: string;
+}
+
+type Tab = "match" | "lineup" | "tactic";
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: "match", label: "单场战术" },
+  { id: "lineup", label: "阵容编辑" },
+  { id: "tactic", label: "战术选择" },
+];
+
+// modSet 字段标签（本页局部使用，与 TacticEditor 保持一致措辞）
+const OFFENSE_FOCUS_LABELS: Record<string, string> = {
+  balanced: "均衡",
+  drive: "突破",
+  outside: "外线",
+  inside: "内线",
+  bully: "碾压",
+  pnr: "挡拆",
+};
+
+const DEFENSE_FOCUS_LABELS: Record<string, string> = {
+  interior: "内线",
+  balanced: "均衡",
+  perimeter: "外线",
+};
+
+const TENDENCY_LABELS: Record<string, string> = {
+  drive: "突破",
+  three: "三分",
+  inside: "内线",
+  postup: "背打",
+  midrange: "中距离",
+};
+
+interface Notice {
+  kind: "success" | "error";
+  msg: string;
+}
+
+/** 在赛程中按 matchId 查找比赛及其所在日 */
+function findScheduleMatch(
+  schedule: ScheduleDay[],
+  matchId: string,
+): { day: number; match: ScheduleMatch } | null {
+  for (const d of schedule) {
+    const m = d.matches.find((mm) => mm.id === matchId);
+    if (m) return { day: d.day, match: m };
+  }
+  return null;
+}
+
+export function MatchTacticPage({ matchId, teamId }: Props) {
+  const { user } = useAuth();
+  const myTeamId = teamId ?? user?.teamId ?? undefined;
+
+  const [tab, setTab] = useState<Tab>("match");
+  const [matchDay, setMatchDay] = useState<number | null>(null);
+  const [match, setMatch] = useState<ScheduleMatch | null>(null);
+  const [presets, setPresets] = useState<TacticPreset[]>([]);
+  const [myTactic, setMyTactic] = useState<TeamTactic | null>(null);
+  const [opponentTactic, setOpponentTactic] = useState<TeamTactic | null>(
+    null,
+  );
+  const [counter, setCounter] = useState<CounterTacticResult | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState<Notice | null>(null);
+
+  // P2: 半场调整 + Clutch 战术卡 state
+  const [halftime, setHalftime] = useState<{
+    offenseFocus?: string;
+    defenseIntensity?: string;
+    pace?: string;
+    threeAdjust?: number;
+  }>({});
+  const [clutch, setClutch] = useState<{
+    leading?: string;
+    trailing?: string;
+    close?: string;
+  }>({});
+
+  // 成功提示自动消失
+  useEffect(() => {
+    if (!notice || notice.kind !== "success") return;
+    const t = window.setTimeout(() => setNotice(null), 3000);
+    return () => window.clearTimeout(t);
+  }, [notice]);
+
+  // 主数据加载链：定位比赛 → 并行拉取预设/我方/对手战术 → 反制建议
+  // 若无 matchId，自动选取我方球队的下一场未结算比赛
+  useEffect(() => {
+    if (!myTeamId) {
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    (async () => {
+      try {
+        // 1. 定位比赛：有 matchId 用指定的，否则自动找下一场
+        const schedule = await fetchSchedule();
+        if (cancelled) return;
+
+        let found: { day: number; match: ScheduleMatch } | null = null;
+        if (matchId) {
+          found = findScheduleMatch(schedule, matchId);
+        } else {
+          // 自动选取我方球队最近的一场未结算比赛
+          for (const d of schedule) {
+            const m = d.matches.find(
+              (mm) =>
+                (mm.homeTeamId === myTeamId || mm.awayTeamId === myTeamId) &&
+                mm.status !== "final",
+            );
+            if (m) {
+              found = { day: d.day, match: m };
+              break;
+            }
+          }
+          // 若无未结算比赛，取最近一场已结算的
+          if (!found) {
+            for (const d of schedule) {
+              const m = d.matches.find(
+                (mm) =>
+                  mm.homeTeamId === myTeamId || mm.awayTeamId === myTeamId,
+              );
+              if (m) {
+                found = { day: d.day, match: m };
+                break;
+              }
+            }
+          }
+        }
+
+        if (!found) {
+          if (!cancelled) {
+            setError("暂无比赛数据");
+            setLoading(false);
+          }
+          return;
+        }
+        setMatchDay(found.day);
+        setMatch(found.match);
+
+        // 2. 判定主客场与对手
+        const isHome = found.match.homeTeamId === myTeamId;
+        const opponentTeamId = isHome
+          ? found.match.awayTeamId
+          : found.match.homeTeamId;
+
+        // 3. 并行拉取预设、我方战术、对手战术（独立请求，消除瀑布流）
+        const [ps, mine, opp] = await Promise.all([
+          fetchTacticPresets(),
+          fetchTeamTactic(myTeamId),
+          opponentTeamId
+            ? fetchTeamTactic(opponentTeamId).catch(() => null)
+            : Promise.resolve<TeamTactic | null>(null),
+        ]);
+        if (cancelled) return;
+        setPresets(ps);
+        setMyTactic(mine);
+        setOpponentTactic(opp);
+
+        // 4. 反制建议（依赖对手战术 presetId）
+        if (opp) {
+          const c = await fetchCounterTactic(opp.presetId).catch(() => null);
+          if (cancelled) return;
+          setCounter(c);
+        }
+      } catch (e: unknown) {
+        if (!cancelled) setError(e instanceof Error ? e.message : String(e));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [matchId, myTeamId]);
+
+  // 切换战术预设（即时保存）
+  const handlePresetChange = async (presetId: string) => {
+    if (!myTeamId || !myTactic) return;
+    setSaving(true);
+    setNotice(null);
+    try {
+      const updated = await putTeamTactic(myTeamId, { presetId });
+      setMyTactic(updated);
+      const preset = presets.find((p) => p.id === presetId);
+      setNotice({
+        kind: "success",
+        msg: `战术已切换为「${preset?.name ?? updated.presetName}」`,
+      });
+    } catch (e: unknown) {
+      setNotice({
+        kind: "error",
+        msg: e instanceof Error ? e.message : String(e),
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // 无球队：提示
+  if (!myTeamId) {
+    return (
+      <div className="match-tactic-page">
+        <div className="page-head">
+          <h2>战术中心</h2>
+          <p className="muted">单场战术 / 阵容编辑 / 战术选择</p>
+        </div>
+        <div className="empty-block">请先登录并认领球队</div>
+      </div>
+    );
+  }
+
+  // 非单场战术 Tab：直接渲染阵容编辑/战术选择，无需等待比赛数据
+  if (tab === "lineup") {
+    return (
+      <div className="match-tactic-page">
+        <div className="page-head">
+          <h2>战术中心</h2>
+          <div className="team-page-tabs">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={`tab${tab === t.id ? " is-active" : ""}`}
+                onClick={() => setTab(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <section className="panel">
+          <div className="panel-head">
+            <h2>首发阵容与出场时间</h2>
+            <span className="hint">勾选 5 名首发，调整出场时间（每人 0-48 min，总 200-240 min）</span>
+          </div>
+          <div className="panel-body">
+            <LineupEditor teamId={myTeamId} editable />
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  if (tab === "tactic") {
+    return (
+      <div className="match-tactic-page">
+        <div className="page-head">
+          <h2>战术中心</h2>
+          <div className="team-page-tabs">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={`tab${tab === t.id ? " is-active" : ""}`}
+                onClick={() => setTab(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <TacticEditor teamId={myTeamId} />
+      </div>
+    );
+  }
+
+  // 单场战术 Tab：依赖比赛数据加载
+  if (loading) {
+    return (
+      <div className="match-tactic-page">
+        <div className="page-head">
+          <h2>战术中心</h2>
+          <div className="team-page-tabs">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={`tab${tab === t.id ? " is-active" : ""}`}
+                onClick={() => setTab(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="state">
+          <span className="spinner" /> 正在加载战术数据…
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="match-tactic-page">
+        <div className="page-head">
+          <h2>战术中心</h2>
+          <div className="team-page-tabs">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={`tab${tab === t.id ? " is-active" : ""}`}
+                onClick={() => setTab(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="state error">加载失败：{error}</div>
+      </div>
+    );
+  }
+
+  // 主客场与对手在渲染期派生（非 state）
+  const isHome = match?.homeTeamId === myTeamId;
+  const mySideLabel = isHome ? "主场" : "客场";
+  const opponentName = match
+    ? isHome
+      ? match.awayTeamName
+      : match.homeTeamName
+    : "—";
+
+  // 对手出手倾向排序（高→低）
+  const opponentTendencies = opponentTactic
+    ? Object.entries(opponentTactic.modSet.tendencyMod)
+        .map(([k, v]) => ({
+          key: k,
+          value: v,
+          label: TENDENCY_LABELS[k] ?? k,
+        }))
+        .sort((a, b) => b.value - a.value)
+    : [];
+
+  const groupedPresets = TACTIC_CATEGORY_ORDER.map((cat) => ({
+    cat,
+    list: presets.filter((p) => p.category === cat),
+  })).filter((g) => g.list.length > 0);
+
+  return (
+    <div className="match-tactic-page">
+      <div className="page-head">
+        <h2>战术中心</h2>
+        <div className="team-page-tabs">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              className={`tab${tab === t.id ? " is-active" : ""}`}
+              onClick={() => setTab(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {tab === "match" && (
+        <>
+          <p className="muted" style={{ marginBottom: 8 }}>
+            为当前比赛定制我方战术，并查看对手分析与反制策略
+          </p>
+          {notice && (
+            <div className={`match-notice ${notice.kind}`}>{notice.msg}</div>
+          )}
+
+          {/* 比赛信息面板 */}
+          {match && (
+            <section className="panel match-info-panel">
+          <div className="panel-head">
+            <h2>比赛信息</h2>
+            <span className="hint">第 {matchDay ?? "—"} 日</span>
+          </div>
+          <div className="panel-body">
+            <div className="match-vs">
+              <div className={`match-side home${isHome ? " mine" : ""}`}>
+                <span className="match-side-label">主场</span>
+                <span className="match-side-name">{match.homeTeamName}</span>
+                {match.homeTeamId === myTeamId && (
+                  <span className="match-side-tag">我方</span>
+                )}
+              </div>
+              <div className="match-vs-center">
+                <span className="match-vs-vs">VS</span>
+                <span className="match-vs-date">第 {matchDay ?? "—"} 日</span>
+              </div>
+              <div className={`match-side away${!isHome ? " mine" : ""}`}>
+                <span className="match-side-label">客场</span>
+                <span className="match-side-name">{match.awayTeamName}</span>
+                {match.awayTeamId === myTeamId && (
+                  <span className="match-side-tag">我方</span>
+                )}
+              </div>
+            </div>
+            <div className="match-side-hint">
+              本场我方为 <strong>{mySideLabel}</strong>，对手：
+              <strong>{opponentName}</strong>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <div className="match-tactic-grid">
+        {/* 我方战术面板 */}
+        <section className="panel my-tactic-panel">
+          <div className="panel-head">
+            <h2>我方战术</h2>
+            <span className="hint">当前：{myTactic?.presetName ?? "—"}</span>
+          </div>
+          <div className="panel-body">
+            {myTactic ? (
+              <>
+                <div className="kv">
+                  <div>
+                    <dt>战术预设</dt>
+                    <dd>{myTactic.presetName}</dd>
+                  </div>
+                  <div>
+                    <dt>进攻侧重</dt>
+                    <dd>
+                      {OFFENSE_FOCUS_LABELS[
+                        myTactic.modSet.offenseFocus ?? "balanced"
+                      ] ?? "均衡"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>防守侧重</dt>
+                    <dd>
+                      {DEFENSE_FOCUS_LABELS[
+                        myTactic.modSet.defenseFocus ?? "balanced"
+                      ] ?? "均衡"}
+                    </dd>
+                  </div>
+                </div>
+
+                <h3
+                  className="section-title"
+                  style={{ marginTop: 16 }}
+                >
+                  切换战术预设
+                </h3>
+                <div className="tactic-preset-grid">
+                  {groupedPresets.map(({ cat, list }) => (
+                    <div key={cat} className="tactic-cat-group">
+                      <h4 className="m4-subtitle">
+                        {TACTIC_CATEGORY_LABEL[cat]}
+                      </h4>
+                      <div className="tactic-cat-list">
+                        {list.map((t) => {
+                          const active = myTactic.presetId === t.id;
+                          return (
+                            <button
+                              key={t.id}
+                              type="button"
+                              className={`tactic-preset-btn${
+                                active ? " is-active" : ""
+                              }`}
+                              onClick={() => handlePresetChange(t.id)}
+                              disabled={saving}
+                            >
+                              <span className="tpb-name">{t.name}</span>
+                              <span className="tpb-desc">{t.desc}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* P2: 半场调整 + Clutch 战术卡 */}
+                <div className="halftime-section">
+                  <h3 className="section-title" style={{ marginTop: 16 }}>
+                    半场调整 & Clutch 战术
+                  </h3>
+                  <p className="muted" style={{ fontSize: 12, marginBottom: 10 }}>
+                    Q2 结束后自动切换战术；末节焦灼时执行 clutch 策略
+                  </p>
+                  <div className="halftime-grid">
+                    <label className="halftime-field">
+                      <span>半场进攻侧重</span>
+                      <select
+                        value={halftime.offenseFocus ?? ""}
+                        onChange={(e) => setHalftime({ ...halftime, offenseFocus: e.target.value || undefined })}
+                      >
+                        <option value="">不变</option>
+                        <option value="balanced">均衡</option>
+                        <option value="drive">突破</option>
+                        <option value="outside">外线</option>
+                        <option value="inside">内线</option>
+                        <option value="pnr">挡拆</option>
+                      </select>
+                    </label>
+                    <label className="halftime-field">
+                      <span>半场防守强度</span>
+                      <select
+                        value={halftime.defenseIntensity ?? ""}
+                        onChange={(e) => setHalftime({ ...halftime, defenseIntensity: e.target.value || undefined })}
+                      >
+                        <option value="">不变</option>
+                        <option value="aggressive">激进</option>
+                        <option value="balanced">均衡</option>
+                        <option value="conservative">保守</option>
+                      </select>
+                    </label>
+                    <label className="halftime-field">
+                      <span>半场节奏</span>
+                      <select
+                        value={halftime.pace ?? ""}
+                        onChange={(e) => setHalftime({ ...halftime, pace: e.target.value || undefined })}
+                      >
+                        <option value="">不变</option>
+                        <option value="faster">加快</option>
+                        <option value="balanced">均衡</option>
+                        <option value="slower">放慢</option>
+                      </select>
+                    </label>
+                    <label className="halftime-field">
+                      <span>三分倾向微调</span>
+                      <input
+                        type="number"
+                        step="0.02"
+                        min="-0.1"
+                        max="0.1"
+                        value={halftime.threeAdjust ?? 0}
+                        onChange={(e) => setHalftime({ ...halftime, threeAdjust: +e.target.value })}
+                      />
+                    </label>
+                  </div>
+                  <div className="clutch-grid">
+                    <label className="halftime-field">
+                      <span>Clutch 领先策略</span>
+                      <select
+                        value={clutch.leading ?? ""}
+                        onChange={(e) => setClutch({ ...clutch, leading: e.target.value || undefined })}
+                      >
+                        <option value="">默认</option>
+                        <option value="normal">正常</option>
+                        <option value="milk_clock">压时间</option>
+                        <option value="isolate_star">球星单打</option>
+                      </select>
+                    </label>
+                    <label className="halftime-field">
+                      <span>Clutch 落后策略</span>
+                      <select
+                        value={clutch.trailing ?? ""}
+                        onChange={(e) => setClutch({ ...clutch, trailing: e.target.value || undefined })}
+                      >
+                        <option value="">默认</option>
+                        <option value="normal">正常</option>
+                        <option value="quick_three">抢投三分</option>
+                        <option value="foul_strategy">砍鲨战术</option>
+                        <option value="isolate_star">球星单打</option>
+                      </select>
+                    </label>
+                    <label className="halftime-field">
+                      <span>Clutch 焦灼策略</span>
+                      <select
+                        value={clutch.close ?? ""}
+                        onChange={(e) => setClutch({ ...clutch, close: e.target.value || undefined })}
+                      >
+                        <option value="">默认</option>
+                        <option value="normal">正常</option>
+                        <option value="isolate_star">球星单打</option>
+                        <option value="double_team">包夹对方球星</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="empty-hint">暂无我方战术数据</div>
+            )}
+          </div>
+        </section>
+
+        {/* 对手分析面板 */}
+        <section className="panel opponent-analysis">
+          <div className="panel-head">
+            <h2>对手分析</h2>
+            <span className="hint">{opponentName}</span>
+          </div>
+          <div className="panel-body">
+            {opponentTactic ? (
+              <>
+                <div className="kv">
+                  <div>
+                    <dt>对手战术</dt>
+                    <dd>{opponentTactic.presetName}</dd>
+                  </div>
+                  <div>
+                    <dt>进攻侧重</dt>
+                    <dd>
+                      {OFFENSE_FOCUS_LABELS[
+                        opponentTactic.modSet.offenseFocus ?? "balanced"
+                      ] ?? "均衡"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>防守侧重</dt>
+                    <dd>
+                      {DEFENSE_FOCUS_LABELS[
+                        opponentTactic.modSet.defenseFocus ?? "balanced"
+                      ] ?? "均衡"}
+                    </dd>
+                  </div>
+                </div>
+
+                <h3
+                  className="section-title"
+                  style={{ marginTop: 16 }}
+                >
+                  出手倾向
+                </h3>
+                <div className="opp-tendency-list">
+                  {opponentTendencies.map((t, idx) => {
+                    const pct = Math.round(((t.value + 1) / 2) * 100);
+                    return (
+                      <div
+                        key={t.key}
+                        className={`opp-tendency-row${
+                          idx === 0 ? " is-top" : ""
+                        }`}
+                      >
+                        <span className="opp-tendency-label">{t.label}</span>
+                        <div className="opp-tendency-bar">
+                          <div
+                            className="opp-tendency-fill"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <span className="opp-tendency-value">
+                          {t.value.toFixed(2)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <div className="empty-hint">暂无对手战术数据</div>
+            )}
+          </div>
+        </section>
+      </div>
+
+      {/* 反制策略面板 */}
+      {counter && (
+        <section className="panel counter-panel">
+          <div className="panel-head">
+            <h2>反制策略</h2>
+            <span className="hint">
+              针对 {opponentTactic?.presetName ?? "对手"} 的推荐战术
+            </span>
+          </div>
+          <div className="panel-body">
+            <div className="counter-card">
+              <div className="counter-name">{counter.counter.name}</div>
+              <div className="counter-desc">
+                {TEMPO_LABEL[counter.counter.tempo]} ·{" "}
+                {OFFENSE_LABEL[counter.counter.offenseTendency]}进攻 ·{" "}
+                {DEFENSE_LABEL[counter.counter.defenseTendency]}防守
+              </div>
+              <div className="counter-reason">
+                <strong>推荐理由：</strong>
+                {counter.reason}
+              </div>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => handlePresetChange(counter.counter.id)}
+                disabled={
+                  saving || myTactic?.presetId === counter.counter.id
+                }
+              >
+                {myTactic?.presetId === counter.counter.id
+                  ? "当前已使用"
+                  : "切换到此战术"}
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* 战术板预览 */}
+      {myTactic && (
+        <section className="panel tactic-board-panel">
+          <div className="panel-head">
+            <h2>战术板预览</h2>
+            <span className="hint">根据当前战术参数预览站位</span>
+          </div>
+          <div className="panel-body tactic-board-wrap">
+            <TacticBoard modSet={myTactic.modSet} width={360} />
+          </div>
+        </section>
+      )}
+      </>
+      )}
+    </div>
+  );
+}

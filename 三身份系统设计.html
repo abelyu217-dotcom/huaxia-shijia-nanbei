@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三身份系统设计 · Hoops World Online</title>
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#141b26; --panel2:#1b2433; --line:#26324a;
+    --ink:#e6edf6; --ink2:#9fb0c7; --ink3:#6b7c97;
+    --accent:#a78bfa; --accent2:#4ade80; --gold:#fbbf24; --red:#ef4444; --blue:#60a5fa; --purple:#a78bfa; --cyan:#22d3ee; --pink:#f472b6; --orange:#ff6b35;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:linear-gradient(180deg,#070a10 0%,#0b0f17 100%);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 22px 120px}
+  .hero{
+    position:relative;border:1px solid var(--line);border-radius:18px;padding:42px 34px 30px;
+    background:
+      radial-gradient(800px 280px at 20% -10%, rgba(167,139,250,.18), transparent 60%),
+      radial-gradient(700px 260px at 90% 0%, rgba(34,211,238,.10), transparent 60%),
+      linear-gradient(180deg,#151d2c,#0e1420);
+    overflow:hidden;margin-bottom:30px;
+  }
+  .hero .tag{display:inline-block;font-size:12px;letter-spacing:.16em;color:var(--purple);border:1px solid rgba(167,139,250,.4);padding:4px 10px;border-radius:999px;margin-bottom:18px;text-transform:uppercase}
+  .hero h1{margin:0 0 8px;font-size:32px;letter-spacing:.5px;font-weight:800}
+  .hero h1 .en{color:var(--ink2);font-weight:600;font-size:18px;margin-left:10px}
+  .hero .pitch{color:var(--ink2);font-size:15px;max-width:820px;margin:10px 0 22px}
+  .hero .meta{display:flex;flex-wrap:wrap;gap:10px}
+  .hero .chip{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--ink2)}
+  .hero .chip b{color:var(--ink);font-weight:600}
+  .hero .tri{position:absolute;right:-30px;bottom:-30px;width:180px;height:180px;pointer-events:none;opacity:.10}
+  .hero .tri::before,.hero .tri::after,.hero .tri span{content:"";position:absolute;width:0;height:0;border-left:50px solid transparent;border-right:50px solid transparent;border-bottom:86px solid var(--purple)}
+  .hero .tri::before{left:0;top:50px;transform:rotate(0deg)}
+  .hero .tri::after{left:40px;top:50px;transform:rotate(120deg);border-bottom-color:var(--cyan)}
+  .hero .tri span{left:20px;top:15px;transform:rotate(60deg);border-bottom-color:var(--pink);display:block}
+
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 28px;margin-bottom:22px}
+  .toc h3{margin:0 0 14px;font-size:14px;color:var(--ink2);letter-spacing:.1em;text-transform:uppercase}
+  .toc ol{margin:0;padding-left:22px;columns:2;column-gap:32px}
+  .toc li{margin:5px 0;break-inside:avoid}
+  .toc a{color:var(--ink2)}
+  .toc a:hover{color:var(--purple)}
+  @media (max-width:640px){.toc ol{columns:1}}
+
+  section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin-bottom:22px}
+  section > h2{margin:0 0 16px;font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
+  section > h2 .num{font-size:12px;color:#0b0f17;background:var(--purple);width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;font-weight:800;flex-shrink:0}
+  h3{font-size:16px;margin:22px 0 10px;color:var(--ink)}
+  h4{font-size:14px;margin:18px 0 8px;color:var(--cyan);letter-spacing:.04em}
+  h5{font-size:13px;margin:14px 0 6px;color:var(--gold);letter-spacing:.03em}
+  p{margin:8px 0}
+  ul,ol{margin:8px 0 8px 4px;padding-left:22px}
+  li{margin:4px 0}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{background:#0d131d;border:1px solid var(--line);padding:2px 6px;border-radius:5px;font-size:13px;color:var(--gold);font-family:"SF Mono","Fira Code",Consolas,monospace}
+  strong{color:#fff}
+  .note{border-left:3px solid var(--accent);background:rgba(167,139,250,.06);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;color:var(--ink2)}
+  .note b{color:var(--purple)}
+  .note.green{border-left-color:var(--accent2);background:rgba(74,222,128,.06)}
+  .note.green b{color:var(--accent2)}
+  .note.blue{border-left-color:var(--blue);background:rgba(96,165,250,.06)}
+  .note.blue b{color:var(--blue)}
+  .note.red{border-left-color:var(--red);background:rgba(239,68,68,.06)}
+  .note.red b{color:var(--red)}
+  .note.gold{border-left-color:var(--gold);background:rgba(251,191,36,.06)}
+  .note.gold b{color:var(--gold)}
+  .note.cyan{border-left-color:var(--cyan);background:rgba(34,211,238,.06)}
+  .note.cyan b{color:var(--cyan)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--purple);font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;background:rgba(255,255,255,.02)}
+  td b{color:var(--ink)}
+  tr:hover td{background:rgba(255,255,255,.02)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:14px 0}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:16px}
+  .card .t{font-weight:700;margin-bottom:6px;color:var(--ink)}
+  .card .d{font-size:13px;color:var(--ink2)}
+  .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;letter-spacing:.04em}
+  .badge.green{background:rgba(74,222,128,.15);color:var(--accent2);border:1px solid rgba(74,222,128,.3)}
+  .badge.blue{background:rgba(96,165,250,.15);color:var(--blue);border:1px solid rgba(96,165,250,.3)}
+  .badge.gold{background:rgba(251,191,36,.15);color:var(--gold);border:1px solid rgba(251,191,36,.3)}
+  .badge.red{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+  .badge.purple{background:rgba(167,139,250,.15);color:var(--purple);border:1px solid rgba(167,139,250,.3)}
+  .badge.cyan{background:rgba(34,211,238,.15);color:var(--cyan);border:1px solid rgba(34,211,238,.3)}
+  .badge.pink{background:rgba(244,114,182,.15);color:var(--pink);border:1px solid rgba(244,114,182,.3)}
+
+  /* Formula box */
+  .formula{background:#0d131d;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;font-family:"SF Mono","Fira Code",Consolas,monospace;font-size:13px;color:var(--gold);overflow-x:auto;line-height:1.8}
+  .formula .var{color:var(--blue)}
+  .formula .op{color:var(--ink2)}
+  .formula .fn{color:var(--accent2)}
+  .formula .num{color:var(--accent)}
+  .formula .comment{color:var(--ink3);font-style:italic}
+  .formula .str{color:var(--cyan)}
+  .formula .kw{color:var(--purple)}
+
+  /* Profession card */
+  .prof-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin:18px 0}
+  .prof{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:18px;position:relative;overflow:hidden}
+  .prof::before{content:"";position:absolute;top:0;left:0;right:0;height:3px}
+  .prof.tech::before{background:var(--cyan)}
+  .prof.biz::before{background:var(--gold)}
+  .prof.media::before{background:var(--pink)}
+  .prof.gov::before{background:var(--purple)}
+  .prof .p-name{font-weight:700;font-size:15px;margin-bottom:2px}
+  .prof .p-en{font-size:11px;color:var(--ink3);margin-bottom:8px}
+  .prof .p-desc{font-size:12.5px;color:var(--ink2);margin-bottom:8px}
+  .prof .p-meta{font-size:11.5px;color:var(--gold);font-family:"SF Mono","Fira Code",Consolas,monospace;line-height:1.6;background:#0d131d;border-radius:6px;padding:8px 10px}
+
+  /* Flow steps */
+  .flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:0;margin:16px 0}
+  .flow .step{flex:1;min-width:140px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;position:relative;font-size:12.5px}
+  .flow .step:not(:last-child){margin-right:18px}
+  .flow .step:not(:last-child)::after{content:"→";position:absolute;right:-16px;top:50%;transform:translateY(-50%);color:var(--purple);font-size:18px;font-weight:700}
+  .flow .step .s-num{font-size:11px;color:var(--purple);font-weight:700;letter-spacing:.06em}
+  .flow .step .s-t{font-weight:700;color:var(--ink);margin:2px 0 4px}
+  .flow .step .s-d{color:var(--ink2);font-size:11.5px}
+
+  /* Cycle diagram */
+  .cycle{margin:18px 0;padding:20px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;text-align:center}
+  .cycle .ring{display:inline-flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--ink2)}
+  .cycle .node{background:#0d131d;border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-weight:600}
+  .cycle .node.m{color:var(--purple);border-color:rgba(167,139,250,.4)}
+  .cycle .node.a{color:var(--cyan);border-color:rgba(34,211,238,.4)}
+  .cycle .node.p{color:var(--pink);border-color:rgba(244,114,182,.4)}
+  .cycle .arrow{color:var(--ink3);font-weight:700}
+
+  /* Timeline */
+  .phase-bar{display:flex;gap:0;margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+  .phase-seg{flex:1;padding:10px 8px;text-align:center;font-size:12px;font-weight:600;position:relative}
+  .phase-seg.p1{background:rgba(74,222,128,.1);color:var(--accent2)}
+  .phase-seg.p2{background:rgba(96,165,250,.1);color:var(--blue)}
+  .phase-seg.p3{background:rgba(251,191,36,.1);color:var(--gold)}
+  .phase-seg.p4{background:rgba(167,139,250,.1);color:var(--purple)}
+  .phase-seg.p5{background:rgba(239,68,68,.1);color:var(--red)}
+  .phase-seg small{display:block;font-weight:400;color:var(--ink3);font-size:11px;margin-top:2px}
+
+  footer{text-align:center;color:var(--ink2);font-size:13px;margin-top:30px;border-top:1px solid var(--line);padding-top:18px}
+  @media (max-width:640px){
+    .wrap{padding:22px 14px 80px}
+    .hero{padding:30px 20px}
+    .hero h1{font-size:26px}
+    section{padding:20px 16px}
+    .flow{flex-direction:column}
+    .flow .step:not(:last-child){margin-right:0;margin-bottom:18px}
+    .flow .step:not(:last-child)::after{right:50%;top:auto;bottom:-14px;transform:translateX(50%) rotate(90deg)}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ==================== HERO ==================== -->
+  <div class="hero">
+    <span class="tag">System Design Document · v1.0</span>
+    <h1>三身份系统设计 <span class="en">Triple Identity System · HWO</span></h1>
+    <p class="pitch">每位玩家同时持有三个身份——球队经理（主身份）、球员化身（自创 1 名球员）、职业人（11 职选一，可转职）。三身份共享同一账号资源池，构成去中心化的多人经济内循环：经理雇佣职业人、签约球员；球员接受合同出战；职业人提供服务赚取薪资。本系统定义三身份的数据模型、生命周期、流动规则与反套利机制。</p>
+    <div class="meta">
+      <span class="chip"><b>文档版本</b> · v1.0</span>
+      <span class="chip"><b>关联文档</b> · 策划方案 §3 / 经济系统 §7 / 成长线 / Sim Engine</span>
+      <span class="chip"><b>里程碑</b> · M0-M1 核心依赖</span>
+      <span class="chip"><b>设计原则</b> · 三身份并行 · 去中心化经济 · 反自交易套利</span>
+    </div>
+    <div class="tri"><span></span></div>
+  </div>
+
+  <!-- ==================== TOC ==================== -->
+  <div class="toc">
+    <h3>目录</h3>
+    <ol>
+      <li><a href="#s1">设计原则与架构</a></li>
+      <li><a href="#s2">身份一 · 球队经理（主身份）</a></li>
+      <li><a href="#s3">身份二 · 球员化身</a></li>
+      <li><a href="#s4">身份三 · 职业人系统总览</a></li>
+      <li><a href="#s5">职业人详细规格（11 职）</a></li>
+      <li><a href="#s6">职业人技能与成长</a></li>
+      <li><a href="#s7">雇佣与上岗机制</a></li>
+      <li><a href="#s8">转职系统</a></li>
+      <li><a href="#s9">三身份经济内循环</a></li>
+      <li><a href="#s10">利益冲突回避与反套利</a></li>
+      <li><a href="#s11">声望系统与积分汇总</a></li>
+      <li><a href="#s12">目标分层与成就沉淀</a></li>
+      <li><a href="#s13">AI 职业人决策</a></li>
+      <li><a href="#s14">身份切换与并发规则</a></li>
+      <li><a href="#s15">数值附录</a></li>
+    </ol>
+  </div>
+
+  <!-- ==================== §1 设计原则与架构 ==================== -->
+  <section id="s1">
+    <h2><span class="num">1</span>设计原则与架构</h2>
+
+    <h3>1.1 核心设计命题</h3>
+    <div class="note"><b>三身份 = 一个玩家、三种角色、一套资源池</b>。传统经理游戏玩家只是"上帝视角的经理"；本作让玩家同时成为<b>劳动力（化身）</b>与<b>服务者（职业人）</b>，使每个玩家既是雇主又是雇员，构成无需 NPC 注资的去中心化经济。</div>
+    <ul>
+      <li><b>主身份常驻</b>：经理身份始终存在且不可放弃；化身与职业人为"侧线身份"，可流动、可转职、可退役。</li>
+      <li><b>资源池共享</b>：三身份赚得的 Credits、声望、人脉均汇入同一账号；但<b>合同/薪资分账</b>——化身合同属化身，职业人佣金属职业人，避免资金无界混淆。</li>
+      <li><b>身份互不碾压</b>：化身再强也不能直接给本队刷分；职业人再顶级也不能替经理做阵容决策。三身份产出各自独立，仅通过"市场交易"互通。</li>
+      <li><b>反套利优先</b>：任何可能造成"自己跟自己交易获利"的路径必须被规则阻断（见 §10）。</li>
+    </ul>
+
+    <h3>1.2 三身份一览</h3>
+    <table>
+      <thead><tr><th>身份</th><th>数量</th><th>核心产出</th><th>流动性</th><th>常驻性</th></tr></thead>
+      <tbody>
+        <tr><td><b>① 球队经理</b> Manager</td><td>1（固定）</td><td>球队战绩、王朝、世界排名</td><td>不可放弃；可被接管他队（赛季末）</td><td><span class="badge purple">常驻</span></td></tr>
+        <tr><td><b>② 球员化身</b> Avatar</td><td>1（自创）</td><td>个人数据、合同薪资、名人堂</td><td>可效力本队 / 跳出 / 回归 / 退役</td><td><span class="badge cyan">流动</span></td></tr>
+        <tr><td><b>③ 职业人</b> Professional</td><td>1（选一职，可转职）</td><td>受雇服务、佣金抽成、职业声望</td><td>可被雇佣 / 应聘预设岗 / 转职</td><td><span class="badge pink">流动</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>1.3 账号数据模型</h3>
+    <div class="formula">
+<span class="kw">Account</span> = {
+  <span class="comment">// —— 主键 ——</span>
+  accountId: <span class="kw">u64</span>,
+  worldId: <span class="kw">u16</span>,           <span class="comment">// 所属世界</span>
+  displayName: <span class="kw">string</span>,
+  createdAt: <span class="kw">Timestamp</span>,
+
+  <span class="comment">// —— 三身份句柄 ——</span>
+  manager: <span class="kw">ManagerHandle</span>,      <span class="comment">// 始终存在</span>
+  avatar: <span class="kw">AvatarHandle?</span>,      <span class="comment">// 创建后存在；退役后归档</span>
+  professional: <span class="kw">ProHandle?</span>,    <span class="comment">// 选职后存在</span>
+
+  <span class="comment">// —— 共享资源池 ——</span>
+  wallet: {
+    credits: <span class="kw">u64</span>,            <span class="comment">// 主货币（经济系统 §2.1）</span>
+    reputation: <span class="kw">i32</span>,         <span class="comment">// 经理声望积分（§11）</span>
+    prestigeBadges: [<span class="kw">Badge</span>], <span class="comment">// 成就徽章</span>
+  },
+  contacts: <span class="kw">ContactGraph</span>,    <span class="comment">// 跨身份人脉（家庭/人际系统）</span>
+
+  <span class="comment">// —— 反套利审计 ——</span>
+  conflictLog: [<span class="kw">ConflictRecord</span>],
+  transferCooldowns: <span class="kw">Map&lt;CooldownType, Timestamp&gt;</span>,
+}
+    </div>
+
+    <h3>1.4 身份生命周期总览</h3>
+    <div class="phase-bar">
+      <div class="phase-seg p1">注册<small>创建经理</small></div>
+      <div class="phase-seg p2">选职<small>化身 + 职业人</small></div>
+      <div class="phase-seg p3">并行<small>三身份同时活动</small></div>
+      <div class="phase-seg p4">流动<small>化身跳出/转职</small></div>
+      <div class="phase-seg p5">沉淀<small>化身退役/名人堂</small></div>
+    </div>
+    <p>注册即创建经理身份；完成新手引导后解锁化身创建与职业人选职。此后三身份并行活动直至赛季/生涯节点触发流动或沉淀。任一身份的终态均不影响其他身份继续运行。</p>
+  </section>
+
+  <!-- ==================== §2 身份一 · 球队经理 ==================== -->
+  <section id="s2">
+    <h2><span class="num">2</span>身份一 · 球队经理（主身份）</h2>
+    <p>经理是玩家的<b>主身份与上帝视角</b>，承担策划方案 §3.1 所述全部球队经营权。本节定义经理身份的数据结构与权力边界，避免与其他系统重复定义行为细节。</p>
+
+    <h3>2.1 经理身份数据结构</h3>
+    <div class="formula">
+<span class="kw">ManagerHandle</span> = {
+  managerId: <span class="kw">u64</span>,
+  teamId: <span class="kw">u32</span>,                <span class="comment">// 当前执教球队</span>
+  hiredAt: <span class="kw">Timestamp</span>,
+  history: [<span class="kw">TenureRecord</span>],   <span class="comment">// 执教履历（跨球队）</span>
+  powers: {
+    roster: <span class="kw">bool</span>,            <span class="comment">// 阵容管理权</span>
+    tactics: <span class="kw">bool</span>,           <span class="comment">// 战术权（战术系统）</span>
+    training: <span class="kw">bool</span>,          <span class="comment">// 训练权（成长线）</span>
+    transfer: <span class="kw">bool</span>,          <span class="comment">// 转会/合同权（经济系统）</span>
+    academy: <span class="kw">bool</span>,           <span class="comment">// 青训学院经营权</span>
+    finance: <span class="kw">bool</span>,           <span class="comment">// 财务权</span>
+    staff: <span class="kw">bool</span>,             <span class="comment">// 职员雇佣权（雇佣职业人）</span>
+  },
+  reputation: <span class="kw">i32</span>,           <span class="comment">// 经理声望（§11）</span>
+}
+    </div>
+
+    <h3>2.2 经理权力与系统映射</h3>
+    <table>
+      <thead><tr><th>权力</th><th>对应系统</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><b>阵容/战术/训练</b></td><td>战术系统 / 成长线 / Sim Engine</td><td>直接操控本队球员的出场、成长、比赛执行。</td></tr>
+        <tr><td><b>转会/合同</b></td><td>经济系统 §3-5</td><td>签约自由球员（含他人化身）、跨经理交易、选秀。</td></tr>
+        <tr><td><b>职员雇佣</b></td><td>本系统 §7</td><td>在职员市场雇佣其他玩家的职业人身份（球探/教练/经纪人等）。</td></tr>
+        <tr><td><b>青训/财务</b></td><td>经济系统 §7 / 成长线</td><td>经营青训学院、管理薪资空间与收支。</td></tr>
+      </tbody>
+    </table>
+
+    <h3>2.3 经理身份的接管与流动</h3>
+    <div class="note blue"><b>赛季末窗口</b>：经理可在赛季结算后的"接管窗口"申请跳槽到<b>同世界空缺球队</b>（被 AI 接管或玩家放弃的球队）。跳槽带走的是经理声望与人脉，不带走红名单球员（除非交易）。</div>
+    <ul>
+      <li><b>跳槽冷却</b>：连续 3 个赛季不得跳槽，防止"经理游牧"破坏世界稳定。</li>
+      <li><b>降级连带</b>：若经理原球队降级，跳槽到高级别球队需支付"违约金"（从声望扣除）。</li>
+      <li><b>不可放弃</b>：经理身份不可注销；玩家离线后球队由 AI 代管（按玩家战术存档执行）。</li>
+    </ul>
+  </section>
+
+  <!-- ==================== §3 身份二 · 球员化身 ==================== -->
+  <section id="s3">
+    <h2><span class="num">3</span>身份二 · 球员化身</h2>
+    <p>每位玩家自创 <b>1 名球员化身</b>进入世界球员池。化身享有与所有球员相同的<b>完整生涯弧线</b>（成长线系统）与<b>业余金字塔</b>，是玩家"亲自养一个自己"的养成入口。化身是流动的劳动力——可效力本队、跳出、回归、退役。</p>
+
+    <h3>3.1 化身创建参数</h3>
+    <table>
+      <thead><tr><th>参数</th><th>选项</th><th>影响</th></tr></thead>
+      <tbody>
+        <tr><td><b>年龄</b></td><td>8–22 任选</td><td>决定成长阶段入口、训练响应率基数、可效力层级上限</td></tr>
+        <tr><td><b>位置</b></td><td>PG / SG / SF / PF / C</td><td>注册不锁风格；影响战术槽位适配与轮换定位</td></tr>
+        <tr><td><b>球员风格</b></td><td>终结型 / 3D / 组织型 / 空间型 / 蓝领 / 全能 / 锚点</td><td>决定能力初始分布倾向与战术偏好遗产</td></tr>
+        <tr><td><b>球员性格</b></td><td>冷血杀手 / 团队领袖 / 独狼 / 大心脏 / 玻璃心 / 老好人 等</td><td>影响 AI 决策倾向、clutch 表现、化学反应、续约谈判</td></tr>
+        <tr><td><b>家庭背景</b></td><td>体育世家 / 普通家庭 / 单亲 / 留学背景 / 体校出身 等</td><td>影响初始 Fame、青训起点、业余金字塔初始层级、训练设施可及性（家庭系统）</td></tr>
+      </tbody>
+    </table>
+    <div class="note gold"><b>天赋 Peak 不可指定</b>：Peak 由系统在创建时按家庭背景与随机生成，玩家不可直接指定——保留迷雾与惊喜。同样的 Peak 下，风格+性格+家庭三者交织走出截然不同的生涯。</div>
+
+    <h3>3.2 化身数据结构</h3>
+    <div class="formula">
+<span class="kw">AvatarHandle</span> = {
+  avatarId: <span class="kw">u64</span>,             <span class="comment">// = playerId，进入世界球员池</span>
+  ownerId: <span class="kw">u64</span>,             <span class="comment">// 所属 accountId</span>
+  createParams: <span class="kw">AvatarCreateParams</span>,
+  peak: <span class="kw">PeakTier</span>,           <span class="comment">// 系统生成，玩家不可见真实值（迷雾）</span>
+
+  <span class="comment">// —— 流动状态 ——</span>
+  status: <span class="kw">AvatarStatus</span>,      <span class="comment">// home_team | floated | on_other_team | retired</span>
+  currentTeamId: <span class="kw">u32?</span>,
+  contract: <span class="kw">Contract?</span>,      <span class="comment">// 当前合同（经济系统 §3）</span>
+  controlMode: <span class="kw">ControlMode</span>,  <span class="comment">// owner_controlled | ai_controlled</span>
+
+  <span class="comment">// —— 生涯沉淀 ——</span>
+  careerArc: <span class="kw">CareerArc</span>,      <span class="comment">// 成长线系统引用</span>
+  hallOfFame: <span class="kw">bool</span>,
+  legacyTags: [<span class="kw">LegacyTag</span>],   <span class="comment">// 时代标签，反哺本队传承</span>
+}
+
+<span class="kw">ControlMode</span> = <span class="str">"owner_controlled"</span>   <span class="comment">// 在本队：玩家亲自训练/给战术倾斜</span>
+           | <span class="str">"ai_controlled"</span>      <span class="comment">// 跳出后：AI 按性格/能力自行决策</span>
+    </div>
+
+    <h3>3.3 化身的流动机制</h3>
+    <div class="grid">
+      <div class="card"><div class="t">效力本队 <span class="badge purple">默认</span></div><div class="d">化身占本队一个名单+薪资，享受玩家亲自训练/战术倾斜。化身与经理身份的利益绑定最紧。</div></div>
+      <div class="card"><div class="t">跳出本队 <span class="badge cyan">流动</span></div><div class="d">化身主动跳出进入世界球员池，被其他经理签约。玩家失去直接控制权，化身转为 ai_controlled，但仍在世界内 sim 成长——玩家可"旁观其生涯"。</div></div>
+      <div class="card"><div class="t">回归本队 <span class="badge blue">召回</span></div><div class="d">化身可被本队重新签回（若薪资空间允许）。回归后恢复 owner_controlled。合同期内不可单方面召回，需买断或等合同到期。</div></div>
+      <div class="card"><div class="t">化身退役 <span class="badge gold">沉淀</span></div><div class="d">化身走完生涯（年龄/能力衰退触发）后退役进名人堂，时代标签可反哺本队传承。退役后化身不可复出，但玩家可创建新化身（受冷却）。</div></div>
+    </div>
+
+    <h3>3.4 跳出决策与控制权交接</h3>
+    <div class="note red"><b>关键设计</b>：化身跳出本队后，玩家<em>不</em>能远程操控化身在别队的表现——这是"流动劳动力"的本质。玩家只能旁观其 sim 生涯。这确保化身在他人队中是真实劳动力而非"玩家的卧底"。</div>
+    <ul>
+      <li><b>跳出条件</b>：合同到期 / 主动买断 / 球员不满（性格触发，如独狼长期被弃用）。跳出需冷却 1 赛季，防止反复横跳。</li>
+      <li><b>AI 决策依据</b>：跳出后的化身由 AI 按其<b>性格 + 能力 + 战术偏好遗产</b>自行决策出场与出手，与他队战术系统适配。</li>
+      <li><b>旁观权限</b>：玩家可订阅化身的比赛 PBP 推送、查看其 Box Score 与成长，但不能干预。</li>
+      <li><b>利益冲突</b>：当化身所在他队与本队交手时，玩家不得利用经理身份针对/放水——系统记录并校验（§10）。</li>
+    </ul>
+
+    <h3>3.5 化身创建/退役冷却</h3>
+    <table>
+      <thead><tr><th>事件</th><th>冷却</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>首次创建化身</td><td>无</td><td>新手引导后即可</td></tr>
+        <tr><td>化身退役后创建新化身</td><td>1 赛季</td><td>防止快速刷化身套利</td></tr>
+        <tr><td>主动注销化身</td><td>2 赛季</td><td>惩罚性冷却，避免随意弃号</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ==================== §4 身份三 · 职业人系统总览 ==================== -->
+  <section id="s4">
+    <h2><span class="num">4</span>身份三 · 职业人系统总览</h2>
+    <p>玩家从 <b>4 线 × 11 职</b>中选一作为第三身份。职业人可被其他球队经理雇佣，也可到游戏预设的 NPC 岗位应聘，提供服务赚取薪资/佣金。职业人身份是<b>去中心化经济的服务供给侧</b>。</p>
+
+    <h3>4.1 四线十一职总览</h3>
+    <div class="prof-grid">
+      <div class="prof tech"><div class="p-name">球探 Scout</div><div class="p-en">技术线</div><div class="p-desc">受雇为某队探查球员/苗子，产出 fog 收窄报告。</div><div class="p-meta">收益：雇主薪资 + 报告质量奖金</div></div>
+      <div class="prof tech"><div class="p-name">助理教练 Asst. Coach</div><div class="p-en">技术线</div><div class="p-desc">受雇提升某队训练效率/特定能力培养。</div><div class="p-meta">收益：雇主薪资 + 球员成长奖金</div></div>
+      <div class="prof tech"><div class="p-name">主教练 Head Coach</div><div class="p-en">技术线 · 高级</div><div class="p-desc">受雇接管他队战术执行（需声望门槛）。</div><div class="p-meta">收益：高薪 + 战绩奖金</div></div>
+      <div class="prof tech"><div class="p-name">训练师 Trainer</div><div class="p-en">技术线</div><div class="p-desc">受雇降低球员伤病风险、加速 condition 恢复。</div><div class="p-meta">收益：雇主薪资 + 出勤奖金</div></div>
+      <div class="prof biz"><div class="p-name">经纪人 Agent</div><div class="p-en">商业线</div><div class="p-desc">代理球员（含他人化身）谈判合同，抽成。</div><div class="p-meta">收益：合同抽成 + 客户佣金</div></div>
+      <div class="prof biz"><div class="p-name">商人 Merchant</div><div class="p-en">商业线</div><div class="p-desc">运营赞助/周边，为球队拉赞助分成。</div><div class="p-meta">收益：赞助分成 + 球市繁荣度</div></div>
+      <div class="prof biz"><div class="p-name">球馆运营 Arena Ops</div><div class="p-en">商业线</div><div class="p-desc">受雇提升球馆收入与上座率。</div><div class="p-meta">收益：雇主薪资 + 上座奖金</div></div>
+      <div class="prof media"><div class="p-name">记者 Reporter</div><div class="p-en">媒体线</div><div class="p-desc">撰写赛事/转会报道，影响舆论与球员 Fame。</div><div class="p-meta">收益：稿费 + 流量分成</div></div>
+      <div class="prof media"><div class="p-name">解说员 Caster</div><div class="p-en">媒体线</div><div class="p-desc">解说关键战，提升赛事曝光与球迷粘性。</div><div class="p-meta">收益：场次费 + 曝光奖金</div></div>
+      <div class="prof gov"><div class="p-name">联盟仲裁人 Arbiter</div><div class="p-en">管理线 · 高级</div><div class="p-desc">裁决失衡交易申诉、仲裁合同纠纷。</div><div class="p-meta">收益：案件费 + 官方津贴</div></div>
+      <div class="prof gov"><div class="p-name">球员工会代表 Union Rep</div><div class="p-en">管理线</div><div class="p-desc">代表球员利益，影响劳资规则与最低薪。</div><div class="p-meta">收益：工会津贴 + 影响力</div></div>
+    </div>
+
+    <h3>4.2 职业人数据结构</h3>
+    <div class="formula">
+<span class="kw">ProHandle</span> = {
+  proId: <span class="kw">u64</span>,
+  ownerId: <span class="kw">u64</span>,             <span class="comment">// 所属 accountId</span>
+  line: <span class="kw">ProLine</span>,           <span class="comment">// tech | biz | media | gov</span>
+  job: <span class="kw">ProJob</span>,             <span class="comment">// 当前职业（11 之一）</span>
+
+  <span class="comment">// —— 上岗状态 ——</span>
+  employment: <span class="kw">Employment?</span>,  <span class="comment">// 当前雇佣关系</span>
+  skills: <span class="kw">SkillTree</span>,        <span class="comment">// 职业技能（§6）</span>
+  level: <span class="kw">u8</span>,                <span class="comment">// 职业等级 1-10</span>
+  proReputation: <span class="kw">i32</span>,      <span class="comment">// 职业声望（独立于经理声望）</span>
+
+  <span class="comment">// —— 转职记录 ——</span>
+  jobHistory: [<span class="kw">JobRecord</span>],
+  switchCooldownUntil: <span class="kw">Timestamp?</span>,
+}
+
+<span class="kw">Employment</span> = {
+  type: <span class="kw">EmpType</span>,            <span class="comment">// hired_by_manager | preset_npc_post</span>
+  employerTeamId: <span class="kw">u32?</span>,    <span class="comment">// 玩家雇主球队；preset 时为 null</span>
+  postId: <span class="kw">u32?</span>,            <span class="comment">// 预设岗位 id</span>
+  contract: <span class="kw">StaffContract</span>, <span class="comment">// 职员合同（§7）</span>
+  startedAt: <span class="kw">Timestamp</span>,
+}
+    </div>
+
+    <h3>4.3 两种上岗方式</h3>
+    <div class="grid">
+      <div class="card"><div class="t">① 被球队经理雇佣 <span class="badge purple">玩家雇主</span></div><div class="d">经理在"职员市场"发布岗位（如"招募球探"），职业人应聘；或职业人主动毛遂自荐。雇佣关系存续期间，职业人为该队服务并领薪。</div></div>
+      <div class="card"><div class="t">② 应聘预设岗位 <span class="badge cyan">NPC 岗位</span></div><div class="d">游戏在世界内预设若干 NPC 岗位（如联盟官方记者、预设 AI 球队的教练、青训学院训练师）。职业人可应聘这些岗位，获得稳定收入与声望，无需依赖玩家雇主。</div></div>
+    </div>
+    <div class="note"><b>设计意图</b>：预设岗位保证职业人身份"即使无人雇佣也有事可做"，避免新世界初期玩家雇主稀少时职业人沦为摆设。预设岗位产出由 AI 模拟，质量随职业人技能/等级提升。</div>
+  </section>
+
+  <!-- ==================== §5 职业人详细规格 ==================== -->
+  <section id="s5">
+    <h2><span class="num">5</span>职业人详细规格（11 职）</h2>
+    <p>逐一定义每个职业的<b>核心职能、产出物、产出公式、对其他系统的影响</b>。产出公式中 <code class="fn">skillRoll</code> 表示职业技能检定（§6），<code class="var">lvl</code> 为职业等级。</p>
+
+    <h3>5.1 技术线（4 职）</h3>
+
+    <h4>球探 Scout</h4>
+    <ul>
+      <li><b>职能</b>：受雇为某队探查目标球员/青训苗子，产出 fog 收窄报告（迷雾系统）。</li>
+      <li><b>产出物</b>：<code>ScoutReport</code>——把目标球员的迷雾能力区间收窄（如三分从 ±15 收窄到 ±8）。</li>
+      <li><b>产出公式</b>：<div class="formula">fogNarrow = baseNarrow(<span class="var">targetAge</span>) + <span class="fn">skillRoll</span>(scouting) × <span class="num">0.6</span> + lvl × <span class="num">0.4</span> - distancePenalty</div></li>
+      <li><b>系统影响</b>：直接降低签约/选秀的信息风险；报告存档可被雇主查看。</li>
+    </ul>
+
+    <h4>助理教练 Asst. Coach</h4>
+    <ul>
+      <li><b>职能</b>：受雇提升某队训练效率/特定能力培养。</li>
+      <li><b>产出物</b>：<code>TrainingBoost</code>——目标训练方向的训练响应率加成。</li>
+      <li><b>产出公式</b>：<div class="formula">trainEffMod = <span class="num">1.0</span> + (<span class="fn">skillRoll</span>(coaching) × <span class="num">0.15</span> + lvl × <span class="num">0.01</span>) × specMatch</div>（specMatch：专长方向与训练方向匹配度 0.5–1.0）</li>
+      <li><b>系统影响</b>：影响成长线系统的训练响应率；经济系统 §7.2 教练组加成落地。</li>
+    </ul>
+
+    <h4>主教练 Head Coach <span class="badge gold">高级</span></h4>
+    <ul>
+      <li><b>职能</b>：受雇接管他队战术执行（玩家不亲任时，或 AI 球队聘请玩家执教）。</li>
+      <li><b>产出物</b>：<code>TacticsExecMod</code>——战术执行修正、轮换质量。</li>
+      <li><b>声望门槛</b>：需前一职业（助理教练）达到声望门槛方可转入（§8）。</li>
+      <li><b>特殊</b>：玩家以职业人·主教练身份执教他队时，<b>不能</b>同时用经理身份执教本队与之交手——触发利益冲突回避（§10）。</li>
+    </ul>
+
+    <h4>训练师 Trainer</h4>
+    <ul>
+      <li><b>职能</b>：受雇降低球员伤病风险、加速 condition 恢复。</li>
+      <li><b>产出物</b>：<code>InjuryRiskMod</code> / <code>RecoveryRate</code>。</li>
+      <li><b>产出公式</b>：<div class="formula">injuryRiskMul = <span class="num">1.0</span> - (<span class="fn">skillRoll</span>(training) × <span class="num">0.20</span> + lvl × <span class="num">0.015</span>)<br>recoveryMul = <span class="num">1.0</span> + <span class="fn">skillRoll</span>(training) × <span class="num">0.3</span> + lvl × <span class="num">0.02</span></div></li>
+      <li><b>系统影响</b>：影响成长线伤病抗性与 Sim Engine 疲劳恢复。</li>
+    </ul>
+
+    <h3>5.2 商业线（3 职）</h3>
+
+    <h4>经纪人 Agent</h4>
+    <ul>
+      <li><b>职能</b>：代理球员（含他人化身）谈判合同，抽成。</li>
+      <li><b>产出物</b>：<code>ContractNegotiation</code>——为客户争取更高合同额/更好条款。</li>
+      <li><b>抽成</b>：合同总额的 5–10%（随技能/等级提升谈判力，抽成率固定）。</li>
+      <li><b>产出公式</b>：<div class="formula">contractBonus = baseSalary × (<span class="fn">skillRoll</span>(negotiation) × <span class="num">0.12</span> + lvl × <span class="num">0.01</span>)</div></li>
+      <li><b>反套利</b>：玩家不得代理本队化身/本队球员签异常合同（§10）。</li>
+    </ul>
+
+    <h4>商人 Merchant</h4>
+    <ul>
+      <li><b>职能</b>：运营赞助/周边，为球队拉赞助分成。</li>
+      <li><b>产出物</b>：<code>SponsorDeal</code> / <code>MerchRevenue</code>。</li>
+      <li><b>产出公式</b>：<div class="formula">sponsorMul = <span class="num">1.0</span> + <span class="fn">skillRoll</span>(commerce) × <span class="num">0.25</span> + lvl × <span class="num">0.02</span> × marketProsperity</div></li>
+      <li><b>系统影响</b>：经济系统 §6.3 赞助商 / §6.5 周边。</li>
+    </ul>
+
+    <h4>球馆运营 Arena Ops</h4>
+    <ul>
+      <li><b>职能</b>：受雇提升球馆收入与上座率。</li>
+      <li><b>产出物</b>：<code>AttendanceBoost</code>。</li>
+      <li><b>产出公式</b>：<div class="formula">attendanceMul = <span class="num">1.0</span> + <span class="fn">skillRoll</span>(operations) × <span class="num">0.18</span> + lvl × <span class="num">0.015</span></div></li>
+      <li><b>系统影响</b>：经济系统 §6.2 球票收入 / §7.4 球馆系统。</li>
+    </ul>
+
+    <h3>5.3 媒体线（2 职）</h3>
+
+    <h4>记者 Reporter</h4>
+    <ul>
+      <li><b>职能</b>：撰写赛事/转会报道，影响舆论与球员 Fame。</li>
+      <li><b>产出物</b>：<code>Article</code>——影响目标球员/球队的 Fame 与舆论倾向。</li>
+      <li><b>产出公式</b>：<div class="formula">fameDelta = (<span class="fn">skillRoll</span>(writing) × <span class="num">0.5</span> + lvl × <span class="num">0.1</span>) × tone × reach</div>（tone: ±1 褒贬；reach: 发布渠道覆盖度）</li>
+      <li><b>系统影响</b>：球员 Fame 影响薪资/签约（经济系统）；舆论影响化学反应。</li>
+    </ul>
+
+    <h4>解说员 Caster</h4>
+    <ul>
+      <li><b>职能</b>：解说关键战，提升赛事曝光与球迷粘性。</li>
+      <li><b>产出物</b>：<code>BroadcastBoost</code>——提升单场赛事的曝光与球市热度。</li>
+      <li><b>产出公式</b>：<div class="formula">exposureMul = <span class="num">1.0</span> + <span class="fn">skillRoll</span>(casting) × <span class="num">0.2</span> + lvl × <span class="num">0.02</span></div></li>
+    </ul>
+
+    <h3>5.4 管理线（2 职）</h3>
+
+    <h4>联盟仲裁人 Arbiter <span class="badge gold">高级</span></h4>
+    <ul>
+      <li><b>职能</b>：裁决失衡交易申诉、仲裁合同纠纷。</li>
+      <li><b>产出物</b>：<code>ArbitrationVerdict</code>——对申诉交易作出裁决（通过/驳回/改判）。</li>
+      <li><b>声望门槛</b>：需高声望方可担任，确保裁决公正性。</li>
+      <li><b>收益</b>：案件费 + 官方津贴；裁决被多数申诉人认可则声望+，被推翻则声望−。</li>
+    </ul>
+
+    <h4>球员工会代表 Union Rep</h4>
+    <ul>
+      <li><b>职能</b>：代表球员利益，影响劳资规则与最低薪。</li>
+      <li><b>产出物</b>：<code>CollectiveAction</code>——参与赛季劳资谈判，影响联盟最低薪/合同条款。</li>
+      <li><b>系统影响</b>：经济系统 §3 薪资底限；影响全体球员合同。</li>
+    </ul>
+  </section>
+
+  <!-- ==================== §6 职业人技能与成长 ==================== -->
+  <section id="s6">
+    <h2><span class="num">6</span>职业人技能与成长</h2>
+    <p>职业人通过<b>完成受雇任务</b>积累经验，提升等级与技能。技能决定产出质量，等级决定基础产出与可应聘的高级岗位。</p>
+
+    <h3>6.1 职业等级（1–10）</h3>
+    <table>
+      <thead><tr><th>等级</th><th>称号</th><th>经验阈值</th><th>解锁</th></tr></thead>
+      <tbody>
+        <tr><td>1–3</td><td>学徒 Apprentice</td><td>0 / 200 / 600</td><td>基础预设岗位</td></tr>
+        <tr><td>4–6</td><td>熟手 Journeyman</td><td>1200 / 2000 / 3000</td><td>可被玩家雇主雇佣</td></tr>
+        <tr><td>7–8</td><td>专家 Expert</td><td>4500 / 6500</td><td>高级预设岗 / 高薪合约</td></tr>
+        <tr><td>9–10</td><td>大师 Master</td><td>9000 / 13000</td><td>转职高级职业（主教练/仲裁人）资格</td></tr>
+      </tbody>
+    </table>
+
+    <h3>6.2 技能树结构</h3>
+    <p>每个职业线有 <b>3 条技能分支</b>，玩家每次升级获得 1 技能点投入。技能点分配决定产出倾向（如球探的"苗子探查/职业评估/情报网络"三支）。</p>
+    <table>
+      <thead><tr><th>职业线</th><th>技能分支</th><th>影响</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="3"><b>技术线</b></td><td>苗子探查 / 训练专精 / 战术执教</td><td>球探报告深度 / 训练加成 / 主教练战术修正</td></tr>
+        <tr><td>伤病管理</td><td>训练师伤病/恢复系数</td></tr>
+        <tr><td>体能科学</td><td>训练师 condition 恢复速率</td></tr>
+        <tr><td rowspan="3"><b>商业线</b></td><td>谈判力</td><td>经纪人合同加成幅度</td></tr>
+        <tr><td>商务拓展</td><td>商人赞助分成</td></tr>
+        <tr><td>运营管理</td><td>球馆运营上座/收入</td></tr>
+        <tr><td rowspan="2"><b>媒体线</b></td><td>笔力 / 口才</td><td>记者 Fame 影响 / 解说曝光</td></tr>
+        <tr><td>人脉网络</td><td>报道/解说覆盖渠道 reach</td></tr>
+        <tr><td rowspan="2"><b>管理线</b></td><td>裁决公正</td><td>仲裁人裁决被认可率</td></tr>
+        <tr><td>劳资博弈</td><td>工会代表谈判力</td></tr>
+      </tbody>
+    </table>
+
+    <h3>6.3 经验获取</h3>
+    <div class="formula">
+expGain = baseExp(<span class="kw">taskType</span>)
+        × taskQualityBonus        <span class="comment">// 任务完成质量 0.5–1.5</span>
+        × clientTierMul           <span class="comment">// 雇主/客户级别倍率</span>
+        × contractBonus           <span class="comment">// 合同约定的经验加成</span>
+    </div>
+    <ul>
+      <li><b>任务质量</b>：球探报告收窄幅度、教练训练达成度、记者报道流量等决定 quality。</li>
+      <li><b>客户级别</b>：服务高级别球队/球员获更多经验（鼓励挑战高难度雇主）。</li>
+      <li><b>每日上限</b>：经验获取有日上限，防止刷职；与每日制节奏一致。</li>
+    </ul>
+
+    <h3>6.4 技能检定 skillRoll</h3>
+    <p>每次产出执行一次技能检定，决定产出质量：</p>
+    <div class="formula">
+<span class="fn">skillRoll</span>(branch) = clamp(
+  (branchSkillPoints × <span class="num">0.1</span>)       <span class="comment">// 投入技能点基础</span>
+  + lvl × <span class="num">0.05</span>                  <span class="comment">// 等级加成</span>
+  + <span class="fn">prng</span>(seed, taskSeed)          <span class="comment">// 随机波动 0.0–0.3</span>
+  + toolBonus,                       <span class="comment">// 工具/设施加成</span>
+  <span class="num">0.0</span>, <span class="num">1.0</span>
+)
+    </div>
+    <div class="note cyan"><b>确定性</b>：skillRoll 使用与 Sim Engine 一致的 mulberry32 PRNG，种子由 (accountId, taskId, worldTick) 派生，保证产出可复现、可审计、防作弊。</div>
+  </section>
+
+  <!-- ==================== §7 雇佣与上岗机制 ==================== -->
+  <section id="s7">
+    <h2><span class="num">7</span>雇佣与上岗机制</h2>
+
+    <h3>7.1 职员市场流程</h3>
+    <div class="flow">
+      <div class="step"><div class="s-num">STEP 1</div><div class="s-t">经理发布岗位</div><div class="s-d">经理在职员市场发布岗位（职业/等级要求/薪资/期限）</div></div>
+      <div class="step"><div class="s-num">STEP 2</div><div class="s-t">职业人应聘</div><div class="s-d">符合条件的职业人投递应聘；或主动毛遂自荐</div></div>
+      <div class="step"><div class="s-num">STEP 3</div><div class="s-t">经理筛选签约</div><div class="s-d">经理查看应聘者履历/声望/技能，选定签约</div></div>
+      <div class="step"><div class="s-num">STEP 4</div><div class="s-t">服务执行</div><div class="s-d">雇佣期内职业人为该队服务，按日结算产出与薪资</div></div>
+      <div class="step"><div class="s-num">STEP 5</div><div class="s-t">合同到期/解约</div><div class="s-d">合同到期自动离岗；双方可提前解约（含违约金）</div></div>
+    </div>
+
+    <h3>7.2 职员合同 StaffContract</h3>
+    <div class="formula">
+<span class="kw">StaffContract</span> = {
+  employerTeamId: <span class="kw">u32</span>,
+  proId: <span class="kw">u64</span>,
+  job: <span class="kw">ProJob</span>,
+  duration: <span class="kw">u8</span>,            <span class="comment">// 赛季数，1-4</span>
+  salary: <span class="kw">u64</span>,             <span class="comment">// 每日薪资（Credits）</span>
+  performanceBonus: <span class="kw">BonusClause?</span>, <span class="comment">// 绩效奖金条款</span>
+  breakClause: <span class="kw">BreakClause?</span>,    <span class="comment">// 提前解约条款</span>
+  startedAt: <span class="kw">Timestamp</span>,
+}
+    </div>
+    <ul>
+      <li><b>薪资上限</b>：受球队职员预算约束（经济系统 §7.1），防止豪门囤积顶级职业人。</li>
+      <li><b>绩效奖金</b>：如球探报告收窄达标、教练训练目标达成等触发奖金。</li>
+      <li><b>提前解约</b>：双方均可触发，违约方支付违约金（合同剩余薪资的 30–50%）。</li>
+    </ul>
+
+    <h3>7.3 预设岗位系统</h3>
+    <div class="note blue"><b>预设岗位 = 世界内的"NPC 雇主池"</b>。游戏在世界生成时预设若干固定岗位，保证职业人始终有事可做。预设岗位的雇主是 AI 机构（联盟/AI 球队/青训学院），产出按职业人技能模拟。</div>
+    <table>
+      <thead><tr><th>预设岗位类型</th><th>数量（每世界）</th><th>雇主</th><th>特点</th></tr></thead>
+      <tbody>
+        <tr><td>联盟官方记者/解说</td><td>8–16</td><td>联盟</td><td>稳定稿费，覆盖全联盟赛事</td></tr>
+        <tr><td>AI 球队教练组</td><td>随 AI 球队数</td><td>AI 球队</td><td>随 AI 球队实力定薪，可被玩家挖角</td></tr>
+        <tr><td>青训学院训练师/球探</td><td>每学院 2–4</td><td>青训学院</td><td>服务青训苗子，影响成长线</td></tr>
+        <tr><td>联盟仲裁人储备</td><td>3–5</td><td>联盟</td><td>处理申诉案件，需高声望</td></tr>
+      </tbody>
+    </table>
+    <ul>
+      <li><b>应聘竞争</b>：热门预设岗多人应聘，按声望+技能择优录取。</li>
+      <li><b>任期</b>：预设岗任期 1–2 赛季，到期重新竞聘，防止永久占据。</li>
+      <li><b>晋升</b>：在预设岗表现优异可被玩家雇主高薪挖走。</li>
+    </ul>
+
+    <h3>7.4 毛遂自荐机制</h3>
+    <p>职业人可不等待岗位发布，主动向心仪球队毛遂自荐。经理可接受/拒绝。自荐需消耗少量"自荐费"（防骚扰），被拒后对该队冷却 1 赛季。</p>
+  </section>
+
+  <!-- ==================== §8 转职系统 ==================== -->
+  <section id="s8">
+    <h2><span class="num">8</span>转职系统</h2>
+    <p>职业人身份可<b>转职</b>（受冷却与声望门槛限制）。转职让玩家探索不同职业线，但保留专精激励。</p>
+
+    <h3>8.1 转职规则</h3>
+    <table>
+      <thead><tr><th>规则</th><th>限制</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><b>转职冷却</b></td><td>每赛季限 1 次</td><td>转职后声望归零重计（防止刷职套利）</td></tr>
+        <tr><td><b>声望门槛</b></td><td>高级职业需门槛</td><td>主教练/仲裁人需前一职业达声望门槛方可转入</td></tr>
+        <tr><td><b>跨线转职</b></td><td>允许但损失经验</td><td>技术线→商业线等跨线转职损失 30% 经验，鼓励专精也允许改行</td></tr>
+        <tr><td><b>同线转职</b></td><td>无经验损失</td><td>同线内转职（如球探→助理教练）保留全部经验与技能点</td></tr>
+        <tr><td><b>经理身份常驻</b></td><td>不影响主身份</td><td>转职仅影响职业人身份，经理身份不受影响</td></tr>
+      </tbody>
+    </table>
+
+    <h3>8.2 转职路径图</h3>
+    <div class="grid">
+      <div class="card"><div class="t">技术线内</div><div class="d">球探 ⇄ 助理教练 ⇄ 训练师（同线无损）；助理教练 →[声望门槛] 主教练（高级）</div></div>
+      <div class="card"><div class="t">商业线内</div><div class="d">经纪人 ⇄ 商人 ⇄ 球馆运营（同线无损）</div></div>
+      <div class="card"><div class="t">媒体线内</div><div class="d">记者 ⇄ 解说员（同线无损）</div></div>
+      <div class="card"><div class="t">管理线内</div><div class="d">工会代表 →[声望门槛] 仲裁人（高级）</div></div>
+    </div>
+    <div class="note gold"><b>跨线转职示例</b>：技术线·助理教练 → 商业线·经纪人，损失 30% 经验与对应技能点，但保留职业等级。鼓励玩家在确定主攻方向前可尝试改行，定型后专精收益更高。</div>
+
+    <h3>8.3 转职流程</h3>
+    <div class="flow">
+      <div class="step"><div class="s-num">STEP 1</div><div class="s-t">检查资格</div><div class="s-d">冷却是否到期 / 目标职业声望门槛是否满足</div></div>
+      <div class="step"><div class="s-num">STEP 2</div><div class="s-t">结算现职</div><div class="s-d">当前雇佣关系解除（提前解约按条款）；声望归零</div></div>
+      <div class="step"><div class="s-num">STEP 3</div><div class="s-t">经验结算</div><div class="s-d">同线无损 / 跨线损失 30%；等级保留</div></div>
+      <div class="step"><div class="s-num">STEP 4</div><div class="s-t">转入新职</div><div class="s-d">技能点重置可分配；进入新职冷却期</div></div>
+    </div>
+  </section>
+
+  <!-- ==================== §9 三身份经济内循环 ==================== -->
+  <section id="s9">
+    <h2><span class="num">9</span>三身份经济内循环</h2>
+    <div class="note blue"><b>循环示意</b>：玩家 A（经理）雇佣玩家 B（职业人·球探）→ B 为 A 产出报告领薪 → A 据报告签约玩家 C（球员化身）→ C 出战为 A 赢球 → C 经由玩家 D（职业人·经纪人）谈下份大合同 → D 抽成。每个玩家同时是 A/B/C，身份在循环中流动，构成去中心化的多人经济。</div>
+
+    <h3>9.1 循环图</h3>
+    <div class="cycle">
+      <div class="ring">
+        <span class="node m">经理 A · 雇佣</span>
+        <span class="arrow">→</span>
+        <span class="node p">职业人 B · 服务领薪</span>
+        <span class="arrow">→</span>
+        <span class="node m">经理 A · 据报告签约</span>
+        <span class="arrow">→</span>
+        <span class="node a">化身 C · 出战赢球</span>
+        <span class="arrow">→</span>
+        <span class="node p">职业人 D · 经纪抽成</span>
+        <span class="arrow">↻</span>
+      </div>
+    </div>
+    <p>货币在三身份间流动，<b>不依赖系统注资</b>：经理付薪给职业人（货币从 A→B），化身合同薪资由雇主球队支付（球队→C），经纪人从合同抽成（C 的薪资→D）。整个循环是世界内封闭的劳动力+服务市场。</p>
+
+    <h3>9.2 两大封闭市场</h3>
+    <table>
+      <thead><tr><th>市场</th><th>供给侧</th><th>需求侧</th><th>定价</th></tr></thead>
+      <tbody>
+        <tr><td><b>劳动力市场</b></td><td>球员化身池 + 自由球员 + 选秀池</td><td>球队经理（签约出战）</td><td>合同薪资（经济系统 §3）</td></tr>
+        <tr><td><b>职业人市场</b></td><td>职业人身份（11 职）</td><td>球队经理（雇佣）+ 预设岗位</td><td>职员薪资/佣金（§7）</td></tr>
+      </tbody>
+    </table>
+    <ul>
+      <li><b>世界内封闭</b>：两市场均世界内封闭，球员/职业人不跨世界流通（保证公平与经济体量可控，策划方案 §4.1）。</li>
+      <li><b>价格发现</b>：薪资/佣金由供需决定；顶级职业人稀缺 → 高薪；球员过剩 → 薪资下行。</li>
+    </ul>
+
+    <h3>9.3 与经济系统的衔接</h3>
+    <p>三身份的货币流动落地于<b>经济系统</b>的账户体系：经理薪资支出记入球队财务（§8），职业人收入记入个人钱包，化身合同薪资记入球队薪资空间（§5 工资帽）。本系统定义身份与流动规则，<b>金额计算与工资帽约束由经济系统负责</b>，避免重复定义。</p>
+
+    <h3>9.4 声望互通</h3>
+    <p>三身份声望汇入玩家整体"经理声望积分"，影响世界排名（§11）。但<b>各身份声望独立计算</b>：经理声望看战绩、化身声望看个人成就、职业声望看服务评价，三者加权汇总而非简单相加。</p>
+  </section>
+
+  <!-- ==================== §10 利益冲突回避与反套利 ==================== -->
+  <section id="s10">
+    <h2><span class="num">10</span>利益冲突回避与反套利</h2>
+    <div class="note red"><b>核心风险</b>：玩家同时持三身份，存在"自己跟自己交易获利"的套利空间。如：经理身份给自己化身开天价合同（球队资产→个人）；经纪人身份代理本队化身抽成（双重抽水）；仲裁人身份偏袒本队交易。所有此类路径必须被规则阻断。</div>
+
+    <h3>10.1 反套利规则矩阵</h3>
+    <table>
+      <thead><tr><th>风险场景</th><th>套利路径</th><th>阻断规则</th></tr></thead>
+      <tbody>
+        <tr><td><b>化身天价合同</b></td><td>经理给本队化身开超额合同，球队资产转个人</td><td>化身合同薪资受<b>同档球员市场均价</b>±20% 约束；超出触发仲裁审查</td></tr>
+        <tr><td><b>经纪人自代理</b></td><td>玩家经纪人身份代理本队化身/本队球员签合同，双向抽成</td><td>禁止代理<b>自己账号下</b>的化身/本队球员；系统校验 ownerId 不匹配</td></tr>
+        <tr><td><b>球探虚假报告</b></td><td>玩家球探身份给本队出虚假高分报告，骗雇主签约</td><td>球探报告基于真实能力 fog 生成，<b>不可手动编造数值</b>；只决定收窄幅度</td></tr>
+        <tr><td><b>主教练偏袒</b></td><td>玩家主教练身份执教他队，对本队放水</td><td>执教他队时<b>回避与本队交手</b>（自动由 AI 代执教该场）；或禁止同时执教直接对手</td></tr>
+        <tr><td><b>仲裁人偏袒</b></td><td>玩家仲裁人身份裁决涉及本队的申诉</td><td>仲裁人<b>回避涉及自己账号/本队</b>的案件，自动转交其他仲裁人</td></tr>
+        <tr><td><b>记者舆论操纵</b></td><td>玩家记者身份写报道打压对手/吹捧本队</td><td>报道 Fame 影响有上限（±X）；涉及自己账号/本队的报道收益减半且标记"利益相关"</td></tr>
+        <tr><td><b>工会代表谋私</b></td><td>玩家工会代表推动利己的劳资规则</td><td>劳资规则影响<b>全体</b>球员，非定向；代表决策需多数代表投票</td></tr>
+      </tbody>
+    </table>
+
+    <h3>10.2 自动校验机制</h3>
+    <div class="formula">
+<span class="kw">function</span> <span class="fn">checkConflict</span>(accountId, transaction) {
+  <span class="kw">if</span> (transaction.type == <span class="str">"avatar_contract"</span>
+      &amp;&amp; transaction.avatar.ownerId == accountId
+      &amp;&amp; transaction.salary &gt; marketAvg × <span class="num">1.2</span>)
+    <span class="kw">return</span> <span class="str">"FLAG_REVIEW"</span>;      <span class="comment">// 触发仲裁审查</span>
+
+  <span class="kw">if</span> (transaction.type == <span class="str">"agent_represent"</span>
+      &amp;&amp; transaction.client.ownerId == accountId)
+    <span class="kw">return</span> <span class="str">"BLOCK"</span>;          <span class="comment">// 直接阻断</span>
+
+  <span class="kw">if</span> (transaction.type == <span class="str">"arbiter_case"</span>
+      &amp;&amp; case.involvesAccount(accountId))
+    <span class="kw">return</span> <span class="str">"REASSIGN"</span>;       <span class="comment">// 转交他人</span>
+}
+    </div>
+
+    <h3>10.3 审计与惩罚</h3>
+    <ul>
+      <li><b>冲突日志</b>：所有涉及自身账号的交易记入 <code>conflictLog</code>，可被仲裁人/官方审计。</li>
+      <li><b>分级处理</b>：BLOCK（直接阻断）→ FLAG_REVIEW（标记审查）→ REASSIGN（转交）。</li>
+      <li><b>违规惩罚</b>：查实套利则没收不当所得、扣除声望、严重者冻结相关身份 1 赛季。</li>
+    </ul>
+  </section>
+
+  <!-- ==================== §11 声望系统与积分汇总 ==================== -->
+  <section id="s11">
+    <h2><span class="num">11</span>声望系统与积分汇总</h2>
+    <p>三身份各有独立声望，加权汇总为<b>经理声望积分</b>（Manager Reputation Score），影响世界排名（策划方案 §3.6）。</p>
+
+    <h3>11.1 三身份声望来源</h3>
+    <table>
+      <thead><tr><th>身份</th><th>声望来源</th><th>计算口径</th></tr></thead>
+      <tbody>
+        <tr><td><b>经理声望</b></td><td>战绩、冠军、升降级、传奇交易</td><td>赛季结算累计；冠军/升级大幅+，降级−</td></tr>
+        <tr><td><b>化身声望</b></td><td>个人数据、全明星、名人堂、时代标签</td><td>生涯成就累计；退役时结算名人堂资格</td></tr>
+        <tr><td><b>职业声望</b></td><td>服务评价、客户满意度、职业成就（名帅戒指/金牌球探）</td><td>每次任务结算 + 雇主评价；高级职业权重更高</td></tr>
+      </tbody>
+    </table>
+
+    <h3>11.2 经理声望积分公式</h3>
+    <div class="formula">
+managerScore = wM × <span class="fn">norm</span>(managerRep)
+             + wA × <span class="fn">norm</span>(avatarRep)
+             + wP × <span class="fn">norm</span>(proRep)
+             + leagueTierBonus        <span class="comment">// 联赛层级加成</span>
+             + dynastyBonus            <span class="comment">// 王朝成就加成</span>
+
+<span class="comment">// 权重（经理为主，化身/职业为辅）</span>
+wM = <span class="num">0.55</span>, wA = <span class="num">0.25</span>, wP = <span class="num">0.20</span>
+    </div>
+    <div class="note"><b>权重设计</b>：经理是主身份，权重最高；化身养成是长线情感钩子，权重次之；职业人是经济内循环润滑剂，权重最低但不可或缺。三者叠加使"全面发展"的玩家排名高于"偏科"玩家。</div>
+
+    <h3>11.3 世界排名</h3>
+    <ul>
+      <li><b>排名维度</b>：联赛层级 + 战绩 + 化身成就 + 职业成就 + 王朝成就（策划方案 §3.6）。</li>
+      <li><b>分层展示</b>：世界总榜 / 联赛榜 / 同级榜，方便玩家定位。</li>
+      <li><b>赛季重置</b>：每赛季排名按上赛季结算分重排，新增本赛季动态分。</li>
+    </ul>
+  </section>
+
+  <!-- ==================== §12 目标分层与成就沉淀 ==================== -->
+  <section id="s12">
+    <h2><span class="num">12</span>目标分层与成就沉淀</h2>
+
+    <h3>12.1 三身份叠加目标分层</h3>
+    <table>
+      <thead><tr><th>层级</th><th>经理目标</th><th>球员化身目标</th><th>职业人目标</th></tr></thead>
+      <tbody>
+        <tr><td><b>即时</b></td><td>赢今晚比赛</td><td>今晚打出好数据</td><td>完成受雇任务</td></tr>
+        <tr><td><b>短期</b></td><td>冲季后赛/升降级</td><td>争取首发/涨薪</td><td>积攒职业声望</td></tr>
+        <tr><td><b>中期</b></td><td>签下心仪球员</td><td>入选全明星/国字号</td><td>晋升高级职业/转职</td></tr>
+        <tr><td><b>长期</b></td><td>建立王朝/登顶</td><td>化身退役进名人堂</td><td>成为顶级职业人/行业领袖</td></tr>
+        <tr><td><b>超长期</b></td><td>跨代王朝传承</td><td>化身时代标签反哺本队</td><td>职业遗产（如名帅体系）传承</td></tr>
+      </tbody>
+    </table>
+
+    <h3>12.2 成就沉淀</h3>
+    <div class="grid">
+      <div class="card"><div class="t">经理履历</div><div class="d">跨赛季记录（战绩、冠军、升降级、传奇交易）。永久存档，跳槽不丢失。</div></div>
+      <div class="card"><div class="t">化身名人堂</div><div class="d">退役化身进名人堂，跨存档可见；时代标签可反哺本队传承（成长线）。</div></div>
+      <div class="card"><div class="t">职业履历</div><div class="d">职业人执教/探查/代理的成就记录（名帅戒指、金牌球探、金牌经纪人）。</div></div>
+      <div class="card"><div class="t">世界排名</div><div class="d">三身份声望积分汇总（联赛层级 + 战绩 + 化身成就 + 职业成就 + 王朝成就）。</div></div>
+    </div>
+
+    <h3>12.3 传承闭环</h3>
+    <div class="note green"><b>跨身份传承</b>：化身退役后的时代标签（如"铁血防守时代"）可反哺本队青训，提升下一代苗子的相关特质觉醒率；职业人·主教练建立的"名帅体系"可作为遗产被本队继承，长效提升战术执行。这让三身份的长期投入形成跨代复利。</div>
+  </section>
+
+  <!-- ==================== §13 AI 职业人决策 ==================== -->
+  <section id="s13">
+    <h2><span class="num">13</span>AI 职业人决策</h2>
+    <p>未被人接管的职业人岗位由 AI 职业人填充，随真实玩家增加逐步替换。AI 职业人需拟真决策，保证世界初期服务供给不断档。</p>
+
+    <h3>13.1 AI 职业人生成</h3>
+    <ul>
+      <li><b>等级分布</b>：按金字塔分布，多数 3–5 级，少量 7–8 级，极少数 9–10 级（顶级稀缺）。</li>
+      <li><b>技能分配</b>：随机但有倾向（如 AI 球探偏苗子探查或职业评估之一支）。</li>
+      <li><b>声望</b>：与等级正相关，避免低级高声望的不合理组合。</li>
+    </ul>
+
+    <h3>13.2 AI 职业人行为规则</h3>
+    <table>
+      <thead><tr><th>行为</th><th>AI 决策依据</th></tr></thead>
+      <tbody>
+        <tr><td><b>应聘岗位</b></td><td>按等级/声望匹配可应聘岗位；高级 AI 优先应聘高薪岗</td></tr>
+        <tr><td><b>服务产出</b></td><td>按技能点+等级+随机波动 sim 产出，与玩家职业人同公式</td></tr>
+        <tr><td><b>转职</b></td><td>低概率转职（模拟职业流动）；满足声望门槛时可能晋升高级职业</td></tr>
+        <tr><td><b>挖角响应</b></td><td>玩家高薪挖角时，AI 按当前合同剩余/薪资差距决定是否跳槽</td></tr>
+      </tbody>
+    </table>
+
+    <h3>13.3 AI 化身决策（跳出后）</h3>
+    <p>玩家化身跳出本队后转为 ai_controlled，其比赛决策由 AI 按<b>性格 + 能力 + 战术偏好遗产</b>执行，与战术系统/Sim Engine 中其他 AI 球员一致。这确保化身在他队是真实劳动力而非玩家卧底。</p>
+  </section>
+
+  <!-- ==================== §14 身份切换与并发规则 ==================== -->
+  <section id="s14">
+    <h2><span class="num">14</span>身份切换与并发规则</h2>
+    <p>玩家同时持三身份，需明确"何时以哪个身份行动"及并发约束，避免身份混淆与操作冲突。</p>
+
+    <h3>14.1 身份上下文</h3>
+    <p>UI 通过<b>身份上下文切换</b>明确当前操作归属哪个身份。每个界面顶部显示当前身份标签，操作自动归属该身份。</p>
+    <table>
+      <thead><tr><th>身份上下文</th><th>主要操作</th><th>切换限制</th></tr></thead>
+      <tbody>
+        <tr><td><b>经理</b>（默认）</td><td>阵容/战术/训练/转会/职员雇佣</td><td>始终可切回；默认上下文</td></tr>
+        <tr><td><b>化身</b></td><td>查看化身生涯/数据/合同；效力本队时训练侧重</td><td>跳出后只读（旁观）；本队时可干预训练</td></tr>
+        <tr><td><b>职业人</b></td><td>应聘/服务执行/技能升级/转职</td><td>受雇任务有截止时间，需在窗口内执行</td></tr>
+      </tbody>
+    </table>
+
+    <h3>14.2 并发约束</h3>
+    <ul>
+      <li><b>每日行动点</b>：三身份共享每日行动点池（与每日制一致），防止一人三身份无限操作。经理操作消耗主体，化身/职业人操作消耗少量。</li>
+      <li><b>时间锁</b>：同一球员/职员同一时段只能被一个身份操作（如化身训练与经理战术布置不冲突，但化身合同谈判与经纪人服务不可同时进行）。</li>
+      <li><b>交手回避</b>：职业人·主教练身份执教他队时，遇本队交手自动 AI 代执教（§10）。</li>
+    </ul>
+
+    <h3>14.3 离线代管</h3>
+    <ul>
+      <li><b>经理离线</b>：球队由 AI 按玩家战术存档执行（战术系统 §14）。</li>
+      <li><b>化身离线</b>：效力本队时按经理设置 sim；跳出后始终 AI sim。</li>
+      <li><b>职业人离线</b>：受雇任务按合同自动 sim 产出（基础质量），不获经验加成——鼓励主动登录执行以提升 quality。</li>
+    </ul>
+  </section>
+
+  <!-- ==================== §15 数值附录 ==================== -->
+  <section id="s15">
+    <h2><span class="num">15</span>数值附录</h2>
+
+    <h3>15.1 职业等级经验表</h3>
+    <table>
+      <thead><tr><th>等级</th><th>称号</th><th>累计经验</th><th>技能点累计</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>学徒</td><td>0</td><td>1</td></tr>
+        <tr><td>2</td><td>一级学徒</td><td>200</td><td>2</td></tr>
+        <tr><td>3</td><td>二级学徒</td><td>600</td><td>3</td></tr>
+        <tr><td>4</td><td>熟手</td><td>1200</td><td>5</td></tr>
+        <tr><td>5</td><td>一级熟手</td><td>2000</td><td>7</td></tr>
+        <tr><td>6</td><td>二级熟手</td><td>3000</td><td>9</td></tr>
+        <tr><td>7</td><td>星级专家</td><td>4500</td><td>12</td></tr>
+        <tr><td>8</td><td>专家</td><td>6500</td><td>15</td></tr>
+        <tr><td>9</td><td>星级大师</td><td>9000</td><td>18</td></tr>
+        <tr><td>10</td><td>大师</td><td>13000</td><td>22</td></tr>
+      </tbody>
+    </table>
+
+    <h3>15.2 各职业产出系数表</h3>
+    <table>
+      <thead><tr><th>职业</th><th>skillRoll 系数</th><th>lvl 系数</th><th>产出类型</th></tr></thead>
+      <tbody>
+        <tr><td>球探</td><td>0.6</td><td>0.4</td><td>fog 收窄</td></tr>
+        <tr><td>助理教练</td><td>0.15</td><td>0.01</td><td>训练效率 mod</td></tr>
+        <tr><td>训练师(伤病)</td><td>0.20</td><td>0.015</td><td>injuryRiskMul</td></tr>
+        <tr><td>训练师(恢复)</td><td>0.30</td><td>0.02</td><td>recoveryMul</td></tr>
+        <tr><td>经纪人</td><td>0.12</td><td>0.01</td><td>合同加成</td></tr>
+        <tr><td>商人</td><td>0.25</td><td>0.02</td><td>sponsorMul</td></tr>
+        <tr><td>球馆运营</td><td>0.18</td><td>0.015</td><td>attendanceMul</td></tr>
+        <tr><td>记者</td><td>0.5</td><td>0.1</td><td>fameDelta</td></tr>
+        <tr><td>解说员</td><td>0.2</td><td>0.02</td><td>exposureMul</td></tr>
+      </tbody>
+    </table>
+
+    <h3>15.3 反套利阈值表</h3>
+    <table>
+      <thead><tr><th>场景</th><th>阈值</th><th>处理</th></tr></thead>
+      <tbody>
+        <tr><td>化身合同超额</td><td>&gt; 市场均价 × 1.2</td><td>FLAG_REVIEW 仲裁审查</td></tr>
+        <tr><td>经纪人自代理</td><td>client.ownerId == pro.ownerId</td><td>BLOCK 直接阻断</td></tr>
+        <tr><td>仲裁人涉己案</td><td>case 涉及 accountId</td><td>REASSIGN 转交</td></tr>
+        <tr><td>记者涉己报道</td><td>报道对象 == accountId/本队</td><td>收益减半 + 标记利益相关</td></tr>
+        <tr><td>主教练交手本队</td><td>对手 == 本队</td><td>AI 代执教该场</td></tr>
+      </tbody>
+    </table>
+
+    <h3>15.4 冷却表</h3>
+    <table>
+      <thead><tr><th>事件</th><th>冷却</th></tr></thead>
+      <tbody>
+        <tr><td>经理跳槽</td><td>3 赛季</td></tr>
+        <tr><td>化身跳出本队</td><td>1 赛季</td></tr>
+        <tr><td>化身退役后创建新化身</td><td>1 赛季</td></tr>
+        <tr><td>主动注销化身</td><td>2 赛季</td></tr>
+        <tr><td>转职</td><td>1 赛季（每赛季限 1 次）</td></tr>
+        <tr><td>毛遂自荐被拒</td><td>对该队 1 赛季</td></tr>
+        <tr><td>预设岗任期</td><td>1–2 赛季到期重聘</td></tr>
+      </tbody>
+    </table>
+
+    <h3>15.5 声望权重表</h3>
+    <table>
+      <thead><tr><th>维度</th><th>权重</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>经理声望</td><td>0.55</td><td>主身份，战绩/王朝为主</td></tr>
+        <tr><td>化身声望</td><td>0.25</td><td>个人成就/名人堂</td></tr>
+        <tr><td>职业声望</td><td>0.20</td><td>服务评价/职业成就</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    篮球经理世界 Hoops World Online · 关联策划方案 §3 / 经济系统 §7 / 成长线 / Sim Engine
+  </footer>
+
+</div>
+
+
+</body></html>

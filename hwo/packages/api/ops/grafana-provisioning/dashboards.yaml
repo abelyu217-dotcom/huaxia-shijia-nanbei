@@ -1,0 +1,14 @@
+# Grafana dashboard provisioning
+# 自动加载 /etc/grafana/provisioning/dashboards/*.json 作为看板
+apiVersion: 1
+providers:
+  - name: hwo-default
+    orgId: 1
+    folder: HWO
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: false

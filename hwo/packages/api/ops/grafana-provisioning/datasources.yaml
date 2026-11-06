@@ -1,0 +1,18 @@
+# Grafana PostgreSQL 数据源自动配置
+# 看板 JSON 引用 uid=hwo_pg
+apiVersion: 1
+datasources:
+  - name: HWO PostgreSQL
+    type: postgres
+    uid: hwo_pg
+    url: postgres:5432
+    database: hwo
+    user: hwo
+    secureJsonData:
+      password: hwo_dev
+    jsonData:
+      sslmode: disable
+      postgresVersion: 1600
+      timescaledb: false
+    isDefault: true
+    editable: true

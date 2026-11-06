@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>训练系统设计 · Hoops World Online</title>
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#141b26; --panel2:#1b2433; --line:#26324a;
+    --ink:#e6edf6; --ink2:#9fb0c7; --ink3:#6b7c97;
+    --accent:#ff6b35; --accent2:#4ade80; --gold:#fbbf24; --red:#ef4444; --blue:#60a5fa; --purple:#a78bfa;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:linear-gradient(180deg,#070a10 0%,#0b0f17 100%);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1020px;margin:0 auto;padding:40px 22px 120px}
+  .hero{
+    position:relative;border:1px solid var(--line);border-radius:18px;padding:42px 34px 30px;
+    background:
+      radial-gradient(800px 280px at 20% -10%, rgba(74,222,128,.16), transparent 60%),
+      radial-gradient(700px 260px at 90% 0%, rgba(255,107,53,.12), transparent 60%),
+      linear-gradient(180deg,#151d2c,#0e1420);
+    overflow:hidden;margin-bottom:30px;
+  }
+  .hero .tag{display:inline-block;font-size:12px;letter-spacing:.16em;color:var(--accent2);border:1px solid rgba(74,222,128,.45);padding:4px 10px;border-radius:999px;margin-bottom:18px;text-transform:uppercase}
+  .hero h1{margin:0 0 8px;font-size:32px;letter-spacing:.5px;font-weight:800}
+  .hero h1 .en{color:var(--ink2);font-weight:600;font-size:18px;margin-left:10px}
+  .hero .pitch{color:var(--ink2);font-size:15px;max-width:760px;margin:10px 0 22px}
+  .hero .meta{display:flex;flex-wrap:wrap;gap:10px}
+  .hero .chip{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--ink2)}
+  .hero .chip b{color:var(--ink);font-weight:600}
+  .hero .whistle{position:absolute;right:40px;bottom:30px;font-size:80px;opacity:.06;pointer-events:none}
+
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 28px;margin-bottom:22px}
+  .toc h3{margin:0 0 14px;font-size:14px;color:var(--ink2);letter-spacing:.1em;text-transform:uppercase}
+  .toc ol{margin:0;padding-left:22px;columns:2;column-gap:32px}
+  .toc li{margin:5px 0;break-inside:avoid}
+  .toc a{color:var(--ink2)}
+  .toc a:hover{color:var(--accent2)}
+  @media (max-width:640px){.toc ol{columns:1}}
+
+  section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin-bottom:22px}
+  section > h2{margin:0 0 16px;font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
+  section > h2 .num{font-size:12px;color:#0b0f17;background:var(--accent2);width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;font-weight:800;flex-shrink:0}
+  h3{font-size:16px;margin:22px 0 10px;color:var(--ink)}
+  h4{font-size:14px;margin:18px 0 8px;color:var(--accent2);letter-spacing:.04em}
+  p{margin:8px 0}
+  ul,ol{margin:8px 0 8px 4px;padding-left:22px}
+  li{margin:4px 0}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{background:#0d131d;border:1px solid var(--line);padding:2px 6px;border-radius:5px;font-size:13px;color:var(--gold)}
+  strong{color:#fff}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--ink);font-weight:600}
+  tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+
+  .note{border-left:3px solid var(--accent);background:rgba(255,107,53,.06);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;color:var(--ink2)}
+  .note b{color:var(--accent)}
+  .note.green{border-left-color:var(--accent2);background:rgba(74,222,128,.06)}
+  .note.green b{color:var(--accent2)}
+  .note.blue{border-left-color:var(--blue);background:rgba(96,165,250,.06)}
+  .note.blue b{color:var(--blue)}
+  .note.red{border-left-color:var(--red);background:rgba(239,68,68,.06)}
+  .note.red b{color:var(--red)}
+
+  .formula{
+    background:#0d131d;border:1px solid var(--line);border-radius:10px;padding:16px 20px;
+    margin:14px 0;font-family:"SF Mono","Fira Code",Consolas,monospace;font-size:13px;line-height:1.9;
+    overflow-x:auto;white-space:pre;
+  }
+  .formula .var{color:var(--blue)}
+  .formula .fn{color:var(--purple)}
+  .formula .op{color:var(--accent)}
+  .formula .num{color:var(--gold)}
+  .formula .comment{color:var(--ink3);font-style:italic}
+  .formula .str{color:var(--accent2)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:14px 0}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .card .t{font-weight:700;color:var(--ink);font-size:14px;margin-bottom:6px}
+  .card .d{font-size:13px;color:var(--ink2)}
+  .card .badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:999px;margin-left:6px;vertical-align:middle}
+  .badge.green{background:rgba(74,222,128,.15);color:var(--accent2)}
+  .badge.gold{background:rgba(251,191,36,.15);color:var(--gold)}
+  .badge.red{background:rgba(239,68,68,.15);color:var(--red)}
+  .badge.blue{background:rgba(96,165,250,.15);color:var(--blue)}
+
+  .load-bar{display:flex;align-items:center;gap:8px;margin:8px 0}
+  .load-bar .label{width:80px;font-size:13px;color:var(--ink2);text-align:right;flex-shrink:0}
+  .load-bar .bar{flex:1;height:10px;background:var(--panel2);border-radius:5px;overflow:hidden;position:relative}
+  .load-bar .fill{height:100%;border-radius:5px;transition:width .3s}
+  .load-bar .val{width:50px;font-size:12px;color:var(--ink);font-family:monospace;flex-shrink:0}
+
+  .flow{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:14px 0;font-size:13px}
+  .flow .step{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 14px;color:var(--ink)}
+  .flow .arrow{color:var(--accent2);font-weight:bold}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ==================== HERO ==================== -->
+<div class="hero">
+  <span class="tag">System Design · Training</span>
+  <h1>训练系统 <span class="en">Training System</span></h1>
+  <p class="pitch">经理每日循环的核心落地接口。将"训练侧重—训练强度—负荷管理—伤病风险—成长收益"编织为可操作、有后果、需权衡的决策系统。训练不是"点了就涨"的数值泵，而是投入产出博弈——压榨极限换取短期跃升，还是稳健培养厚积薄发，由经理的建队哲学决定。</p>
+  <div class="meta">
+    <span class="chip"><b>优先级</b> P0</span>
+    <span class="chip"><b>依赖</b> 球员成长线 · 比赛模拟引擎 · 世界与联赛结构</span>
+    <span class="chip"><b>下游</b> 球探系统 · 选秀系统 · 王朝与传承</span>
+    <span class="chip"><b>版本</b> v1.0</span>
+  </div>
+  <span class="whistle">🏋️</span>
+</div>
+
+<!-- ==================== TOC ==================== -->
+<div class="toc">
+  <h3>目录 · Table of Contents</h3>
+  <ol>
+    <li><a href="#s1">设计原则</a></li>
+    <li><a href="#s2">系统总览与架构</a></li>
+    <li><a href="#s3">训练类型体系</a></li>
+    <li><a href="#s4">训练计划与日程</a></li>
+    <li><a href="#s5">训练强度与负荷管理</a></li>
+    <li><a href="#s6">训练效果计算引擎</a></li>
+    <li><a href="#s7">训练与成长因素联动</a></li>
+    <li><a href="#s8">训练伤病风险模型</a></li>
+    <li><a href="#s9">训练设施与教练组</a></li>
+    <li><a href="#s10">青训学院训练体系</a></li>
+    <li><a href="#s11">训练与世界时钟</a></li>
+    <li><a href="#s12">训练报告与反馈</a></li>
+    <li><a href="#s13">特殊训练模式</a></li>
+    <li><a href="#s14">训练与化学反应</a></li>
+    <li><a href="#s15">AI 训练决策模型</a></li>
+    <li><a href="#s16">异常处理与边界规则</a></li>
+    <li><a href="#s17">数值附录</a></li>
+  </ol>
+</div>
+
+<!-- ==================== §1 设计原则 ==================== -->
+<section id="s1">
+  <h2><span class="num">1</span>设计原则</h2>
+
+  <div class="note green"><b>核心定位</b>：训练系统是成长线引擎在"每日循环"中的操作接口。经理每天 09:30 前提交训练安排，10:00 结算后产生成长增量、Condition 变化与伤病风险判定。它是"养成"玩法的把手，而非 sim 背景数据。</div>
+
+  <div class="grid">
+    <div class="card"><div class="t">① 有后果的决策 <span class="badge green">核心</span></div><div class="d">每次训练安排都是投入产出博弈：高强度=快成长但高伤病+高疲劳；低强度=安全但成长慢。没有"免费午餐"。</div></div>
+    <div class="card"><div class="t">② 与成长线对齐 <span class="badge blue">约束</span></div><div class="d">训练不绕过 Peak 天花板、不绕过 Trainability 衰减、不绕过技术熟练度定型。训练是"逼近天花板"的手段，不是"打破天花板"的捷径。</div></div>
+    <div class="card"><div class="t">③ 负荷可见可控 <span class="badge gold">体验</span></div><div class="d">球员负荷（Load）是独立可见指标，累积影响伤病概率与 Condition 恢复。经理能直观看到"红灯球员"。</div></div>
+    <div class="card"><div class="t">④ 异步与确定性 <span class="badge blue">架构</span></div><div class="d">训练结算在世界时钟 10:00 统一执行，使用确定性 PRNG（mulberry32 + seed），同输入同输出。支持回放与审计。</div></div>
+  </div>
+
+  <h3>1.1 不做什么</h3>
+  <ul>
+    <li><b>不做即时训练</b>：训练不是点击立即生效的数值泵，而是每日结算的异步系统，与比赛 sim 共享时钟节奏。</li>
+    <li><b>不做无脑最高强度最优</b>：高强度训练有明确的伤病风险与 Condition 代价，让"科学轮换+恢复训练"成为合理策略。</li>
+    <li><b>不做忽略年龄的训练</b>：老将训练效率天然衰减（ageDecay），强行高压训练只会加速衰退而非逆生长。</li>
+    <li><b>不做脱离场景的训练</b>：训练侧重需与球队战术、球员特质、赛程密度联动——背靠背赛程不该安排极限强度。</li>
+  </ul>
+</section>
+
+<!-- ==================== §2 系统总览与架构 ==================== -->
+<section id="s2">
+  <h2><span class="num">2</span>系统总览与架构</h2>
+
+  <h3>2.1 训练系统在游戏循环中的位置</h3>
+  <div class="flow">
+    <span class="step">球探/选秀/签约</span>
+    <span class="arrow">→</span>
+    <span class="step">制定训练计划（侧重+强度+类型）</span>
+    <span class="arrow">→</span>
+    <span class="step">09:30 提交截止</span>
+    <span class="arrow">→</span>
+    <span class="step">10:00 训练结算</span>
+    <span class="arrow">→</span>
+    <span class="step">成长增量 / Condition / 伤病判定</span>
+    <span class="arrow">→</span>
+    <span class="step">10:00 比赛结算</span>
+    <span class="arrow">→</span>
+    <span class="step">16:00 翻天（Condition 恢复 / 事件）</span>
+  </div>
+  <p>训练结算与比赛结算共享同一结算窗口（10:00）。训练先于比赛执行——意味着当日训练产生的 Condition 变化会直接影响当日比赛 sim。</p>
+
+  <h3>2.2 四层架构</h3>
+  <table>
+    <thead><tr><th>层</th><th>名称</th><th>职责</th></tr></thead>
+    <tbody>
+      <tr><td><b>L1</b></td><td>输入层 Input Layer</td><td>经理提交训练计划（训练侧重 / 强度 / 类型 / 目标球员）；青训学院默认计划</td></tr>
+      <tr><td><b>L2</b></td><td>结算层 Settlement Layer</td><td>每日 10:00 执行：计算成长增量、Condition 消耗、Load 累积、伤病判定。纯函数 + 确定性 PRNG</td></tr>
+      <tr><td><b>L3</b></td><td>反馈层 Feedback Layer</td><td>生成训练报告（成长变化、负荷状态、伤病预警、教练评语）</td></tr>
+      <tr><td><b>L4</b></td><td>修正层 Modifier Layer</td><td>设施等级、教练组、teaching、青训血脉等加成注入 L2 计算</td></tr>
+    </tbody>
+  </table>
+
+  <h3>2.3 核心数据结构</h3>
+  <div class="formula">
+<span class="comment">── 训练计划（经理每日提交） ──</span>
+
+<span class="var">TrainingPlan</span> <span class="op">=</span> {
+  teamId:        <span class="var">TeamId</span>,
+  seasonDay:     <span class="var">u8</span>,              <span class="comment">// 赛季日（1-180）</span>
+  focus:         <span class="var">TrainingFocus</span>,  <span class="comment">// 均衡/单项侧重/双项侧重/防守专精/体能恢复</span>
+  focusTarget:   [<span class="var">AbilityKey</span>?], <span class="comment">// 侧重目标能力（单项/双项时必填）</span>
+  intensity:     <span class="var">Intensity</span>,      <span class="comment">// light / normal / heavy /极限</span>
+  sessionType:   <span class="var">SessionType</span>,    <span class="comment">// 个人/团队/专项/恢复（§3）</span>
+  targetPlayers: [<span class="var">PlayerId</span>],    <span class="comment">// 该计划适用球员列表</span>
+  submittedAt:   <span class="var">Timestamp</span>,
+}
+
+<span class="comment">── 球员训练状态（每日结算后更新） ──</span>
+
+<span class="var">TrainingState</span> <span class="op">=</span> {
+  playerId:      <span class="var">PlayerId</span>,
+  load:          <span class="var">f32</span>,            <span class="comment">// 累积负荷 0-100（§5）</span>
+  loadTrend:     [<span class="var">f32</span>],          <span class="comment">// 近 7 日负荷序列</span>
+  lastGrowth:    <span class="var">Map</span>&lt;<span class="var">AbilityKey</span>, <span class="var">f32</span>&gt;, <span class="comment">// 上次训练成长增量</span>
+  fatigueRisk:   <span class="var">f32</span>,            <span class="comment">// 当前疲劳伤病风险系数 0-1</span>
+  trainingStreak:<span class="var">u8</span>,             <span class="comment">// 连续训练日数（影响 bonus/penalty）</span>
+  recoveryStreak:<span class="var">u8</span>,             <span class="comment">// 连续恢复日数</span>
+}
+  </div>
+</section>
+
+<!-- ==================== §3 训练类型体系 ==================== -->
+<section id="s3">
+  <h2><span class="num">3</span>训练类型体系</h2>
+  <p>训练按 <b>SessionType</b> 分为四大类，每类有不同的成长侧重、Condition 消耗与伤病风险特征。经理可针对不同球员组合安排不同类型。</p>
+
+  <h3>3.1 四大训练类型</h3>
+  <table>
+    <thead><tr><th>类型</th><th>成长侧重</th><th>Condition 消耗</th><th>伤病风险</th><th>适用场景</th></tr></thead>
+    <tbody>
+      <tr><td><b>个人训练</b><br>Individual</td><td>指定能力值成长（受 TrainingFocus 调控）</td><td>中（-8~-15）</td><td>中</td><td>日常培养主力轮换，针对性补短板</td></tr>
+      <tr><td><b>团队训练</b><br>Team</td><td>战术执行度↑、化学反应↑、团队篮板/助攻熟练度↑</td><td>低（-5~-10）</td><td>低</td><td>新援融入、战术磨合、连败后提振</td></tr>
+      <tr><td><b>专项训练</b><br>Specialty</td><td>单一技术熟练度↑↑（如三分投射/挡拆/罚球）</td><td>高（-12~-20）</td><td>高</td><td>短期突破某项技术；季后赛针对性补强</td></tr>
+      <tr><td><b>恢复训练</b><br>Recovery</td><td>不成长能力；Condition↑↑、Load↓、疲劳风险↓</td><td>负（+20~+35）</td><td>极低</td><td>背靠背赛程、伤病复出后、老将保养</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.2 个人训练的侧重模式</h3>
+  <p>个人训练继承成长线 §9.1 的 TrainingFocus 体系：</p>
+  <table>
+    <thead><tr><th>侧重模式</th><th>效果</th><th>倍率</th><th>限制</th></tr></thead>
+    <tbody>
+      <tr><td><b>均衡</b></td><td>所有能力均匀成长</td><td>×1.0（全部）</td><td>无</td></tr>
+      <tr><td><b>单项侧重</b></td><td>指定一项能力加速</td><td>×2.0（侧重）/ ×0.5（其余）</td><td>侧重项受 Peak 限制</td></tr>
+      <tr><td><b>双项侧重</b></td><td>两项能力加速</td><td>×1.5（侧重）/ ×0.6（其余）</td><td>需助理教练等级≥2</td></tr>
+      <tr><td><b>防守专精</b></td><td>防守组能力加速</td><td>×1.8（防守组）/ ×0.7（其余）</td><td>需助理教练防守专长</td></tr>
+      <tr><td><b>体能恢复</b></td><td>不成长能力，专注恢复</td><td>×0 / Condition +30</td><td>背靠背推荐</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.3 专项训练的技术目录</h3>
+  <p>专项训练针对<b>技术熟练度</b>（成长线 §4.6）进行突破，与能力值成长正交。每项技术有独立的熟练度上限（受少年期定型影响）。</p>
+  <div class="grid">
+    <div class="card"><div class="t">进攻专项</div><div class="d">三分投射 / 中距离 / 突破上篮 / 低位单打 / 挡拆持球 / 挡拆顺下 / 罚球</div></div>
+    <div class="card"><div class="t">防守专项</div><div class="d">单防 / 协防 / 护筐 / 抢断 / 篮板卡位 / 挡拆挤过</div></div>
+    <div class="card"><div class="t">组织专项</div><div class="d">传球视野 / 推进节奏 / 阵地组织 / 快攻发起</div></div>
+    <div class="card"><div class="t">体能专项</div><div class="d">耐力 / 爆发力 / 横移速度 / 弹跳</div></div>
+  </div>
+  <div class="note"><b>专项训练与个人训练的区别</b>：个人训练提升<b>能力值</b>（如 ThreePT rating），受 Trainability 和 Peak 限制；专项训练提升<b>技术熟练度</b>（如三分熟练度 1-10），影响能力值转化为实际表现的效率。两者可同日安排给不同球员，但同一球员同日只能选一种。</div>
+
+  <h3>3.4 训练类型组合规则</h3>
+  <ul>
+    <li><b>同日单一</b>：同一球员每日只能安排一种训练类型（个人/团队/专项/恢复四选一）。</li>
+    <li><b>队内混排</b>：经理可为不同球员安排不同类型——如主力安排团队训练磨合战术，替补安排个人训练补短板，老将安排恢复训练。</li>
+    <li><b>青训苗子</b>：青训苗子的训练独立于职业队，由青训学院默认计划驱动（§10）。</li>
+    <li><b>比赛日限制</b>：当日有比赛的球员，训练强度上限自动锁定为 normal（不可 heavy/极限），防止赛前过劳。</li>
+  </ul>
+</section>
+
+<!-- ==================== §4 训练计划与日程 ==================== -->
+<section id="s4">
+  <h2><span class="num">4</span>训练计划与日程</h2>
+
+  <h3>4.1 训练计划的生命周期</h3>
+  <div class="flow">
+    <span class="step">制定计划（任意时间）</span>
+    <span class="arrow">→</span>
+    <span class="step">09:30 提交截止</span>
+    <span class="arrow">→</span>
+    <span class="step">锁定不可改</span>
+    <span class="arrow">→</span>
+    <span class="step">10:00 结算执行</span>
+    <span class="arrow">→</span>
+    <span class="step">生成报告</span>
+  </div>
+  <p>训练计划可在赛季日内的任意时间制定和修改，但 <b>09:30 为提交截止</b>（与世界时钟对齐）。截止后当日计划锁定，不可再改。10:00 结算时统一执行。</p>
+
+  <h3>4.2 默认计划与继承</h3>
+  <p>为降低每日操作负担，系统支持<b>默认计划继承</b>：</p>
+  <ul>
+    <li><b>首次设置</b>：经理首次进入训练界面时设置默认计划（如"全队个人训练·均衡·normal"）。</li>
+    <li><b>自动继承</b>：若某日经理未手动修改，系统自动继承前一日的计划。</li>
+    <li><b>智能提醒</b>：当赛程出现背靠背、伤病潮、新援加盟等情况时，系统弹出提醒建议调整。</li>
+    <li><b>青训学院</b>：青训苗子使用学院级默认计划，经理可整体调档但无需逐人设置。</li>
+  </ul>
+
+  <h3>4.3 训练计划模板</h3>
+  <p>经理可保存常用计划为模板，一键应用到全队或指定分组：</p>
+  <table>
+    <thead><tr><th>模板名</th><th>类型</th><th>侧重</th><th>强度</th><th>适用场景</th></tr></thead>
+    <tbody>
+      <tr><td>常规赛日常</td><td>个人</td><td>均衡</td><td>normal</td><td>常规比赛日，稳定成长</td></tr>
+      <tr><td>背靠背恢复</td><td>恢复</td><td>—</td><td>light</td><td>连续比赛日，保护主力</td></tr>
+      <tr><td>战术磨合期</td><td>团队</td><td>—</td><td>normal</td><td>新援加盟后 2-3 周</td></tr>
+      <tr><td>季后赛冲刺</td><td>专项</td><td>针对对手弱点</td><td>heavy</td><td>季后赛前针对性补强</td></tr>
+      <tr><td>老将保养</td><td>恢复</td><td>—</td><td>light</td><td>30+ 老将常规安排</td></tr>
+      <tr><td>新秀强化</td><td>个人</td><td>单项侧重</td><td>heavy</td><td>新秀培养期，针对性补短板</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== §5 训练强度与负荷管理 ==================== -->
+<section id="s5">
+  <h2><span class="num">5</span>训练强度与负荷管理</h2>
+
+  <h3>5.1 四档训练强度</h3>
+  <table>
+    <thead><tr><th>强度</th><th>成长倍率</th><th>Condition 消耗</th><th>Load 增量</th><th>伤病风险修正</th><th>限制</th></tr></thead>
+    <tbody>
+      <tr><td><b>light 轻量</b></td><td>×0.5</td><td>-5~-8</td><td>+3~5</td><td>×0.6</td><td>无</td></tr>
+      <tr><td><b>normal 常规</b></td><td>×1.0</td><td>-8~-12</td><td>+6~10</td><td>×1.0</td><td>无</td></tr>
+      <tr><td><b>heavy 大量</b></td><td>×1.5</td><td>-12~-18</td><td>+12~18</td><td>×1.6</td><td>需教练等级≥2</td></tr>
+      <tr><td><b>极限 Limit</b></td><td>×2.0</td><td>-18~-25</td><td>+20~28</td><td>×2.5</td><td>需教练等级≥3 + 球员无伤病</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.2 负荷 Load 系统</h3>
+  <p>Load 是球员累积疲劳的独立指标（0–100），与 Condition（单日体力）不同——Condition 每日恢复，Load 是多日累积。</p>
+  <div class="formula">
+<span class="comment">── Load 计算 ──</span>
+
+<span class="var">load</span>[p] <span class="op">=</span> <span class="var">load</span>[p] <span class="op">*</span> <span class="num">0.92</span> <span class="op">+</span> <span class="var">dailyLoadGain</span>[p]   <span class="comment">// 每日衰减8% + 新增量</span>
+
+<span class="var">dailyLoadGain</span>[p] <span class="op">=</span> <span class="var">intensityLoad</span>[session]
+                  <span class="op">*</span> <span class="var">durabilityMod</span>[p]       <span class="comment">// Durability高→负荷累积慢</span>
+                  <span class="op">*</span> <span class="var">ageMod</span>[p]              <span class="comment">// 老将负荷累积快</span>
+                  <span class="op">+</span> <span class="var">gameLoad</span>[p]            <span class="comment">// 当日比赛消耗追加</span>
+
+<span class="comment">// Load 影响</span>
+<span class="var">load</span> <span class="op">&gt;</span> <span class="num">70</span>  <span class="op">→</span> <span class="var">injuryRisk</span> <span class="op">*</span> <span class="num">1.5</span>,  Condition 恢复 <span class="op">*</span> <span class="num">0.8</span>
+<span class="var">load</span> <span class="op">&gt;</span> <span class="num">85</span>  <span class="op">→</span> <span class="var">injuryRisk</span> <span class="op">*</span> <span class="num">2.0</span>,  Condition 恢复 <span class="op">*</span> <span class="num">0.6</span>, 训练效率 <span class="op">*</span> <span class="num">0.7</span>
+<span class="var">load</span> <span class="op">&gt;</span> <span class="num">95</span>  <span class="op">→</span> <span class="var">injuryRisk</span> <span class="op">*</span> <span class="num">3.0</span>,  强制 rest（系统自动安排恢复）
+  </div>
+
+  <h3>5.3 负荷可视化</h3>
+  <p>训练界面为每名球员显示负荷条，经理直观判断"红灯球员"：</p>
+  <div class="load-bar">
+    <span class="label">主力 PG</span>
+    <div class="bar"><div class="fill" style="width:42%;background:var(--accent2)"></div></div>
+    <span class="val">42 绿</span>
+  </div>
+  <div class="load-bar">
+    <span class="label">替补 SG</span>
+    <div class="bar"><div class="fill" style="width:68%;background:var(--gold)"></div></div>
+    <span class="val">68 黄</span>
+  </div>
+  <div class="load-bar">
+    <span class="label">主力 C</span>
+    <div class="bar"><div class="fill" style="width:83%;background:var(--accent)"></div></div>
+    <span class="val">83 橙</span>
+  </div>
+  <div class="load-bar">
+    <span class="label">老将 SF</span>
+    <div class="bar"><div class="fill" style="width:94%;background:var(--red)"></div></div>
+    <span class="val">94 红</span>
+  </div>
+  <table>
+    <thead><tr><th>Load 区间</th><th>状态</th><th>颜色</th><th>系统行为</th></tr></thead>
+    <tbody>
+      <tr><td>0–50</td><td>充沛</td><td>绿</td><td>正常训练比赛</td></tr>
+      <tr><td>51–70</td><td>正常</td><td>黄</td><td>正常训练比赛</td></tr>
+      <tr><td>71–85</td><td>疲劳</td><td>橙</td><td>建议恢复训练；伤病风险上升</td></tr>
+      <tr><td>86–95</td><td>过载</td><td>红</td><td>强制 light 以下强度；伤病风险高</td></tr>
+      <tr><td>96–100</td><td>临界</td><td>深红</td><td>强制 rest；当日不可安排训练</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.4 负荷管理策略</h3>
+  <div class="note blue"><b>设计意图</b>：Load 系统让"负荷管理"成为真实可玩的策略——经理需要在"冲击战绩（主力多打多练）"与"保护球员（轮休+恢复训练）"间权衡。忽视 Load 的经理会遭遇伤病潮，过度保护 Load 的经理则成长缓慢。这是训练系统最核心的博弈点。</div>
+</section>
+
+<!-- ==================== §6 训练效果计算引擎 ==================== -->
+<section id="s6">
+  <h2><span class="num">6</span>训练效果计算引擎</h2>
+  <p>训练结算在每日 10:00 执行，纯函数 + 确定性 PRNG，同输入同输出。</p>
+
+  <h3>6.1 个人训练成长计算</h3>
+  <div class="formula">
+<span class="comment">── 个人训练每日成长增量 ──</span>
+
+<span class="var">growthDelta</span>[ability] <span class="op">=</span> <span class="var">baseGrowthRate</span>[ability]
+                        <span class="op">*</span> <span class="var">EffectiveTrainability</span>[p]    <span class="comment">// 成长线§9.2 ageDecay</span>
+                        <span class="op">*</span> <span class="var">TrainingFocus</span>[ability]       <span class="comment">// 侧重倍率 0.5~2.0</span>
+                        <span class="op">*</span> <span class="var">intensityGrowthMod</span>[session] <span class="comment">// light×0.5 ~ 极限×2.0</span>
+                        <span class="op">*</span> <span class="var">facilityMod</span>                  <span class="comment">// 设施等级加成 §9</span>
+                        <span class="op">*</span> <span class="var">coachMod</span>                     <span class="comment">// 教练组加成 §9</span>
+                        <span class="op">*</span> <span class="var">teachingMod</span>                  <span class="comment">// 老将 teaching 加成</span>
+                        <span class="op">*</span> <span class="var">loadEfficiencyMod</span>[p]         <span class="comment">// Load过高→效率下降</span>
+                        <span class="op">*</span> <span class="var">streakBonus</span>[p]               <span class="comment">// 连续训练奖励</span>
+
+<span class="comment">// Peak 限制：成长不可超过 Peak</span>
+<span class="var">newRating</span> <span class="op">=</span> <span class="fn">min</span>(<span class="var">currentRating</span> <span class="op">+</span> <span class="var">growthDelta</span>, <span class="var">Peak</span>[ability])
+
+<span class="comment">// 接近 Peak 时成长递减（最后10点慢速逼近）</span>
+<span class="var">proximityMod</span> <span class="op">=</span> (<span class="var">Peak</span> <span class="op">-</span> <span class="var">newRating</span>) <span class="op">&lt;</span> <span class="num">10</span> <span class="op">?</span> (<span class="var">Peak</span> <span class="op">-</span> <span class="var">newRating</span>) <span class="op">/</span> <span class="num">10</span> <span class="op">:</span> <span class="num">1.0</span>
+  </div>
+
+  <h3>6.2 团队训练效果</h3>
+  <div class="formula">
+<span class="comment">── 团队训练每日效果 ──</span>
+
+<span class="var">chemGrowth</span> <span class="op">=</span> <span class="var">baseChemRate</span> <span class="op">*</span> <span class="var">intensityMod</span> <span class="op">*</span> <span class="var">coachMod</span>
+<span class="comment">// 化学反应 +chemGrowth（受 Sim Engine §11 化学修正上限约束）</span>
+
+<span class="var">tacticFamiliarity</span> <span class="op">+=</span> <span class="var">baseFamRate</span> <span class="op">*</span> <span class="var">intensityMod</span>
+<span class="comment">// 当前预设战术的执行度 +（影响 Sim Engine 战术修正强度）</span>
+
+<span class="var">teamSkillGrowth</span> <span class="op">=</span> {
+  teamRebound: <span class="op">+</span><span class="var">val</span>,    <span class="comment">// 团队篮板熟练度</span>
+  teamAssist:  <span class="op">+</span><span class="var">val</span>,    <span class="comment">// 团队传导熟练度</span>
+  defenseSync: <span class="op">+</span><span class="var">val</span>,    <span class="comment">// 防守协同度</span>
+}
+
+<span class="comment">// 团队训练不提升个人能力值，但提升团队级修正</span>
+<span class="comment">// 化学反应、战术执行度、团队熟练度 → Sim Engine Modifier Layer</span>
+  </div>
+
+  <h3>6.3 专项训练效果</h3>
+  <div class="formula">
+<span class="comment">── 专项训练每日效果 ──</span>
+
+<span class="var">skillExpGain</span> <span class="op">=</span> <span class="var">baseSkillRate</span> <span class="op">*</span> <span class="var">intensityMod</span> <span class="op">*</span> <span class="var">coachSpecialtyMod</span>
+
+<span class="comment">// 技术熟练度升级阈值（指数递增）</span>
+<span class="var">threshold</span>[lv] <span class="op">=</span> <span class="num">100</span> <span class="op">*</span> <span class="num">1.5</span>^(lv<span class="op">-</span><span class="num">1</span>)
+<span class="comment">// lv1→2: 100exp, lv2→3: 150, lv3→4: 225, ... lv9→10: 3844</span>
+
+<span class="comment">// 熟练度上限受少年期定型限制（成长线§4.6）</span>
+<span class="var">newSkillLv</span> <span class="op">=</span> <span class="fn">min</span>(<span class="var">currentLv</span> <span class="op">+</span> <span class="var">upgrade</span>, <span class="var">skillCap</span>[p])
+  </div>
+
+  <h3>6.4 恢复训练效果</h3>
+  <div class="formula">
+<span class="comment">── 恢复训练每日效果 ──</span>
+
+<span class="var">conditionGain</span> <span class="op">=</span> <span class="num">25</span> <span class="op">*</span> <span class="var">facilityMod</span> <span class="op">*</span> <span class="var">medicalStaffMod</span>
+<span class="comment">// Condition +conditionGain（上限100）</span>
+
+<span class="var">loadReduction</span> <span class="op">=</span> <span class="num">15</span> <span class="op">*</span> <span class="var">medicalStaffMod</span>
+<span class="comment">// Load 直接削减（而非靠衰减）</span>
+
+<span class="var">fatigueRisk</span> <span class="op">=</span> <span class="fn">max</span>(<span class="num">0</span>, <span class="var">fatigueRisk</span> <span class="op">-</span> <span class="num">0.15</span>)
+<span class="comment">// 疲劳风险系数下降</span>
+
+<span class="comment">// 恢复训练不产生任何能力成长（growthDelta = 0）</span>
+  </div>
+
+  <h3>6.5 连续训练奖励/惩罚</h3>
+  <table>
+    <thead><tr><th>连续状态</th><th>效果</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>连续训练 3-6 日</td><td>streakBonus ×1.05/日</td><td>进入节奏，成长效率微升</td></tr>
+      <tr><td>连续训练 7+ 日</td><td>streakBonus 封顶 ×1.15</td><td>但 Load 累积风险同步上升</td></tr>
+      <tr><td>连续训练 10+ 日无恢复</td><td>疲劳风险 +0.1/日</td><td>系统弹窗警告"建议安排恢复日"</td></tr>
+      <tr><td>连续恢复 2+ 日</td><td>成长效率惩罚 ×0.9</td><td>久疏训练，需重新进入节奏</td></tr>
+      <tr><td>连续恢复 3+ 日</td><td>惩罚 ×0.8</td><td>过度休息也有代价</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== §7 训练与成长因素联动 ==================== -->
+<section id="s7">
+  <h2><span class="num">7</span>训练与成长因素联动</h2>
+  <p>训练系统直接驱动成长线七大动态因素中的多项，是"可养成层"的主要输入源。</p>
+
+  <h3>7.1 联动映射表</h3>
+  <table>
+    <thead><tr><th>成长因素</th><th>训练影响方式</th><th>影响程度</th></tr></thead>
+    <tbody>
+      <tr><td><b>训练响应率 Trainability</b></td><td>训练侧重匹配度 +0.1；童子/少年期持续正规训练维持上限</td><td>直接</td></tr>
+      <tr><td><b>特质觉醒</b></td><td>专项训练 +10% 觉醒催化；高强度训练有小概率触发"压力觉醒"</td><td>催化</td></tr>
+      <tr><td><b>伤病抗性 Durability</b></td><td>少年期过度训练（heavy+）-0.2 雏形损伤；体能专项训练 +0.05/季</td><td>双向</td></tr>
+      <tr><td><b>比赛经验</b></td><td>不直接由训练影响（由比赛 sim 驱动）</td><td>—</td></tr>
+      <tr><td><b>心理素质 Mental Fortitude</b></td><td>teaching 加成 +5%；团队训练提振 +2%</td><td>间接</td></tr>
+      <tr><td><b>技术熟练度</b></td><td>专项训练是唯一主动提升途径</td><td>核心</td></tr>
+      <tr><td><b>生涯耐久 Longevity</b></td><td>科学负荷管理（不持续过载）+0.1/季；少年期不过度参赛 +0.2/年</td><td>长线</td></tr>
+    </tbody>
+  </table>
+
+  <h3>7.2 训练响应率与侧重匹配</h3>
+  <div class="formula">
+<span class="comment">── 训练侧重与球员特质匹配度 ──</span>
+
+<span class="var">TrainingMatch</span> <span class="op">=</span> <span class="num">1.0</span> <span class="comment">// 默认</span>
+
+<span class="keyword">if</span> (<span class="var">focusTarget</span> <span class="op">==</span> <span class="var">playerTrait</span>.growthDirection):
+    <span class="var">TrainingMatch</span> <span class="op">=</span> <span class="num">1.3</span>      <span class="comment">// 侧重方向与特质成长方向一致</span>
+
+<span class="keyword">if</span> (<span class="var">focusTarget</span> <span class="op">∈</span> <span class="var">playerTrait</span>.counterDirection):
+    <span class="var">TrainingMatch</span> <span class="op">=</span> <span class="num">0.7</span>      <span class="comment">// 侧重方向与特质相悖</span>
+
+<span class="comment">// 例：特质"快速学习"(成长型) + 训练侧重匹配 → Trainability +0.1</span>
+<span class="comment">// 例：特质"晚 bloomer"(成长型) + 少年期训练 → Trainability 临时降低但巅峰期回升</span>
+  </div>
+
+  <h3>7.3 ageDecay 与训练效率</h3>
+  <p>训练效率天然受球员年龄影响（成长线 §9.2）：</p>
+  <table>
+    <thead><tr><th>年龄段</th><th>ageDecay</th><th>训练表现</th><th>策略建议</th></tr></thead>
+    <tbody>
+      <tr><td>8–15（青训期）</td><td>×1.0</td><td>满效率</td><td>童子/少年期是训练黄金窗口，决定一生 Trainability 上限</td></tr>
+      <tr><td>16–22（青年期）</td><td>×0.95</td><td>微衰</td><td>技术定型关键期，专项训练价值最高</td></tr>
+      <tr><td>23–28（巅峰期）</td><td>×0.80</td><td>下降</td><td>能力值逼近 Peak，转向维持+专项</td></tr>
+      <tr><td>29–32（后巅峰）</td><td>×0.60</td><td>明显下降</td><td>恢复训练比重增加，防止衰退</td></tr>
+      <tr><td>33+（老将期）</td><td>×0.35</td><td>几乎只维持</td><td>以恢复+teaching 为主</td></tr>
+    </tbody>
+  </table>
+  <div class="note"><b>CareerLongevity 修正</b>：Longevity ≥ 15 的球员，ageDecay 衰减速率减半——长巅峰球员的训练效率维持更久，这是"厚积薄发"路线的兑现。</div>
+</section>
+
+<!-- ==================== §8 训练伤病风险模型 ==================== -->
+<section id="s8">
+  <h2><span class="num">8</span>训练伤病风险模型</h2>
+
+  <h3>8.1 每日伤病判定</h3>
+  <p>训练结算是每日伤病判定的两个触发点之一（另一个是比赛结算）。训练伤病风险独立于比赛伤病。</p>
+  <div class="formula">
+<span class="comment">── 训练伤病判定 ──</span>
+
+<span class="var">trainInjuryChance</span>[p] <span class="op">=</span> <span class="var">baseInjuryRate</span>           <span class="comment">// 基础率 0.3%</span>
+                        <span class="op">*</span> <span class="var">intensityRiskMod</span>        <span class="comment">// light×0.6 ~ 极限×2.5</span>
+                        <span class="op">*</span> <span class="var">loadRiskMod</span>[p]          <span class="comment">// Load区段修正 §5.2</span>
+                        <span class="op">*</span> <span class="var">durabilityMod</span>[p]        <span class="comment">// Durability高→风险低</span>
+                        <span class="op">*</span> <span class="var">ageRiskMod</span>[p]           <span class="comment">// 老将风险更高</span>
+                        <span class="op">*</span> <span class="var">facilityProtectMod</span>     <span class="comment">// 设施伤病防护 §9</span>
+                        <span class="op">*</span> <span class="var">medicalStaffMod</span>        <span class="comment">// 医疗组防护</span>
+                        <span class="op">*</span> <span class="var">sessionTypeRiskMod</span>      <span class="comment">// 恢复×0.1 / 团队×0.7 / 专项×1.5</span>
+
+<span class="keyword">if</span> (<span class="fn">rand</span>(seed) <span class="op">&lt;</span> <span class="var">trainInjuryChance</span>):
+    <span class="var">injury</span> <span class="op">=</span> <span class="fn">rollInjury</span>(seed, p)   <span class="comment">// 判定伤情等级（轻微/中度/重度）</span>
+  </div>
+
+  <h3>8.2 伤情等级</h3>
+  <table>
+    <thead><tr><th>等级</th><th>概率</th><th>缺阵</th><th>影响</th></tr></thead>
+    <tbody>
+      <tr><td>轻微（扭伤/拉伤）</td><td>60%</td><td>1–3 日</td><td>Condition 暂降；不影响能力值</td></tr>
+      <tr><td>中度（肌肉撕裂/关节）</td><td>30%</td><td>4–14 日</td><td>Condition 大幅下降；相关能力暂时 -3~5</td></tr>
+      <tr><td>重度（韧带/骨折）</td><td>10%</td><td>15–90 日</td><td>赛季报销风险；Durability 永久 -0.1</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8.3 训练特有伤病类型</h3>
+  <div class="grid">
+    <div class="card"><div class="t">过劳伤 <span class="badge red">高风险</span></div><div class="d">Load 持续 85+ 触发。肌腱炎、疲劳性骨折。与高强度+高频次正相关。</div></div>
+    <div class="card"><div class="t">专项过载伤</div><div class="d">同一专项连续训练 5+ 日。如连续三分专项→手腕/肩膀过载。建议轮换专项。</div></div>
+    <div class="card"><div class="t">设施不足伤</div><div class="d">设施 Lv1 时 heavy 以上强度触发概率 ×1.5。劣质场地/缺乏保护。</div></div>
+    <div class="card"><div class="t">少年期过劳雏形伤 <span class="badge gold">永久</span></div><div class="d">少年期 heavy+ 训练有概率埋下 Durability -0.2 雏形损伤，终身不可逆。</div></div>
+  </div>
+
+  <div class="note red"><b>风险红线</b>：Load 95+ 的球员若经理仍安排 heavy/极限训练，系统弹出二次确认警告。强行执行后若触发伤病，伤病等级自动升一级（轻微→中度）作为"无视警告"的惩罚。这确保 Load 系统不是摆设。</div>
+</section>
+
+<!-- ==================== §9 训练设施与教练组 ==================== -->
+<section id="s9">
+  <h2><span class="num">9</span>训练设施与教练组</h2>
+
+  <h3>9.1 训练设施等级</h3>
+  <p>训练设施是球队的基建投资，影响全队训练效率与伤病防护。</p>
+  <table>
+    <thead><tr><th>等级</th><th>训练效率</th><th>伤病防护</th><th>Condition 恢复</th><th>投资/维护成本</th></tr></thead>
+    <tbody>
+      <tr><td><b>Lv1 简陋</b></td><td>×0.8</td><td>+0</td><td>×0.9</td><td>低</td></tr>
+      <tr><td><b>Lv2 标准</b></td><td>×1.0</td><td>+0.05</td><td>×1.0</td><td>中</td></tr>
+      <tr><td><b>Lv3 优秀</b></td><td>×1.15</td><td>+0.10</td><td>×1.1</td><td>高</td></tr>
+      <tr><td><b>Lv4 精英</b></td><td>×1.3</td><td>+0.15</td><td>×1.2</td><td>很高</td></tr>
+      <tr><td><b>Lv5 顶级</b></td><td>×1.5</td><td>+0.20</td><td>×1.3</td><td>极高（需持续维护）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>9.2 教练组编制</h3>
+  <table>
+    <thead><tr><th>角色</th><th>影响</th><th>等级</th><th>解锁条件</th></tr></thead>
+    <tbody>
+      <tr><td><b>主教练</b></td><td>全队训练效率 +5%/级；战术执行度成长</td><td>1–5</td><td>初始拥有</td></tr>
+      <tr><td><b>助理教练（进攻）</b></td><td>进攻组能力训练效率 +8%/级；解锁双项侧重</td><td>1–5</td><td>Lv2 解锁双项侧重</td></tr>
+      <tr><td><b>助理教练（防守）</b></td><td>防守组能力训练效率 +8%/级；解锁防守专精</td><td>1–5</td><td>需防守专长特质</td></tr>
+      <tr><td><b>体能训练师</b></td><td>Condition 消耗 -5%/级；Durability 成长 +0.02/级</td><td>1–5</td><td>初始可雇</td></tr>
+      <tr><td><b>专项教练</b></td><td>指定专项训练效率 +15%/级（可雇多个不同专项）</td><td>1–5</td><td>按需雇佣</td></tr>
+      <tr><td><b>医疗组</b></td><td>伤病防护 +0.03/级；恢复训练效率 +10%/级；伤愈回归加速</td><td>1–5</td><td>初始可雇</td></tr>
+    </tbody>
+  </table>
+
+  <h3>9.3 教练组总加成计算</h3>
+  <div class="formula">
+<span class="comment">── 教练组训练加成叠加 ──</span>
+
+<span class="var">coachMod</span> <span class="op">=</span> <span class="num">1.0</span>
+  <span class="op">+</span> <span class="var">headCoach</span>.level <span class="op">*</span> <span class="num">0.05</span>                 <span class="comment">// 主教练</span>
+  <span class="op">+</span> (<span class="var">asstOffense</span> <span class="op">?</span> <span class="var">asstOffense</span>.level <span class="op">*</span> <span class="num">0.08</span> <span class="op">:</span> <span class="num">0</span>)  <span class="comment">// 进攻助教（仅进攻组能力）</span>
+  <span class="op">+</span> (<span class="var">asstDefense</span> <span class="op">?</span> <span class="var">asstDefense</span>.level <span class="op">*</span> <span class="num">0.08</span> <span class="op">:</span> <span class="num">0</span>) <span class="comment">// 防守助教（仅防守组能力）</span>
+  <span class="op">+</span> <span class="var">specialtyCoach</span>[focus].level <span class="op">*</span> <span class="num">0.15</span>      <span class="comment">// 对口专项教练</span>
+
+<span class="var">medicalStaffMod</span> <span class="op">=</span> <span class="num">1.0</span> <span class="op">+</span> <span class="var">medical</span>.level <span class="op">*</span> <span class="num">0.10</span>
+<span class="var">facilityProtectMod</span> <span class="op">=</span> <span class="num">1.0</span> <span class="op">-</span> <span class="var">facilityProtect</span>[lv]   <span class="comment">// 设施防护减少风险</span>
+  </div>
+
+  <h3>9.4 教练雇佣与预算</h3>
+  <ul>
+    <li>教练组薪资从球队预算支出（经济系统），等级越高薪资越高。</li>
+    <li>教练有专长特质（如"中距离大师""防守体系构建者"），对口专长额外 +5%。</li>
+    <li>教练可被其他球队挖角（需支付违约金），形成教练市场流动。</li>
+    <li>退役老将可转任教练（teaching 机制延续），初始等级与生涯评分挂钩。</li>
+  </ul>
+</section>
+
+<!-- ==================== §10 青训学院训练体系 ==================== -->
+<section id="s10">
+  <h2><span class="num">10</span>青训学院训练体系</h2>
+  <p>青训苗子的训练独立于职业队，由青训学院设施等级和默认计划驱动（成长线 §9.3）。</p>
+
+  <h3>10.1 青训学院等级</h3>
+  <table>
+    <thead><tr><th>学院等级</th><th>训练效率</th><th>伤病防护</th><th>特质觉醒催化</th><th>投资成本</th></tr></thead>
+    <tbody>
+      <tr><td><b>Lv1 基础</b></td><td>×0.8</td><td>+0</td><td>×0.9</td><td>低</td></tr>
+      <tr><td><b>Lv2 标准</b></td><td>×1.0</td><td>+0.05</td><td>×1.0</td><td>中</td></tr>
+      <tr><td><b>Lv3 优秀</b></td><td>×1.15</td><td>+0.10</td><td>×1.1</td><td>高</td></tr>
+      <tr><td><b>Lv4 精英</b></td><td>×1.3</td><td>+0.15</td><td>×1.2</td><td>很高</td></tr>
+      <tr><td><b>Lv5 顶级</b></td><td>×1.5</td><td>+0.20</td><td>×1.3</td><td>极高（需持续维护）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>10.2 青训苗子训练特殊规则</h3>
+  <ul>
+    <li><b>阶段限制</b>：童子期（8-12）只可 light/normal 强度；少年期（13-15）解锁 heavy；极限强度对青训苗子永久禁用。</li>
+    <li><b>定型窗口</b>：少年期训练侧重决定技术熟练度成长潜力上限（成长线 §4.6），不可逆。系统对此阶段决策提供特别提示。</li>
+    <li><b>teaching 加成</b>：队内老将/教练的 teaching 直接注入青训苗子训练效率（成长线 §10.3）。</li>
+    <li><b>青训血脉</b>：传承系统产出的"青训血脉"遗产提升苗子 Trainability 上限 +0.1 与伤病防护 +0.05（成长线 §10.2）。</li>
+    <li><b>赛事联动</b>：青训苗子参赛密度影响训练可用日数——参赛日不可同时安排高强度训练。</li>
+  </ul>
+
+  <h3>10.3 青训学院默认计划</h3>
+  <p>经理为青训学院设置整体训练方向，无需逐人操作：</p>
+  <table>
+    <thead><tr><th>默认计划</th><th>侧重</th><th>强度</th><th>适用</th></tr></thead>
+    <tbody>
+      <tr><td>学术型</td><td>均衡 + 体能专项</td><td>normal</td><td>稳健培养，保护身体</td></tr>
+      <tr><td>竞技型</td><td>单项侧重 + 对口专项</td><td>heavy</td><td>加速成长，承担风险</td></tr>
+      <tr><td>厚积薄发型</td><td>均衡 + 恢复日轮换</td><td>light-normal 交替</td><td>保 Longevity，慢但稳</td></tr>
+      <tr><td>选秀行情型</td><td>针对选秀考察项侧重</td><td>heavy</td><td>选秀年前一年冲刺行情</td></tr>
+    </tbody>
+  </table>
+  <div class="note green"><b>设计意图</b>：青训学院是长线建队流派的核心基建。高等级学院不仅训练更高效，还提供伤病防护和特质觉醒催化——让"厚积薄发"路线也有加速度。但维护成本高，需要经理在球员薪资与青训投入间做预算权衡。</div>
+</section>
+
+<!-- ==================== §11 训练与世界时钟 ==================== -->
+<section id="s11">
+  <h2><span class="num">11</span>训练与世界时钟</h2>
+  <p>训练系统完全嵌入世界与联赛结构的全局时钟（世界结构 §3）。</p>
+
+  <h3>11.1 训练相关时钟节点</h3>
+  <table>
+    <thead><tr><th>时间</th><th>节点</th><th>训练相关行为</th></tr></thead>
+    <tbody>
+      <tr><td>全天</td><td>计划制定</td><td>经理可随时制定/修改当日训练计划</td></tr>
+      <tr><td>09:30</td><td>提交截止</td><td>训练计划锁定，过后不可改</td></tr>
+      <tr><td>10:00</td><td>训练结算</td><td>执行训练：成长增量 / Condition 消耗 / Load 累积 / 伤病判定</td></tr>
+      <tr><td>10:00</td><td>比赛结算</td><td>训练后 Condition 状态进入比赛 sim</td></tr>
+      <tr><td>16:00</td><td>翻天</td><td>Condition 基础恢复 +Load 衰减；伤病状态翻页</td></tr>
+    </tbody>
+  </table>
+
+  <h3>11.2 训练-比赛 Condition 链</h3>
+  <div class="formula">
+<span class="comment">── 当日 Condition 流转 ──</span>
+
+<span class="num">10:00</span> 训练结算:
+  <span class="var">condition</span>[p] <span class="op">-=</span> <span class="var">trainCondCost</span>[session, intensity]
+
+<span class="num">10:00</span> 比赛结算:
+  <span class="var">condition</span>[p] <span class="op">-=</span> <span class="var">gameCondLoss</span>[p]   <span class="comment">// Sim Engine §11</span>
+
+<span class="num">16:00</span> 翻天:
+  <span class="var">condition</span>[p] <span class="op">+=</span> <span class="var">baseRecovery</span> <span class="op">*</span> <span class="var">loadRecoveryMod</span>[p]
+  <span class="comment">// Load 高的球员恢复慢（§5.2）</span>
+  <span class="comment">// 恢复训练当日额外 +25</span>
+
+<span class="comment">// 次日 10:00 训练结算时，condition 从翻天后的值开始</span>
+  </div>
+
+  <h3>11.3 休赛日与赛季日</h3>
+  <ul>
+    <li><b>赛季日</b>：正常训练结算流程。</li>
+    <li><b>休赛日</b>（无比赛日）：训练照常结算，但无比赛 Condition 消耗。适合安排 heavy/极限训练冲击成长。</li>
+    <li><b>全明星休赛</b>：全队强制 rest，不可安排训练。</li>
+    <li><b>赛季间隔期</b>：训练暂停，Condition 全恢复，Load 清零。</li>
+  </ul>
+</section>
+
+<!-- ==================== §12 训练报告与反馈 ==================== -->
+<section id="s12">
+  <h2><span class="num">12</span>训练报告与反馈</h2>
+
+  <h3>12.1 每日训练报告</h3>
+  <p>10:00 结算后生成训练报告，经理可查看：</p>
+  <table>
+    <thead><tr><th>报告项</th><th>内容</th></tr></thead>
+    <tbody>
+      <tr><td><b>成长增量</b></td><td>每名球员各项能力的 growthDelta；接近 Peak 的标注"接近上限"</td></tr>
+      <tr><td><b>负荷状态</b></td><td>全队 Load 条；红灯球员高亮警告</td></tr>
+      <tr><td><b>Condition 变化</b></td><td>训练消耗 + 翻天恢复净值</td></tr>
+      <tr><td><b>伤病事件</b></td><td>若触发训练伤病，标注伤情等级与预计缺阵</td></tr>
+      <tr><td><b>化学反应变化</b></td><td>团队训练产生的 chemGrowth</td></tr>
+      <tr><td><b>教练评语</b></td><td>教练组对训练效果的定性反馈（"某球员状态火热"/"某球员需要休息"）</td></tr>
+      <tr><td><b>特质觉醒</b></td><td>若触发觉醒，醒目提示新特质</td></tr>
+    </tbody>
+  </table>
+
+  <h3>12.2 教练评语系统</h3>
+  <p>教练评语基于训练数据生成的定性反馈，帮助经理理解训练效果背后的逻辑：</p>
+  <div class="grid">
+    <div class="card"><div class="t">正面评语</div><div class="d">"XX 训练状态火热，成长效率 +15%" / "XX 专项训练突破，三分熟练度升级" / "团队化学反应提升明显"</div></div>
+    <div class="card"><div class="t">警告评语</div><div class="d">"XX 负荷过高，建议安排恢复日" / "XX 连续高强度训练，伤病风险上升" / "XX 训练侧重与特质不匹配，效率偏低"</div></div>
+    <div class="card"><div class="t">中性评语</div><div class="d">"XX 接近能力上限，成长放缓" / "XX 恢复训练完成，Condition 已恢复" / "战术执行度稳步提升"</div></div>
+  </div>
+
+  <h3>12.3 周/月训练摘要</h3>
+  <ul>
+    <li><b>周报</b>：汇总本周训练成长总量、Load 均值、伤病事件、化学反应变化。</li>
+    <li><b>月报</b>：月度成长趋势图，对比上月；标注"进步最快球员"和"需关注球员"。</li>
+    <li><b>赛季报</b>：赛季末训练总结，为休赛期训练方向调整提供依据。</li>
+  </ul>
+</section>
+
+<!-- ==================== §13 特殊训练模式 ==================== -->
+<section id="s13">
+  <h2><span class="num">13</span>特殊训练模式</h2>
+
+  <h3>13.1 针对性训练（季后赛）</h3>
+  <p>季后赛前可启动针对性训练，针对对手弱点集中突破：</p>
+  <ul>
+    <li><b>触发条件</b>：季后赛系列赛确定对手后。</li>
+    <li><b>效果</b>：专项训练效率 ×1.3；可选择"针对对手"方向（如对手三分弱→己方三分专项加成）。</li>
+    <li><b>代价</b>：Load 增量 ×1.5；伤病风险 ×1.3。短期博弈。</li>
+    <li><b>限制</b>：每轮系列赛仅可启动 1 次，持续 3 日。</li>
+  </ul>
+
+  <h3>13.2 特训营（休赛期）</h3>
+  <ul>
+    <li><b>触发</b>：赛季间隔期。</li>
+    <li><b>效果</b>：集中 7 日特训，单项能力成长 ×2.0，但 Load 重置后重新累积。</li>
+    <li><b>限制</b>：每名球员每休赛期仅可参加 1 次特训营；需支付额外费用。</li>
+    <li><b>风险</b>：特训营有 5% 概率触发"特训伤"，影响赛季初状态。</li>
+  </ul>
+
+  <h3>13.3 心理训练</h3>
+  <ul>
+    <li><b>效果</b>：提升 Mental Fortitude（心理素质）和 Clutch IQ 成长，不提升身体能力。</li>
+    <li><b>触发条件</b>：需心理咨询师（教练组扩展角色）。</li>
+    <li><b>适用</b>：关键战前、连败后士气低落、年轻球员心理成长窗口。</li>
+    <li><b>限制</b>：每周仅可安排 2 次心理训练（避免过度干预）。</li>
+  </ul>
+
+  <h3>13.4 teaching 训练日</h3>
+  <p>队内有 teaching 老将时，可安排"teaching 训练日"——老将不参加正常训练，转为指导年轻球员：</p>
+  <ul>
+    <li>年轻球员（23 岁以下）训练效率 +teaching × 2%。</li>
+    <li>老将当日 Condition 不消耗（教学不耗体力）。</li>
+    <li>特质觉醒概率 +teaching × 1%。</li>
+    <li>每日最多 1 名老将进行 teaching，受影响年轻球员最多 3 名。</li>
+  </ul>
+</section>
+
+<!-- ==================== §14 训练与化学反应 ==================== -->
+<section id="s14">
+  <h2><span class="num">14</span>训练与化学反应</h2>
+
+  <h3>14.1 团队训练对化学反应的驱动</h3>
+  <p>团队训练是提升化学反应（Sim Engine §11）的主要主动途径。化学反应影响团队传球失误、篮板协同、防守协防等。</p>
+  <div class="formula">
+<span class="comment">── 团队训练化学反应成长 ──</span>
+
+<span class="var">chemGrowth</span> <span class="op">=</span> <span class="var">baseChemRate</span>            <span class="comment">// 0.5/日</span>
+              <span class="op">*</span> <span class="var">intensityMod</span>          <span class="comment">// normal×1.0 ~ heavy×1.3</span>
+              <span class="op">*</span> <span class="var">coachMod</span>              <span class="comment">// 主教练战术加成</span>
+              <span class="op">*</span> <span class="var">rosterStabilityMod</span>    <span class="comment">// 阵容稳定性：连续同阵容训练加成</span>
+              <span class="op">*</span> <span class="var">newPlayerPenalty</span>      <span class="comment">// 新援加盟初期 chem 下降</span>
+
+<span class="comment">// 化学反应上限 1.0；接近上限时成长递减</span>
+<span class="var">proximityMod</span> <span class="op">=</span> (<span class="num">1.0</span> <span class="op">-</span> <span class="var">chem</span>) <span class="op">&lt;</span> <span class="num">0.2</span> <span class="op">?</span> (<span class="num">1.0</span> <span class="op">-</span> <span class="var">chem</span>) <span class="op">/</span> <span class="num">0.2</span> <span class="op">:</span> <span class="num">1.0</span>
+  </div>
+
+  <h3>14.2 阵容稳定性与化学反应</h3>
+  <table>
+    <thead><tr><th>阵容状态</th><th>chem 影响</th><th>恢复方式</th></tr></thead>
+    <tbody>
+      <tr><td>连续 5+ 日同阵容训练</td><td>chemGrowth ×1.2</td><td>—</td></tr>
+      <tr><td>新援加盟</td><td>chem -0.15</td><td>团队训练恢复</td></tr>
+      <tr><td>主力伤病</td><td>chem -0.10</td><td>团队训练恢复</td></tr>
+      <tr><td>主力交易离队</td><td>chem -0.20</td><td>团队训练恢复（较慢）</td></tr>
+      <tr><td>连败 3+</td><td>chem -0.05/场</td><td>团队训练 + 心理训练</td></tr>
+    </tbody>
+  </table>
+
+  <h3>14.3 训练侧重与战术适配</h3>
+  <p>团队训练的战术执行度成长与当前预设战术（战术系统）挂钩：</p>
+  <ul>
+    <li>团队训练提升<b>当前预设战术</b>的执行度，执行度影响 Sim Engine 中战术修正的强度。</li>
+    <li>切换预设战术后，原战术执行度衰减（-0.05/日），新战术从基础执行度开始。</li>
+    <li>频繁切换战术会导致多个战术执行度都不高——鼓励经理确定战术体系后持续磨合。</li>
+    <li>传承系统的"战术偏好遗产"（成长线 §10.2）让适配传统战术的球员训练效率 +10%。</li>
+  </ul>
+</section>
+
+<!-- ==================== §15 AI 训练决策模型 ==================== -->
+<section id="s15">
+  <h2><span class="num">15</span>AI 训练决策模型</h2>
+  <p>AI 经理（世界结构 §13）的训练决策模型，确保 AI 球队也有合理的训练行为。</p>
+
+  <h3>15.1 AI 训练决策权重</h3>
+  <div class="formula">
+<span class="comment">── AI 训练决策逻辑 ──</span>
+
+<span class="keyword">function</span> <span class="fn">aiDecideTraining</span>(team, schedule):
+  <span class="comment">// 1. 赛程密度判断</span>
+  <span class="keyword">if</span> (<span class="fn">isBackToBack</span>(schedule)):
+      <span class="keyword">return</span> <span class="str">"recovery_light"</span>           <span class="comment">// 背靠背→恢复训练</span>
+
+  <span class="comment">// 2. 球队状态判断</span>
+  <span class="keyword">if</span> (<span class="fn">avgLoad</span>(team) <span class="op">&gt;</span> <span class="num">75</span>):
+      <span class="keyword">return</span> <span class="str">"recovery_light"</span>           <span class="comment">// 全队过载→恢复</span>
+
+  <span class="keyword">if</span> (<span class="fn">hasNewAcquisition</span>(team)):
+      <span class="keyword">return</span> <span class="str">"team_normal"</span>             <span class="comment">// 新援→团队磨合</span>
+
+  <span class="comment">// 3. 赛季阶段判断</span>
+  <span class="keyword">if</span> (<span class="fn">isPlayoffPrep</span>(season)):
+      <span class="keyword">return</span> <span class="str">"specialty_heavy"</span>        <span class="comment">// 季后赛→针对专项</span>
+
+  <span class="comment">// 4. 默认策略（按 AI 等级分化）</span>
+  <span class="keyword">return</span> <span class="var">aiDefaultStrategy</span>[aiLevel]    <span class="comment">// 见下表</span>
+  </div>
+
+  <h3>15.2 AI 等级与训练策略</h3>
+  <table>
+    <thead><tr><th>AI 等级</th><th>默认策略</th><th>负荷管理</th><th>教练组投资</th></tr></thead>
+    <tbody>
+      <tr><td><b>弱</b>（T4 填充）</td><td>均衡 normal</td><td>不主动管理</td><td>维持 Lv1-2</td></tr>
+      <tr><td><b>中</b>（T3 主力）</td><td>均衡 normal + 偶尔专项</td><td>Load 85+ 安排恢复</td><td>Lv2-3</td></tr>
+      <tr><td><b>强</b>（T2 竞争者）</td><td>针对短板侧重 + 团队磨合</td><td>主动轮换+恢复日</td><td>Lv3-4</td></tr>
+      <tr><td><b>精英</b>（T1 冠军争夺）</td><td>季后赛针对性 + 老将 teaching</td><td>精细负荷管理</td><td>Lv4-5</td></tr>
+    </tbody>
+  </table>
+
+  <h3>15.3 AI 青训学院决策</h3>
+  <ul>
+    <li>AI 经理根据建队流派（即战型/培养型/混合型）决定青训学院投资等级。</li>
+    <li>培养型 AI 优先升级学院至 Lv4-5；即战型 AI 维持 Lv2-3，预算投向球员薪资。</li>
+    <li>AI 青训苗子训练侧重基于苗子 Peak 方向自动选择最优侧重。</li>
+  </ul>
+</section>
+
+<!-- ==================== §16 异常处理与边界规则 ==================== -->
+<section id="s16">
+  <h2><span class="num">16</span>异常处理与边界规则</h2>
+
+  <h3>16.1 球员状态异常</h3>
+  <table>
+    <thead><tr><th>异常状态</th><th>训练处理</th></tr></thead>
+    <tbody>
+      <tr><td>球员受伤中</td><td>不可安排训练（强制 rest）；医疗组进行康复训练（不影响能力值）</td></tr>
+      <tr><td>球员被交易</td><td>当日训练计划自动取消，新球队次日生效</td></tr>
+      <tr><td>球员退役</td><td>训练计划移除；若转教练轨，转为 teaching 来源</td></tr>
+      <tr><td>球员停赛</td><td>可正常训练（停赛不影响训练）</td></tr>
+      <tr><td>全队事件（如罢训）</td><td>当日训练取消，Condition 不变，无成长</td></tr>
+    </tbody>
+  </table>
+
+  <h3>16.2 计划冲突处理</h3>
+  <ul>
+    <li><b>同一球员多计划</b>：系统取最后提交的计划，前者覆盖。</li>
+    <li><b>比赛日+heavy 训练</b>：系统自动降级为 normal，并通知经理。</li>
+    <li><b>Load 95+ 强制 rest</b>：经理计划被系统覆盖为 rest，不可强制执行。</li>
+    <li><b>青训苗子极限强度</b>：永久禁用，系统拒绝提交。</li>
+  </ul>
+
+  <h3>16.3 结算异常</h3>
+  <ul>
+    <li><b>结算失败</b>：训练结算为纯函数，失败时回滚至结算前状态，重试。</li>
+    <li><b>数据不一致</b>：通过确定性 PRNG 重放验证——同 seed 同输入必须同输出。</li>
+    <li><b>世界维护期</b>：维护期内训练暂停，维护结束后补结算（仅成长，不补伤病判定）。</li>
+  </ul>
+
+  <h3>16.4 新经理引导</h3>
+  <ul>
+    <li>新经理首赛季训练界面提供引导教程，推荐"均衡 normal"默认计划。</li>
+    <li>Load 系统首次触发警告时弹出说明面板。</li>
+    <li>侧重/专项/teaching 等进阶功能在经理声望达到一定等级后解锁。</li>
+  </ul>
+</section>
+
+<!-- ==================== §17 数值附录 ==================== -->
+<section id="s17">
+  <h2><span class="num">17</span>数值附录</h2>
+
+  <h3>17.1 训练强度参数表</h3>
+  <table>
+    <thead><tr><th>参数</th><th>light</th><th>normal</th><th>heavy</th><th>极限</th></tr></thead>
+    <tbody>
+      <tr><td>成长倍率</td><td>×0.5</td><td>×1.0</td><td>×1.5</td><td>×2.0</td></tr>
+      <tr><td>Condition 消耗</td><td>-5~-8</td><td>-8~-12</td><td>-12~-18</td><td>-18~-25</td></tr>
+      <tr><td>Load 增量</td><td>+3~5</td><td>+6~10</td><td>+12~18</td><td>+20~28</td></tr>
+      <tr><td>伤病风险修正</td><td>×0.6</td><td>×1.0</td><td>×1.6</td><td>×2.5</td></tr>
+      <tr><td>解锁条件</td><td>—</td><td>—</td><td>教练≥Lv2</td><td>教练≥Lv3+无伤</td></tr>
+    </tbody>
+  </table>
+
+  <h3>17.2 训练类型参数表</h3>
+  <table>
+    <thead><tr><th>参数</th><th>个人</th><th>团队</th><th>专项</th><th>恢复</th></tr></thead>
+    <tbody>
+      <tr><td>Condition 消耗</td><td>-8~-15</td><td>-5~-10</td><td>-12~-20</td><td>+20~+35</td></tr>
+      <tr><td>伤病风险修正</td><td>×1.0</td><td>×0.7</td><td>×1.5</td><td>×0.1</td></tr>
+      <tr><td>能力成长</td><td>有（受侧重调控）</td><td>无</td><td>无（提升熟练度）</td><td>无</td></tr>
+      <tr><td>化学反应成长</td><td>无</td><td>有</td><td>无</td><td>无</td></tr>
+      <tr><td>Load 增量</td><td>标准</td><td>标准×0.8</td><td>标准×1.2</td><td>-15（削减）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>17.3 成长基础速率</h3>
+  <table>
+    <thead><tr><th>能力类别</th><th>baseGrowthRate/日</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>身体组（Speed/Strength/Vertical）</td><td>0.15</td><td>身体成长慢，受年龄强约束</td></tr>
+      <tr><td>进攻组（ThreePT/Midrange/Inside/Drive）</td><td>0.25</td><td>可侧重加速</td></tr>
+      <tr><td>防守组（DefIQ/Steal/Block）</td><td>0.20</td><td>防守专精时 ×1.8</td></tr>
+      <tr><td>心智组（ClutchIQ/MentalFortitude）</td><td>0.10</td><td>主要靠比赛经验+teaching</td></tr>
+      <tr><td>组织组（Passing/Vision）</td><td>0.20</td><td>团队训练有额外加成</td></tr>
+    </tbody>
+  </table>
+
+  <h3>17.4 负荷与伤病参数</h3>
+  <table>
+    <thead><tr><th>参数</th><th>值</th></tr></thead>
+    <tbody>
+      <tr><td>Load 每日衰减率</td><td>8%（×0.92）</td></tr>
+      <tr><td>Load 绿色区间</td><td>0–50</td></tr>
+      <tr><td>Load 黄色区间</td><td>51–70</td></tr>
+      <tr><td>Load 橙色区间</td><td>71–85（伤病 ×1.5，恢复 ×0.8）</td></tr>
+      <tr><td>Load 红色区间</td><td>86–95（伤病 ×2.0，恢复 ×0.6，效率 ×0.7）</td></tr>
+      <tr><td>Load 临界区间</td><td>96–100（伤病 ×3.0，强制 rest）</td></tr>
+      <tr><td>训练伤病基础率</td><td>0.3%/日</td></tr>
+      <tr><td>训练伤病等级概率</td><td>轻微 60% / 中度 30% / 重度 10%</td></tr>
+      <tr><td>恢复训练 Condition 增量</td><td>+25（基础）×facilityMod×medicalMod</td></tr>
+      <tr><td>恢复训练 Load 削减</td><td>-15（基础）×medicalMod</td></tr>
+    </tbody>
+  </table>
+
+  <h3>17.5 教练组与设施参数</h3>
+  <table>
+    <thead><tr><th>参数</th><th>值</th></tr></thead>
+    <tbody>
+      <tr><td>主教练训练效率加成</td><td>+5%/级（Lv1-5）</td></tr>
+      <tr><td>助教对口组效率加成</td><td>+8%/级（Lv1-5）</td></tr>
+      <tr><td>专项教练效率加成</td><td>+15%/级（Lv1-5）</td></tr>
+      <tr><td>体能训练师 Condition 消耗减免</td><td>-5%/级</td></tr>
+      <tr><td>医疗组伤病防护</td><td>+0.03/级</td></tr>
+      <tr><td>医疗组恢复效率</td><td>+10%/级</td></tr>
+      <tr><td>设施训练效率</td><td>Lv1×0.8 ~ Lv5×1.5</td></tr>
+      <tr><td>设施伤病防护</td><td>Lv1+0 ~ Lv5+0.20</td></tr>
+      <tr><td>teaching 训练日效率加成</td><td>teaching值 × 2%</td></tr>
+      <tr><td>teaching 特质觉醒加成</td><td>teaching值 × 1%</td></tr>
+    </tbody>
+  </table>
+
+  <h3>17.6 青训学院参数</h3>
+  <table>
+    <thead><tr><th>参数</th><th>值</th></tr></thead>
+    <tbody>
+      <tr><td>青训苗子强度上限</td><td>童子期 light/normal；少年期 +heavy；极限永久禁用</td></tr>
+      <tr><td>学院训练效率</td><td>Lv1×0.8 ~ Lv5×1.5</td></tr>
+      <tr><td>学院伤病防护</td><td>Lv1+0 ~ Lv5+0.20</td></tr>
+      <tr><td>学院特质觉醒催化</td><td>Lv1×0.9 ~ Lv5×1.3</td></tr>
+      <tr><td>teaching 加成</td><td>Trainability +0.01/点、MentalFortitude +5%、觉醒 +2%</td></tr>
+      <tr><td>教练轨 teaching 倍率</td><td>×2.0</td></tr>
+      <tr><td>青训血脉遗产</td><td>Trainability上限+0.1、伤病防护+0.05</td></tr>
+    </tbody>
+  </table>
+
+  <h3>17.7 特殊训练模式参数</h3>
+  <table>
+    <thead><tr><th>模式</th><th>效率加成</th><th>代价</th><th>限制</th></tr></thead>
+    <tbody>
+      <tr><td>针对性训练（季后赛）</td><td>专项 ×1.3</td><td>Load ×1.5、伤病 ×1.3</td><td>每轮 1 次，持续 3 日</td></tr>
+      <tr><td>特训营（休赛期）</td><td>单项 ×2.0</td><td>5% 特训伤概率</td><td>每球员每休赛期 1 次，7 日</td></tr>
+      <tr><td>心理训练</td><td>MentalFortitude/ClutchIQ 成长</td><td>需心理咨询师</td><td>每周 2 次</td></tr>
+      <tr><td>teaching 训练日</td><td>年轻球员效率 +teaching×2%</td><td>老将当日不出战</td><td>每日 1 老将 / 3 年轻球员</td></tr>
+    </tbody>
+  </table>
+
+  <h3>17.8 连续训练奖惩表</h3>
+  <table>
+    <thead><tr><th>连续状态</th><th>效果</th></tr></thead>
+    <tbody>
+      <tr><td>连续训练 3-6 日</td><td>streakBonus ×1.05/日（累积）</td></tr>
+      <tr><td>连续训练 7+ 日</td><td>streakBonus 封顶 ×1.15</td></tr>
+      <tr><td>连续训练 10+ 日无恢复</td><td>疲劳风险 +0.1/日 + 系统警告</td></tr>
+      <tr><td>连续恢复 2+ 日</td><td>成长效率 ×0.9</td></tr>
+      <tr><td>连续恢复 3+ 日</td><td>成长效率 ×0.8</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note green"><b>数值总览</b>：训练系统的数值设计确保"normal 均衡"是安全基线，"heavy 侧重"是激进博弈，"极限专项"是高风险高回报。Load 系统和伤病红线防止"无脑极限"成为最优解。设施/教练/teaching 的基建投入让长线建队流派有成长加速度。所有数值在 EA 阶段通过灰度参数热更新调优。</div>
+</section>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>战术系统设计 · Hoops World Online</title>
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#141b26; --panel2:#1b2433; --line:#26324a;
+    --ink:#e6edf6; --ink2:#9fb0c7; --ink3:#6b7c97;
+    --accent:#ff6b35; --accent2:#4ade80; --gold:#fbbf24; --red:#ef4444; --blue:#60a5fa; --purple:#a78bfa; --cyan:#22d3ee;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:linear-gradient(180deg,#070a10 0%,#0b0f17 100%);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 22px 120px}
+  .hero{
+    position:relative;border:1px solid var(--line);border-radius:18px;padding:42px 34px 30px;
+    background:
+      radial-gradient(800px 280px at 20% -10%, rgba(96,165,250,.15), transparent 60%),
+      radial-gradient(700px 260px at 90% 0%, rgba(251,191,36,.10), transparent 60%),
+      linear-gradient(180deg,#151d2c,#0e1420);
+    overflow:hidden;margin-bottom:30px;
+  }
+  .hero .tag{display:inline-block;font-size:12px;letter-spacing:.16em;color:var(--blue);border:1px solid rgba(96,165,250,.4);padding:4px 10px;border-radius:999px;margin-bottom:18px;text-transform:uppercase}
+  .hero h1{margin:0 0 8px;font-size:32px;letter-spacing:.5px;font-weight:800}
+  .hero h1 .en{color:var(--ink2);font-weight:600;font-size:18px;margin-left:10px}
+  .hero .pitch{color:var(--ink2);font-size:15px;max-width:820px;margin:10px 0 22px}
+  .hero .meta{display:flex;flex-wrap:wrap;gap:10px}
+  .hero .chip{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--ink2)}
+  .hero .chip b{color:var(--ink);font-weight:600}
+  .hero .board{position:absolute;right:-40px;bottom:-40px;width:160px;height:100px;pointer-events:none;opacity:.08}
+  .hero .board::before{content:"";position:absolute;inset:0;border:2px solid var(--blue);border-radius:4px}
+  .hero .board::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--blue)}
+
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 28px;margin-bottom:22px}
+  .toc h3{margin:0 0 14px;font-size:14px;color:var(--ink2);letter-spacing:.1em;text-transform:uppercase}
+  .toc ol{margin:0;padding-left:22px;columns:2;column-gap:32px}
+  .toc li{margin:5px 0;break-inside:avoid}
+  .toc a{color:var(--ink2)}
+  .toc a:hover{color:var(--blue)}
+  @media (max-width:640px){.toc ol{columns:1}}
+
+  section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin-bottom:22px}
+  section > h2{margin:0 0 16px;font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
+  section > h2 .num{font-size:12px;color:#0b0f17;background:var(--blue);width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;font-weight:800;flex-shrink:0}
+  h3{font-size:16px;margin:22px 0 10px;color:var(--ink)}
+  h4{font-size:14px;margin:18px 0 8px;color:var(--accent2);letter-spacing:.04em}
+  h5{font-size:13px;margin:14px 0 6px;color:var(--gold);letter-spacing:.03em}
+  p{margin:8px 0}
+  ul,ol{margin:8px 0 8px 4px;padding-left:22px}
+  li{margin:4px 0}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{background:#0d131d;border:1px solid var(--line);padding:2px 6px;border-radius:5px;font-size:13px;color:var(--gold);font-family:"SF Mono","Fira Code",Consolas,monospace}
+  strong{color:#fff}
+  .note{border-left:3px solid var(--accent);background:rgba(255,107,53,.06);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;color:var(--ink2)}
+  .note b{color:var(--accent)}
+  .note.green{border-left-color:var(--accent2);background:rgba(74,222,128,.06)}
+  .note.green b{color:var(--accent2)}
+  .note.blue{border-left-color:var(--blue);background:rgba(96,165,250,.06)}
+  .note.blue b{color:var(--blue)}
+  .note.red{border-left-color:var(--red);background:rgba(239,68,68,.06)}
+  .note.red b{color:var(--red)}
+  .note.gold{border-left-color:var(--gold);background:rgba(251,191,36,.06)}
+  .note.gold b{color:var(--gold)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--blue);font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;background:rgba(255,255,255,.02)}
+  td b{color:var(--ink)}
+  tr:hover td{background:rgba(255,255,255,.02)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:14px 0}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:16px}
+  .card .t{font-weight:700;margin-bottom:6px;color:var(--ink)}
+  .card .d{font-size:13px;color:var(--ink2)}
+  .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;letter-spacing:.04em}
+  .badge.green{background:rgba(74,222,128,.15);color:var(--accent2);border:1px solid rgba(74,222,128,.3)}
+  .badge.blue{background:rgba(96,165,250,.15);color:var(--blue);border:1px solid rgba(96,165,250,.3)}
+  .badge.gold{background:rgba(251,191,36,.15);color:var(--gold);border:1px solid rgba(251,191,36,.3)}
+  .badge.red{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+  .badge.purple{background:rgba(167,139,250,.15);color:var(--purple);border:1px solid rgba(167,139,250,.3)}
+
+  /* Formula box */
+  .formula{background:#0d131d;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;font-family:"SF Mono","Fira Code",Consolas,monospace;font-size:13px;color:var(--gold);overflow-x:auto;line-height:1.8}
+  .formula .var{color:var(--blue)}
+  .formula .op{color:var(--ink2)}
+  .formula .fn{color:var(--accent2)}
+  .formula .num{color:var(--accent)}
+  .formula .comment{color:var(--ink3);font-style:italic}
+  .formula .str{color:var(--cyan)}
+
+  /* Preset card */
+  .preset-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin:18px 0}
+  .preset{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:18px;position:relative;overflow:hidden}
+  .preset::before{content:"";position:absolute;top:0;left:0;right:0;height:3px}
+  .preset.off::before{background:var(--accent)}
+  .preset.def::before{background:var(--blue)}
+  .preset.mix::before{background:var(--gold)}
+  .preset .p-name{font-weight:700;font-size:15px;margin-bottom:4px}
+  .preset .p-tag{font-size:11px;color:var(--ink3);margin-bottom:10px}
+  .preset .p-desc{font-size:12.5px;color:var(--ink2);margin-bottom:8px}
+  .preset .p-params{font-size:11.5px;color:var(--gold);font-family:"SF Mono","Fira Code",Consolas,monospace;line-height:1.6;background:#0d131d;border-radius:6px;padding:8px 10px}
+
+  /* Decision tree */
+  .tree{margin:16px 0;padding:0;list-style:none}
+  .tree li{position:relative;padding-left:28px;margin:6px 0}
+  .tree li::before{content:"";position:absolute;left:8px;top:0;bottom:0;border-left:1px solid var(--line)}
+  .tree li::after{content:"";position:absolute;left:8px;top:14px;width:14px;border-top:1px solid var(--line)}
+  .tree > li::before{display:none}
+  .tree > li{padding-left:0}
+  .tree > li::after{display:none}
+  .tree .tl-node{display:inline-block;font-size:13px;font-weight:600;color:var(--blue);background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:4px 12px}
+  .tree .tl-node.d{color:var(--gold);border-color:rgba(251,191,36,.3)}
+  .tree .tl-node.e{color:var(--red);border-color:rgba(239,68,68,.3)}
+  .tree .tl-node.g{color:var(--accent2);border-color:rgba(74,222,128,.3)}
+  .tree .tl-desc{font-size:12.5px;color:var(--ink2);margin-left:8px}
+
+  /* Timeline */
+  .phase-bar{display:flex;gap:0;margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+  .phase-seg{flex:1;padding:10px 8px;text-align:center;font-size:12px;font-weight:600;position:relative}
+  .phase-seg.p1{background:rgba(74,222,128,.1);color:var(--accent2)}
+  .phase-seg.p2{background:rgba(96,165,250,.1);color:var(--blue)}
+  .phase-seg.p3{background:rgba(251,191,36,.1);color:var(--gold)}
+  .phase-seg.p4{background:rgba(255,107,53,.1);color:var(--accent)}
+  .phase-seg.p5{background:rgba(239,68,68,.1);color:var(--red)}
+  .phase-seg small{display:block;font-weight:400;color:var(--ink3);font-size:11px;margin-top:2px}
+
+  footer{text-align:center;color:var(--ink2);font-size:13px;margin-top:30px;border-top:1px solid var(--line);padding-top:18px}
+  @media (max-width:640px){
+    .wrap{padding:22px 14px 80px}
+    .hero{padding:30px 20px}
+    .hero h1{font-size:26px}
+    section{padding:20px 16px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ==================== HERO ==================== -->
+  <div class="hero">
+    <span class="tag">System Design Document · v1.0</span>
+    <h1>战术系统设计 <span class="en">Tactics System · HWO</span></h1>
+    <p class="pitch">战术是方向，不是遥控器。玩家通过战术设置指导球队的进攻倾向、防守策略、轮换节奏和关键球处理，但具体每回合的出手选择仍由球员依据自身能力、情境与对位自行决策。本系统定义战术如何作为"权重修改参数集"注入 sim engine。</p>
+    <div class="meta">
+      <span class="chip"><b>文档版本</b> · v1.0</span>
+      <span class="chip"><b>关联文档</b> · 策划方案 §8 / Sim Engine §12-14</span>
+      <span class="chip"><b>里程碑</b> · M0-M1 核心依赖</span>
+      <span class="chip"><b>设计原则</b> · 战术是方向 · 球员自主决策 · 涌现性优先</span>
+    </div>
+    <div class="board"></div>
+  </div>
+
+  <!-- ==================== TOC ==================== -->
+  <div class="toc">
+    <h3>目录</h3>
+    <ol>
+      <li><a href="#s1">设计原则与架构</a></li>
+      <li><a href="#s2">基础战术系统</a></li>
+      <li><a href="#s3">高级战术编辑器</a></li>
+      <li><a href="#s4">完整战术预设库</a></li>
+      <li><a href="#s5">战术角色系统</a></li>
+      <li><a href="#s6">条件规则系统规格</a></li>
+      <li><a href="#s7">Clutch 战术卡系统</a></li>
+      <li><a href="#s8">对位针对性防守策略</a></li>
+      <li><a href="#s9">半场调整系统</a></li>
+      <li><a href="#s10">轮换决策树</a></li>
+      <li><a href="#s11">战术与球员特质交互</a></li>
+      <li><a href="#s12">Per-game 战术与备战系统</a></li>
+      <li><a href="#s13">战术解锁与进度系统</a></li>
+      <li><a href="#s14">AI 经理战术决策</a></li>
+      <li><a href="#s15">战术平衡性设计</a></li>
+      <li><a href="#s16">数值附录</a></li>
+    </ol>
+  </div>
+
+  <!-- ==================== §1 设计原则与架构 ==================== -->
+  <section id="s1">
+    <h2><span class="num">1</span>设计原则与架构</h2>
+
+    <h3>1.1 核心设计命题</h3>
+    <div class="note blue"><b>战术是方向，不是遥控器</b>：玩家设定的是球队"打法倾向"——进攻偏外线还是内线、防守压迫还是收缩、节奏快还是慢——而非逐回合操控。球员依据自身能力 + 战术倾向 + 对位 + 情境自行决策每个回合的行动。这让战术真正"活"起来：同一个"外线进攻"战术，给一支三分射手群和给一支内线猛兽队，会打出截然不同的比赛。</div>
+
+    <h3>1.2 战术系统的三层深度</h3>
+    <div class="phase-bar">
+      <div class="phase-seg p1">L1 基础<small>三选即用 · 新手友好</small></div>
+      <div class="phase-seg p2">L2 高级<small>角色/轮换/条件规则</small></div>
+      <div class="phase-seg p3">L3 Clutch<small>战术卡/半场调整/对位针对性</small></div>
+    </div>
+    <table>
+      <thead><tr><th>层级</th><th>面向用户</th><th>核心内容</th><th>解锁条件</th></tr></thead>
+      <tbody>
+        <tr><td><b>L1 基础</b></td><td>新手 / 休闲玩家</td><td>进攻倾向 + 防守倾向 + 节奏，三选即用</td><td>默认解锁</td></tr>
+        <tr><td><b>L2 高级</b></td><td>核心玩家</td><td>战术角色分配、轮换逻辑、条件规则、多套存档</td><td>经理声望 Lv.3</td></tr>
+        <tr><td><b>L3 Clutch</b></td><td>硬核玩家</td><td>Clutch 战术卡、半场调整、对位针对性防守</td><td>经理声望 Lv.6</td></tr>
+      </tbody>
+    </table>
+
+    <h3>1.3 战术数据结构</h3>
+    <p>战术在 sim engine 中体现为一个 <code>MatchTactics</code> 结构，sim 引擎只消费这个结构，不区分默认战术与 per-game 战术。</p>
+    <div class="formula">
+<span class="var">MatchTactics</span> <span class="op">=</span> {
+  <span class="comment">// L1 基础</span>
+  offenseTendency:  <span class="str">"outside"</span> | <span class="str">"balanced"</span> | <span class="str">"inside"</span>,
+  defenseTendency:  <span class="str">"press"</span> | <span class="str">"balanced"</span> | <span class="str">"pack"</span>,
+  tempo:            <span class="str">"fast"</span> | <span class="str">"balanced"</span> | <span class="str">"slow"</span>,
+
+  <span class="comment">// L2 高级</span>
+  roles:            [TacticalRole; 12],     <span class="comment">// 每名球员的战术角色</span>
+  rotation:         RotationConfig,          <span class="comment">// 轮换设置</span>
+  pickRollFreq:     <span class="str">"low"</span> | <span class="str">"mid"</span> | <span class="str">"high"</span>,
+  threeFreq:        <span class="str">"low"</span> | <span class="str">"mid"</span> | <span class="str">"high"</span>,
+  fastBreakPref:    <span class="str">"low"</span> | <span class="str">"mid"</span> | <span class="str">"high"</span>,
+  matchupOverride:  [MatchupPair; 5],       <span class="comment">// 自定义对位</span>
+  conditionalRules: [ConditionalRule],      <span class="comment">// 条件规则列表</span>
+
+  <span class="comment">// L3 Clutch</span>
+  clutchDeck:       [ClutchCard; 3],        <span class="comment">// Clutch 战术卡组（3 张）</span>
+  halftimeRules:    [HalftimeRule; 2],      <span class="comment">// 半场调整规则（2 槽）</span>
+  targetDef:        TargetDefense?,         <span class="comment">// 对位针对性防守</span>
+
+  <span class="comment">// 元数据</span>
+  name:             string,                 <span class="comment">// 战术存档名</span>
+  isDefault:        bool,                   <span class="comment">// 是否为默认战术</span>
+}
+    </div>
+
+    <h3>1.4 战术→Sim 参数注入流程</h3>
+    <p>战术参数通过 sim engine 的 Modifier Layer (L4) 注入。每回合开始时，sim 按以下优先级叠加所有有效参数：</p>
+    <div class="formula">
+<span class="comment">// 参数叠加优先级（低→高，高优先级覆盖低优先级）</span>
+<span class="var">effectiveParams</span> <span class="op">=</span> <span class="fn">mergeByPriority</span>(
+  <span class="num">①</span> <span class="var">baseConfig</span>,              <span class="comment">// sim 全局默认配置</span>
+  <span class="num">②</span> <span class="var">tactics.L1</span>,              <span class="comment">// 基础三选参数</span>
+  <span class="num">③</span> <span class="var">tactics.L2</span>,              <span class="comment">// 高级参数（角色/轮换/频率）</span>
+  <span class="num">④</span> <span class="var">conditionalRules</span>,         <span class="comment">// 满足条件的条件规则（按 priority 降序）</span>
+  <span class="num">⑤</span> <span class="var">halftimeRules</span>,            <span class="comment">// 半场调整（仅下半场生效）</span>
+  <span class="num">⑥</span> <span class="var">clutchCards</span>,              <span class="comment">// Clutch 卡（仅 Clutch 时段生效）</span>
+  <span class="num">⑦</span> <span class="var">targetDef</span>,                <span class="comment">// 对位针对性防守（全程或指定时段）</span>
+)
+<span class="comment">// 后者覆盖前者同参数；不同参数叠加共存</span>
+    </div>
+  </section>
+
+  <!-- ==================== §2 基础战术系统 ==================== -->
+  <section id="s2">
+    <h2><span class="num">2</span>基础战术系统</h2>
+    <p>基础战术面向新手和休闲玩家，三个维度各三选一即可。27 种组合覆盖绝大多数打法风格。</p>
+
+    <h3>2.1 进攻倾向</h3>
+    <table>
+      <thead><tr><th>选项</th><th>Sim 参数影响</th><th>适合阵容</th><th>风险</th></tr></thead>
+      <tbody>
+        <tr><td><b>外线</b> (Outside)</td><td>tendencyMod[three] ×2.0, [inside] ×0.4, [midrange] ×0.8</td><td>三分射手群、空间型阵容</td><td>命中率波动大，手感冰凉时得分荒</td></tr>
+        <tr><td><b>平衡</b> (Balanced)</td><td>所有 tendencyMod ×1.0</td><td>全能阵容</td><td>无突出优势</td></tr>
+        <tr><td><b>内线</b> (Inside)</td><td>tendencyMod[inside] ×2.0, [three] ×0.3, [postup] ×1.5</td><td>内线猛兽、背打型阵容</td><td>易被护筐型防守针对</td></tr>
+      </tbody>
+    </table>
+
+    <h3>2.2 防守倾向</h3>
+    <table>
+      <thead><tr><th>选项</th><th>Sim 参数影响</th><th>适合阵容</th><th>风险</th></tr></thead>
+      <tbody>
+        <tr><td><b>压迫</b> (Press)</td><td>defFoulChance ×1.3, stealChance ×1.3, defenseContest ×1.05</td><td>外线锁、敏捷型防守者</td><td>犯规增多，主力犯规麻烦风险</td></tr>
+        <tr><td><b>平衡</b> (Balanced)</td><td>正常</td><td>所有阵容</td><td>无</td></tr>
+        <tr><td><b>收缩</b> (Pack)</td><td>inside defensePenalty ×1.2, three defensePenalty ×0.6, helpDefChance ×1.3</td><td>内线护筐型、对方三分差时</td><td>放空外线，被三分惩罚</td></tr>
+      </tbody>
+    </table>
+
+    <h3>2.3 节奏</h3>
+    <table>
+      <thead><tr><th>选项</th><th>Sim 参数影响</th><th>适合阵容</th><th>风险</th></tr></thead>
+      <tbody>
+        <tr><td><b>快</b> (Fast)</td><td>possessionTime baseTime -3, fastBreakChance ×1.4, conditionLoss ×1.3</td><td>速度型、快攻型阵容、板凳深</td><td>体力消耗快，主力疲劳风险高</td></tr>
+        <tr><td><b>平衡</b> (Balanced)</td><td>正常</td><td>所有阵容</td><td>无</td></tr>
+        <tr><td><b>慢</b> (Slow)</td><td>possessionTime baseTime +3, fastBreakChance ×0.7, pass actionWeight ×1.2</td><td>控球型后卫、半场阵地战强队</td><td>回合数少，得分上限低</td></tr>
+      </tbody>
+    </table>
+
+    <h3>2.4 基础组合推荐</h3>
+    <div class="preset-grid">
+      <div class="preset off"><div class="p-name">跑轰战术</div><div class="p-tag">外线 + 平衡 + 快</div><div class="p-desc">追求速度与三分火力，每场回合数拉满。适合板凳深度够、三分射手多的阵容。</div></div>
+      <div class="preset def"><div class="p-name">铁桶阵地</div><div class="p-tag">内线 + 收缩 + 慢</div><div class="p-desc">降低节奏打半场阵地，内线攻筐 + 收缩防守。适合有强力内线但外线防守弱的阵容。</div></div>
+      <div class="preset mix"><div class="p-name">全能均衡</div><div class="p-tag">平衡 + 平衡 + 平衡</div><div class="p-desc">最稳妥的默认选择，无明显短板也无突出优势。</div></div>
+      <div class="preset off"><div class="p-name">魔球理论</div><div class="p-tag">外线 + 平衡 + 快</div><div class="p-desc">极端三分 + 快攻，放弃中距离。需要大量三分射手和快攻型后卫。</div></div>
+      <div class="preset def"><div class="p-name">绞肉机</div><div class="p-tag">内线 + 压迫 + 慢</div><div class="p-desc">内线强攻 + 全场压迫防守。犯规风险极高但防守压迫感拉满。</div></div>
+      <div class="preset mix"><div class="p-name">防守反击</div><div class="p-tag">平衡 + 压迫 + 快</div><div class="p-desc">压迫防守造失误 → 快攻转换。需要敏捷型防守者和快攻型后卫。</div></div>
+    </div>
+  </section>
+
+  <!-- ==================== §3 高级战术编辑器 ==================== -->
+  <section id="s3">
+    <h2><span class="num">3</span>高级战术编辑器</h2>
+    <p>高级编辑器在基础三选之上，允许细粒度控制。玩家可保存多套战术存档，在不同比赛中切换。</p>
+
+    <h3>3.1 可配置参数总览</h3>
+    <table>
+      <thead><tr><th>参数</th><th>类型</th><th>选项/范围</th><th>Sim 影响</th></tr></thead>
+      <tbody>
+        <tr><td><b>主攻点</b></td><td>指定 1-2 名球员</td><td>从 12 人名单选</td><td>主攻点 actionWeight[shoot] ×1.5, ballHandlerWeight ×2.0</td></tr>
+        <tr><td><b>副攻点</b></td><td>指定 1 名球员</td><td>从剩余球员选</td><td>副攻点 actionWeight[shoot] ×1.2, ballHandlerWeight ×1.3</td></tr>
+        <tr><td><b>挡拆频率</b></td><td>三档</td><td>低/中/高</td><td>pickRollChance baseMod: 0.15/0.25/0.40</td></tr>
+        <tr><td><b>三分频率</b></td><td>三档</td><td>低/中/高</td><td>tendencyMod[three] 额外 ×0.7/×1.0/×1.4</td></tr>
+        <tr><td><b>快攻倾向</b></td><td>三档</td><td>低/中/高</td><td>fastBreakChance ×0.6/×1.0/×1.5</td></tr>
+        <tr><td><b>防守对位</b></td><td>5 组对位</td><td>指定 5 名防守者分别对位对方 5 名球员</td><td>覆盖默认 PG↔PG 同位置对位</td></tr>
+        <tr><td><b>犯规策略</b></td><td>三档</td><td>保守/正常/激进</td><td>见 §3.2</td></tr>
+        <tr><td><b>轮换模式</b></td><td>预设 + 自定义</td><td>主力优先/均衡/深度/自定义</td><td>见 §10</td></tr>
+        <tr><td><b>条件规则</b></td><td>规则列表</td><td>最多 8 条</td><td>见 §6</td></tr>
+      </tbody>
+    </table>
+
+    <h3>3.2 犯规策略</h3>
+    <table>
+      <thead><tr><th>策略</th><th>行为</th><th>Sim 参数</th></tr></thead>
+      <tbody>
+        <tr><td><b>保守</b></td><td>犯规麻烦球员（≥3 犯上半场 / ≥4 犯下半场）提前换下；防守者主动避免对抗</td><td>defFoulChance ×0.7; 犯规麻烦球员 defenseContest ×0.85</td></tr>
+        <tr><td><b>正常</b></td><td>按默认逻辑，犯规 ≥4 上半场评估换人</td><td>默认</td></tr>
+        <tr><td><b>激进</b></td><td>不因犯规麻烦换人（除犯满）；防守强度不减</td><td>defFoulChance ×1.15; 不触发犯规麻烦修正</td></tr>
+      </tbody>
+    </table>
+
+    <h3>3.3 战术存档系统</h3>
+    <ul>
+      <li><b>存档上限</b>：默认 5 套存档，VIP 额外 +5 套</li>
+      <li><b>存档命名</b>：自定义名称，如"主场跑轰""季后赛防守"</li>
+      <li><b>快速切换</b>：比赛日前可从存档库选择一套作为本场战术</li>
+      <li><b>复制与模板</b>：可复制已有存档进行修改；提供 6 套预设模板（跑轰/铁桶/全能/魔球/绞肉/防守反击）</li>
+      <li><b>Per-game 覆盖</b>：可为指定赛程设置 per-game 战术，优先于默认存档</li>
+    </ul>
+  </section>
+
+  <!-- ==================== §4 完整战术预设库 ==================== -->
+  <section id="s4">
+    <h2><span class="num">4</span>完整战术预设库</h2>
+    <p>预设库定义每套预设的具体 sim 参数修改。玩家可直接使用预设，也可基于预设修改后另存。</p>
+
+    <div class="preset-grid">
+      <div class="preset off">
+        <div class="p-name">跑轰战术 Run & Gun</div>
+        <div class="p-tag">L1: 外线 + 平衡 + 快 | L2: 快攻高, 三分高</div>
+        <div class="p-desc">极致的快节奏 + 三分火力。用速度制造转换进攻机会，半场以三分为主攻。体力消耗大，需要深度板凳。</div>
+        <div class="p-params">
+offenseTendency = "outside"
+tempo = "fast"
+fastBreakPref = "high"
+threeFreq = "high"
+pickRollFreq = "mid"<br>
+conditionLoss ×1.3
+fastBreakChance ×1.4 ×1.5 = ×2.1
+tendencyMod[three] ×2.0 ×1.4 = ×2.8
+        </div>
+      </div>
+      <div class="preset def">
+        <div class="p-name">铁桶阵地 Iron Wall</div>
+        <div class="p-tag">L1: 内线 + 收缩 + 慢 | L2: 快攻低, 三分低</div>
+        <div class="p-desc">降低节奏打半场阵地，内线攻筐为主。收缩防守保护禁区，放对方外线。适合内线强 + 对方三分弱的对手。</div>
+        <div class="p-params">
+offenseTendency = "inside"
+defenseTendency = "pack"
+tempo = "slow"
+fastBreakPref = "low"
+threeFreq = "low"<br>
+possessionTime +3
+inside defensePenalty ×1.2
+three defensePenalty ×0.6
+tendencyMod[inside] ×2.0
+        </div>
+      </div>
+      <div class="preset mix">
+        <div class="p-name">全能均衡 All-Around</div>
+        <div class="p-tag">L1: 平衡 + 平衡 + 平衡</div>
+        <div class="p-desc">最稳妥的默认选择。不偏不倚，让球员能力自然发挥。适合阵容无明显短板的球队。</div>
+        <div class="p-params">
+all tendencyMod ×1.0
+all defenseMod = normal
+possessionTime = base<br>
+无额外修正
+        </div>
+      </div>
+      <div class="preset off">
+        <div class="p-name">魔球理论 Moreyball</div>
+        <div class="p-tag">L1: 外线 + 平衡 + 快 | L2: 三分高, 挡拆高</div>
+        <div class="p-desc">极端三分 + 攻筐 + 快攻，彻底放弃中距离。需要大量优质三分射手和突破型后卫。高分高赔。</div>
+        <div class="p-params">
+offenseTendency = "outside"
+tempo = "fast"
+threeFreq = "high"
+pickRollFreq = "high"<br>
+tendencyMod[three] ×2.8
+tendencyMod[midrange] ×0.3
+tendencyMod[inside] ×1.2
+pickRollChance ×0.40
+        </div>
+      </div>
+      <div class="preset def">
+        <div class="p-name">绞肉机 Grinder</div>
+        <div class="p-tag">L1: 内线 + 压迫 + 慢 | L2: 快攻低, 犯规激进</div>
+        <div class="p-desc">内线强攻 + 全场压迫防守。犯规风险极高但防守压迫感拉满。适合身体对抗型阵容。</div>
+        <div class="p-params">
+offenseTendency = "inside"
+defenseTendency = "press"
+tempo = "slow"
+foulStrategy = "aggressive"<br>
+defFoulChance ×1.3 ×1.15 = ×1.50
+stealChance ×1.3
+tendencyMod[inside] ×2.0
+tendencyMod[postup] ×1.5
+        </div>
+      </div>
+      <div class="preset mix">
+        <div class="p-name">防守反击 Fast Break</div>
+        <div class="p-tag">L1: 平衡 + 压迫 + 快 | L2: 快攻高</div>
+        <div class="p-desc">压迫防守造失误 → 快攻转换得分。需要敏捷型防守者 + 快攻型后卫。半场进攻不是重点。</div>
+        <div class="p-params">
+offenseTendency = "balanced"
+defenseTendency = "press"
+tempo = "fast"
+fastBreakPref = "high"<br>
+stealChance ×1.3
+fastBreakChance ×1.4 ×1.5 = ×2.1
+defenseContest ×1.05
+        </div>
+      </div>
+      <div class="preset def">
+        <div class="p-name">锁死外线 Perimeter Lock</div>
+        <div class="p-tag">L1: 平衡 + 压迫 + 平衡 | L2: 三分低(对方)</div>
+        <div class="p-desc">专门针对三分强队的防守战术。外线压迫 + 对方射手针对性防守。自身进攻保持平衡。</div>
+        <div class="p-params">
+defenseTendency = "press"
+targetDef = { type: "perimeter_lock" }<br>
+three defensePenalty ×1.3
+stealChance ×1.3
+对方 three matchupMod ×0.6
+        </div>
+      </div>
+      <div class="preset off">
+        <div class="p-name">普林斯顿 Princeton</div>
+        <div class="p-tag">L1: 平衡 + 平衡 + 慢 | L2: 挡拆高, 三分中</div>
+        <div class="p-desc">强调团队配合与挡拆策应，追求高质量出手。慢节奏控球，半场战术执行力高。适合高 OffIQ 阵容。</div>
+        <div class="p-params">
+offenseTendency = "balanced"
+tempo = "slow"
+pickRollFreq = "high"
+threeFreq = "mid"<br>
+possessionTime +3
+pass actionWeight ×1.2
+pickRollChance ×0.40
+abilityBonus ×1.05 (配合加成)
+        </div>
+      </div>
+      <div class="preset mix">
+        <div class="p-name">双核驱动 Twin Engine</div>
+        <div class="p-tag">L1: 平衡 + 平衡 + 平衡 | L2: 双主攻点</div>
+        <div class="p-desc">指定两名核心球员为主攻点，围绕双核展开进攻。适合有两名全明星级球员的阵容。</div>
+        <div class="p-params">
+offenseTendency = "balanced"
+primaryScorer = [star1, star2]<br>
+star1/2: actionWeight[shoot] ×1.5
+star1/2: ballHandlerWeight ×2.0
+其他球员: pass actionWeight ×1.1
+        </div>
+      </div>
+    </div>
+    <div class="note"><b>预设使用率设计</b>：预设不是"最优解"——每套预设都有明确的代价和风险。跑轰体力消耗大，铁桶放空三分，魔球中距离真空。预设是起点而非终点，真正的高手用条件规则和 per-game 战术做针对性调整。</div>
+  </section>
+
+  <!-- ==================== §5 战术角色系统 ==================== -->
+  <section id="s5">
+    <h2><span class="num">5</span>战术角色系统</h2>
+    <p>每名球员可分配一个战术角色，角色修改该球员在 sim 中的行为权重。角色不锁死——同一球员在不同战术存档中可有不同角色。</p>
+
+    <h3>5.1 进攻角色</h3>
+    <table>
+      <thead><tr><th>角色</th><th>Sim 参数影响</th><th>适合球员</th></tr></thead>
+      <tbody>
+        <tr><td><b>主攻点</b> Primary Scorer</td><td>actionWeight[shoot] ×1.5, ballHandlerWeight ×2.0, 使用率大幅提升</td><td>球队头号得分手、Peak 最高的球员</td></tr>
+        <tr><td><b>副攻点</b> Secondary Scorer</td><td>actionWeight[shoot] ×1.2, ballHandlerWeight ×1.3</td><td>第二得分选择</td></tr>
+        <tr><td><b>3D 侧翼</b> 3&D Wing</td><td>three ×1.2, defensePenalty(作为防守者) ×1.1, actionWeight[shoot] ×0.9</td><td>三分 + 外线防守兼顾的球员</td></tr>
+        <tr><td><b>蓝领内线</b> Blue Collar</td><td>inside ×1.3, reboundContest ×1.2, actionWeight[three] ×0.3, actionWeight[postup] ×1.3</td><td>篮板 + 护筐 + 内线终结</td></tr>
+        <tr><td><b>组织核心</b> Playmaker</td><td>ballHandlerWeight ×2.5, pass ×1.4, actionWeight[shoot] ×0.8</td><td>高 Passing + OffIQ 的控球后卫</td></tr>
+        <tr><td><b>空间型内线</b> Stretch Big</td><td>three ×1.4, inside ×0.7, 拉开空间</td><td>能投三分的大个子</td></tr>
+        <tr><td><b>第六人</b> Sixth Man</td><td>替补出场时 actionWeight[shoot] ×1.3, 得分倾向提升</td><td>板凳得分手</td></tr>
+        <tr><td><b>定点射手</b> Spot-Up Shooter</td><td>three ×1.3(仅接球投), drive ×0.4, pass ×0.9</td><td>纯射手、无自主创造能力</td></tr>
+        <tr><td><b>挡拆顺下</b> Roll Man</td><td>pickRollChance 顺下概率 ×1.3, inside ×1.2</td><td>高顺下终结能力的内线</td></tr>
+        <tr><td><b>工具人</b> Utility</td><td>无修正，按默认行为</td><td>角色球员</td></tr>
+      </tbody>
+    </table>
+
+    <h3>5.2 防守角色</h3>
+    <table>
+      <thead><tr><th>角色</th><th>Sim 参数影响</th><th>适合球员</th></tr></thead>
+      <tbody>
+        <tr><td><b>外线锁</b> Perimeter Stopper</td><td>作为对位防守者时 three/midrange defensePenalty ×1.25, stealChance ×1.15</td><td>高 Perimeter D + Agility 的侧翼</td></tr>
+        <tr><td><b>护筐者</b> Rim Protector</td><td>inside/drive defensePenalty ×1.2, blockChance ×1.3, helpDefChance ×1.4</td><td>高 Interior D + Standing Reach 的内线</td></tr>
+        <tr><td><b>全场压迫</b> Full-Court Press</td><td>对位防守者 stealChance ×1.3, defFoulChance ×1.2</td><td>高 Speed + Steal 的后卫</td></tr>
+        <tr><td><b>协防扫荡</b> Help Defender</td><td>helpDefChance ×1.5, helpDefQuality ×1.1, 对位防守者 defenseContest ×0.9</td><td>高 DefIQ + Speed 的侧翼/内线</td></tr>
+        <tr><td><b>篮板手</b> Rebounder</td><td>reboundContest ×1.3, 优先卡位</td><td>高篮板能力的大个子</td></tr>
+        <tr><td><b>普通防守</b> Default</td><td>无修正</td><td>角色球员</td></tr>
+      </tbody>
+    </table>
+
+    <h3>5.3 角色冲突规则</h3>
+    <div class="note red"><b>约束</b>：每名球员只能有一个进攻角色和一个防守角色。主攻点/副攻点全队最多各 2 人。组织核心全队最多 1 人。护筐者全队最多 1 人。这些限制防止单一角色堆叠导致的策略扭曲。</div>
+  </section>
+
+  <!-- ==================== §6 条件规则系统规格 ==================== -->
+  <section id="s6">
+    <h2><span class="num">6</span>条件规则系统规格</h2>
+    <p>条件规则是战术系统的核心深度机制：预设一组条件 + 一组参数修改，当比赛中满足条件时自动触发。这让战术从"静态设定"变为"动态响应"。</p>
+
+    <h3>6.1 规则结构</h3>
+    <div class="formula">
+<span class="var">ConditionalRule</span> <span class="op">=</span> {
+  id:          string,
+  name:        string,                  <span class="comment">// 玩家自定义名称</span>
+  enabled:     bool,
+  conditions:  [Condition],             <span class="comment">// 条件列表（AND 关系：全部满足才触发）</span>
+  actions:     [RuleAction],            <span class="comment">// 触发后执行的参数修改</span>
+  priority:    u8,                      <span class="comment">// 优先级 1-99，高优先级覆盖低优先级</span>
+  cooldown:    u16,                     <span class="comment">// 冷却回合数（触发后 N 回合不再触发，防抖）</span>
+  maxTriggers: u8,                      <span class="comment">// 最大触发次数（0=无限）</span>
+}
+
+<span class="var">Condition</span> <span class="op">=</span> {
+  type:  ConditionType,
+  op:    <span class="str">"=="</span> | <span class="str">"!="</span> | <span class="str">"<"</span> | <span class="str">"<="</span> | <span class="str">">"</span> | <span class="str">">="</span>,
+  value: number | string,
+}
+
+<span class="var">RuleAction</span> <span class="op">=</span> {
+  param:  string,       <span class="comment">// 修改的 sim 参数名</span>
+  op:     <span class="str">"set"</span> | <span class="str">"multiply"</span> | <span class="str">"add"</span>,
+  value:  number,
+}
+    </div>
+
+    <h3>6.2 可用条件类型</h3>
+    <table>
+      <thead><tr><th>type</th><th>说明</th><th>value 范围</th><th>示例</th></tr></thead>
+      <tbody>
+        <tr><td><code>score_diff</code></td><td>当前比分差（正=领先，负=落后）</td><td>-50 ~ +50</td><td>落后 8+ 分: <code>&lt;= -8</code></td></tr>
+        <tr><td><code>quarter</code></td><td>当前节次</td><td>1-5+（5+=OT）</td><td>第四节及以后: <code>&gt;= 4</code></td></tr>
+        <tr><td><code>clock</code></td><td>当前节剩余时间（秒）</td><td>0-720</td><td>最后 5 分钟: <code>&lt;= 300</code></td></tr>
+        <tr><td><code>player_fouls</code></td><td>指定球员个人犯规数</td><td>0-6</td><td>主力 4 犯: <code>&gt;= 4</code></td></tr>
+        <tr><td><code>team_fouls</code></td><td>本节全队犯规数</td><td>0-10+</td><td>进入 bonus: <code>&gt;= 4</code></td></tr>
+        <tr><td><code>player_condition</code></td><td>指定球员 Condition 值</td><td>0-100</td><td>主力体力低: <code>&lt;= 40</code></td></tr>
+        <tr><td><code>opp_player_pts</code></td><td>对方指定球员本场得分</td><td>0-60+</td><td>对方核心发威: <code>&gt;= 20</code></td></tr>
+        <tr><td><code>opp_team_pts</code></td><td>对方本场总得分</td><td>0-150</td><td>对方得分高: <code>&gt;= 60</code></td></tr>
+        <tr><td><code>streak</code></td><td>对方连续得分</td><td>0-20+</td><td>对方高潮: <code>&gt;= 10</code></td></tr>
+        <tr><td><code>clutch</code></td><td>是否处于 Clutch 时段</td><td>true/false</td><td>Clutch 时段: <code>== true</code></td></tr>
+        <tr><td><code>has_ball</code></td><td>本方是否持球</td><td>true/false</td><td>本方进攻: <code>== true</code></td></tr>
+        <tr><td><code>player_on_court</code></td><td>指定球员是否在场</td><td>playerId</td><td>核心在场时</td></tr>
+      </tbody>
+    </table>
+
+    <h3>6.3 可修改参数</h3>
+    <table>
+      <thead><tr><th>param</th><th>说明</th><th>op</th><th>典型 value</th></tr></thead>
+      <tbody>
+        <tr><td><code>tendencyMod[three]</code></td><td>三分出手倾向</td><td>multiply</td><td>1.0-2.0</td></tr>
+        <tr><td><code>tendencyMod[inside]</code></td><td>内线出手倾向</td><td>multiply</td><td>1.0-2.0</td></tr>
+        <tr><td><code>tendencyMod[midrange]</code></td><td>中距离出手倾向</td><td>multiply</td><td>0.5-1.5</td></tr>
+        <tr><td><code>tendencyMod[drive]</code></td><td>突破倾向</td><td>multiply</td><td>0.5-1.5</td></tr>
+        <tr><td><code>tendencyMod[postup]</code></td><td>背打倾向</td><td>multiply</td><td>0.5-1.5</td></tr>
+        <tr><td><code>fastBreakChance</code></td><td>快攻概率</td><td>multiply</td><td>0.5-1.5</td></tr>
+        <tr><td><code>defenseContest</code></td><td>防守干扰度</td><td>multiply</td><td>0.8-1.3</td></tr>
+        <tr><td><code>helpDefChance</code></td><td>协防概率</td><td>multiply</td><td>0.5-2.0</td></tr>
+        <tr><td><code>stealChance</code></td><td>抢断概率</td><td>multiply</td><td>0.5-1.5</td></tr>
+        <tr><td><code>possessionTime</code></td><td>回合耗时基线</td><td>add</td><td>-5 ~ +5</td></tr>
+        <tr><td><code>primaryScorer</code></td><td>主攻点</td><td>set</td><td>playerId</td></tr>
+        <tr><td><code>matchupOverride</code></td><td>对位调整</td><td>set</td><td>[MatchupPair]</td></tr>
+        <tr><td><code>targetDef</code></td><td>对位针对性防守</td><td>set</td><td>TargetDefense</td></tr>
+        <tr><td><code>foulStrategy</code></td><td>犯规策略</td><td>set</td><td>"conservative"/"normal"/"aggressive"</td></tr>
+      </tbody>
+    </table>
+
+    <h3>6.4 条件规则示例</h3>
+    <div class="formula">
+<span class="comment">// 示例 1：落后追分（第四节最后 5 分钟落后 8+ 分 → 提升三分 + 加快节奏）</span>
+{
+  name: <span class="str">"追分模式"</span>,
+  conditions: [
+    { type: <span class="str">"score_diff"</span>, op: <span class="str">"<="</span>, value: <span class="op">-</span><span class="num">8</span> },
+    { type: <span class="str">"quarter"</span>, op: <span class="str">">="</span>, value: <span class="num">4</span> },
+    { type: <span class="str">"clock"</span>, op: <span class="str">"<="</span>, value: <span class="num">300</span> },
+  ],
+  actions: [
+    { param: <span class="str">"tendencyMod[three]"</span>, op: <span class="str">"multiply"</span>, value: <span class="num">1.5</span> },
+    { param: <span class="str">"fastBreakChance"</span>, op: <span class="str">"multiply"</span>, value: <span class="num">1.3</span> },
+    { param: <span class="str">"possessionTime"</span>, op: <span class="str">"add"</span>, value: <span class="op">-</span><span class="num">3</span> },
+  ],
+  priority: <span class="num">50</span>,
+  cooldown: <span class="num">0</span>,
+  maxTriggers: <span class="num">0</span>,
+}
+
+<span class="comment">// 示例 2：对方核心爆发（对方某球员得分 ≥20 → 针对性包夹）</span>
+{
+  name: <span class="str">"锁死对方核心"</span>,
+  conditions: [
+    { type: <span class="str">"opp_player_pts"</span>, op: <span class="str">">="</span>, value: <span class="num">20</span>, target: <span class="str">"opp_star_id"</span> },
+  ],
+  actions: [
+    { param: <span class="str">"targetDef"</span>, op: <span class="str">"set"</span>,
+      value: { type: <span class="str">"double_team"</span>, target: <span class="str">"opp_star_id"</span> } },
+  ],
+  priority: <span class="num">60</span>,
+  cooldown: <span class="num">0</span>,
+  maxTriggers: <span class="num">1</span>,
+}
+
+<span class="comment">// 示例 3：主力犯规麻烦（主力 4 犯 → 切换保守犯规策略）</span>
+{
+  name: <span class="str">"保护犯规麻烦主力"</span>,
+  conditions: [
+    { type: <span class="str">"player_fouls"</span>, op: <span class="str">">="</span>, value: <span class="num">4</span>, target: <span class="str">"my_star_id"</span> },
+    { type: <span class="str">"quarter"</span>, op: <span class="str">"<="</span>, value: <span class="num">2</span> },
+  ],
+  actions: [
+    { param: <span class="str">"foulStrategy"</span>, op: <span class="str">"set"</span>, value: <span class="str">"conservative"</span> },
+  ],
+  priority: <span class="num">70</span>,
+  cooldown: <span class="num">0</span>,
+  maxTriggers: <span class="num">1</span>,
+}
+    </div>
+
+    <h3>6.5 冲突解决规则</h3>
+    <p>多条规则同时满足时，按以下规则解决参数冲突：</p>
+    <ul>
+      <li><b>不同参数</b>：叠加共存（如一条改三分倾向、一条改防守策略，两者同时生效）</li>
+      <li><b>同参数同 op</b>：高 priority 覆盖低 priority（不叠加）</li>
+      <li><b>同参数不同 op</b>：按 op 类型顺序执行——先 <code>set</code> 再 <code>multiply</code> 再 <code>add</code></li>
+      <li><b>同 priority</b>：按规则列表顺序，后者覆盖前者</li>
+      <li><b>冷却与次数</b>：规则触发后进入冷却期（cooldown 回合），期间不再检查该规则；maxTriggers 到达后规则永久禁用</li>
+    </ul>
+    <div class="note"><b>规则上限</b>：每套战术存档最多 8 条条件规则。这既是性能约束（sim 每回合检查所有规则），也是设计约束（防止玩家写"万能战术"覆盖所有情境，失去涌现性）。</div>
+  </section>
+
+  <!-- ==================== §7 Clutch 战术卡系统 ==================== -->
+  <section id="s7">
+    <h2><span class="num">7</span>Clutch 战术卡系统</h2>
+    <p>Clutch 战术卡是 L3 深度的核心机制。玩家组建一套 3 张 Clutch 卡组，在 Clutch 时段（第四节最后 3 分钟或 OT，分差 ≤ 5）自动按条件激活。</p>
+
+    <h3>7.1 卡组构建规则</h3>
+    <table>
+      <thead><tr><th>规则</th><th>限制</th></tr></thead>
+      <tbody>
+        <tr><td>卡组大小</td><td>3 张</td></tr>
+        <tr><td>卡牌类型限制</td><td>最多 1 张"最后一攻"卡 + 最多 1 张"防守"卡 + 最多 1 张"节奏"卡（每类最多 1 张）</td></tr>
+        <tr><td>触发模式</td><td>自动：满足卡牌触发条件时自动激活，无需手动操作</td></tr>
+        <tr><td>激活时机</td><td>Clutch 进入时检查所有卡牌条件，持续激活至 Clutch 结束或条件不再满足</td></tr>
+        <tr><td>最后一攻卡</td><td>仅在最后一回合（最后 24 秒）激活，激活后覆盖所有其他卡</td></tr>
+      </tbody>
+    </table>
+
+    <h3>7.2 完整卡牌库</h3>
+
+    <h4>最后一攻卡（仅最后 24 秒激活）</h4>
+    <table>
+      <thead><tr><th>卡牌</th><th>触发条件</th><th>覆盖效果</th></tr></thead>
+      <tbody>
+        <tr><td><b>三分绝杀</b></td><td>落后 3 分 / 平局</td><td>actionWeight[three] ×3.0; ballHandlerWeight 强制指定主攻点; abilityBonus[three] +0.05; pass ×0.3</td></tr>
+        <tr><td><b>突破造杀伤</b></td><td>落后 1-2 分 / 平局</td><td>actionWeight[drive] ×2.5; andOneChance ×1.3; ftProb +0.05; ballHandlerWeight 指定最高 Dribbling+Speed 球员</td></tr>
+        <tr><td><b>中距离绝杀</b></td><td>落后 2 分 / 平局</td><td>actionWeight[midrange] ×2.5; ballHandlerWeight 指定最佳中距离射手; abilityBonus[midrange] +0.05</td></tr>
+        <tr><td><b>内线强攻</b></td><td>落后 1 分 / 平局</td><td>actionWeight[inside] ×2.5; actionWeight[postup] ×2.0; ballHandlerWeight 指定最强 Inside+Strength 球员; andOneChance ×1.2</td></tr>
+        <tr><td><b>控时间最后一攻</b></td><td>领先 1-2 分</td><td>possessionTime 设为剩余时间; pass ×2.0; actionWeight[shoot] ×0.3（消耗时间到最后 3 秒再出手）; actionWeight[drive] ×1.5（最后选择高命中率攻筐）</td></tr>
+      </tbody>
+    </table>
+
+    <h4>防守卡（Clutch 时段全程激活）</h4>
+    <table>
+      <thead><tr><th>卡牌</th><th>触发条件</th><th>覆盖效果</th></tr></thead>
+      <tbody>
+        <tr><td><b>锁死核心</b></td><td>领先时</td><td>对方主攻点 defenseContest ×1.3; 包夹触发 ×2.0; 但对方其他球员 defensePenalty ×0.7（放空角色球员赌角色球员不进）</td></tr>
+        <tr><td><b>护筐防突</b></td><td>领先 2-3 分</td><td>inside defensePenalty ×1.4; drive defensePenalty ×1.3; three defensePenalty ×0.5（放投防突）</td></tr>
+        <tr><td><b>放投锁内</b></td><td>领先 1-2 分，对方三分命中率 &lt; 33%</td><td>inside defensePenalty ×1.5; three defensePenalty ×0.3; helpDefChance ×1.5（极端收缩）</td></tr>
+        <tr><td><b>全场紧逼</b></td><td>落后时追分</td><td>对方控球者 turnoverChance ×1.5; stealChance ×1.4; defFoulChance ×1.2; conditionLoss ×1.3（体力代价）</td></tr>
+      </tbody>
+    </table>
+
+    <h4>节奏卡（Clutch 时段全程激活）</h4>
+    <table>
+      <thead><tr><th>卡牌</th><th>触发条件</th><th>覆盖效果</th></tr></thead>
+      <tbody>
+        <tr><td><b>控时间</b></td><td>领先 3+ 分</td><td>possessionTime +5; pass ×1.5; shoot ×0.6; fastBreakChance ×0.3（减速消耗时间）</td></tr>
+        <tr><td><b>抢攻追分</b></td><td>落后 4+ 分</td><td>possessionTime -4; fastBreakChance ×1.5; three ×1.3; conditionLoss ×1.2（加速追分）</td></tr>
+        <tr><td><b>犯规战术</b></td><td>落后 3+ 分且剩余 &lt; 60 秒</td><td>无球防守时主动犯规（defFoulChance ×5.0）; 强制送对方罚球线; 赌对方罚球不中</td></tr>
+      </tbody>
+    </table>
+
+    <h3>7.3 卡组推荐组合</h3>
+    <div class="preset-grid">
+      <div class="preset mix"><div class="p-name">稳守反击型</div><div class="p-tag">控时间最后一攻 + 锁死核心 + 控时间</div><div class="p-desc">领先时控制节奏锁死对方核心，最后一攻控时间消耗。适合防守强队领先局面。</div></div>
+      <div class="preset off"><div class="p-name">绝杀型</div><div class="p-tag">三分绝杀 + 全场紧逼 + 抢攻追分</div><div class="p-desc">落后时全场紧逼造失误 + 快速追分 + 最后三分绝杀。高风险高回报。</div></div>
+      <div class="preset def"><div class="p-name">稳扎稳打型</div><div class="p-tag">突破造杀伤 + 护筐防突 + 控时间</div><div class="p-desc">领先时护筐 + 控时间，最后一攻突破造杀伤拿罚球。适合有强力突破手且罚球好的球队。</div></div>
+      <div class="preset off"><div class="p-name">极限翻盘型</div><div class="p-tag">三分绝杀 + 犯规战术 + 抢攻追分</div><div class="p-desc">落后 3+ 分最后 60 秒的极限操作：犯规送罚球 → 抢攻三分 → 再犯规 → 再三分。仅用于绝境。</div></div>
+    </div>
+
+    <h3>7.4 Clutch 卡与 Clutch 球员修正的交互</h3>
+    <p>Clutch 球员修正（基于性格和特质，见 Sim Engine §13.3）与 Clutch 战术卡<b>叠加生效</b>：</p>
+    <div class="formula">
+<span class="comment">// Clutch 时段最终参数 = 战术卡覆盖 × 球员性格/特质修正</span>
+<span class="var">effectiveClutchMod</span>[p] <span class="op">=</span> <span class="var">clutchCardMod</span> <span class="op">×</span> <span class="var">clutchPlayerMod</span>[p]
+
+<span class="comment">// 例：冷血杀手球员 + 三分绝杀卡</span>
+<span class="comment">// shotProb: baseRate + abilityBonus + (clutchCard +0.05) + (coldBlood +0.08) = +0.13</span>
+<span class="comment">// actionWeight[three]: ×3.0 (card) × 1.3 (coldBlood trait) = ×3.9</span>
+    </div>
+    <div class="note gold"><b>设计意图</b>：Clutch 卡是"战术方向"，球员性格/特质是"执行力"。好的战术 + 好的关键球球员 = Clutch 统治力。但即使最好的战术卡也无法让"玻璃心"球员在关键时刻不退缩——这让选材和战术设计成为互补的两个维度。</div>
+  </section>
+
+  <!-- ==================== §8 对位针对性防守策略 ==================== -->
+  <section id="s8">
+    <h2><span class="num">8</span>对位针对性防守策略</h2>
+    <p>对位针对性防守（Target Defense）允许玩家针对对方核心球员设定专门的防守策略。这是 L3 深度机制，需要了解对手阵容后才有意义。</p>
+
+    <h3>8.1 可用策略</h3>
+    <table>
+      <thead><tr><th>策略</th><th>Sim 效果</th><th>代价</th><th>适合对手</th></tr></thead>
+      <tbody>
+        <tr><td><b>包夹</b> Double Team</td><td>目标球员持球时 defenseContest +0.2; 目标球员 turnoverChance ×1.5; 包夹者对位球员空位（three matchupMod ×1.4）</td><td>放空包夹者的对位人，对方传球出空位</td><td>对方核心使用率极高、队友投射差的球员</td></tr>
+        <tr><td><b>护筐</b> Protect the Rim</td><td>对方所有 inside/drive 的 defensePenalty ×1.3; 但 three 的 defensePenalty ×0.6</td><td>放空外线投篮</td><td>对方内线强攻型、三分命中率低的球队</td></tr>
+        <tr><td><b>换防全部</b> Switch All</td><td>挡拆后 100% 换防; 消除挡拆错位优势; 但可能形成小打大/大打小</td><td>错位风险（对方大打小或小打大）</td><td>己方防守者全能型（可换防 1-5 号位）</td></tr>
+        <tr><td><b>放投</b> Sag Off</td><td>目标球员 three 的 defensePenalty ×0.4; 但该球员 drive 的 defensePenalty ×1.2（收缩防守堵突破）</td><td>给目标球员空位三分机会</td><td>对方核心三分命中率极低（&lt;30%）的突破型球员</td></tr>
+        <tr><td><b>外线锁死</b> Perimeter Lock</td><td>目标球员 three/midrange 的 defensePenalty ×1.3; 目标球员 three matchupMod ×0.5（极大降低三分意愿）; 但 inside defensePenalty ×0.7</td><td>放空该球员的内线攻筐</td><td>对方核心是纯射手的球员</td></tr>
+        <tr><td><b>内线顶防</b> Post Deny</td><td>目标球员 postup/inside 的 defensePenalty ×1.3; 目标球员 postup matchupMod ×0.5（降低背打意愿）; 但 three defensePenalty ×0.7</td><td>放空该球员的外线投篮</td><td>对方核心是背打型内线的球员</td></tr>
+      </tbody>
+    </table>
+
+    <h3>8.2 目标选择</h3>
+    <div class="formula">
+<span class="var">TargetDefense</span> <span class="op">=</span> {
+  type:    <span class="str">"double_team"</span> | <span class="str">"protect_rim"</span> | <span class="str">"switch_all"</span>
+         | <span class="str">"sag_off"</span> | <span class="str">"perimeter_lock"</span> | <span class="str">"post_deny"</span>,
+  target:  playerId?,     <span class="comment">// 对方球员ID（protect_rim/switch_all 不需要指定目标）</span>
+  duration: <span class="str">"full_game"</span> | <span class="str">"clutch_only"</span> | <span class="str">"conditional"</span>,
+  condition: Condition?,  <span class="comment">// duration=conditional 时的触发条件</span>
+}
+    </div>
+    <ul>
+      <li><b>全程</b>：从比赛开始到结束持续生效（适用于你确信策略有效的对手）</li>
+      <li><b>仅 Clutch</b>：仅在 Clutch 时段生效（保守选择，避免全程被对手适应）</li>
+      <li><b>条件触发</b>：满足预设条件时生效（如"对方核心得分 ≥ 20 时包夹"）</li>
+    </ul>
+
+    <h3>8.3 对位针对性 vs 基础防守倾向的交互</h3>
+    <p>对位针对性防守与基础防守倾向<b>叠加生效</b>，而非互斥。但两者效果方向可能矛盾：</p>
+    <div class="formula">
+<span class="comment">// 例：基础"收缩" + 对位"外线锁死"对方核心射手</span>
+<span class="comment">// 收缩：three defensePenalty ×0.6（全队放空外线）</span>
+<span class="comment">// 外线锁死：目标球员 three defensePenalty ×1.3（锁死该球员外线）</span>
+<span class="comment">// 结果：对方核心被锁死，但其他球员外线被放空</span>
+<span class="comment">// 这是一种"赌角色球员投不死我"的策略——合理但有风险</span>
+    </div>
+  </section>
+
+  <!-- ==================== §9 半场调整系统 ==================== -->
+  <section id="s9">
+    <h2><span class="num">9</span>半场调整系统</h2>
+    <p>半场调整允许玩家在中场休息时基于上半场 Box Score 做最多 2 处战术调整。这是"中场教练"体验的核心——读完上半场数据后做出针对性调整。</p>
+
+    <h3>9.1 调整槽位</h3>
+    <div class="formula">
+<span class="var">HalftimeRule</span> <span class="op">=</span> {
+  slot:        <span class="num">1</span> | <span class="num">2</span>,              <span class="comment">// 槽位 1 或 2</span>
+  condition:   HalftimeCondition,     <span class="comment">// 触发条件（基于上半场数据）</span>
+  action:      HalftimeAction,        <span class="comment">// 调整内容</span>
+  triggerMode: <span class="str">"auto"</span> | <span class="str">"manual"</span>,
+}
+    </div>
+
+    <h3>9.2 可用条件（基于上半场 Box Score）</h3>
+    <table>
+      <thead><tr><th>条件</th><th>说明</th><th>示例</th></tr></thead>
+      <tbody>
+        <tr><td><code>opp_player_pts_ht</code></td><td>对方某球员上半场得分</td><td>≥ 15 → 包夹</td></tr>
+        <tr><td><code>opp_team_fg_pct_ht</code></td><td>对方上半场命中率</td><td>≥ 50% → 收缩防守</td></tr>
+        <tr><td><code>opp_team_3p_pct_ht</code></td><td>对方上半场三分命中率</td><td>≥ 40% → 外线防守加强</td></tr>
+        <tr><td><code>my_team_fg_pct_ht</code></td><td>本方上半场命中率</td><td>&lt; 40% → 更多突破造犯规</td></tr>
+        <tr><td><code>my_player_fouls_ht</code></td><td>本方某球员上半场犯规数</td><td>≥ 3 → 保守犯规策略</td></tr>
+        <tr><td><code>score_diff_ht</code></td><td>上半场分差</td><td>≤ -10 → 追分模式</td></tr>
+        <tr><td><code>opp_reb_diff_ht</code></td><td>上半场篮板差</td><td>对方 +10 → 加强篮板</td></tr>
+      </tbody>
+    </table>
+
+    <h3>9.3 可用调整动作</h3>
+    <table>
+      <thead><tr><th>动作</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><code>change_offense_tendency</code></td><td>改进攻倾向（外线/平衡/内线）</td></tr>
+        <tr><td><code>change_defense_tendency</code></td><td>改防守倾向（压迫/平衡/收缩）</td></tr>
+        <tr><td><code>change_tempo</code></td><td>改节奏（快/平衡/慢）</td></tr>
+        <tr><td><code>change_matchup</code></td><td>改对位（指定新对位组合）</td></tr>
+        <tr><td><code>change_primary_scorer</code></td><td>改主攻点</td></tr>
+        <tr><td><code>set_target_def</code></td><td>设置/取消对位针对性防守</td></tr>
+        <tr><td><code>change_foul_strategy</code></td><td>改犯规策略</td></tr>
+      </tbody>
+    </table>
+
+    <h3>9.4 半场调整示例</h3>
+    <div class="formula">
+<span class="comment">// 槽位 1：对方核心上半场发威 → 包夹</span>
+{
+  slot: <span class="num">1</span>,
+  condition: { type: <span class="str">"opp_player_pts_ht"</span>, op: <span class="str">">="</span>, value: <span class="num">15</span>, target: <span class="str">"opp_star"</span> },
+  action: { type: <span class="str">"set_target_def"</span>, value: { type: <span class="str">"double_team"</span>, target: <span class="str">"opp_star"</span> } },
+  triggerMode: <span class="str">"auto"</span>,
+}
+
+<span class="comment">// 槽位 2：落后 10+ 分 → 追分模式</span>
+{
+  slot: <span class="num">2</span>,
+  condition: { type: <span class="str">"score_diff_ht"</span>, op: <span class="str">"<="</span>, value: <span class="op">-</span><span class="num">10</span> },
+  action: { type: <span class="str">"change_offense_tendency"</span>, value: <span class="str">"outside"</span> },
+  triggerMode: <span class="str">"auto"</span>,
+}
+    </div>
+
+    <h3>9.5 自动 vs 手动</h3>
+    <ul>
+      <li><b>自动模式</b>：玩家在比赛前预设好条件和动作，中场时系统自动检查并执行。适合不想中断观赛体验的玩家。</li>
+      <li><b>手动模式</b>：中场时弹出调整界面，玩家看到上半场 Box Score 后手动选择 0-2 处调整。适合喜欢"中场教练"体验的玩家。</li>
+      <li><b>默认</b>：L3 解锁后默认为手动模式；可在设置中切换为自动。</li>
+    </ul>
+  </section>
+
+  <!-- ==================== §10 轮换决策树 ==================== -->
+  <section id="s10">
+    <h2><span class="num">10</span>轮换决策树</h2>
+    <p>轮换引擎（Sim Engine §14）的完整决策树。每回合结束后按此树检查换人需求。</p>
+
+    <h3>10.1 轮换检查优先级</h3>
+    <ul class="tree">
+      <li><span class="tl-node e">P0 强制换人（不可跳过）</span><span class="tl-desc">犯满出场 / 受伤 → 立即换下</span></li>
+      <li><span class="tl-node e">P1 Condition 危急</span><span class="tl-desc">Condition &lt; 35 → 强制换下</span></li>
+      <li><span class="tl-node d">P2 战术触发</span><span class="tl-desc">半场调整 / Clutch 卡 / 对位针对性调整 → 换上指定球员</span></li>
+      <li><span class="tl-node d">P3 犯规麻烦评估</span><span class="tl-desc">按犯规策略（保守/正常/激进）评估是否换下</span></li>
+      <li><span class="tl-node">P4 疲劳管理</span><span class="tl-desc">Condition &lt; 55 + 有休息充分的替补 → 评估换人</span></li>
+      <li><span class="tl-node">P5 节间轮换</span><span class="tl-desc">每节结束按预设轮换模式调整</span></li>
+      <li><span class="tl-node">P6 垃圾时间</span><span class="tl-desc">第四节最后 5 分钟 + 分差 ≥ 20 → 全替补</span></li>
+    </ul>
+
+    <h3>10.2 轮换模式详细规格</h3>
+    <table>
+      <thead><tr><th>模式</th><th>主力分钟</th><th>替补分钟</th><th>换人节奏</th><th>Condition 阈值</th></tr></thead>
+      <tbody>
+        <tr><td><b>主力优先</b></td><td>38-40 min</td><td>8-10 min</td><td>第一节打满 → 第二节初休息 → 二节末上场 → 第三节打满 → 第四节打满</td><td>Condition &lt; 30 才换人</td></tr>
+        <tr><td><b>均衡轮换</b></td><td>30-34 min</td><td>14-18 min</td><td>第一节 6-8 分钟首次换人 → 轮换出场 → 全场均衡分配</td><td>Condition &lt; 45 评估换人</td></tr>
+        <tr><td><b>深度轮换</b></td><td>24-28 min</td><td>20-24 min</td><td>频繁轮换，每 4-5 分钟换人 → 10 人轮换</td><td>Condition &lt; 55 评估换人</td></tr>
+        <tr><td><b>自定义</b></td><td>玩家指定</td><td>玩家指定</td><td>按玩家自定义的换人时间点和触发条件</td><td>玩家指定</td></tr>
+      </tbody>
+    </table>
+
+    <h3>10.3 轮换模式 × 节奏的交互</h3>
+    <table>
+      <thead><tr><th></th><th>快节奏</th><th>平衡节奏</th><th>慢节奏</th></tr></thead>
+      <tbody>
+        <tr><td><b>主力优先</b></td><td style="color:var(--red)">极高风险：Condition 衰减 ×1.3 + 38 分钟 → 主力第四节 Condition 可能 &lt; 20</td><td style="color:var(--gold)">高风险：正常衰减但时间太长</td><td>可控：衰减慢但仍在冒险</td></tr>
+        <tr><td><b>均衡轮换</b></td><td style="color:var(--gold)">轻微风险：替补需要跟上快节奏</td><td style="color:var(--accent2)">推荐：最稳定的组合</td><td>安全但回合数少</td></tr>
+        <tr><td><b>深度轮换</b></td><td style="color:var(--accent2)">理想：快节奏消耗大 + 深度轮换分担</td><td style="color:var(--accent2)">安全：替补时间充足</td><td>浪费：慢节奏不需要这么多轮换</td></tr>
+      </tbody>
+    </table>
+
+    <h3>10.4 自定义轮换设置</h3>
+    <p>玩家可逐节设置每个位置的轮换时间线：</p>
+    <div class="formula">
+<span class="var">CustomRotation</span> <span class="op">=</span> {
+  quarters: [
+    {
+      q: <span class="num">1</span>,
+      slots: [
+        { time: <span class="num">0</span>,    starters: [5 players] },  <span class="comment">// 开节首发</span>
+        { time: <span class="num">360</span>,  subs: [(out: PG1, in: PG2)] },  <span class="comment">// 6 分钟换控卫</span>
+        { time: <span class="num">480</span>,  subs: [(out: C1, in: C2)] },   <span class="comment">// 8 分钟换中锋</span>
+      ]
+    },
+    <span class="comment">// ... 每节均可自定义</span>
+  ],
+  clutchOverride: bool,  <span class="comment">// Clutch 时段是否强制上主力</span>
+  garbageTimeRule: <span class="str">"auto"</span> | <span class="str">"keep_starter"</span> | <span class="str">"all_bench"</span>,
+}
+    </div>
+  </section>
+
+  <!-- ==================== §11 战术与球员特质交互 ==================== -->
+  <section id="s11">
+    <h2><span class="num">11</span>战术与球员特质交互</h2>
+    <p>球员特质（Traits）与战术系统交互，产生"1+1>2"或"错配"效果。这让选材和战术设计成为互补的两个维度。</p>
+
+    <h3>11.1 进攻特质 × 战术倾向</h3>
+    <table>
+      <thead><tr><th>特质</th><th>战术适配</th><th>交互效果</th><th>错配效果</th></tr></thead>
+      <tbody>
+        <tr><td><b>冷血杀手</b></td><td>Clutch 卡 + 外线倾向</td><td>Clutch shotProb +0.08 + 三分卡 +0.05 = 绝杀能力拉满</td><td>无 Clutch 卡时 Clutch 加成浪费</td></tr>
+        <tr><td><b>微波</b></td><td>主攻点角色</td><td>连续命中额外 +0.03/球 × 微波特质 = 快速进入手感火热状态</td><td>非主攻点时出手少，难以触发连续命中</td></tr>
+        <tr><td><b>空接王</b></td><td>挡拆高 + 快攻高</td><td>挡拆顺下 + 快攻接球即投三分命中率 +0.05</td><td>半场阵地 + 低挡拆频率时无效</td></tr>
+        <tr><td><b>篮下野兽</b></td><td>内线倾向 + 突破高</td><td>inside 命中率 +0.06 + 扣篮概率提升 + 对方犯规风险 +20%</td><td>外线倾向时攻筐机会少，特质浪费</td></tr>
+        <tr><td><b>玻璃人</b></td><td>慢节奏 + 均衡轮换</td><td>Condition 衰减减免：慢节奏 ×0.8 + 均衡轮换多休息</td><td>快节奏 + 主力优先 → Condition 急速下降 + 受伤概率 ×1.5</td></tr>
+        <tr><td><b>铁人</b></td><td>快节奏 + 主力优先</td><td>Condition 衰减 ×0.5 + 疲劳惩罚减免 → 可承受 38+ 分钟</td><td>慢节奏时铁人优势浪费</td></tr>
+      </tbody>
+    </table>
+
+    <h3>11.2 防守特质 × 防守策略</h3>
+    <table>
+      <thead><tr><th>特质</th><th>战术适配</th><th>交互效果</th></tr></thead>
+      <tbody>
+        <tr><td><b>护筐大师</b></td><td>收缩防守 + 护筐策略</td><td>inside defensePenalty ×1.3(收缩) ×1.2(护筐者) ×1.3(护筐策略) = ×2.03 护筐压制力</td></tr>
+        <tr><td><b>外线锁</b></td><td>压迫防守 + 外线锁死策略</td><td>three defensePenalty ×1.25(外线锁) ×1.3(外线锁死) = 对方射手窒息</td></tr>
+        <tr><td><b>快手</b></td><td>压迫防守 + 全场紧逼</td><td>stealChance ×1.3(压迫) ×1.3(紧逼) ×1.2(快手) = 高抢断产出</td></tr>
+        <tr><td><b>铁墙</b></td><td>内线顶防策略</td><td>postup defensePenalty ×1.3(铁墙) ×1.3(内线顶防) = 对方背打效率暴跌</td></tr>
+      </tbody>
+    </table>
+
+    <h3>11.3 性格 × 战术执行</h3>
+    <table>
+      <thead><tr><th>性格</th><th>战术影响</th></tr></thead>
+      <tbody>
+        <tr><td><b>独狼</b></td><td>pass actionWeight ×0.5 → 传球战术（如普林斯顿）效果减半；适合主攻点角色</td></tr>
+        <tr><td><b>团队领袖</b></td><td>全队 shotProb +0.02 + pass ×1.2 → 传球战术效果增强；适合组织核心角色</td></tr>
+        <tr><td><b>大心脏</b></td><td>Clutch shotProb +0.05 → 必须配 Clutch 卡才能发挥最大价值</td></tr>
+        <tr><td><b>玻璃心</b></td><td>Condition 低时退缩 → 必须配均衡/深度轮换避免疲劳触发性格惩罚</td></tr>
+        <tr><td><b>老好人</b></td><td>pass ×1.2, shoot ×0.9 → 不适合主攻点角色；适合 3D/蓝领角色</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ==================== §12 Per-game 战术与备战系统 ==================== -->
+  <section id="s12">
+    <h2><span class="num">12</span>Per-game 战术与备战系统</h2>
+
+    <h3>12.1 Per-game 战术机制</h3>
+    <ul>
+      <li><b>设定</b>：可为任意赛程指定一套 per-game 战术，完全替代默认战术</li>
+      <li><b>隐私</b>：对手看不到你的 per-game 战术设置；你也看不到对手的</li>
+      <li><b>适用场景</b>：关键战、季后赛、针对性备战（如知道对方核心是三分射手 → 设外线锁死）</li>
+      <li><b>管理</b>：赛程列表中每场比赛可挂载一套 per-game 战术存档或新建</li>
+      <li><b>AI 经理</b>：AI 经理也会根据自身阵容和对手设定 per-game 战术</li>
+    </ul>
+
+    <h3>12.2 备战情报系统</h3>
+    <p>Per-game 战术的有效性依赖于对对手的了解。备战情报系统提供赛前信息：</p>
+    <table>
+      <thead><tr><th>情报项</th><th>来源</th><th>影响</th></tr></thead>
+      <tbody>
+        <tr><td>对方近期阵容与轮换</td><td>对方最近 3 场 Box Score</td><td>预测对方首发和主力轮换</td></tr>
+        <tr><td>对方核心球员近期状态</td><td>对方核心近 5 场场均数据</td><td>判断是否需要针对性防守</td></tr>
+        <tr><td>对方战术倾向</td><td>对方近 5 场出手分布（三分/内线占比）</td><td>推测对方进攻倾向，设定针对性防守</td></tr>
+        <tr><td>对方球员 Condition</td><td>对方最近一场比赛分钟数</td><td>判断对方主力是否疲劳</td></tr>
+        <tr><td>对方伤病情况</td><td>对方伤病报告</td><td>判断对方是否有主力缺阵</td></tr>
+        <tr><td>交手历史</td><td>本赛季双方交手记录</td><td>参考上次对战的战术效果</td></tr>
+      </tbody>
+    </table>
+    <div class="note blue"><b>情报限制</b>：对方战术存档（具体条件规则/Clutch 卡/对位针对性）始终不可见——只能从比赛数据推测。这保留了战术博弈的不确定性和心理战维度。</div>
+
+    <h3>12.3 球探报告辅助</h3>
+    <p>球探系统（策划方案 §10）的 Fog 机制与备战情报联动：</p>
+    <ul>
+      <li>对方球员的 Fog 收窄后，备战情报中的数据更精确（能力估值误差更小）</li>
+      <li>对阵亲历（交过手）自动收窄 Fog → 再打同一对手时备战信息更准</li>
+      <li>可派球探专门探查下一场对手 → 赛前获得对方球员的精确能力估值</li>
+    </ul>
+  </section>
+
+  <!-- ==================== §13 战术解锁与进度系统 ==================== -->
+  <section id="s13">
+    <h2><span class="num">13</span>战术解锁与进度系统</h2>
+
+    <h3>13.1 解锁条件</h3>
+    <table>
+      <thead><tr><th>功能</th><th>解锁条件</th><th>理由</th></tr></thead>
+      <tbody>
+        <tr><td>L1 基础三选</td><td>默认解锁</td><td>新手立即可用</td></tr>
+        <tr><td>L2 高级编辑器</td><td>经理声望 Lv.3 或完成 10 场比赛</td><td>让新手先理解基础再进阶</td></tr>
+        <tr><td>条件规则</td><td>经理声望 Lv.5 或完成 1 个赛季</td><td>条件规则需要理解比赛情境</td></tr>
+        <tr><td>L3 Clutch 战术卡</td><td>经理声望 Lv.6</td><td>Clutch 是高级机制</td></tr>
+        <tr><td>半场调整（手动）</td><td>经理声望 Lv.6</td><td>需要阅读 Box Score 的能力</td></tr>
+        <tr><td>对位针对性防守</td><td>经理声望 Lv.8</td><td>需要对对手有深入了解</td></tr>
+        <tr><td>自定义轮换</td><td>经理声望 Lv.4</td><td>需要理解轮换逻辑</td></tr>
+        <tr><td>Per-game 战术</td><td>经理声望 Lv.5</td><td>需要备战意识</td></tr>
+      </tbody>
+    </table>
+
+    <h3>13.2 战术存档上限</h3>
+    <table>
+      <thead><tr><th>等级</th><th>存档上限</th><th>条件规则上限</th></tr></thead>
+      <tbody>
+        <tr><td>默认</td><td>3 套</td><td>0 条</td></tr>
+        <tr><td>经理声望 Lv.5</td><td>5 套</td><td>4 条/套</td></tr>
+        <tr><td>经理声望 Lv.8</td><td>8 套</td><td>8 条/套</td></tr>
+        <tr><td>VIP</td><td>+5 套</td><td>不变</td></tr>
+      </tbody>
+    </table>
+    <div class="note green"><b>设计意图</b>：渐进式解锁让新手不会在第一天面对 50 个战术参数的界面。先用三选体验比赛 → 解锁高级后探索角色和轮换 → 最后掌握条件规则和 Clutch 卡成为战术大师。</div>
+  </section>
+
+  <!-- ==================== §14 AI 经理战术决策 ==================== -->
+  <section id="s14">
+    <h2><span class="num">14</span>AI 经理战术决策</h2>
+    <p>AI 经理（填充联赛的 NPC 球队）也需要设定战术。AI 战术决策的质量影响联赛竞争平衡。</p>
+
+    <h3>14.1 AI 战术生成规则</h3>
+    <div class="formula">
+<span class="comment">// AI 经理战术生成流程</span>
+<span class="fn">generateAITactics</span>(<span class="var">roster</span>, <span class="var">leagueLevel</span>, <span class="var">opponent</span>) → <span class="var">MatchTactics</span> {
+
+  <span class="comment">// 1. 根据阵容能力分布选择基础倾向</span>
+  <span class="var">avgThree</span> <span class="op">=</span> <span class="fn">avg</span>(roster.ThreePoint)
+  <span class="var">avgInside</span> <span class="op">=</span> <span class="fn">avg</span>(roster.Inside <span class="op">+</span> Strength)
+  <span class="keyword">if</span> <span class="var">avgThree</span> <span class="op">></span> <span class="var">avgInside</span> <span class="op">+</span> <span class="num">5</span>:
+    <span class="var">offenseTendency</span> <span class="op">=</span> <span class="str">"outside"</span>
+  <span class="keyword">elif</span> <span class="var">avgInside</span> <span class="op">></span> <span class="var">avgThree</span> <span class="op">+</span> <span class="num">5</span>:
+    <span class="var">offenseTendency</span> <span class="op">=</span> <span class="str">"inside"</span>
+  <span class="keyword">else</span>:
+    <span class="var">offenseTendency</span> <span class="op">=</span> <span class="str">"balanced"</span>
+
+  <span class="comment">// 2. 根据联赛层级设定战术"聪明度"</span>
+  <span class="var">smartness</span> <span class="op">=</span> <span class="fn">leagueLevel</span>  <span class="comment">// 1(最低级联赛)=笨 ~ 4(最高级联赛)=精明</span>
+
+  <span class="comment">// 3. 低级联赛：只用 L1 基础三选，随机选节奏</span>
+  <span class="comment">// 4. 中级联赛：加 L2 角色分配 + 挡拆频率</span>
+  <span class="comment">// 5. 高级联赛：加条件规则 + Clutch 卡 + 对位针对性</span>
+  <span class="comment">// 6. 最高级联赛：加 per-game 针对性备战</span>
+
+  <span class="keyword">return</span> <span class="fn">buildTactics</span>(<span class="var">offenseTendency</span>, <span class="var">defenseTendency</span>, <span class="var">tempo</span>, <span class="op">...</span>)
+}
+    </div>
+
+    <h3>14.2 AI 战术"聪明度"分级</h3>
+    <table>
+      <thead><tr><th>联赛层级</th><th>战术层级</th><th>条件规则</th><th>Clutch 卡</th><th>对位针对性</th><th>Per-game</th></tr></thead>
+      <tbody>
+        <tr><td>L1 最低级</td><td>L1 基础</td><td>无</td><td>无</td><td>无</td><td>无</td></tr>
+        <tr><td>L2</td><td>L1 + 部分 L2</td><td>无</td><td>基础卡</td><td>无</td><td>无</td></tr>
+        <tr><td>L3</td><td>L1 + L2</td><td>2 条</td><td>基础卡</td><td>无</td><td>无</td></tr>
+        <tr><td>L4 最高级</td><td>L1 + L2 + L3</td><td>4-6 条</td><td>完整卡组</td><td>有</td><td>有</td></tr>
+      </tbody>
+    </table>
+    <div class="note"><b>设计意图</b>：低级联赛 AI 笨 → 玩家升上去容易；高级联赛 AI 精明 → 顶级联赛竞争激烈。这制造了"越往上越难"的渐进挑战曲线。</div>
+  </section>
+
+  <!-- ==================== §15 战术平衡性设计 ==================== -->
+  <section id="s15">
+    <h2><span class="num">15</span>战术平衡性设计</h2>
+
+    <h3>15.1 平衡原则</h3>
+    <table>
+      <thead><tr><th>原则</th><th>含义</th><th>实现方式</th></tr></thead>
+      <tbody>
+        <tr><td><b>无最优解</b></td><td>不存在一套"最强战术"</td><td>每套战术都有明确代价（跑轰费体力、铁桶放三分、压迫犯规多）</td></tr>
+        <tr><td><b>克制关系</b></td><td>战术间有循环克制</td><td>外线进攻克收缩防守；内线进攻克压迫防守；快攻克慢节奏但被深度轮换克</td></tr>
+        <tr><td><b>阵容匹配</b></td><td>战术效果取决于阵容</td><td>外线战术需要三分射手；压迫防守需要敏捷防守者；没有合适球员时战术效果打折</td></tr>
+        <tr><td><b>涌现性</b></td><td>比赛结果不可预测</td><td>随机项 + 对位博弈 + 条件规则触发 → 同一 matchups 多场结果有合理方差</td></tr>
+      </tbody>
+    </table>
+
+    <h3>15.2 战术克制矩阵</h3>
+    <table>
+      <thead><tr><th>进攻\防守</th><th>压迫</th><th>平衡</th><th>收缩</th></tr></thead>
+      <tbody>
+        <tr><td><b>外线</b></td><td>中立：压迫增加失误但也给空位</td><td>中立</td><td style="color:var(--accent2)">进攻优势：收缩放空三分</td></tr>
+        <tr><td><b>平衡</b></td><td style="color:var(--red)">防守优势：压迫打乱平衡进攻</td><td>中立</td><td>中立</td></tr>
+        <tr><td><b>内线</b></td><td style="color:var(--accent2)">进攻优势：压迫犯规多 + 内线造杀伤</td><td>中立</td><td style="color:var(--red)">防守优势：收缩护筐克内线</td></tr>
+      </tbody>
+    </table>
+
+    <h3>15.3 节奏克制</h3>
+    <table>
+      <thead><tr><th>进攻节奏\对方轮换</th><th>主力优先</th><th>均衡</th><th>深度轮换</th></tr></thead>
+      <tbody>
+        <tr><td><b>快</b></td><td style="color:var(--accent2)">进攻优势：快节奏消耗对方主力体力</td><td>中立</td><td style="color:var(--red)">防守优势：深度轮换不怕消耗</td></tr>
+        <tr><td><b>平衡</b></td><td>中立</td><td>中立</td><td>中立</td></tr>
+        <tr><td><b>慢</b></td><td style="color:var(--red)">防守优势：慢节奏让主力优势发挥</td><td>中立</td><td style="color:var(--accent2)">进攻优势：慢节奏减少回合数压制深度轮换优势</td></tr>
+      </tbody>
+    </table>
+
+    <h3>15.4 回归测试校准</h3>
+    <p>战术平衡性通过 Sim Engine §19 的回归测试框架验证：</p>
+    <ul>
+      <li><b>战术克制验证</b>：外线战术 vs 收缩防守的胜率应显著高于外线 vs 压迫防守</li>
+      <li><b>无最优解验证</b>：27 种基础组合的相互对局中，没有一种组合胜率显著高于所有其他组合</li>
+      <li><b>阵容匹配验证</b>：外线战术 + 三分射手阵容 的胜率应显著高于 外线战术 + 内线阵容</li>
+      <li><b>Clutch 卡验证</b>：有 Clutch 卡的球队在 Clutch 频率场景中胜率应高于无卡球队</li>
+      <li><b>条件规则验证</b>：合理条件规则的球队在特定情境（落后追分等）中逆转率应更高</li>
+    </ul>
+  </section>
+
+  <!-- ==================== §16 数值附录 ==================== -->
+  <section id="s16">
+    <h2><span class="num">16</span>数值附录</h2>
+
+    <h3>16.1 基础战术参数映射表（完整）</h3>
+    <table>
+      <thead><tr><th>参数</th><th>选项</th><th>Sim 影响</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="3">offenseTendency</td><td>outside</td><td>tendencyMod[three] ×2.0, [inside] ×0.4, [midrange] ×0.8</td></tr>
+        <tr><td>balanced</td><td>所有 tendencyMod ×1.0</td></tr>
+        <tr><td>inside</td><td>tendencyMod[inside] ×2.0, [three] ×0.3, [postup] ×1.5</td></tr>
+        <tr><td rowspan="3">defenseTendency</td><td>press</td><td>defFoulChance ×1.3, stealChance ×1.3, defenseContest ×1.05</td></tr>
+        <tr><td>balanced</td><td>正常</td></tr>
+        <tr><td>pack</td><td>inside defensePenalty ×1.2, three defensePenalty ×0.6, helpDefChance ×1.3</td></tr>
+        <tr><td rowspan="3">tempo</td><td>fast</td><td>possessionTime -3, fastBreakChance ×1.4, conditionLoss ×1.3</td></tr>
+        <tr><td>balanced</td><td>正常</td></tr>
+        <tr><td>slow</td><td>possessionTime +3, fastBreakChance ×0.7, pass ×1.2</td></tr>
+      </tbody>
+    </table>
+
+    <h3>16.2 战术角色参数表（完整）</h3>
+    <table>
+      <thead><tr><th>角色</th><th>参数影响</th></tr></thead>
+      <tbody>
+        <tr><td>主攻点</td><td>actionWeight[shoot] ×1.5, ballHandlerWeight ×2.0</td></tr>
+        <tr><td>副攻点</td><td>actionWeight[shoot] ×1.2, ballHandlerWeight ×1.3</td></tr>
+        <tr><td>3D 侧翼</td><td>three ×1.2, defensePenalty(自身防守) ×1.1, actionWeight[shoot] ×0.9</td></tr>
+        <tr><td>蓝领内线</td><td>inside ×1.3, reboundContest ×1.2, three ×0.3, postup ×1.3</td></tr>
+        <tr><td>组织核心</td><td>ballHandlerWeight ×2.5, pass ×1.4, shoot ×0.8</td></tr>
+        <tr><td>空间型内线</td><td>three ×1.4, inside ×0.7</td></tr>
+        <tr><td>第六人</td><td>替补时 shoot ×1.3</td></tr>
+        <tr><td>定点射手</td><td>three ×1.3(接球投), drive ×0.4, pass ×0.9</td></tr>
+        <tr><td>挡拆顺下</td><td>顺下概率 ×1.3, inside ×1.2</td></tr>
+        <tr><td>外线锁</td><td>对位 three/midrange defensePenalty ×1.25, stealChance ×1.15</td></tr>
+        <tr><td>护筐者</td><td>inside/drive defensePenalty ×1.2, blockChance ×1.3, helpDefChance ×1.4</td></tr>
+        <tr><td>全场压迫</td><td>stealChance ×1.3, defFoulChance ×1.2</td></tr>
+        <tr><td>协防扫荡</td><td>helpDefChance ×1.5, helpDefQuality ×1.1, 对位 defenseContest ×0.9</td></tr>
+        <tr><td>篮板手</td><td>reboundContest ×1.3</td></tr>
+      </tbody>
+    </table>
+
+    <h3>16.3 高级频率参数表</h3>
+    <table>
+      <thead><tr><th>参数</th><th>低</th><th>中</th><th>高</th></tr></thead>
+      <tbody>
+        <tr><td>pickRollFreq</td><td>0.15</td><td>0.25</td><td>0.40</td></tr>
+        <tr><td>threeFreq</td><td>×0.7</td><td>×1.0</td><td>×1.4</td></tr>
+        <tr><td>fastBreakPref</td><td>×0.6</td><td>×1.0</td><td>×1.5</td></tr>
+      </tbody>
+    </table>
+
+    <h3>16.4 Clutch 卡参数表（完整）</h3>
+    <table>
+      <thead><tr><th>卡牌</th><th>类型</th><th>关键参数</th></tr></thead>
+      <tbody>
+        <tr><td>三分绝杀</td><td>最后一攻</td><td>three ×3.0, ballHandler=主攻点, abilityBonus[three] +0.05, pass ×0.3</td></tr>
+        <tr><td>突破造杀伤</td><td>最后一攻</td><td>drive ×2.5, andOneChance ×1.3, ftProb +0.05</td></tr>
+        <tr><td>中距离绝杀</td><td>最后一攻</td><td>midrange ×2.5, ballHandler=最佳中距离射手, abilityBonus[midrange] +0.05</td></tr>
+        <tr><td>内线强攻</td><td>最后一攻</td><td>inside ×2.5, postup ×2.0, andOneChance ×1.2</td></tr>
+        <tr><td>控时间最后一攻</td><td>最后一攻</td><td>pass ×2.0, shoot ×0.3, drive ×1.5(最后3秒)</td></tr>
+        <tr><td>锁死核心</td><td>防守</td><td>对方主攻点 defenseContest ×1.3, 包夹 ×2.0, 其他 defensePenalty ×0.7</td></tr>
+        <tr><td>护筐防突</td><td>防守</td><td>inside defensePenalty ×1.4, drive ×1.3, three ×0.5</td></tr>
+        <tr><td>放投锁内</td><td>防守</td><td>inside defensePenalty ×1.5, three ×0.3, helpDefChance ×1.5</td></tr>
+        <tr><td>全场紧逼</td><td>防守</td><td>对方 turnoverChance ×1.5, stealChance ×1.4, defFoulChance ×1.2</td></tr>
+        <tr><td>控时间</td><td>节奏</td><td>possessionTime +5, pass ×1.5, shoot ×0.6, fastBreak ×0.3</td></tr>
+        <tr><td>抢攻追分</td><td>节奏</td><td>possessionTime -4, fastBreak ×1.5, three ×1.3</td></tr>
+        <tr><td>犯规战术</td><td>节奏</td><td>defFoulChance ×5.0, 强制送罚球</td></tr>
+      </tbody>
+    </table>
+
+    <h3>16.5 对位针对性防守参数表（完整）</h3>
+    <table>
+      <thead><tr><th>策略</th><th>效果</th><th>代价</th></tr></thead>
+      <tbody>
+        <tr><td>包夹</td><td>目标 defenseContest +0.2, 目标 turnoverChance ×1.5</td><td>包夹者对位人 three matchupMod ×1.4</td></tr>
+        <tr><td>护筐</td><td>inside/drive defensePenalty ×1.3</td><td>three defensePenalty ×0.6</td></tr>
+        <tr><td>换防全部</td><td>挡拆后 100% 换防</td><td>可能形成错位</td></tr>
+        <tr><td>放投</td><td>目标 drive defensePenalty ×1.2</td><td>目标 three defensePenalty ×0.4</td></tr>
+        <tr><td>外线锁死</td><td>目标 three/midrange defensePenalty ×1.3, three matchupMod ×0.5</td><td>目标 inside defensePenalty ×0.7</td></tr>
+        <tr><td>内线顶防</td><td>目标 postup/inside defensePenalty ×1.3, postup matchupMod ×0.5</td><td>目标 three defensePenalty ×0.7</td></tr>
+      </tbody>
+    </table>
+
+    <h3>16.6 条件规则限制表</h3>
+    <table>
+      <thead><tr><th>限制项</th><th>值</th></tr></thead>
+      <tbody>
+        <tr><td>每套存档最大条件规则数</td><td>8 条</td></tr>
+        <tr><td>条件类型数</td><td>12 种</td></tr>
+        <tr><td>可修改参数数</td><td>14 种</td></tr>
+        <tr><td>优先级范围</td><td>1-99</td></tr>
+        <tr><td>冷却回合范围</td><td>0-20 回合</td></tr>
+        <tr><td>最大触发次数</td><td>0（无限）- 10</td></tr>
+        <tr><td>条件关系</td><td>AND（全部满足才触发）</td></tr>
+        <tr><td>同参数冲突解决</td><td>高 priority 覆盖低 priority</td></tr>
+      </tbody>
+    </table>
+
+    <h3>16.7 轮换阈值表</h3>
+    <table>
+      <thead><tr><th>参数</th><th>值</th></tr></thead>
+      <tbody>
+        <tr><td>强制换人 Condition 阈值</td><td>35</td></tr>
+        <tr><td>评估换人 Condition 阈值</td><td>55</td></tr>
+        <tr><td>犯规麻烦（保守/上半场）</td><td>≥ 3</td></tr>
+        <tr><td>犯规麻烦（正常/上半场）</td><td>≥ 4</td></tr>
+        <tr><td>犯规麻烦（激进/上半场）</td><td>不换（除犯满）</td></tr>
+        <tr><td>犯满出场</td><td>= 6</td></tr>
+        <tr><td>全队 bonus 阈值</td><td>4 犯/节</td></tr>
+        <tr><td>垃圾时间触发</td><td>Q4 最后 5 分钟 + 分差 ≥ 20</td></tr>
+        <tr><td>休息恢复率</td><td>0.8 Condition/回合</td></tr>
+        <tr><td>主力优先 Condition 阈值</td><td>30</td></tr>
+        <tr><td>均衡轮换 Condition 阈值</td><td>45</td></tr>
+        <tr><td>深度轮换 Condition 阈值</td><td>55</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    战术系统设计 · Tactics System Design · v1.0<br>
+    篮球经理世界 Hoops World Online · 关联策划方案 §8 / Sim Engine §12-14
+  </footer>
+
+</div>
+</body>
+</html>
